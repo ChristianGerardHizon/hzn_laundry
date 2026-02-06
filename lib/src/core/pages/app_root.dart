@@ -42,6 +42,15 @@ class _AppRootState extends ConsumerState<AppRoot> {
   /// Key for the scaffold to control drawer.
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    // Dismiss keyboard when entering authenticated shell (e.g., after login)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
   /// Route paths in order of navigation index.
   static const _routePaths = [
     DashboardRoute.path, // 0: /

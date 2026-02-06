@@ -10,18 +10,21 @@ part of 'kanban_sales_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Fetches all active sales (non-voided) grouped by order status.
 /// Filtered by current branch, sorted by most recent first.
+/// Also fetches service items for processing/ready sales to display machine/storage.
 
 @ProviderFor(kanbanSales)
 final kanbanSalesProvider = KanbanSalesProvider._();
 
 /// Fetches all active sales (non-voided) grouped by order status.
 /// Filtered by current branch, sorted by most recent first.
+/// Also fetches service items for processing/ready sales to display machine/storage.
 
 final class KanbanSalesProvider extends $FunctionalProvider<
         AsyncValue<KanbanSalesData>, KanbanSalesData, FutureOr<KanbanSalesData>>
     with $FutureModifier<KanbanSalesData>, $FutureProvider<KanbanSalesData> {
   /// Fetches all active sales (non-voided) grouped by order status.
   /// Filtered by current branch, sorted by most recent first.
+  /// Also fetches service items for processing/ready sales to display machine/storage.
   KanbanSalesProvider._()
       : super(
           from: null,
@@ -48,4 +51,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'ce938fd5150186685e7f77fc4a882b72a03f3ea0';
+String _$kanbanSalesHash() => r'69ccb91f92854cbba99ba6f2df54c780bbbf743b';

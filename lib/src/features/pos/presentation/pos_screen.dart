@@ -213,6 +213,7 @@ class _MobileLayout extends ConsumerWidget {
 
     return Scaffold(
       key: scaffoldKey,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Cashier'),
         actions: [

@@ -5,6 +5,8 @@ import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../pos/data/dto/sale_dto.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../services/data/dto/sale_service_item_dto.dart';
+import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 
 part 'kanban_sales_controller.g.dart';
@@ -16,12 +18,16 @@ class KanbanSalesData {
     required this.processing,
     required this.ready,
     required this.pickedUp,
+    this.serviceItemsBySale = const {},
   });
 
   final List<Sale> pending;
   final List<Sale> processing;
   final List<Sale> ready;
   final List<Sale> pickedUp;
+
+  /// Map of sale ID to its service items (for displaying machine/storage info).
+  final Map<String, List<SaleServiceItem>> serviceItemsBySale;
 
   /// Returns the sales list for a given status.
   List<Sale> salesForStatus(OrderStatus status) => switch (status) {
@@ -31,6 +37,10 @@ class KanbanSalesData {
         OrderStatus.pickedUp => pickedUp,
       };
 
+  /// Returns service items for a given sale.
+  List<SaleServiceItem> serviceItemsForSale(String saleId) =>
+      serviceItemsBySale[saleId] ?? [];
+
   /// Total count of all sales.
   int get totalCount =>
       pending.length + processing.length + ready.length + pickedUp.length;
@@ -38,6 +48,7 @@ class KanbanSalesData {
 
 /// Fetches all active sales (non-voided) grouped by order status.
 /// Filtered by current branch, sorted by most recent first.
+/// Also fetches service items for processing/ready sales to display machine/storage.
 @riverpod
 Future<KanbanSalesData> kanbanSales(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
@@ -57,12 +68,41 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
   final sales =
       records.map((record) => SaleDto.fromRecord(record).toEntity()).toList();
 
+  final pending =
+      sales.where((s) => s.orderStatus == OrderStatus.pending).toList();
+  final processing =
+      sales.where((s) => s.orderStatus == OrderStatus.processing).toList();
+  final ready = sales.where((s) => s.orderStatus == OrderStatus.ready).toList();
+  final pickedUp =
+      sales.where((s) => s.orderStatus == OrderStatus.pickedUp).toList();
+
+  // Fetch service items for processing and ready sales to show machine/storage
+  final saleIdsNeedingServiceItems = [
+    ...processing.map((s) => s.id),
+    ...ready.map((s) => s.id),
+  ];
+
+  final Map<String, List<SaleServiceItem>> serviceItemsBySale = {};
+
+  if (saleIdsNeedingServiceItems.isNotEmpty) {
+    // Build filter for all relevant sale IDs
+    final saleIdFilters =
+        saleIdsNeedingServiceItems.map((id) => 'sale = "$id"').join(' || ');
+    final serviceItemRecords = await pb
+        .collection(PocketBaseCollections.saleServiceItems)
+        .getFullList(filter: '($saleIdFilters)');
+
+    for (final record in serviceItemRecords) {
+      final item = SaleServiceItemDto.fromRecord(record).toEntity();
+      serviceItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
+    }
+  }
+
   return KanbanSalesData(
-    pending: sales.where((s) => s.orderStatus == OrderStatus.pending).toList(),
-    processing:
-        sales.where((s) => s.orderStatus == OrderStatus.processing).toList(),
-    ready: sales.where((s) => s.orderStatus == OrderStatus.ready).toList(),
-    pickedUp:
-        sales.where((s) => s.orderStatus == OrderStatus.pickedUp).toList(),
+    pending: pending,
+    processing: processing,
+    ready: ready,
+    pickedUp: pickedUp,
+    serviceItemsBySale: serviceItemsBySale,
   );
 }
