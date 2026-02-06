@@ -63,6 +63,14 @@ Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
     // Use the newer get<T>(keyPath) API with dot-notation
     final orderStatus = record.get<String?>('expand.sale.orderStatus');
     if (orderStatus == 'processing') {
+      // Check the service item's status - machine is only "in use" if
+      // the service item is not completed
+      final itemStatus = record.get<String?>('status');
+      if (itemStatus == 'completed') {
+        // Service item is done, machine is available
+        continue;
+      }
+
       final receiptNumber = record.get<String?>('expand.sale.receiptNumber');
       if (receiptNumber != null &&
           receiptNumber.isNotEmpty &&

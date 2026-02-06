@@ -17,6 +17,7 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
       ServiceMapper.ensureInitialized();
       MachineMapper.ensureInitialized();
       StorageLocationMapper.ensureInitialized();
+      ServiceItemStatusMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -96,6 +97,12 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
       v.storageLocation;
   static const Field<SaleServiceItem, StorageLocation> _f$storageLocation =
       Field('storageLocation', _$storageLocation, opt: true);
+  static ServiceItemStatus? _$status(SaleServiceItem v) => v.status;
+  static const Field<SaleServiceItem, ServiceItemStatus> _f$status = Field(
+    'status',
+    _$status,
+    opt: true,
+  );
   static DateTime? _$created(SaleServiceItem v) => v.created;
   static const Field<SaleServiceItem, DateTime> _f$created = Field(
     'created',
@@ -125,6 +132,7 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
     #storageId: _f$storageId,
     #storageName: _f$storageName,
     #storageLocation: _f$storageLocation,
+    #status: _f$status,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -145,6 +153,7 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
       storageId: data.dec(_f$storageId),
       storageName: data.dec(_f$storageName),
       storageLocation: data.dec(_f$storageLocation),
+      status: data.dec(_f$status),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -231,6 +240,7 @@ abstract class SaleServiceItemCopyWith<$R, $In extends SaleServiceItem, $Out>
     String? storageId,
     String? storageName,
     StorageLocation? storageLocation,
+    ServiceItemStatus? status,
     DateTime? created,
     DateTime? updated,
   });
@@ -273,6 +283,7 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
     Object? storageId = $none,
     Object? storageName = $none,
     Object? storageLocation = $none,
+    Object? status = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -291,6 +302,7 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
       if (storageId != $none) #storageId: storageId,
       if (storageName != $none) #storageName: storageName,
       if (storageLocation != $none) #storageLocation: storageLocation,
+      if (status != $none) #status: status,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -311,6 +323,7 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
     storageId: data.get(#storageId, or: $value.storageId),
     storageName: data.get(#storageName, or: $value.storageName),
     storageLocation: data.get(#storageLocation, or: $value.storageLocation),
+    status: data.get(#status, or: $value.status),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

@@ -3,6 +3,7 @@ import 'package:dart_mappable/dart_mappable.dart';
 import '../../machines/domain/machine.dart';
 import '../../storages/domain/storage_location.dart';
 import 'service.dart';
+import 'service_item_status.dart';
 
 part 'sale_service_item.mapper.dart';
 
@@ -26,6 +27,7 @@ class SaleServiceItem with SaleServiceItemMappable {
     this.storageId,
     this.storageName,
     this.storageLocation,
+    this.status,
     this.created,
     this.updated,
   });
@@ -71,6 +73,9 @@ class SaleServiceItem with SaleServiceItemMappable {
 
   /// Expanded StorageLocation (optional).
   final StorageLocation? storageLocation;
+
+  /// Service item completion status.
+  final ServiceItemStatus? status;
 
   /// Creation timestamp.
   final DateTime? created;

@@ -12,6 +12,7 @@ import '../../../pos/domain/order_status_history.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
+import '../../../services/domain/service_item_status.dart';
 import '../controllers/order_status_history_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
@@ -298,6 +299,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                                 item.machineName!.isNotEmpty;
                             final hasStorage = item.storageName != null &&
                                 item.storageName!.isNotEmpty;
+                            final isCompleted =
+                                item.status == ServiceItemStatus.completed;
+                            final isProcessing =
+                                sale.orderStatus == OrderStatus.processing;
+                            final canMarkDone =
+                                isProcessing && hasMachine && !isCompleted;
 
                             return Padding(
                               padding: const EdgeInsets.all(16),
@@ -312,10 +319,30 @@ class _SaleDetailContent extends HookConsumerWidget {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              item.serviceName,
-                                              style: theme
-                                                  .textTheme.titleSmall,
+                                            Row(
+                                              children: [
+                                                if (isCompleted) ...[
+                                                  const Icon(
+                                                    Icons.check_circle,
+                                                    size: 16,
+                                                    color: Colors.green,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                ],
+                                                Expanded(
+                                                  child: Text(
+                                                    item.serviceName,
+                                                    style: theme
+                                                        .textTheme.titleSmall
+                                                        ?.copyWith(
+                                                      color: isCompleted
+                                                          ? theme.colorScheme
+                                                              .onSurfaceVariant
+                                                          : null,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
@@ -353,7 +380,9 @@ class _SaleDetailContent extends HookConsumerWidget {
                                               label: 'Machine',
                                               name:
                                                   item.machineName!,
-                                              color: Colors.blue,
+                                              color: isCompleted
+                                                  ? Colors.grey
+                                                  : Colors.blue,
                                             ),
                                           ),
                                         if (hasMachine && hasStorage)
@@ -370,6 +399,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                                             ),
                                           ),
                                       ],
+                                    ),
+                                  ],
+
+                                  // Mark Done button
+                                  if (canMarkDone) ...[
+                                    const SizedBox(height: 12),
+                                    _ServiceItemMarkDoneButton(
+                                      itemId: item.id,
+                                      saleId: sale.id,
                                     ),
                                   ],
                                 ],
@@ -1273,6 +1311,98 @@ class _OrderStatusButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Button to mark a service item as completed.
+class _ServiceItemMarkDoneButton extends HookConsumerWidget {
+  const _ServiceItemMarkDoneButton({
+    required this.itemId,
+    required this.saleId,
+  });
+
+  final String itemId;
+  final String saleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMarking = useState(false);
+
+    Future<void> markDone() async {
+      isMarking.value = true;
+      final repo = ref.read(salesRepositoryProvider);
+      final result = await repo.markServiceItemCompleted(itemId);
+      isMarking.value = false;
+
+      if (!context.mounted) return;
+
+      await result.fold(
+        (failure) async {
+          showErrorSnackBar(context, message: failure.messageString);
+        },
+        (allCompleted) async {
+          // Refresh the service items
+          ref.invalidate(saleServiceItemsProvider(saleId));
+
+          if (allCompleted) {
+            // All service items completed - auto-advance to ready status
+            showSuccessSnackBar(
+              context,
+              message: 'All services completed! Assigning storage...',
+            );
+
+            // Show storage assignment dialog
+            final serviceItems =
+                await ref.read(saleServiceItemsProvider(saleId).future);
+            if (serviceItems.isNotEmpty && context.mounted) {
+              final storageResult = await showAssignStoragesDialog(
+                context,
+                serviceItems: serviceItems,
+              );
+              if (storageResult != null && context.mounted) {
+                // Update order status to ready
+                final statusResult =
+                    await repo.updateOrderStatus(saleId, OrderStatus.ready);
+                statusResult.fold(
+                  (failure) {
+                    if (context.mounted) {
+                      showErrorSnackBar(context, message: failure.messageString);
+                    }
+                  },
+                  (_) {
+                    ref.invalidate(saleProvider(saleId));
+                  },
+                );
+              }
+            }
+          } else {
+            showSuccessSnackBar(
+              context,
+              message: 'Service marked as done. Machine released.',
+            );
+          }
+        },
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: isMarking.value ? null : markDone,
+        icon: isMarking.value
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.check_circle_outline, size: 18),
+        label: Text(isMarking.value ? 'Marking...' : 'Mark Done'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.green,
+          side: const BorderSide(color: Colors.green),
         ),
       ),
     );

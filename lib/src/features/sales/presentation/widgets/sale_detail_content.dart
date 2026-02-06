@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/routing/routes/customers.routes.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../pos/data/repositories/sales_repository.dart';
+import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
+import '../../../services/domain/service_item_status.dart';
 import '../controllers/sale_items_provider.dart';
+import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
+import 'assign_storages_dialog.dart';
 import 'sale_highlight_banner.dart';
 import 'sale_status_chip.dart';
 
@@ -65,6 +73,7 @@ class SaleDetailContent extends ConsumerWidget {
 
           // Service Items Section
           _ServiceItemsSection(
+            sale: sale,
             serviceItemsAsync: serviceItemsAsync,
             currencyFormat: currencyFormat,
             compact: compact,
@@ -219,11 +228,13 @@ class _ItemsSection extends StatelessWidget {
 /// Service items section with machine/storage assignments.
 class _ServiceItemsSection extends StatelessWidget {
   const _ServiceItemsSection({
+    required this.sale,
     required this.serviceItemsAsync,
     required this.currencyFormat,
     required this.compact,
   });
 
+  final Sale sale;
   final AsyncValue<List<SaleServiceItem>> serviceItemsAsync;
   final NumberFormat currencyFormat;
   final bool compact;
@@ -255,6 +266,7 @@ class _ServiceItemsSection extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = serviceItems[index];
                   return _ServiceItemTile(
+                    sale: sale,
                     item: item,
                     currencyFormat: currencyFormat,
                     compact: compact,
@@ -270,25 +282,91 @@ class _ServiceItemsSection extends StatelessWidget {
   }
 }
 
-/// Individual service item tile with machine/storage info.
-class _ServiceItemTile extends StatelessWidget {
+/// Individual service item tile with machine/storage info and mark done button.
+class _ServiceItemTile extends HookConsumerWidget {
   const _ServiceItemTile({
+    required this.sale,
     required this.item,
     required this.currencyFormat,
     required this.compact,
   });
 
+  final Sale sale;
   final SaleServiceItem item;
   final NumberFormat currencyFormat;
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final hasMachine =
         item.machineName != null && item.machineName!.isNotEmpty;
     final hasStorage =
         item.storageName != null && item.storageName!.isNotEmpty;
+    final isCompleted = item.status == ServiceItemStatus.completed;
+    final isProcessing = sale.orderStatus == OrderStatus.processing;
+    final canMarkDone = isProcessing && hasMachine && !isCompleted;
+
+    final isMarking = useState(false);
+
+    Future<void> markDone() async {
+      isMarking.value = true;
+      final repo = ref.read(salesRepositoryProvider);
+      final result = await repo.markServiceItemCompleted(item.id);
+      isMarking.value = false;
+
+      if (!context.mounted) return;
+
+      await result.fold(
+        (failure) async {
+          showErrorSnackBar(context, message: failure.messageString);
+        },
+        (allCompleted) async {
+          // Refresh the service items and kanban board
+          ref.invalidate(saleServiceItemsProvider(sale.id));
+          ref.invalidate(kanbanSalesProvider);
+
+          if (allCompleted) {
+            // All service items completed - auto-advance to ready status
+            showSuccessSnackBar(
+              context,
+              message: 'All services completed! Assigning storage...',
+            );
+
+            // Show storage assignment dialog
+            final serviceItems =
+                await ref.read(saleServiceItemsProvider(sale.id).future);
+            if (serviceItems.isNotEmpty && context.mounted) {
+              final storageResult = await showAssignStoragesDialog(
+                context,
+                serviceItems: serviceItems,
+              );
+              if (storageResult != null && context.mounted) {
+                // Update order status to ready
+                final statusResult =
+                    await repo.updateOrderStatus(sale.id, OrderStatus.ready);
+                statusResult.fold(
+                  (failure) {
+                    if (context.mounted) {
+                      showErrorSnackBar(context, message: failure.messageString);
+                    }
+                  },
+                  (_) {
+                    ref.invalidate(saleProvider(sale.id));
+                    ref.invalidate(kanbanSalesProvider);
+                  },
+                );
+              }
+            }
+          } else {
+            showSuccessSnackBar(
+              context,
+              message: 'Service marked as done. Machine released.',
+            );
+          }
+        },
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.all(compact ? 12 : 16),
@@ -302,9 +380,27 @@ class _ServiceItemTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.serviceName,
-                      style: theme.textTheme.titleSmall,
+                    Row(
+                      children: [
+                        if (isCompleted) ...[
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            item.serviceName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: isCompleted
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -334,7 +430,7 @@ class _ServiceItemTile extends StatelessWidget {
                       icon: Icons.local_laundry_service,
                       label: 'Machine',
                       name: item.machineName!,
-                      color: Colors.blue,
+                      color: isCompleted ? Colors.grey : Colors.blue,
                       compact: compact,
                     ),
                   ),
@@ -350,6 +446,29 @@ class _ServiceItemTile extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
+          ],
+
+          // Mark Done button
+          if (canMarkDone) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: isMarking.value ? null : markDone,
+                icon: isMarking.value
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline, size: 18),
+                label: Text(isMarking.value ? 'Marking...' : 'Mark Done'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  side: const BorderSide(color: Colors.green),
+                ),
+              ),
             ),
           ],
         ],
