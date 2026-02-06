@@ -11,6 +11,7 @@ import '../../../pos/domain/sale.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
 import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
 import '../../../sales/presentation/widgets/assign_storages_dialog.dart';
+import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../controllers/kanban_sales_controller.dart';
 
@@ -482,7 +483,7 @@ class _SaleCardContent extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => SaleDetailRoute(id: sale.id).go(context),
+        onTap: () => showSaleDetailDialog(context, saleId: sale.id),
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(

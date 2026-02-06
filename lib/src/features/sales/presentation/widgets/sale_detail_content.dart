@@ -1,0 +1,585 @@
+import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../core/routing/routes/customers.routes.dart';
+import '../../../pos/domain/sale.dart';
+import '../../../pos/domain/sale_item.dart';
+import '../../../services/domain/sale_service_item.dart';
+import '../controllers/sale_items_provider.dart';
+import '../controllers/sale_service_items_provider.dart';
+import 'sale_highlight_banner.dart';
+import 'sale_status_chip.dart';
+
+/// Reusable sale detail content widget.
+///
+/// Used by both SaleDetailPage and SaleDetailDialog to display sale information
+/// without the scaffold/appbar wrapper.
+class SaleDetailContent extends ConsumerWidget {
+  const SaleDetailContent({
+    super.key,
+    required this.sale,
+    this.compact = false,
+  });
+
+  final Sale sale;
+
+  /// When true, uses a more compact layout suitable for dialogs.
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final saleItemsAsync = ref.watch(saleItemsProvider(sale.id));
+    final serviceItemsAsync = ref.watch(saleServiceItemsProvider(sale.id));
+    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+    final currencyFormat = NumberFormat.currency(symbol: '₱');
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(compact ? 12 : 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Card
+          _SaleHeaderCard(
+            sale: sale,
+            dateFormat: dateFormat,
+            compact: compact,
+          ),
+          SizedBox(height: compact ? 12 : 16),
+
+          // Highlight Banner - shows most important status
+          SaleHighlightBanner(
+            orderStatus: sale.orderStatus,
+            isPaid: sale.isPaid,
+            saleStatus: sale.status,
+          ),
+          SizedBox(height: compact ? 12 : 16),
+
+          // Items Section
+          _ItemsSection(
+            saleItemsAsync: saleItemsAsync,
+            currencyFormat: currencyFormat,
+            compact: compact,
+          ),
+          SizedBox(height: compact ? 12 : 16),
+
+          // Service Items Section
+          _ServiceItemsSection(
+            serviceItemsAsync: serviceItemsAsync,
+            currencyFormat: currencyFormat,
+            compact: compact,
+          ),
+
+          // Total Card
+          _TotalCard(
+            totalAmount: sale.totalAmount,
+            currencyFormat: currencyFormat,
+            compact: compact,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Header card with receipt number, date, status, and customer info.
+class _SaleHeaderCard extends StatelessWidget {
+  const _SaleHeaderCard({
+    required this.sale,
+    required this.dateFormat,
+    required this.compact,
+  });
+
+  final Sale sale;
+  final DateFormat dateFormat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sale.receiptNumber,
+                        style: compact
+                            ? theme.textTheme.titleMedium
+                            : theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        sale.created != null
+                            ? dateFormat.format(sale.created!)
+                            : 'Unknown date',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SaleStatusChip(status: sale.status),
+              ],
+            ),
+            const Divider(height: 24),
+            if (sale.customerName != null && sale.customerName!.isNotEmpty)
+              SaleCustomerInfoRow(
+                customerName: sale.customerName!,
+                customerId: sale.customerId,
+              ),
+            if (sale.notes != null && sale.notes!.isNotEmpty)
+              SaleInfoRow(
+                icon: Icons.note,
+                label: 'Notes',
+                value: sale.notes!,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Items section showing product items.
+class _ItemsSection extends StatelessWidget {
+  const _ItemsSection({
+    required this.saleItemsAsync,
+    required this.currencyFormat,
+    required this.compact,
+  });
+
+  final AsyncValue<List<SaleItem>> saleItemsAsync;
+  final NumberFormat currencyFormat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Items',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: saleItemsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, _) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text('Error loading items: $error'),
+            ),
+            data: (items) => items.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No items'),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return ListTile(
+                        dense: compact,
+                        title: Text(item.productName),
+                        subtitle: Text(
+                          '${currencyFormat.format(item.unitPrice)} × ${item.quantity}',
+                        ),
+                        trailing: Text(
+                          currencyFormat.format(item.subtotal),
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Service items section with machine/storage assignments.
+class _ServiceItemsSection extends StatelessWidget {
+  const _ServiceItemsSection({
+    required this.serviceItemsAsync,
+    required this.currencyFormat,
+    required this.compact,
+  });
+
+  final AsyncValue<List<SaleServiceItem>> serviceItemsAsync;
+  final NumberFormat currencyFormat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return serviceItemsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (serviceItems) {
+        if (serviceItems.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Service Items',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: serviceItems.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final item = serviceItems[index];
+                  return _ServiceItemTile(
+                    item: item,
+                    currencyFormat: currencyFormat,
+                    compact: compact,
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: compact ? 12 : 16),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Individual service item tile with machine/storage info.
+class _ServiceItemTile extends StatelessWidget {
+  const _ServiceItemTile({
+    required this.item,
+    required this.currencyFormat,
+    required this.compact,
+  });
+
+  final SaleServiceItem item;
+  final NumberFormat currencyFormat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasMachine =
+        item.machineName != null && item.machineName!.isNotEmpty;
+    final hasStorage =
+        item.storageName != null && item.storageName!.isNotEmpty;
+
+    return Padding(
+      padding: EdgeInsets.all(compact ? 12 : 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Service name + price row
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.serviceName,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${currencyFormat.format(item.unitPrice)} x ${item.quantity}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                currencyFormat.format(item.subtotal),
+                style: theme.textTheme.titleSmall,
+              ),
+            ],
+          ),
+
+          // Machine & Storage assignment section
+          if (hasMachine || hasStorage) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (hasMachine)
+                  Expanded(
+                    child: SaleAssignmentInfoCard(
+                      icon: Icons.local_laundry_service,
+                      label: 'Machine',
+                      name: item.machineName!,
+                      color: Colors.blue,
+                      compact: compact,
+                    ),
+                  ),
+                if (hasMachine && hasStorage) const SizedBox(width: 12),
+                if (hasStorage)
+                  Expanded(
+                    child: SaleAssignmentInfoCard(
+                      icon: Icons.inventory_2,
+                      label: 'Storage',
+                      name: item.storageName!,
+                      color: Colors.teal,
+                      compact: compact,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Total amount card.
+class _TotalCard extends StatelessWidget {
+  const _TotalCard({
+    required this.totalAmount,
+    required this.currencyFormat,
+    required this.compact,
+  });
+
+  final num totalAmount;
+  final NumberFormat currencyFormat;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      color: theme.colorScheme.primaryContainer,
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 12 : 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total',
+              style: compact
+                  ? theme.textTheme.titleMedium
+                  : theme.textTheme.titleLarge,
+            ),
+            Text(
+              currencyFormat.format(totalAmount),
+              style: (compact
+                      ? theme.textTheme.titleLarge
+                      : theme.textTheme.headlineMedium)
+                  ?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Simple info row with icon, label, and value.
+class SaleInfoRow extends StatelessWidget {
+  const SaleInfoRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Clickable customer info row that navigates to customer detail.
+class SaleCustomerInfoRow extends StatelessWidget {
+  const SaleCustomerInfoRow({
+    super.key,
+    required this.customerName,
+    this.customerId,
+  });
+
+  final String customerName;
+  final String? customerId;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasCustomerId = customerId != null && customerId!.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            Icons.person,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Customer: ',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Expanded(
+            child: hasCustomerId
+                ? InkWell(
+                    onTap: () =>
+                        CustomerDetailRoute(id: customerId!).go(context),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              customerName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                                decorationColor: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.open_in_new,
+                            size: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Text(
+                    customerName,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card showing a machine or storage assignment with a large icon.
+class SaleAssignmentInfoCard extends StatelessWidget {
+  const SaleAssignmentInfoCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.name,
+    required this.color,
+    this.compact = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String name;
+  final Color color;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 8 : 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: compact ? 24 : 32,
+            color: color,
+          ),
+          SizedBox(height: compact ? 4 : 8),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            name,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
