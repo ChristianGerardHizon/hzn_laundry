@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../machines/domain/machine.dart';
+import '../../../machines/presentation/controllers/machine_usage_provider.dart';
 import '../../../machines/presentation/controllers/machines_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../services/domain/sale_service_item.dart';
@@ -143,7 +144,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
   }
 }
 
-class _ServiceItemMachineRow extends StatelessWidget {
+class _ServiceItemMachineRow extends HookConsumerWidget {
   const _ServiceItemMachineRow({
     required this.item,
     required this.machines,
@@ -157,8 +158,18 @@ class _ServiceItemMachineRow extends StatelessWidget {
   final ValueChanged<String?>? onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
+    // Find the selected machine to check strictSingleUse
+    final selectedMachine = selectedMachineId != null && selectedMachineId!.isNotEmpty
+        ? machines.where((m) => m.id == selectedMachineId).firstOrNull
+        : null;
+
+    // Only watch usage if the selected machine has strictSingleUse enabled
+    final usageAsync = selectedMachine?.strictSingleUse == true
+        ? ref.watch(machineUsageProvider(selectedMachineId!))
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,12 +194,67 @@ class _ServiceItemMachineRow extends StatelessWidget {
             ...machines.where((m) => m.isAvailable).map((machine) {
               return DropdownMenuItem<String>(
                 value: machine.id,
-                child: Text('${machine.name} (${machine.type.displayName})'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (machine.strictSingleUse) ...[
+                      Icon(
+                        Icons.lock_outline,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        '${machine.name} (${machine.type.displayName})',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }),
           ],
           onChanged: onChanged,
         ),
+        // Show warning if strictSingleUse machine is in use
+        if (usageAsync != null)
+          usageAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (usage) {
+              if (!usage.isInUse) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber,
+                      size: 16,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        'Machine is processing ${usage.displaySummary}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }

@@ -87,6 +87,12 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     _$storageName,
     opt: true,
   );
+  static String? _$status(SaleServiceItemDto v) => v.status;
+  static const Field<SaleServiceItemDto, String> _f$status = Field(
+    'status',
+    _$status,
+    opt: true,
+  );
   static String? _$created(SaleServiceItemDto v) => v.created;
   static const Field<SaleServiceItemDto, String> _f$created = Field(
     'created',
@@ -115,6 +121,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     #machineName: _f$machineName,
     #storage: _f$storage,
     #storageName: _f$storageName,
+    #status: _f$status,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -134,6 +141,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
       machineName: data.dec(_f$machineName),
       storage: data.dec(_f$storage),
       storageName: data.dec(_f$storageName),
+      status: data.dec(_f$status),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -224,6 +232,7 @@ abstract class SaleServiceItemDtoCopyWith<
     String? machineName,
     String? storage,
     String? storageName,
+    String? status,
     String? created,
     String? updated,
   });
@@ -255,6 +264,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     Object? machineName = $none,
     Object? storage = $none,
     Object? storageName = $none,
+    Object? status = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -272,6 +282,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
       if (machineName != $none) #machineName: machineName,
       if (storage != $none) #storage: storage,
       if (storageName != $none) #storageName: storageName,
+      if (status != $none) #status: status,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -291,6 +302,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     machineName: data.get(#machineName, or: $value.machineName),
     storage: data.get(#storage, or: $value.storage),
     storageName: data.get(#storageName, or: $value.storageName),
+    status: data.get(#status, or: $value.status),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

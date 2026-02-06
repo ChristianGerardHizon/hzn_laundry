@@ -38,6 +38,7 @@ class MachineFormDialog extends HookConsumerWidget {
               'name': machine!.name,
               'type': machine!.type,
               'isAvailable': machine!.isAvailable,
+              'strictSingleUse': machine!.strictSingleUse,
             }
           : null,
     );
@@ -65,6 +66,7 @@ class MachineFormDialog extends HookConsumerWidget {
         type: values['type'] as MachineType,
         branchId: machine?.branchId,
         isAvailable: values['isAvailable'] as bool? ?? true,
+        strictSingleUse: values['strictSingleUse'] as bool? ?? false,
       );
 
       bool success;
@@ -217,6 +219,24 @@ class MachineFormDialog extends HookConsumerWidget {
                           name: 'isAvailable',
                           initialValue: machine?.isAvailable ?? true,
                           title: const Text('Available'),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                          enabled: !isSaving.value,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Strict Single Use switch
+                        FormBuilderSwitch(
+                          name: 'strictSingleUse',
+                          initialValue: machine?.strictSingleUse ?? false,
+                          title: const Text('Strict Single Use'),
+                          subtitle: Text(
+                            'Show warning when assigning to a machine already processing an order',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                           ),

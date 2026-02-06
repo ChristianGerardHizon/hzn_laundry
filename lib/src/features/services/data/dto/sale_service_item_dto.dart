@@ -5,6 +5,7 @@ import '../../../../core/utils/date_utils.dart';
 import '../../../machines/data/dto/machine_dto.dart';
 import '../../../storages/data/dto/storage_location_dto.dart';
 import '../../domain/sale_service_item.dart';
+import '../../domain/service_item_status.dart';
 import 'service_dto.dart';
 
 part 'sale_service_item_dto.mapper.dart';
@@ -24,6 +25,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final String? machineName;
   final String? storage;
   final String? storageName;
+  final String? status;
   final String? created;
   final String? updated;
 
@@ -41,6 +43,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     this.machineName,
     this.storage,
     this.storageName,
+    this.status,
     this.created,
     this.updated,
   });
@@ -60,6 +63,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       machineName: record.getStringValue('machineName'),
       storage: record.getStringValue('storage'),
       storageName: record.getStringValue('storageName'),
+      status: record.getStringValue('status'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -91,6 +95,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       storageLocation: storageExpanded != null
           ? StorageLocationDto.fromRecord(storageExpanded).toEntity()
           : null,
+      status: ServiceItemStatus.fromDbValue(status),
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

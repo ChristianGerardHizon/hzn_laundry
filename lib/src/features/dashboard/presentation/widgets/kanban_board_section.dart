@@ -11,7 +11,9 @@ import '../../../pos/domain/sale.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
 import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
 import '../../../sales/presentation/widgets/assign_storages_dialog.dart';
+import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
+import '../../../services/domain/service_item_status.dart';
 import '../controllers/kanban_sales_controller.dart';
 
 /// Kanban-style board showing all sales grouped by order status.
@@ -422,14 +424,17 @@ class _SaleCardContent extends StatelessWidget {
     if (serviceItems.isEmpty) return null;
 
     if (sale.orderStatus == OrderStatus.processing) {
-      // Show machine names for processing orders
-      final machineNames = serviceItems
+      // Show machine names for processing orders with completion status
+      final machineInfos = serviceItems
           .where((item) => item.machineName != null && item.machineName!.isNotEmpty)
-          .map((item) => item.machineName!)
+          .map((item) {
+            final isCompleted = item.status == ServiceItemStatus.completed;
+            return isCompleted ? '${item.machineName!} ✓' : item.machineName!;
+          })
           .toSet()
           .toList();
-      if (machineNames.isEmpty) return null;
-      return machineNames.join(', ');
+      if (machineInfos.isEmpty) return null;
+      return machineInfos.join(', ');
     } else if (sale.orderStatus == OrderStatus.ready) {
       // Show storage names for ready orders
       final storageNames = serviceItems
@@ -444,6 +449,23 @@ class _SaleCardContent extends StatelessWidget {
     return null;
   }
 
+  /// Checks if all service items with machines are completed.
+  bool get _allServicesCompleted {
+    final itemsWithMachines = serviceItems
+        .where((item) => item.machineName != null && item.machineName!.isNotEmpty);
+    if (itemsWithMachines.isEmpty) return false;
+    return itemsWithMachines.every((item) => item.status == ServiceItemStatus.completed);
+  }
+
+  /// Checks if some (but not all) service items are completed.
+  bool get _someServicesCompleted {
+    final itemsWithMachines = serviceItems
+        .where((item) => item.machineName != null && item.machineName!.isNotEmpty);
+    if (itemsWithMachines.isEmpty) return false;
+    final completed = itemsWithMachines.where((item) => item.status == ServiceItemStatus.completed);
+    return completed.isNotEmpty && completed.length < itemsWithMachines.length;
+  }
+
   IconData? _getAssignmentIcon() {
     if (sale.orderStatus == OrderStatus.processing) {
       return Icons.local_laundry_service;
@@ -455,6 +477,10 @@ class _SaleCardContent extends StatelessWidget {
 
   Color _getAssignmentColor() {
     if (sale.orderStatus == OrderStatus.processing) {
+      // Show green if all services completed (ready to advance)
+      if (_allServicesCompleted) return Colors.green;
+      // Show orange if some services completed
+      if (_someServicesCompleted) return Colors.orange;
       return Colors.blue;
     } else if (sale.orderStatus == OrderStatus.ready) {
       return Colors.teal;
@@ -482,7 +508,7 @@ class _SaleCardContent extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => SaleDetailRoute(id: sale.id).go(context),
+        onTap: () => showSaleDetailDialog(context, saleId: sale.id),
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(

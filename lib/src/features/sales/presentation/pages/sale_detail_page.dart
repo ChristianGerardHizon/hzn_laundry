@@ -3,7 +3,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/routing/routes/customers.routes.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -13,6 +12,7 @@ import '../../../pos/domain/order_status_history.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
+import '../../../services/domain/service_item_status.dart';
 import '../controllers/order_status_history_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
@@ -20,6 +20,7 @@ import '../controllers/sale_service_items_provider.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
 import '../widgets/record_payment_sheet.dart';
+import '../widgets/sale_detail_content.dart';
 import '../widgets/sale_highlight_banner.dart';
 import '../widgets/sale_status_chip.dart';
 
@@ -189,12 +190,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                       const Divider(height: 24),
                       if (sale.customerName != null &&
                           sale.customerName!.isNotEmpty)
-                        _CustomerInfoRow(
+                        SaleCustomerInfoRow(
                           customerName: sale.customerName!,
                           customerId: sale.customerId,
                         ),
                       if (sale.notes != null && sale.notes!.isNotEmpty)
-                        _InfoRow(
+                        SaleInfoRow(
                           icon: Icons.note,
                           label: 'Notes',
                           value: sale.notes!,
@@ -298,6 +299,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                                 item.machineName!.isNotEmpty;
                             final hasStorage = item.storageName != null &&
                                 item.storageName!.isNotEmpty;
+                            final isCompleted =
+                                item.status == ServiceItemStatus.completed;
+                            final isProcessing =
+                                sale.orderStatus == OrderStatus.processing;
+                            final canMarkDone =
+                                isProcessing && hasMachine && !isCompleted;
 
                             return Padding(
                               padding: const EdgeInsets.all(16),
@@ -312,10 +319,30 @@ class _SaleDetailContent extends HookConsumerWidget {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              item.serviceName,
-                                              style: theme
-                                                  .textTheme.titleSmall,
+                                            Row(
+                                              children: [
+                                                if (isCompleted) ...[
+                                                  const Icon(
+                                                    Icons.check_circle,
+                                                    size: 16,
+                                                    color: Colors.green,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                ],
+                                                Expanded(
+                                                  child: Text(
+                                                    item.serviceName,
+                                                    style: theme
+                                                        .textTheme.titleSmall
+                                                        ?.copyWith(
+                                                      color: isCompleted
+                                                          ? theme.colorScheme
+                                                              .onSurfaceVariant
+                                                          : null,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
@@ -347,13 +374,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                                         if (hasMachine)
                                           Expanded(
                                             child:
-                                                _AssignmentInfoCard(
+                                                SaleAssignmentInfoCard(
                                               icon: Icons
                                                   .local_laundry_service,
                                               label: 'Machine',
                                               name:
                                                   item.machineName!,
-                                              color: Colors.blue,
+                                              color: isCompleted
+                                                  ? Colors.grey
+                                                  : Colors.blue,
                                             ),
                                           ),
                                         if (hasMachine && hasStorage)
@@ -361,7 +390,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                                         if (hasStorage)
                                           Expanded(
                                             child:
-                                                _AssignmentInfoCard(
+                                                SaleAssignmentInfoCard(
                                               icon: Icons.inventory_2,
                                               label: 'Storage',
                                               name:
@@ -370,6 +399,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                                             ),
                                           ),
                                       ],
+                                    ),
+                                  ],
+
+                                  // Mark Done button
+                                  if (canMarkDone) ...[
+                                    const SizedBox(height: 12),
+                                    _ServiceItemMarkDoneButton(
+                                      itemId: item.id,
+                                      saleId: sale.id,
                                     ),
                                   ],
                                 ],
@@ -1197,180 +1235,6 @@ class _SaleDetailContent extends HookConsumerWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Clickable customer info row that navigates to customer detail.
-class _CustomerInfoRow extends StatelessWidget {
-  const _CustomerInfoRow({
-    required this.customerName,
-    this.customerId,
-  });
-
-  final String customerName;
-  final String? customerId;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasCustomerId = customerId != null && customerId!.isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            Icons.person,
-            size: 20,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Customer: ',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Expanded(
-            child: hasCustomerId
-                ? InkWell(
-                    onTap: () =>
-                        CustomerDetailRoute(id: customerId!).go(context),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              customerName,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.primary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.open_in_new,
-                            size: 14,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : Text(
-                    customerName,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Card showing a machine or storage assignment with a large icon.
-class _AssignmentInfoCard extends StatelessWidget {
-  const _AssignmentInfoCard({
-    required this.icon,
-    required this.label,
-    required this.name,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String name;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 32,
-            color: color,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            name,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Custom button for order status selection.
 class _OrderStatusButton extends StatelessWidget {
   const _OrderStatusButton({
@@ -1447,6 +1311,98 @@ class _OrderStatusButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Button to mark a service item as completed.
+class _ServiceItemMarkDoneButton extends HookConsumerWidget {
+  const _ServiceItemMarkDoneButton({
+    required this.itemId,
+    required this.saleId,
+  });
+
+  final String itemId;
+  final String saleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMarking = useState(false);
+
+    Future<void> markDone() async {
+      isMarking.value = true;
+      final repo = ref.read(salesRepositoryProvider);
+      final result = await repo.markServiceItemCompleted(itemId);
+      isMarking.value = false;
+
+      if (!context.mounted) return;
+
+      await result.fold(
+        (failure) async {
+          showErrorSnackBar(context, message: failure.messageString);
+        },
+        (allCompleted) async {
+          // Refresh the service items
+          ref.invalidate(saleServiceItemsProvider(saleId));
+
+          if (allCompleted) {
+            // All service items completed - auto-advance to ready status
+            showSuccessSnackBar(
+              context,
+              message: 'All services completed! Assigning storage...',
+            );
+
+            // Show storage assignment dialog
+            final serviceItems =
+                await ref.read(saleServiceItemsProvider(saleId).future);
+            if (serviceItems.isNotEmpty && context.mounted) {
+              final storageResult = await showAssignStoragesDialog(
+                context,
+                serviceItems: serviceItems,
+              );
+              if (storageResult != null && context.mounted) {
+                // Update order status to ready
+                final statusResult =
+                    await repo.updateOrderStatus(saleId, OrderStatus.ready);
+                statusResult.fold(
+                  (failure) {
+                    if (context.mounted) {
+                      showErrorSnackBar(context, message: failure.messageString);
+                    }
+                  },
+                  (_) {
+                    ref.invalidate(saleProvider(saleId));
+                  },
+                );
+              }
+            }
+          } else {
+            showSuccessSnackBar(
+              context,
+              message: 'Service marked as done. Machine released.',
+            );
+          }
+        },
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: isMarking.value ? null : markDone,
+        icon: isMarking.value
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.check_circle_outline, size: 18),
+        label: Text(isMarking.value ? 'Marking...' : 'Mark Done'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.green,
+          side: const BorderSide(color: Colors.green),
         ),
       ),
     );

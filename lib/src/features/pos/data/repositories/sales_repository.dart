@@ -56,6 +56,12 @@ abstract class SalesRepository {
     String storageName,
   );
 
+  /// Marks a service item as completed, releasing its machine.
+  ///
+  /// Returns `true` if all service items for the sale are now completed,
+  /// indicating the order can be auto-advanced to 'ready' status.
+  FutureEither<bool> markServiceItemCompleted(String itemId);
+
   /// Fetches all sales for a specific customer.
   FutureEither<List<Sale>> getSalesByCustomer(String customerId);
 
@@ -440,6 +446,7 @@ class SalesRepositoryImpl implements SalesRepository {
         await _saleServiceItems.update(itemId, body: {
           'machine': machineId,
           'machineName': machineName,
+          'status': 'in_progress',
         });
       },
       Failure.handle,
@@ -458,6 +465,38 @@ class SalesRepositoryImpl implements SalesRepository {
           'storage': storageId,
           'storageName': storageName,
         });
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<bool> markServiceItemCompleted(String itemId) async {
+    return TaskEither.tryCatch(
+      () async {
+        // 1. Update the service item status to 'completed'
+        final updatedRecord = await _saleServiceItems.update(itemId, body: {
+          'status': 'completed',
+        });
+
+        // 2. Get the sale ID from the updated record
+        final saleId = updatedRecord.getStringValue('sale');
+        if (saleId.isEmpty) {
+          return false;
+        }
+
+        // 3. Fetch all service items for this sale
+        final allItems = await _saleServiceItems.getFullList(
+          filter: 'sale = "$saleId"',
+        );
+
+        // 4. Check if ALL items are now completed
+        final allCompleted = allItems.every((item) {
+          final status = item.getStringValue('status');
+          return status == 'completed';
+        });
+
+        return allCompleted;
       },
       Failure.handle,
     ).run();

@@ -41,6 +41,13 @@ class MachineMapper extends ClassMapperBase<Machine> {
     opt: true,
     def: true,
   );
+  static bool _$strictSingleUse(Machine v) => v.strictSingleUse;
+  static const Field<Machine, bool> _f$strictSingleUse = Field(
+    'strictSingleUse',
+    _$strictSingleUse,
+    opt: true,
+    def: false,
+  );
   static bool _$isDeleted(Machine v) => v.isDeleted;
   static const Field<Machine, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -68,6 +75,7 @@ class MachineMapper extends ClassMapperBase<Machine> {
     #type: _f$type,
     #branchId: _f$branchId,
     #isAvailable: _f$isAvailable,
+    #strictSingleUse: _f$strictSingleUse,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -80,6 +88,7 @@ class MachineMapper extends ClassMapperBase<Machine> {
       type: data.dec(_f$type),
       branchId: data.dec(_f$branchId),
       isAvailable: data.dec(_f$isAvailable),
+      strictSingleUse: data.dec(_f$strictSingleUse),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -149,6 +158,7 @@ abstract class MachineCopyWith<$R, $In extends Machine, $Out>
     MachineType? type,
     String? branchId,
     bool? isAvailable,
+    bool? strictSingleUse,
     bool? isDeleted,
     DateTime? created,
     DateTime? updated,
@@ -171,6 +181,7 @@ class _MachineCopyWithImpl<$R, $Out>
     MachineType? type,
     Object? branchId = $none,
     bool? isAvailable,
+    bool? strictSingleUse,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -181,6 +192,7 @@ class _MachineCopyWithImpl<$R, $Out>
       if (type != null) #type: type,
       if (branchId != $none) #branchId: branchId,
       if (isAvailable != null) #isAvailable: isAvailable,
+      if (strictSingleUse != null) #strictSingleUse: strictSingleUse,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -193,6 +205,7 @@ class _MachineCopyWithImpl<$R, $Out>
     type: data.get(#type, or: $value.type),
     branchId: data.get(#branchId, or: $value.branchId),
     isAvailable: data.get(#isAvailable, or: $value.isAvailable),
+    strictSingleUse: data.get(#strictSingleUse, or: $value.strictSingleUse),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

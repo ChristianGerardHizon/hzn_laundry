@@ -1052,7 +1052,19 @@ class _OrganizationMachinesListPage extends ConsumerWidget {
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  title: Text(machine.name),
+                  title: Row(
+                    children: [
+                      Flexible(child: Text(machine.name)),
+                      if (machine.strictSingleUse) ...[
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.lock,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ],
+                  ),
                   subtitle: Text(machine.type.displayName),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => OrganizationMachineDetailRoute(id: machine.id)
@@ -1231,6 +1243,12 @@ class _OrganizationMachineDetailPage extends ConsumerWidget {
                         icon: Icons.category,
                         label: 'Type',
                         value: machine.type.displayName),
+                    _detailRow(theme,
+                        icon: machine.strictSingleUse
+                            ? Icons.lock
+                            : Icons.lock_open,
+                        label: 'Strict Single Use',
+                        value: machine.strictSingleUse ? 'Yes' : 'No'),
                     if (machine.created != null)
                       _detailRow(theme,
                           icon: Icons.calendar_today,
