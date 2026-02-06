@@ -17,6 +17,7 @@ class MachineDto with MachineDtoMappable {
   final String type;
   final String? branch;
   final bool isAvailable;
+  final bool strictSingleUse;
   final bool isDeleted;
   final String? created;
   final String? updated;
@@ -29,6 +30,7 @@ class MachineDto with MachineDtoMappable {
     required this.type,
     this.branch,
     this.isAvailable = true,
+    this.strictSingleUse = false,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -46,6 +48,7 @@ class MachineDto with MachineDtoMappable {
       type: json['type'] as String? ?? 'other',
       branch: json['branch'] as String?,
       isAvailable: json['isAvailable'] as bool? ?? true,
+      strictSingleUse: json['strictSingleUse'] as bool? ?? false,
       isDeleted: json['isDeleted'] as bool? ?? false,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
@@ -63,6 +66,7 @@ class MachineDto with MachineDtoMappable {
       ),
       branchId: branch,
       isAvailable: isAvailable,
+      strictSingleUse: strictSingleUse,
       isDeleted: isDeleted,
       created: parseToLocal(created),
       updated: parseToLocal(updated),

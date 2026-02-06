@@ -96,6 +96,7 @@ class MachineRepositoryImpl implements MachineRepository {
           'type': machine.type.name,
           'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
+          'strictSingleUse': machine.strictSingleUse,
           'isDeleted': false,
         };
 
@@ -123,6 +124,7 @@ class MachineRepositoryImpl implements MachineRepository {
           'type': machine.type.name,
           'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
+          'strictSingleUse': machine.strictSingleUse,
         };
 
         final record = await _collection.update(machine.id, body: body);

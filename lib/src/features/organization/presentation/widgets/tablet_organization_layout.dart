@@ -671,7 +671,19 @@ class _MachinesListWrapper extends HookConsumerWidget {
                                           .colorScheme.onPrimaryContainer,
                                 ),
                               ),
-                              title: Text(machine.name),
+                              title: Row(
+                                children: [
+                                  Flexible(child: Text(machine.name)),
+                                  if (machine.strictSingleUse) ...[
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.lock,
+                                      size: 16,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ],
+                                ],
+                              ),
                               subtitle: Text(machine.type.displayName),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () =>

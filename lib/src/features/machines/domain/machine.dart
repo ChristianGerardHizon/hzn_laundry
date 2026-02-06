@@ -15,6 +15,7 @@ class Machine with MachineMappable {
     required this.type,
     this.branchId,
     this.isAvailable = true,
+    this.strictSingleUse = false,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -36,6 +37,10 @@ class Machine with MachineMappable {
 
   /// Whether the machine is currently available.
   final bool isAvailable;
+
+  /// Whether the machine requires strict single use validation.
+  /// When true, shows a warning if the machine is assigned to a processing order.
+  final bool strictSingleUse;
 
   /// Soft delete flag.
   final bool isDeleted;
