@@ -58,7 +58,8 @@ class CreateUserDialog extends HookConsumerWidget {
       final user = User(
         id: '',
         name: (values['name'] as String).trim(),
-        email: (values['email'] as String).trim().toLowerCase(),
+        userName: (values['userName'] as String).trim().toLowerCase(),
+        email: (values['email'] as String?)?.trim().toLowerCase(),
         roleId: values['role'] as String?,
         branchId: values['branch'] as String?,
       );
@@ -190,24 +191,40 @@ class CreateUserDialog extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Email (required)
+                      // Username (required)
+                      FormBuilderTextField(
+                        name: 'userName',
+                        decoration: const InputDecoration(
+                          labelText: 'Username *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.alternate_email),
+                        ),
+                        enabled: !isSaving.value,
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(
+                            errorText: 'Username is required',
+                          ),
+                          FormBuilderValidators.minLength(
+                            3,
+                            errorText: 'Username must be at least 3 characters',
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Email (optional)
                       FormBuilderTextField(
                         name: 'email',
                         decoration: const InputDecoration(
-                          labelText: 'Email *',
+                          labelText: 'Email',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.email),
                         ),
                         enabled: !isSaving.value,
                         keyboardType: TextInputType.emailAddress,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: 'Email is required',
-                          ),
-                          FormBuilderValidators.email(
-                            errorText: 'Invalid email format',
-                          ),
-                        ]),
+                        validator: FormBuilderValidators.email(
+                          errorText: 'Invalid email format',
+                        ),
                       ),
                       const SizedBox(height: 16),
 
@@ -395,6 +412,7 @@ class CreateUserDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
+    'userName': 'Username',
     'email': 'Email',
     'password': 'Password',
     'confirmPassword': 'Confirm Password',

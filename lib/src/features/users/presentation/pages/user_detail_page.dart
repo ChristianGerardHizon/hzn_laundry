@@ -285,9 +285,19 @@ class UserDetailPage extends HookConsumerWidget {
 
   Future<void> _sendVerificationEmail(
       BuildContext context, WidgetRef ref, User user) async {
+    if (user.email == null) {
+      if (context.mounted) {
+        showErrorSnackBar(
+          context,
+          message: 'User does not have an email address',
+        );
+      }
+      return;
+    }
+
     final success = await ref
         .read(authControllerProvider.notifier)
-        .requestVerification(user.email);
+        .requestVerification(user.email!);
 
     if (context.mounted) {
       if (success) {
