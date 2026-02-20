@@ -25,14 +25,14 @@ class AuthController extends _$AuthController {
     );
   }
 
-  /// Attempts to login with email and password.
+  /// Attempts to login with username and password.
   ///
   /// Returns true on success, false on failure.
   /// If the user's email is not verified, a verification email is automatically sent.
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String username, String password) async {
     state = const AsyncLoading();
 
-    final result = await _repository.login(email, password);
+    final result = await _repository.login(username, password);
 
     return result.fold(
       (failure) {
@@ -42,9 +42,9 @@ class AuthController extends _$AuthController {
       (authState) async {
         state = AsyncData(authState);
 
-        // Auto-send verification email if user is not verified
-        if (!authState.isVerified) {
-          await _repository.requestVerification(email);
+        // Auto-send verification email if user is not verified and has email
+        if (!authState.isVerified && authState.user.email != null) {
+          await _repository.requestVerification(authState.user.email!);
         }
 
         return true;

@@ -25,8 +25,14 @@ class UserMapper extends ClassMapperBase<User> {
   static const Field<User, String> _f$id = Field('id', _$id);
   static String _$name(User v) => v.name;
   static const Field<User, String> _f$name = Field('name', _$name);
-  static String _$email(User v) => v.email;
-  static const Field<User, String> _f$email = Field('email', _$email);
+  static String _$userName(User v) => v.userName;
+  static const Field<User, String> _f$userName = Field('userName', _$userName);
+  static String? _$email(User v) => v.email;
+  static const Field<User, String> _f$email = Field(
+    'email',
+    _$email,
+    opt: true,
+  );
   static String? _$avatar(User v) => v.avatar;
   static const Field<User, String> _f$avatar = Field(
     'avatar',
@@ -88,6 +94,7 @@ class UserMapper extends ClassMapperBase<User> {
   final MappableFields<User> fields = const {
     #id: _f$id,
     #name: _f$name,
+    #userName: _f$userName,
     #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
@@ -104,6 +111,7 @@ class UserMapper extends ClassMapperBase<User> {
     return User(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
+      userName: data.dec(_f$userName),
       email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
@@ -166,6 +174,7 @@ abstract class UserCopyWith<$R, $In extends User, $Out>
   $R call({
     String? id,
     String? name,
+    String? userName,
     String? email,
     String? avatar,
     bool? verified,
@@ -190,7 +199,8 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   $R call({
     String? id,
     String? name,
-    String? email,
+    String? userName,
+    Object? email = $none,
     Object? avatar = $none,
     bool? verified,
     Object? roleId = $none,
@@ -204,7 +214,8 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     FieldCopyWithData({
       if (id != null) #id: id,
       if (name != null) #name: name,
-      if (email != null) #email: email,
+      if (userName != null) #userName: userName,
+      if (email != $none) #email: email,
       if (avatar != $none) #avatar: avatar,
       if (verified != null) #verified: verified,
       if (roleId != $none) #roleId: roleId,
@@ -220,6 +231,7 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   User $make(CopyWithData data) => User(
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
+    userName: data.get(#userName, or: $value.userName),
     email: data.get(#email, or: $value.email),
     avatar: data.get(#avatar, or: $value.avatar),
     verified: data.get(#verified, or: $value.verified),

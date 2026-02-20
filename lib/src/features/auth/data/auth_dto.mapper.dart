@@ -37,8 +37,17 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
   );
   static String _$name(AuthDto v) => v.name;
   static const Field<AuthDto, String> _f$name = Field('name', _$name);
-  static String _$email(AuthDto v) => v.email;
-  static const Field<AuthDto, String> _f$email = Field('email', _$email);
+  static String _$userName(AuthDto v) => v.userName;
+  static const Field<AuthDto, String> _f$userName = Field(
+    'userName',
+    _$userName,
+  );
+  static String? _$email(AuthDto v) => v.email;
+  static const Field<AuthDto, String> _f$email = Field(
+    'email',
+    _$email,
+    opt: true,
+  );
   static String _$avatar(AuthDto v) => v.avatar;
   static const Field<AuthDto, String> _f$avatar = Field(
     'avatar',
@@ -73,6 +82,7 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
+    #userName: _f$userName,
     #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
@@ -87,6 +97,7 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
+      userName: data.dec(_f$userName),
       email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
@@ -158,6 +169,7 @@ abstract class AuthDtoCopyWith<$R, $In extends AuthDto, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
+    String? userName,
     String? email,
     String? avatar,
     bool? verified,
@@ -182,7 +194,8 @@ class _AuthDtoCopyWithImpl<$R, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
-    String? email,
+    String? userName,
+    Object? email = $none,
     String? avatar,
     bool? verified,
     Object? role = $none,
@@ -194,7 +207,8 @@ class _AuthDtoCopyWithImpl<$R, $Out>
       if (collectionId != null) #collectionId: collectionId,
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
-      if (email != null) #email: email,
+      if (userName != null) #userName: userName,
+      if (email != $none) #email: email,
       if (avatar != null) #avatar: avatar,
       if (verified != null) #verified: verified,
       if (role != $none) #role: role,
@@ -208,6 +222,7 @@ class _AuthDtoCopyWithImpl<$R, $Out>
     collectionId: data.get(#collectionId, or: $value.collectionId),
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
+    userName: data.get(#userName, or: $value.userName),
     email: data.get(#email, or: $value.email),
     avatar: data.get(#avatar, or: $value.avatar),
     verified: data.get(#verified, or: $value.verified),

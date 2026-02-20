@@ -255,8 +255,8 @@ class TranslationsFailuresEn {
 	/// en: 'No internet connection.'
 	String get noInternet => 'No internet connection.';
 
-	/// en: 'Invalid email or password.'
-	String get invalidCredentials => 'Invalid email or password.';
+	/// en: 'Invalid username or password.'
+	String get invalidCredentials => 'Invalid username or password.';
 
 	/// en: 'Your account has been disabled.'
 	String get accountDisabled => 'Your account has been disabled.';
@@ -275,6 +275,9 @@ class TranslationsFieldsEn {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Username'
+	String get userName => 'Username';
 
 	/// en: 'Email'
 	String get email => 'Email';
@@ -556,10 +559,11 @@ extension on Translations {
 			'failures.conflict' => 'A conflict occurred. The resource may already exist.',
 			'failures.timeout' => 'Request timed out. Please try again.',
 			'failures.noInternet' => 'No internet connection.',
-			'failures.invalidCredentials' => 'Invalid email or password.',
+			'failures.invalidCredentials' => 'Invalid username or password.',
 			'failures.accountDisabled' => 'Your account has been disabled.',
 			'failures.emailNotVerified' => 'Please verify your email address.',
 			'failures.tooManyRequests' => 'Too many requests. Please wait a moment.',
+			'fields.userName' => 'Username',
 			'fields.email' => 'Email',
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',

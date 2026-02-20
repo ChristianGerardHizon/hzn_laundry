@@ -136,7 +136,7 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get conflict => 'May nangyaring conflict. Maaaring umiiral na ang resource.';
 	@override String get timeout => 'Nag-timeout ang request. Pakisubukang muli.';
 	@override String get noInternet => 'Walang koneksyon sa internet.';
-	@override String get invalidCredentials => 'Di-wastong email o password.';
+	@override String get invalidCredentials => 'Di-wastong username o password.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
 	@override String get tooManyRequests => 'Masyadong maraming request. Maghintay ng ilang sandali.';
@@ -149,6 +149,7 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
+	@override String get userName => 'Username';
 	@override String get email => 'Email';
 	@override String get password => 'Password';
 	@override String get passwordConfirmation => 'Password confirmation';
@@ -308,10 +309,11 @@ extension on TranslationsTl {
 			'failures.conflict' => 'May nangyaring conflict. Maaaring umiiral na ang resource.',
 			'failures.timeout' => 'Nag-timeout ang request. Pakisubukang muli.',
 			'failures.noInternet' => 'Walang koneksyon sa internet.',
-			'failures.invalidCredentials' => 'Di-wastong email o password.',
+			'failures.invalidCredentials' => 'Di-wastong username o password.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',
 			'failures.tooManyRequests' => 'Masyadong maraming request. Maghintay ng ilang sandali.',
+			'fields.userName' => 'Username',
 			'fields.email' => 'Email',
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
