@@ -284,6 +284,12 @@ return ScaffoldMessenger(
 
 - **All PRs must target the `staging` branch**, not `main`.
 - When creating PRs with `gh pr create`, always use `--base staging`.
+- **Before creating a PR, always ask the user which version label to apply:**
+  - `version:patch` — Bug fixes, small tweaks (e.g., `1.2.3` → `1.2.4`)
+  - `version:minor` — New features, enhancements (e.g., `1.2.3` → `1.3.0`)
+  - `version:major` — Breaking changes, major releases (e.g., `1.2.3` → `2.0.0`)
+  - **This is required** — the deploy workflow will fail without a version label.
+  - Add the label using: `gh pr edit <number> --add-label "version:patch"`
 
 ### QA Notes
 
