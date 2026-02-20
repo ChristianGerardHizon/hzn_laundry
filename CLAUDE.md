@@ -288,7 +288,8 @@ return ScaffoldMessenger(
   - `version:patch` — Bug fixes, small tweaks (e.g., `1.2.3` → `1.2.4`)
   - `version:minor` — New features, enhancements (e.g., `1.2.3` → `1.3.0`)
   - `version:major` — Breaking changes, major releases (e.g., `1.2.3` → `2.0.0`)
-  - **This is required** — the deploy workflow will fail without a version label.
+  - **No label** — Skip deploy; the PR will merge without triggering a build (staging only)
+  - For PRs targeting `main`, a version label is **required** — the deploy will fail without one.
   - Add the label using: `gh pr edit <number> --add-label "version:patch"`
 
 ### QA Notes

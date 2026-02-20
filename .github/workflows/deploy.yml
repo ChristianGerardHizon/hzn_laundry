@@ -94,8 +94,9 @@ jobs:
             elif echo "$LABELS" | grep -q '"version:patch"'; then
               BUMP="patch"
             else
-              echo "::error::Missing version label! Add one of: version:patch, version:minor, version:major"
-              exit 1
+              echo "::notice::No version label found — skipping staging deploy"
+              echo "skip=true" >> $GITHUB_OUTPUT
+              exit 0
             fi
           fi
 
@@ -104,6 +105,7 @@ jobs:
 
       # ROBUST VERSION CALCULATION
       - name: Calculate Staging Version
+        if: steps.bump_type.outputs.skip != 'true'
         id: calc_staging
         env:
           URL: ${{ secrets.VERSION_MANAGER_URL }}
@@ -149,6 +151,7 @@ jobs:
           echo "Calculated Staging Version: $STAGING_VER (bump: $BUMP)"
 
       - name: Resolve unique staging tag
+        if: steps.bump_type.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -168,13 +171,16 @@ jobs:
 
       # DECODE KEYSTORE FOR RELEASE SIGNING
       - name: Decode Keystore
+        if: steps.bump_type.outputs.skip != 'true'
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/android/app/upload-keystore.jks
 
       # BUILD WEB & APK
       - name: Build Web (WASM)
+        if: steps.bump_type.outputs.skip != 'true'
         run: flutter build web --wasm --release --build-name=${{ env.STAGING_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=staging --dart-define=API_URL=${{ secrets.POCKETBASE_URL_STAGING }}
 
       - name: Build APK (Release)
+        if: steps.bump_type.outputs.skip != 'true'
         env:
           CI: "true"
           CM_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
@@ -185,28 +191,33 @@ jobs:
 
       # --- SSH DEPLOY START ---
       - name: Setup SSH agent
+        if: steps.bump_type.outputs.skip != 'true'
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add server to known_hosts
+        if: steps.bump_type.outputs.skip != 'true'
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy web build to staging server
+        if: steps.bump_type.outputs.skip != 'true'
         run: |
           rsync -avz --delete \
             build/web/ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_public/
 
       - name: Deploy migrations to staging server
+        if: steps.bump_type.outputs.skip != 'true'
         run: |
           rsync -avz --delete \
             server/pb_migrations/ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_migrations/
 
       - name: Restart PocketBase staging service
+        if: steps.bump_type.outputs.skip != 'true'
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             'sudo systemctl restart pocketbase_hizonelaundry-staging.service'
@@ -214,6 +225,7 @@ jobs:
 
       # RELEASE
       - name: Create Staging Release
+        if: steps.bump_type.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.STAGING_TAG }}
