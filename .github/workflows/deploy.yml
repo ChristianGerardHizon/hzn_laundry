@@ -45,37 +45,7 @@ jobs:
           fi
       # --- PREFLIGHT CHECKS END ---
 
-      # --- SETUP & CACHE START ---
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.3'
-          cache: true
-
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache/hosted
-            ~/.pub-cache/git
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-pub-
-
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
-          sudo apt-get clean
-          df -h
-
-      - name: Install dependencies
-        run: flutter pub get
-      # --- SETUP & CACHE END ---
-
+      # --- VERSION CHECKS (before setup — no dependencies on Java/Flutter) ---
       # DETECT VERSION BUMP TYPE FROM PR LABELS
       - name: Detect version bump type
         id: bump_type
@@ -168,6 +138,43 @@ jobs:
 
           echo "STAGING_TAG=$TAG" >> $GITHUB_ENV
           echo "Resolved staging tag: $TAG"
+      # --- VERSION CHECKS END ---
+
+      # --- SETUP & CACHE START (skipped if no version label) ---
+      - uses: actions/setup-java@v4
+        if: steps.bump_type.outputs.skip != 'true'
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        if: steps.bump_type.outputs.skip != 'true'
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+
+      - name: Cache Pub dependencies
+        if: steps.bump_type.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache/hosted
+            ~/.pub-cache/git
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Free disk space
+        if: steps.bump_type.outputs.skip != 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      - name: Install dependencies
+        if: steps.bump_type.outputs.skip != 'true'
+        run: flutter pub get
+      # --- SETUP & CACHE END ---
 
       # DECODE KEYSTORE FOR RELEASE SIGNING
       - name: Decode Keystore
@@ -279,37 +286,7 @@ jobs:
           fi
       # --- PREFLIGHT CHECKS END ---
 
-      # --- SETUP & CACHE START ---
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.3'
-          cache: true
-
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache/hosted
-            ~/.pub-cache/git
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-pub-
-
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
-          sudo apt-get clean
-          df -h
-
-      - name: Install dependencies
-        run: flutter pub get
-      # --- SETUP & CACHE END ---
-
+      # --- VERSION CHECKS (before setup — no dependencies on Java/Flutter) ---
       # DETECT VERSION BUMP TYPE FROM PR LABELS
       - name: Detect version bump type
         id: bump_type
@@ -373,6 +350,38 @@ jobs:
           echo "new_patch=$PATCH" >> $GITHUB_OUTPUT
           echo "major=$MAJOR" >> $GITHUB_OUTPUT
           echo "minor=$MINOR" >> $GITHUB_OUTPUT
+      # --- VERSION CHECKS END ---
+
+      # --- SETUP & CACHE START ---
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache/hosted
+            ~/.pub-cache/git
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
+          sudo apt-get clean
+          df -h
+
+      - name: Install dependencies
+        run: flutter pub get
+      # --- SETUP & CACHE END ---
 
       # DECODE KEYSTORE FOR RELEASE SIGNING
       - name: Decode Keystore
