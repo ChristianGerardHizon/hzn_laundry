@@ -216,6 +216,12 @@ jobs:
             server/pb_migrations/ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_migrations/
 
+      - name: Deploy hooks to staging server
+        run: |
+          rsync -avz --delete \
+            server/pb_hooks/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_hooks/
+
       - name: Restart PocketBase staging service
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
@@ -413,6 +419,12 @@ jobs:
           rsync -avz --delete \
             server/pb_migrations/ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_migrations/
+
+      - name: Deploy hooks to production server
+        run: |
+          rsync -avz --delete \
+            server/pb_hooks/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_hooks/
 
       - name: Restart PocketBase production service
         run: |
