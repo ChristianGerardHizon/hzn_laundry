@@ -33,7 +33,7 @@ class EditUserDialog extends HookConsumerWidget {
       formKey: formKey,
       initialValues: {
         'name': user.name,
-        'userName': user.userName,
+        'username': user.username,
         'email': user.email,
         'role': user.roleId,
         'branch': user.branchId,
@@ -67,7 +67,7 @@ class EditUserDialog extends HookConsumerWidget {
       final updatedUser = User(
         id: user.id,
         name: (values['name'] as String).trim(),
-        userName: (values['userName'] as String).trim().toLowerCase(),
+        username: (values['username'] as String).trim().toLowerCase(),
         email: (values['email'] as String?)?.trim().toLowerCase(),
         avatar: user.avatar,
         verified: user.verified,
@@ -167,7 +167,7 @@ class EditUserDialog extends HookConsumerWidget {
                 key: formKey,
                 initialValue: {
                   'name': user.name,
-                  'userName': user.userName,
+                  'username': user.username,
                   'email': user.email,
                   'role': user.roleId,
                   'branch': user.branchId,
@@ -204,7 +204,7 @@ class EditUserDialog extends HookConsumerWidget {
 
                       // Username (required)
                       FormBuilderTextField(
-                        name: 'userName',
+                        name: 'username',
                         decoration: const InputDecoration(
                           labelText: 'Username *',
                           border: OutlineInputBorder(),
@@ -448,7 +448,7 @@ class EditUserDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
-    'userName': 'Username',
+    'username': 'Username',
     'email': 'Email',
     'role': 'Role',
     'branch': 'Branch',

@@ -54,7 +54,7 @@ class LoginPage extends HookConsumerWidget {
         errorMessage.value = null;
         final values = formKey.currentState!.value;
         ref.read(authControllerProvider.notifier).login(
-              values['userName'] as String,
+              values['username'] as String,
               values['password'] as String,
             );
       }
@@ -130,7 +130,7 @@ class LoginPage extends HookConsumerWidget {
 
                   // Username field
                   FormBuilderTextField(
-                    name: 'userName',
+                    name: 'username',
                     enabled: !isLoading,
                     decoration: InputDecoration(
                       labelText: t.fields.userName,

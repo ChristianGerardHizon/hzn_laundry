@@ -58,7 +58,7 @@ class CreateUserDialog extends HookConsumerWidget {
       final user = User(
         id: '',
         name: (values['name'] as String).trim(),
-        userName: (values['userName'] as String).trim().toLowerCase(),
+        username: (values['username'] as String).trim().toLowerCase(),
         roleId: values['role'] as String?,
         branchId: values['branch'] as String?,
       );
@@ -192,7 +192,7 @@ class CreateUserDialog extends HookConsumerWidget {
 
                       // Username (required)
                       FormBuilderTextField(
-                        name: 'userName',
+                        name: 'username',
                         decoration: const InputDecoration(
                           labelText: 'Username *',
                           border: OutlineInputBorder(),
@@ -395,7 +395,7 @@ class CreateUserDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
-    'userName': 'Username',
+    'username': 'Username',
     'password': 'Password',
     'confirmPassword': 'Confirm Password',
     'role': 'Role',

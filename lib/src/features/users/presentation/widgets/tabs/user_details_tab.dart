@@ -69,7 +69,7 @@ class UserDetailsTab extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.email ?? user.userName,
+                    user.email ?? user.username,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -204,7 +204,7 @@ class UserDetailsTab extends HookConsumerWidget {
       _DetailItem(
         icon: Icons.alternate_email,
         label: 'Username',
-        value: user.userName,
+        value: user.username,
       ),
       _DetailItem(
         icon: Icons.email,

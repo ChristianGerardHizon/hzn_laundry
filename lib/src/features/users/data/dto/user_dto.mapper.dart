@@ -2,6 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_protected_member
 // ignore_for_file: unused_element, unnecessary_cast, override_on_non_overriding_member
 // ignore_for_file: strict_raw_type, inference_failure_on_untyped_parameter
 
@@ -35,10 +36,10 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
   );
   static String _$name(UserDto v) => v.name;
   static const Field<UserDto, String> _f$name = Field('name', _$name);
-  static String _$userName(UserDto v) => v.userName;
-  static const Field<UserDto, String> _f$userName = Field(
-    'userName',
-    _$userName,
+  static String _$username(UserDto v) => v.username;
+  static const Field<UserDto, String> _f$username = Field(
+    'username',
+    _$username,
   );
   static String? _$email(UserDto v) => v.email;
   static const Field<UserDto, String> _f$email = Field(
@@ -109,7 +110,7 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
-    #userName: _f$userName,
+    #username: _f$username,
     #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
@@ -128,7 +129,7 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
-      userName: data.dec(_f$userName),
+      username: data.dec(_f$username),
       email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
@@ -204,7 +205,7 @@ abstract class UserDtoCopyWith<$R, $In extends UserDto, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
-    String? userName,
+    String? username,
     String? email,
     String? avatar,
     bool? verified,
@@ -233,7 +234,7 @@ class _UserDtoCopyWithImpl<$R, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
-    String? userName,
+    String? username,
     Object? email = $none,
     Object? avatar = $none,
     bool? verified,
@@ -250,7 +251,7 @@ class _UserDtoCopyWithImpl<$R, $Out>
       if (collectionId != null) #collectionId: collectionId,
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
-      if (userName != null) #userName: userName,
+      if (username != null) #username: username,
       if (email != $none) #email: email,
       if (avatar != $none) #avatar: avatar,
       if (verified != null) #verified: verified,
@@ -269,7 +270,7 @@ class _UserDtoCopyWithImpl<$R, $Out>
     collectionId: data.get(#collectionId, or: $value.collectionId),
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
-    userName: data.get(#userName, or: $value.userName),
+    username: data.get(#username, or: $value.username),
     email: data.get(#email, or: $value.email),
     avatar: data.get(#avatar, or: $value.avatar),
     verified: data.get(#verified, or: $value.verified),

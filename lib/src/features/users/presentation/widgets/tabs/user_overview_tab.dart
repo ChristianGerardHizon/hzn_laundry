@@ -71,7 +71,7 @@ class UserOverviewTab extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          user.email ?? user.userName,
+                          user.email ?? user.username,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),

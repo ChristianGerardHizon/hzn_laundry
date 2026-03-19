@@ -2,6 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_protected_member
 // ignore_for_file: unused_element, unnecessary_cast, override_on_non_overriding_member
 // ignore_for_file: strict_raw_type, inference_failure_on_untyped_parameter
 
@@ -25,8 +26,8 @@ class UserMapper extends ClassMapperBase<User> {
   static const Field<User, String> _f$id = Field('id', _$id);
   static String _$name(User v) => v.name;
   static const Field<User, String> _f$name = Field('name', _$name);
-  static String _$userName(User v) => v.userName;
-  static const Field<User, String> _f$userName = Field('userName', _$userName);
+  static String _$username(User v) => v.username;
+  static const Field<User, String> _f$username = Field('username', _$username);
   static String? _$email(User v) => v.email;
   static const Field<User, String> _f$email = Field(
     'email',
@@ -57,7 +58,7 @@ class UserMapper extends ClassMapperBase<User> {
   final MappableFields<User> fields = const {
     #id: _f$id,
     #name: _f$name,
-    #userName: _f$userName,
+    #username: _f$username,
     #email: _f$email,
     #avatarUrl: _f$avatarUrl,
     #verified: _f$verified,
@@ -68,7 +69,7 @@ class UserMapper extends ClassMapperBase<User> {
     return User(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
-      userName: data.dec(_f$userName),
+      username: data.dec(_f$username),
       email: data.dec(_f$email),
       avatarUrl: data.dec(_f$avatarUrl),
       verified: data.dec(_f$verified),
@@ -125,7 +126,7 @@ abstract class UserCopyWith<$R, $In extends User, $Out>
   $R call({
     String? id,
     String? name,
-    String? userName,
+    String? username,
     String? email,
     String? avatarUrl,
     bool? verified,
@@ -144,7 +145,7 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   $R call({
     String? id,
     String? name,
-    String? userName,
+    String? username,
     Object? email = $none,
     Object? avatarUrl = $none,
     bool? verified,
@@ -153,7 +154,7 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     FieldCopyWithData({
       if (id != null) #id: id,
       if (name != null) #name: name,
-      if (userName != null) #userName: userName,
+      if (username != null) #username: username,
       if (email != $none) #email: email,
       if (avatarUrl != $none) #avatarUrl: avatarUrl,
       if (verified != null) #verified: verified,
@@ -164,7 +165,7 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   User $make(CopyWithData data) => User(
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
-    userName: data.get(#userName, or: $value.userName),
+    username: data.get(#username, or: $value.username),
     email: data.get(#email, or: $value.email),
     avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
     verified: data.get(#verified, or: $value.verified),

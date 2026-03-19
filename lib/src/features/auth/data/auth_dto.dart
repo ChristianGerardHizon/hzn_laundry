@@ -18,7 +18,7 @@ class AuthDto with AuthDtoMappable {
   final String collectionId;
   final String collectionName;
   final String name;
-  final String userName;
+  final String username;
   final String? email;
   final String avatar;
   final bool verified;
@@ -31,7 +31,7 @@ class AuthDto with AuthDtoMappable {
     required this.collectionId,
     required this.collectionName,
     required this.name,
-    required this.userName,
+    required this.username,
     this.email,
     this.avatar = '',
     this.verified = false,
@@ -49,7 +49,7 @@ class AuthDto with AuthDtoMappable {
       collectionId: json['collectionId'] as String? ?? '',
       collectionName: json['collectionName'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      userName: json['userName'] as String? ?? '',
+      username: json['username'] as String? ?? '',
       email: json['email'] as String?,
       avatar: json['avatar'] as String? ?? '',
       verified: json['verified'] as bool? ?? false,
@@ -69,7 +69,7 @@ class AuthDto with AuthDtoMappable {
     return User(
       id: id,
       name: name,
-      userName: userName,
+      username: username,
       email: email,
       avatarUrl: _buildAvatarUrl(domain),
       verified: verified,
@@ -84,7 +84,7 @@ class AuthDto with AuthDtoMappable {
       'collectionId': collectionId,
       'collectionName': collectionName,
       'name': name,
-      'userName': userName,
+      'username': username,
       'email': email,
       'avatar': avatar,
       'verified': verified,
