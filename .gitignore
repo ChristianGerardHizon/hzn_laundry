@@ -72,3 +72,4 @@ app.*.map.json
 # un-ignore pb_hooks
 !/server/pb_hooks/**
 .grepai/
+pocketbase.env

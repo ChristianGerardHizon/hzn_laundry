@@ -354,7 +354,41 @@ Example update for Recent Updates table:
 
 
 ## Testing
- check docs/testing.md for the testing account 
+ check docs/testing.md for the testing account
+
+## PocketBase API Access
+
+**IMPORTANT:** When any PocketBase schema or data change is needed (creating collections, modifying fields, seeding data, etc.), **always use the PocketBase API directly** — never modify the database through migrations alone without verifying via the API first.
+
+### Test Superuser Credentials
+
+Credentials are stored in `pocketbase.env` (gitignored — never commit this file):
+
+```
+email=test@test.com
+password=password101
+```
+
+### Authenticating
+
+```bash
+# Authenticate and get a token
+curl -X POST http://127.0.0.1:8090/api/admins/auth-with-password \
+  -H "Content-Type: application/json" \
+  -d '{"identity":"test@test.com","password":"password101"}'
+```
+
+Use the returned `token` as a Bearer token for subsequent requests:
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8090/api/collections
+```
+
+### Guidelines
+
+- **Always use the test superuser** from `pocketbase.env` for API interactions during development
+- **Prefer the PocketBase API** over direct DB manipulation for schema changes, collection management, and data seeding
+- `pocketbase.env` is gitignored — keep credentials out of source control
 
 
 ## grepai - Semantic Code Search
