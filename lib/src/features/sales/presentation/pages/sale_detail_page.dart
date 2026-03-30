@@ -12,7 +12,12 @@ import '../../../pos/domain/order_status_history.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
+import '../../../pos/presentation/services/thermal_print_service.dart';
 import '../../../services/domain/service_item_status.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../settings/presentation/controllers/branch_provider.dart';
+import '../../../settings/presentation/controllers/printer_config_provider.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/order_status_history_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
@@ -124,13 +129,10 @@ class _SaleDetailContent extends HookConsumerWidget {
               ),
         title: Text(sale.receiptNumber),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.print),
-            onPressed: () {
-              showWarningSnackBar(context,
-                  message: 'Print functionality coming soon');
-            },
-            tooltip: 'Print Receipt',
+          _PrintMenuButton(
+            sale: sale,
+            saleItemsAsync: saleItemsAsync,
+            serviceItemsAsync: serviceItemsAsync,
           ),
         ],
       ),
@@ -469,18 +471,44 @@ class _SaleDetailContent extends HookConsumerWidget {
     }
 
     Future<void> updateSaleStatus(String newStatus) async {
+      final isVoidAction = newStatus == 'voided';
+      final isRefundAction = newStatus == 'refunded';
+
+      String dialogTitle;
+      String dialogContent;
+      String confirmLabel;
+      Color confirmColor;
+      String successMessage;
+
+      if (isVoidAction) {
+        dialogTitle = 'Void Sale?';
+        dialogContent =
+            'Are you sure you want to void this sale? This action cannot be undone.';
+        confirmLabel = 'Void Sale';
+        confirmColor = Colors.red;
+        successMessage = 'Sale has been voided';
+      } else if (isRefundAction) {
+        dialogTitle = 'Refund Sale?';
+        dialogContent =
+            'Are you sure you want to mark this sale as refunded? This will update the sale status.';
+        confirmLabel = 'Refund';
+        confirmColor = Colors.orange;
+        successMessage = 'Sale marked as refunded';
+      } else {
+        dialogTitle = 'Remove Refund?';
+        dialogContent =
+            'Are you sure you want to remove the refund status and mark this sale as $newStatus?';
+        confirmLabel = 'Remove Refund';
+        confirmColor = Colors.green;
+        successMessage = 'Refund status removed';
+      }
+
       // Show confirmation dialog
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(
-            newStatus == 'refunded' ? 'Refund Sale?' : 'Remove Refund?',
-          ),
-          content: Text(
-            newStatus == 'refunded'
-                ? 'Are you sure you want to mark this sale as refunded? This will update the sale status.'
-                : 'Are you sure you want to remove the refund status and mark this sale as $newStatus?',
-          ),
+          title: Text(dialogTitle),
+          content: Text(dialogContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -489,10 +517,9 @@ class _SaleDetailContent extends HookConsumerWidget {
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    newStatus == 'refunded' ? Colors.orange : Colors.green,
+                backgroundColor: confirmColor,
               ),
-              child: Text(newStatus == 'refunded' ? 'Refund' : 'Remove Refund'),
+              child: Text(confirmLabel),
             ),
           ],
         ),
@@ -512,12 +539,7 @@ class _SaleDetailContent extends HookConsumerWidget {
           showErrorSnackBar(context, message: failure.messageString);
         },
         (_) {
-          showSuccessSnackBar(
-            context,
-            message: newStatus == 'refunded'
-                ? 'Sale marked as refunded'
-                : 'Refund status removed',
-          );
+          showSuccessSnackBar(context, message: successMessage);
           ref.invalidate(saleProvider(sale.id));
         },
       );
@@ -589,6 +611,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                           ? 'completed'
                           : 'pending';
                   updateSaleStatus(revertStatus);
+                } else if (value == 'void') {
+                  updateSaleStatus('voided');
                 }
               },
               itemBuilder: (context) => [
@@ -612,6 +636,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
+                const PopupMenuItem<String>(
+                  value: 'void',
+                  child: ListTile(
+                    leading: Icon(Icons.block, color: Colors.red),
+                    title: Text('Void Sale'),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               ],
             ),
           ],
@@ -1405,6 +1438,113 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
           side: const BorderSide(color: Colors.green),
         ),
       ),
+    );
+  }
+}
+
+// ── Print menu button ────────────────────────────────────────────────────────
+
+class _PrintMenuButton extends HookConsumerWidget {
+  const _PrintMenuButton({
+    required this.sale,
+    required this.saleItemsAsync,
+    required this.serviceItemsAsync,
+  });
+
+  final Sale sale;
+  final AsyncValue<dynamic> saleItemsAsync;
+  final AsyncValue<dynamic> serviceItemsAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPrinting = useState(false);
+    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final currentAuth = ref.watch(currentAuthProvider);
+    final branchId = ref.watch(currentBranchIdProvider);
+    final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+
+    Future<void> printCopy(OrderReceiptCopy copyType) async {
+      final printer = defaultPrinterAsync.value;
+      if (printer == null) {
+        showErrorSnackBar(context, message: 'No default printer configured');
+        return;
+      }
+
+      // Get service item info for the receipt
+      final serviceItems = serviceItemsAsync.value ?? [];
+      final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
+
+      isPrinting.value = true;
+      final printService = ref.read(thermalPrintServiceProvider.notifier);
+      final currentBranch = branchAsync.value;
+
+      final result = await printService.printOrderReceipt(
+        printer: printer,
+        customerName: sale.customerName ?? 'Walk-in',
+        serviceName: firstService?.serviceName ?? 'Laundry',
+        quantity: firstService?.quantity.toDouble() ?? 1.0,
+        unitLabel: 'PCS',
+        totalAmount: sale.totalAmount.toDouble(),
+        copyType: copyType,
+        businessName: currentBranch?.name,
+        branchAddress: currentBranch?.address,
+        contactNumber: currentBranch?.contactNumber,
+        cashierName: currentAuth?.user.name,
+        specialInstructions: sale.notes,
+      );
+
+      isPrinting.value = false;
+      if (!context.mounted) return;
+
+      if (result is PrintFailure) {
+        showErrorSnackBar(context, message: result.message);
+      } else {
+        final label = copyType == OrderReceiptCopy.customer
+            ? 'Customer copy'
+            : 'Store copy';
+        showSuccessSnackBar(context, message: '$label printed');
+      }
+    }
+
+    return PopupMenuButton<String>(
+      icon: isPrinting.value
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.print),
+      tooltip: 'Print',
+      enabled: !isPrinting.value,
+      onSelected: (value) {
+        switch (value) {
+          case 'customer':
+            printCopy(OrderReceiptCopy.customer);
+          case 'store':
+            printCopy(OrderReceiptCopy.store);
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'customer',
+          child: ListTile(
+            leading: Icon(Icons.receipt_long),
+            title: Text('Print Customer Copy'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'store',
+          child: ListTile(
+            leading: Icon(Icons.local_laundry_service),
+            title: Text('Print Store Copy'),
+            subtitle: Text('Machine tag'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }

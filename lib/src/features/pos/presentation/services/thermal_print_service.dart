@@ -1,8 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_esc_pos_network/flutter_esc_pos_network.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -31,11 +31,40 @@ class PrintFailure extends PrintResult {
   final String message;
 }
 
+/// Which copy of the order receipt to print.
+enum OrderReceiptCopy {
+  /// Full receipt for the customer with business info and totals.
+  customer,
+
+  /// Compact tag for the store — large customer name for machine identification.
+  store,
+}
+
 /// Service for thermal printing operations.
 @riverpod
 class ThermalPrintService extends _$ThermalPrintService {
+  /// Cached network socket to avoid repeated connect/disconnect events.
+  Socket? _socket;
+  String? _socketAddress;
+  int? _socketPort;
+
+  /// Whether the printer should auto-cut after printing.
+  bool _autoCut = true;
+
+  /// Whether auto-cut is currently enabled.
+  bool get autoCut => _autoCut;
+
+  /// Enables or disables auto-cut after printing.
+  void setAutoCut(bool enabled) => _autoCut = enabled;
+
   @override
-  FutureOr<void> build() {}
+  FutureOr<void> build() {
+    // Clean up the persistent socket when the provider is disposed.
+    ref.onDispose(() {
+      _socket?.destroy();
+      _socket = null;
+    });
+  }
 
   /// Prints a sale receipt to the specified printer.
   ///
@@ -66,6 +95,46 @@ class ThermalPrintService extends _$ThermalPrintService {
     );
 
     // Print based on connection type
+    return _printBytes(printer, bytes);
+  }
+
+  /// Prints an order receipt (without a full Sale object).
+  ///
+  /// [copyType] controls the label printed: customer copy (default) or store copy.
+  /// The store copy has a large customer name header for machine identification.
+  Future<PrintResult> printOrderReceipt({
+    required PrinterConfig printer,
+    required String customerName,
+    required String serviceName,
+    required double quantity,
+    required String unitLabel,
+    required double totalAmount,
+    OrderReceiptCopy copyType = OrderReceiptCopy.customer,
+    String? businessName,
+    String? branchAddress,
+    String? contactNumber,
+    String? cashierName,
+    String? specialInstructions,
+  }) async {
+    if (!printer.hasAddress) {
+      return const PrintFailure('Printer address not configured');
+    }
+
+    final bytes = await _generateOrderReceiptBytes(
+      customerName: customerName,
+      serviceName: serviceName,
+      quantity: quantity,
+      unitLabel: unitLabel,
+      totalAmount: totalAmount,
+      paperWidth: printer.paperWidth,
+      businessName: businessName ?? '',
+      branchAddress: branchAddress,
+      contactNumber: contactNumber,
+      cashierName: cashierName,
+      specialInstructions: specialInstructions,
+      copyType: copyType,
+    );
+
     return _printBytes(printer, bytes);
   }
 
@@ -129,6 +198,11 @@ class ThermalPrintService extends _$ThermalPrintService {
   }
 
   /// Prints via Bluetooth connection.
+  ///
+  /// On macOS the `print_bluetooth_thermal` plugin has platform-channel
+  /// quirks (duplicate responses, writeBytes type errors). We work around
+  /// them by sending data in small chunks and catching channel errors
+  /// gracefully.
   Future<PrintResult> _printViaBluetooth(
       String macAddress, List<int> bytes) async {
     try {
@@ -152,14 +226,41 @@ class ThermalPrintService extends _$ThermalPrintService {
         return const PrintFailure('Failed to connect to Bluetooth printer');
       }
 
-      // Print the data
-      final result =
-          await PrintBluetoothThermal.writeBytes(Uint8List.fromList(bytes));
+      // Send data in chunks to avoid buffer overflow on macOS.
+      // The plugin's writeBytes can fail with "Invalid arguments type"
+      // when sending large payloads on macOS.
+      const chunkSize = 200;
+      final data = Uint8List.fromList(bytes);
+      bool lastResult = true;
+
+      for (var offset = 0; offset < data.length; offset += chunkSize) {
+        final end =
+            (offset + chunkSize > data.length) ? data.length : offset + chunkSize;
+        final chunk = data.sublist(offset, end);
+
+        try {
+          lastResult = await PrintBluetoothThermal.writeBytes(chunk);
+        } catch (e) {
+          // On macOS the plugin may throw due to duplicate platform channel
+          // responses. The data is often still sent successfully, so we
+          // log and continue rather than failing.
+          debugPrint('Bluetooth write chunk warning: $e');
+        }
+
+        // Small delay between chunks to let the printer process
+        if (end < data.length) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      }
 
       // Disconnect
-      await PrintBluetoothThermal.disconnect;
+      try {
+        await PrintBluetoothThermal.disconnect;
+      } catch (_) {
+        // Ignore disconnect errors on macOS
+      }
 
-      if (result) {
+      if (lastResult) {
         return const PrintSuccess();
       } else {
         return const PrintFailure('Failed to send data to printer');
@@ -169,22 +270,59 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
   }
 
-  /// Prints via network connection.
+  /// Prints via network connection using a persistent TCP socket.
+  ///
+  /// Keeps the socket open between prints to avoid the WiFi print server
+  /// module (HF-A11, USR-WiFi232, etc.) printing `+EVENT=SOCKA_ON` /
+  /// `+EVENT=SOCKA_OFF` debug lines on every connect/disconnect cycle.
+  ///
+  /// If the cached socket is stale or the address changed, a new connection
+  /// is established automatically.
   Future<PrintResult> _printViaNetwork(
       String ipAddress, int port, List<int> bytes) async {
     try {
-      final printer = PrinterNetworkManager(ipAddress, port: port);
-      final result = await printer.connect();
-
-      if (result != PosPrintResult.success) {
-        return PrintFailure('Failed to connect to network printer: $result');
+      // Reuse existing socket if it matches the target address.
+      if (_socket == null ||
+          _socketAddress != ipAddress ||
+          _socketPort != port) {
+        _socket?.destroy();
+        _socket = await Socket.connect(
+          ipAddress,
+          port,
+          timeout: const Duration(seconds: 5),
+        );
+        _socketAddress = ipAddress;
+        _socketPort = port;
       }
 
-      await printer.printTicket(bytes);
-      await printer.disconnect();
+      try {
+        _socket!.add(Uint8List.fromList(bytes));
+        await _socket!.flush();
+      } catch (_) {
+        // Socket was stale — reconnect once and retry.
+        _socket?.destroy();
+        _socket = await Socket.connect(
+          ipAddress,
+          port,
+          timeout: const Duration(seconds: 5),
+        );
+        _socketAddress = ipAddress;
+        _socketPort = port;
+
+        _socket!.add(Uint8List.fromList(bytes));
+        await _socket!.flush();
+      }
+
+      // Wait for the printer to finish processing.
+      await Future.delayed(const Duration(milliseconds: 500));
 
       return const PrintSuccess();
     } catch (e) {
+      // Connection fully failed — clean up.
+      _socket?.destroy();
+      _socket = null;
+      _socketAddress = null;
+      _socketPort = null;
       return PrintFailure('Network print error: $e');
     }
   }
@@ -207,9 +345,6 @@ class ThermalPrintService extends _$ThermalPrintService {
     );
 
     List<int> bytes = [];
-
-    // Reset printer to clear any previous state
-    bytes += generator.reset();
 
     // Header - Business Name
     bytes += generator.text(
@@ -342,9 +477,244 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     bytes += generator.hr(ch: '=');
 
-    // Feed and cut
-    bytes += generator.feed(2);
-    bytes += generator.cut();
+    // Feed and optionally cut
+    bytes += generator.feed(_autoCut ? 2 : 4);
+    if (_autoCut) bytes += generator.cut();
+
+    return bytes;
+  }
+
+  /// Generates order receipt bytes (service-based order).
+  ///
+  /// [copyType] controls the layout:
+  /// - [OrderReceiptCopy.customer]: Full receipt with business header, totals, thank-you.
+  /// - [OrderReceiptCopy.store]: Compact machine tag with large customer name for
+  ///   easy identification on the laundry machine.
+  Future<List<int>> _generateOrderReceiptBytes({
+    required String customerName,
+    required String serviceName,
+    required double quantity,
+    required String unitLabel,
+    required double totalAmount,
+    required PrinterPaperWidth paperWidth,
+    required String businessName,
+    required OrderReceiptCopy copyType,
+    String? branchAddress,
+    String? contactNumber,
+    String? cashierName,
+    String? specialInstructions,
+  }) async {
+    final profile = await CapabilityProfile.load(name: 'default');
+    final generator = Generator(
+      paperWidth == PrinterPaperWidth.mm58 ? PaperSize.mm58 : PaperSize.mm80,
+      profile,
+    );
+
+    final currencyFormat =
+        NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+
+    List<int> bytes = [];
+
+    if (copyType == OrderReceiptCopy.store) {
+      // ── Store copy — compact machine tag ─────────────────────────────
+      bytes += generator.hr(ch: '=');
+      bytes += generator.text(
+        'STORE COPY',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      );
+      bytes += generator.hr(ch: '=');
+
+      // Large customer name for easy identification on the machine
+      bytes += generator.text(
+        customerName.toUpperCase(),
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
+
+      bytes += generator.emptyLines(1);
+
+      // Service & quantity
+      bytes += generator.text(
+        serviceName,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size1,
+          width: PosTextSize.size2,
+        ),
+      );
+      bytes += generator.text(
+        '${quantity.toStringAsFixed(1)} $unitLabel',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          height: PosTextSize.size1,
+          width: PosTextSize.size2,
+        ),
+      );
+
+      bytes += generator.hr();
+
+      // Date & time
+      bytes += generator.text(
+        dateFormat.format(DateTime.now()),
+        styles: const PosStyles(align: PosAlign.center),
+      );
+
+      // Special instructions (important for machine operators)
+      bytes += generator.hr();
+      bytes += generator.text(
+        'NOTES:',
+        styles: const PosStyles(bold: true),
+      );
+      bytes += generator.text(
+        (specialInstructions != null && specialInstructions.isNotEmpty)
+            ? specialInstructions
+            : 'No special instructions',
+      );
+
+      bytes += generator.hr(ch: '=');
+      bytes += generator.feed(_autoCut ? 2 : 4);
+      if (_autoCut) bytes += generator.cut();
+    } else {
+      // ── Customer copy — full receipt ──────────────────────────────────
+
+      // Header - Business Name
+      bytes += generator.text(
+        businessName,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
+
+      if (branchAddress != null && branchAddress.isNotEmpty) {
+        bytes += generator.text(
+          branchAddress,
+          styles: const PosStyles(align: PosAlign.center),
+        );
+      }
+
+      if (contactNumber != null && contactNumber.isNotEmpty) {
+        bytes += generator.text(
+          'Tel: $contactNumber',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+      }
+
+      bytes += generator.hr(ch: '=');
+
+      bytes += generator.text(
+        'CUSTOMER COPY',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+
+      bytes += generator.emptyLines(1);
+
+      // Order info
+      bytes += generator.text(
+        'ORDER RECEIPT',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+      bytes += generator.text(
+          'Date: ${dateFormat.format(DateTime.now())}');
+
+      if (cashierName != null && cashierName.isNotEmpty) {
+        bytes += generator.text('Cashier: $cashierName');
+      }
+
+      bytes += generator.hr();
+
+      // Customer
+      bytes += generator.text('Customer: $customerName');
+
+      bytes += generator.hr();
+
+      // Service details
+      bytes += generator.row([
+        PosColumn(
+          text: 'SERVICE',
+          width: 6,
+          styles: const PosStyles(bold: true),
+        ),
+        PosColumn(
+          text: 'QTY',
+          width: 2,
+          styles: const PosStyles(bold: true, align: PosAlign.center),
+        ),
+        PosColumn(
+          text: 'AMOUNT',
+          width: 4,
+          styles: const PosStyles(bold: true, align: PosAlign.right),
+        ),
+      ]);
+
+      bytes += generator.hr();
+
+      String name = serviceName;
+      if (name.length > 16) {
+        name = '${name.substring(0, 14)}..';
+      }
+
+      bytes += generator.row([
+        PosColumn(text: name, width: 6),
+        PosColumn(
+          text: '${quantity.toStringAsFixed(1)} $unitLabel',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.center),
+        ),
+        PosColumn(
+          text: currencyFormat.format(totalAmount),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+
+      bytes += generator.hr();
+
+      // Total
+      bytes += generator.row([
+        PosColumn(
+          text: 'TOTAL:',
+          width: 6,
+          styles: const PosStyles(bold: true),
+        ),
+        PosColumn(text: '', width: 2),
+        PosColumn(
+          text: currencyFormat.format(totalAmount),
+          width: 4,
+          styles: const PosStyles(bold: true, align: PosAlign.right),
+        ),
+      ]);
+
+      bytes += generator.hr();
+
+      bytes += generator.text(
+        (specialInstructions != null && specialInstructions.isNotEmpty)
+            ? 'Notes: $specialInstructions'
+            : 'Notes: No special instructions',
+      );
+      bytes += generator.hr();
+
+      // Footer
+      bytes += generator.text(
+        'Thank you!',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+
+      bytes += generator.hr(ch: '=');
+      bytes += generator.feed(_autoCut ? 2 : 4);
+      if (_autoCut) bytes += generator.cut();
+    }
 
     return bytes;
   }
@@ -387,8 +757,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     );
 
     bytes += generator.hr(ch: '=');
-    bytes += generator.feed(2);
-    bytes += generator.cut();
+    bytes += generator.feed(4);
 
     return bytes;
   }

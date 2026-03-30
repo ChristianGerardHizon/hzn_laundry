@@ -79,6 +79,13 @@ class SaleDetailContent extends ConsumerWidget {
             compact: compact,
           ),
 
+          // Special Instructions Section
+          _SpecialInstructionsSection(
+            notes: sale.notes,
+            compact: compact,
+          ),
+          SizedBox(height: compact ? 12 : 16),
+
           // Total Card
           _TotalCard(
             totalAmount: sale.totalAmount,
@@ -145,12 +152,6 @@ class _SaleHeaderCard extends StatelessWidget {
               SaleCustomerInfoRow(
                 customerName: sale.customerName!,
                 customerId: sale.customerId,
-              ),
-            if (sale.notes != null && sale.notes!.isNotEmpty)
-              SaleInfoRow(
-                icon: Icons.note,
-                label: 'Notes',
-                value: sale.notes!,
               ),
           ],
         ),
@@ -473,6 +474,63 @@ class _ServiceItemTile extends HookConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Special instructions section — always visible.
+class _SpecialInstructionsSection extends StatelessWidget {
+  const _SpecialInstructionsSection({
+    required this.notes,
+    required this.compact,
+  });
+
+  final String? notes;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasNotes = notes != null && notes!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Special Instructions',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(compact ? 12 : 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  hasNotes ? Icons.note_alt : Icons.note_alt_outlined,
+                  size: 20,
+                  color: hasNotes
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    hasNotes ? notes! : 'No special instructions',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: hasNotes
+                          ? null
+                          : theme.colorScheme.onSurfaceVariant,
+                      fontStyle: hasNotes ? null : FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

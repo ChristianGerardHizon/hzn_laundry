@@ -68,7 +68,9 @@ class CurrentBranchController extends _$CurrentBranchController {
 
     // Get full user to access roleId
     final fullUser = await ref.read(userProvider(auth.user.id).future);
-    if (fullUser == null || fullUser.roleId == null) return false;
+    if (fullUser == null || fullUser.roleId == null || fullUser.roleId!.isEmpty) {
+      return false;
+    }
 
     // Get user's role to check isAdmin
     final userRole = await ref.read(userRoleProvider(fullUser.roleId!).future);

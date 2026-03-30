@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/routing/routes/sales.routes.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
+import '../../../sales/presentation/widgets/create_order_dialog.dart';
 
 /// Section displaying quick action buttons on the dashboard.
 ///
@@ -48,10 +48,10 @@ class QuickActionsSection extends ConsumerWidget {
                   const SizedBox(width: 12),
                 ],
                 _QuickActionButton(
-                  icon: Icons.point_of_sale,
+                  icon: Icons.add_shopping_cart,
                   label: 'New Sale',
                   color: Colors.green,
-                  onTap: () => const SalesRoute().go(context),
+                  onTap: () => showCreateOrderDialog(context),
                 ),
                 const SizedBox(width: 12),
                 _QuickActionButton(

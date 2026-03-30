@@ -36,5 +36,9 @@
 	<string>NSApplication</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Connect to thermal receipt printers via Bluetooth</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connect to network thermal printers on your local network</string>
 </dict>
 </plist>

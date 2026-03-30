@@ -26,28 +26,7 @@ class KanbanBoardSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kanbanAsync = ref.watch(kanbanSalesProvider);
-
-    return kanbanAsync.when(
-      data: (data) => _KanbanBoard(data: data),
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: _LoadingState(),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
-
-class _KanbanBoard extends StatelessWidget {
-  const _KanbanBoard({required this.data});
-
-  final KanbanSalesData data;
-
-  static const _statuses = OrderStatus.values;
-
-  @override
-  Widget build(BuildContext context) {
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final filterMode = ref.watch(kanbanFilterProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -76,14 +55,117 @@ class _KanbanBoard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          // Filter chips
+          _KanbanFilterChips(currentFilter: filterMode),
           const SizedBox(height: 12),
-          // Columns
-          if (isTablet)
-            _TabletKanbanLayout(data: data, statuses: _statuses)
-          else
-            _MobileKanbanLayout(data: data, statuses: _statuses),
+          // Board content
+          kanbanAsync.when(
+            data: (data) => _KanbanBoard(data: data, filterMode: filterMode),
+            loading: () => const _LoadingState(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _KanbanFilterChips extends ConsumerWidget {
+  const _KanbanFilterChips({required this.currentFilter});
+
+  final KanbanFilterMode currentFilter;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        _FilterChip(
+          label: "Today's Orders",
+          icon: Icons.today,
+          isSelected: currentFilter == KanbanFilterMode.today,
+          onSelected: () => ref
+              .read(kanbanFilterProvider.notifier)
+              .setFilter(KanbanFilterMode.today),
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: 'Not Picked Up',
+          icon: Icons.pending_actions,
+          isSelected: currentFilter == KanbanFilterMode.notPickedUp,
+          onSelected: () => ref
+              .read(kanbanFilterProvider.notifier)
+              .setFilter(KanbanFilterMode.notPickedUp),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = isSelected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+
+    return FilterChip(
+      selected: isSelected,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(label),
+        ],
+      ),
+      onSelected: (_) => onSelected(),
+      showCheckmark: false,
+    );
+  }
+}
+
+class _KanbanBoard extends StatelessWidget {
+  const _KanbanBoard({required this.data, required this.filterMode});
+
+  final KanbanSalesData data;
+  final KanbanFilterMode filterMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTablet = Breakpoints.isTabletOrLarger(context);
+
+    // In "not picked up" mode, hide the Picked Up column
+    final statuses = filterMode == KanbanFilterMode.notPickedUp
+        ? OrderStatus.values
+            .where((s) => s != OrderStatus.pickedUp)
+            .toList()
+        : OrderStatus.values;
+
+    if (isTablet) {
+      return _TabletKanbanLayout(
+        data: data,
+        statuses: statuses,
+        filterMode: filterMode,
+      );
+    }
+    return _MobileKanbanLayout(
+      data: data,
+      statuses: statuses,
+      filterMode: filterMode,
     );
   }
 }
@@ -93,10 +175,12 @@ class _TabletKanbanLayout extends StatelessWidget {
   const _TabletKanbanLayout({
     required this.data,
     required this.statuses,
+    required this.filterMode,
   });
 
   final KanbanSalesData data;
   final List<OrderStatus> statuses;
+  final KanbanFilterMode filterMode;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +197,7 @@ class _TabletKanbanLayout extends StatelessWidget {
                 sales: data.salesForStatus(statuses[i]),
                 kanbanData: data,
                 isScrollable: true,
+                filterMode: filterMode,
               ),
             ),
           ],
@@ -127,10 +212,12 @@ class _MobileKanbanLayout extends StatelessWidget {
   const _MobileKanbanLayout({
     required this.data,
     required this.statuses,
+    required this.filterMode,
   });
 
   final KanbanSalesData data;
   final List<OrderStatus> statuses;
+  final KanbanFilterMode filterMode;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +231,7 @@ class _MobileKanbanLayout extends StatelessWidget {
             kanbanData: data,
             isScrollable: false,
             maxItems: 5,
+            filterMode: filterMode,
           ),
         ],
       ],
@@ -158,6 +246,7 @@ class _KanbanColumn extends ConsumerWidget {
     required this.sales,
     required this.kanbanData,
     required this.isScrollable,
+    required this.filterMode,
     this.maxItems,
   });
 
@@ -165,6 +254,7 @@ class _KanbanColumn extends ConsumerWidget {
   final List<Sale> sales;
   final KanbanSalesData kanbanData;
   final bool isScrollable;
+  final KanbanFilterMode filterMode;
   final int? maxItems;
 
   Color _statusColor() => switch (status) {
@@ -336,6 +426,7 @@ class _KanbanColumn extends ConsumerWidget {
                       return _SaleCard(
                         sale: sale,
                         serviceItems: kanbanData.serviceItemsForSale(sale.id),
+                        showOverdue: filterMode == KanbanFilterMode.notPickedUp,
                       );
                     },
                   ),
@@ -351,6 +442,7 @@ class _KanbanColumn extends ConsumerWidget {
                           sale: displayedSales[i],
                           serviceItems: kanbanData
                               .serviceItemsForSale(displayedSales[i].id),
+                          showOverdue: filterMode == KanbanFilterMode.notPickedUp,
                         ),
                       ],
                       if (remainingCount > 0) ...[
@@ -379,10 +471,12 @@ class _SaleCard extends StatelessWidget {
   const _SaleCard({
     required this.sale,
     this.serviceItems = const [],
+    this.showOverdue = false,
   });
 
   final Sale sale;
   final List<SaleServiceItem> serviceItems;
+  final bool showOverdue;
 
   @override
   Widget build(BuildContext context) {
@@ -396,15 +490,27 @@ class _SaleCard extends StatelessWidget {
           opacity: 0.9,
           child: SizedBox(
             width: 180,
-            child: _SaleCardContent(sale: sale, serviceItems: serviceItems),
+            child: _SaleCardContent(
+              sale: sale,
+              serviceItems: serviceItems,
+              showOverdue: showOverdue,
+            ),
           ),
         ),
       ),
       childWhenDragging: Opacity(
         opacity: 0.3,
-        child: _SaleCardContent(sale: sale, serviceItems: serviceItems),
+        child: _SaleCardContent(
+          sale: sale,
+          serviceItems: serviceItems,
+          showOverdue: showOverdue,
+        ),
       ),
-      child: _SaleCardContent(sale: sale, serviceItems: serviceItems),
+      child: _SaleCardContent(
+        sale: sale,
+        serviceItems: serviceItems,
+        showOverdue: showOverdue,
+      ),
     );
   }
 }
@@ -414,10 +520,23 @@ class _SaleCardContent extends StatelessWidget {
   const _SaleCardContent({
     required this.sale,
     this.serviceItems = const [],
+    this.showOverdue = false,
   });
 
   final Sale sale;
   final List<SaleServiceItem> serviceItems;
+  final bool showOverdue;
+
+  /// Whether this order is overdue (created before today and not picked up).
+  bool get _isOverdue {
+    if (!showOverdue || sale.created == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final createdLocal = sale.created!.toLocal();
+    final createdDate =
+        DateTime(createdLocal.year, createdLocal.month, createdLocal.day);
+    return createdDate.isBefore(today);
+  }
 
   /// Gets the display text for machine or storage based on order status.
   String? _getAssignmentInfo() {
@@ -527,6 +646,10 @@ class _SaleCardContent extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (_isOverdue) ...[
+                    const _OverdueBadge(),
+                    const SizedBox(width: 4),
+                  ],
                   _PaymentBadge(isPaid: sale.isPaid),
                 ],
               ),
@@ -614,6 +737,29 @@ class _SaleCardContent extends StatelessWidget {
       return 'Yesterday';
     }
     return DateFormat('MMM d').format(local);
+  }
+}
+
+class _OverdueBadge extends StatelessWidget {
+  const _OverdueBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        'Overdue',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: Colors.red,
+        ),
+      ),
+    );
   }
 }
 
