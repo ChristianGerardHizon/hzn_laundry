@@ -5,6 +5,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/pos/presentation/cart_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
+import '../../features/version_lock/domain/version_check_result.dart';
+import '../../features/version_lock/presentation/controllers/update_dismissed_provider.dart';
+import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
+import '../../features/version_lock/presentation/widgets/optional_update_dialog.dart';
 import '../routing/routes/dashboard.routes.dart';
 import '../routing/routes/organization.routes.dart';
 import '../routing/routes/products.routes.dart';
@@ -111,6 +115,20 @@ class _AppRootState extends ConsumerState<AppRoot> {
   Widget build(BuildContext context) {
     // Initialize cart controller early to load any active cart
     ref.watch(cartControllerProvider);
+
+    // Listen for optional update availability
+    ref.listen(versionCheckProvider, (previous, next) {
+      final result = next.value;
+      if (result == null) return;
+      if (result.status != VersionCheckStatus.updateAvailable) return;
+      if (ref.read(updateDismissedProvider)) return;
+
+      ref.read(updateDismissedProvider.notifier).dismiss();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showOptionalUpdateDialog(context, result);
+      });
+    });
 
     final isMobile = Breakpoints.isMobile(context);
 

@@ -5,9 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/version_lock/domain/version_check_result.dart';
+import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import 'pending_redirect_provider.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
+import 'routes/version_lock.routes.dart';
 
 /// Utility functions for router configuration.
 abstract class RouterUtils {
@@ -17,6 +20,8 @@ abstract class RouterUtils {
     '/splash',
     '/auth-loading',
     '/forgot-password',
+    '/force-update',
+    '/web-update',
   ];
 
   /// Global redirect function for auth guards.
@@ -31,6 +36,31 @@ abstract class RouterUtils {
   ) {
     final currentPath = state.matchedLocation;
     final fullUri = state.uri.toString();
+
+    // --- Version check redirects (take priority over auth) ---
+    final versionAsync = ref.read(versionCheckProvider);
+    final versionStatus = versionAsync.value?.status;
+
+    // Force update required → redirect to force-update page
+    if (versionStatus == VersionCheckStatus.forceUpdateRequired &&
+        currentPath != ForceUpdateRoute.path) {
+      return ForceUpdateRoute.path;
+    }
+    // On force-update page but no longer required → redirect to splash
+    if (currentPath == ForceUpdateRoute.path &&
+        versionStatus != VersionCheckStatus.forceUpdateRequired) {
+      return SplashRoute.path;
+    }
+    // Web update available → redirect to web-update page
+    if (versionStatus == VersionCheckStatus.webUpdateAvailable &&
+        currentPath != WebUpdateRoute.path) {
+      return WebUpdateRoute.path;
+    }
+    // On web-update page but no longer required → redirect to splash
+    if (currentPath == WebUpdateRoute.path &&
+        versionStatus != VersionCheckStatus.webUpdateAvailable) {
+      return SplashRoute.path;
+    }
 
     // Check if this route should skip auth check
     final isIgnored = ignoredRoutes.any(

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../pages/app_root.dart';
 import 'router_utils.dart';
 import 'routes/auth.routes.dart';
@@ -15,6 +16,7 @@ import 'routes/sales.routes.dart';
 import 'routes/sales_history.routes.dart';
 import 'routes/reports.routes.dart';
 import 'routes/system.routes.dart';
+import 'routes/version_lock.routes.dart';
 
 part 'router.g.dart';
 
@@ -36,6 +38,10 @@ GoRouter router(Ref ref) {
     redirect: (context, state) => RouterUtils.redirect(context, state, ref),
     errorBuilder: RouterUtils.errorBuilder,
     routes: [
+      // Version lock routes (outside shell)
+      $forceUpdateRoute,
+      $webUpdateRoute,
+
       // Auth routes (outside shell)
       $splashRoute,
       $loginRoute,
@@ -65,6 +71,13 @@ GoRouter router(Ref ref) {
     // Refresh router when auth state changes (loading -> data/error)
     // This triggers redirect logic to navigate after login success/failure
     router.refresh();
+  });
+
+  // Refresh router when version check completes to trigger version redirects
+  ref.listen(versionCheckProvider, (previous, next) {
+    if (previous?.isLoading == true && !next.isLoading) {
+      router.refresh();
+    }
   });
 
   return router;
