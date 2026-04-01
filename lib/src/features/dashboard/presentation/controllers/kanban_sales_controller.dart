@@ -65,6 +65,27 @@ class KanbanSalesData {
   /// Total count of all sales.
   int get totalCount =>
       pending.length + processing.length + ready.length + pickedUp.length;
+
+  /// Returns a new [KanbanSalesData] with sales filtered by search query.
+  /// Matches against customer name and receipt number (case-insensitive).
+  KanbanSalesData filterByQuery(String query) {
+    if (query.isEmpty) return this;
+    final q = query.toLowerCase();
+    bool matches(Sale s) {
+      final name = s.customerDisplay?.toLowerCase() ?? '';
+      final receipt = s.receiptNumber.toLowerCase();
+      return name.contains(q) || receipt.contains(q);
+    }
+
+    return KanbanSalesData(
+      pending: pending.where(matches).toList(),
+      processing: processing.where(matches).toList(),
+      ready: ready.where(matches).toList(),
+      pickedUp: pickedUp.where(matches).toList(),
+      serviceItemsBySale: serviceItemsBySale,
+      saleItemsBySale: saleItemsBySale,
+    );
+  }
 }
 
 /// Holds the current kanban filter mode.

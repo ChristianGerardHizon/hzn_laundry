@@ -683,6 +683,11 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       bytes += generator.hr();
 
+      // Service subtotal excludes add-on prices
+      final addOnsTotal =
+          addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+      final serviceSubtotal = totalAmount - addOnsTotal;
+
       String name = serviceName;
       if (name.length > 16) {
         name = '${name.substring(0, 14)}..';
@@ -696,7 +701,7 @@ class ThermalPrintService extends _$ThermalPrintService {
           styles: const PosStyles(align: PosAlign.center),
         ),
         PosColumn(
-          text: currencyFormat.format(totalAmount),
+          text: currencyFormat.format(serviceSubtotal),
           width: 4,
           styles: const PosStyles(align: PosAlign.right),
         ),

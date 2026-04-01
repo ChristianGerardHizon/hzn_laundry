@@ -15,6 +15,7 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../customers/domain/customer.dart';
 import '../../../customers/presentation/controllers/customers_controller.dart';
+import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
@@ -395,14 +396,14 @@ class _CreateOrderDialog extends HookConsumerWidget {
                           label: const Text('New Customer'),
                           onPressed: isSaving.value
                               ? null
-                              : () async {
-                                  final created =
-                                      await _showQuickAddCustomerDialog(
-                                          context, ref);
-                                  if (created != null) {
-                                    selectedCustomer.value = created;
-                                    isDirty.value = true;
-                                  }
+                              : () {
+                                  showCustomerFormDialog(
+                                    context,
+                                    onSaved: (created) {
+                                      selectedCustomer.value = created;
+                                      isDirty.value = true;
+                                    },
+                                  );
                                 },
                         ),
                       ),
@@ -514,15 +515,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
     );
   }
 
-  Future<Customer?> _showQuickAddCustomerDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    return showDialog<Customer?>(
-      context: context,
-      builder: (_) => _QuickAddCustomerDialog(ref: ref),
-    );
-  }
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -741,6 +733,16 @@ class _CustomerSearchField extends HookConsumerWidget {
     if (selectedCustomer.value != null && !isSearching.value) {
       return _SelectedCustomerTile(
         customer: selectedCustomer.value!,
+        onEdit: () {
+          showCustomerFormDialog(
+            context,
+            customer: selectedCustomer.value!,
+            onSaved: (updated) {
+              selectedCustomer.value = updated;
+              onChanged();
+            },
+          );
+        },
         onClear: () {
           selectedCustomer.value = null;
           searchController.clear();
@@ -837,10 +839,12 @@ class _CustomerSearchField extends HookConsumerWidget {
 class _SelectedCustomerTile extends StatelessWidget {
   const _SelectedCustomerTile({
     required this.customer,
+    required this.onEdit,
     required this.onClear,
   });
 
   final Customer customer;
+  final VoidCallback onEdit;
   final VoidCallback onClear;
 
   @override
@@ -885,6 +889,15 @@ class _SelectedCustomerTile extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.edit,
+              size: 18,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+            tooltip: 'Edit customer',
+            onPressed: onEdit,
           ),
           IconButton(
             icon: Icon(
@@ -2319,130 +2332,6 @@ class _OrderDateDisplay extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Quick add customer dialog ─────────────────────────────────────────────────
-
-class _QuickAddCustomerDialog extends HookConsumerWidget {
-  const _QuickAddCustomerDialog({required this.ref});
-
-  final WidgetRef ref;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
-    final isSaving = useState(false);
-
-    return ScaffoldMessenger(
-      child: Builder(
-        builder: (innerContext) {
-          Future<void> handleSave() async {
-            if (!formKey.currentState!.saveAndValidate()) return;
-            isSaving.value = true;
-            final values = formKey.currentState!.value;
-
-            final customerData = Customer(
-              id: '',
-              name: values['name'] as String,
-              phone: values['phone'] as String?,
-              address: values['address'] as String?,
-              notes: values['notes'] as String?,
-            );
-
-            final created = await ref
-                .read(customersControllerProvider.notifier)
-                .createCustomer(customerData);
-
-            isSaving.value = false;
-
-            if (!innerContext.mounted) return;
-            if (created != null) {
-              // Pop using the dialog context to ensure we return
-              // the value to the correct showDialog future
-              Navigator.of(context).pop(created);
-            } else {
-              showErrorSnackBar(
-                innerContext,
-                message: 'Failed to create customer',
-                useRootMessenger: false,
-              );
-            }
-          }
-
-          return AlertDialog(
-            title: const Text('New Customer'),
-            content: FormBuilder(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FormBuilderTextField(
-                    name: 'name',
-                    decoration: const InputDecoration(
-                      labelText: 'Name *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: FormBuilderValidators.required(),
-                    autofocus: true,
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 16),
-                  FormBuilderTextField(
-                    name: 'phone',
-                    decoration: const InputDecoration(
-                      labelText: 'Phone',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 16),
-                  FormBuilderTextField(
-                    name: 'address',
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 16),
-                  FormBuilderTextField(
-                    name: 'notes',
-                    decoration: const InputDecoration(
-                      labelText: 'Notes',
-                      border: OutlineInputBorder(),
-                    ),
-                    textInputAction: TextInputAction.done,
-                    textCapitalization: TextCapitalization.sentences,
-                    maxLines: 2,
-                    onSubmitted: (_) => handleSave(),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: isSaving.value ? null : handleSave,
-                child: isSaving.value
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Save'),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

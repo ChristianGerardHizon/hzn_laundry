@@ -16,13 +16,19 @@ import '../controllers/customers_controller.dart';
 /// Shows a dialog form for creating or editing a customer.
 ///
 /// Uses the root navigator so the dialog renders above all routes.
+/// If [onSaved] is provided, it will be called with the saved customer data
+/// after a successful create or update.
 void showCustomerFormDialog(
   BuildContext context, {
   Customer? customer,
+  ValueChanged<Customer>? onSaved,
 }) {
   showConstrainedDialog(
     context: context,
-    builder: (context) => CustomerFormDialog(customer: customer),
+    builder: (context) => CustomerFormDialog(
+      customer: customer,
+      onSaved: onSaved,
+    ),
   );
 }
 
@@ -40,9 +46,11 @@ class CustomerFormDialog extends HookConsumerWidget {
   const CustomerFormDialog({
     super.key,
     this.customer,
+    this.onSaved,
   });
 
   final Customer? customer;
+  final ValueChanged<Customer>? onSaved;
 
   bool get isEditing => customer != null;
 
@@ -91,15 +99,15 @@ class CustomerFormDialog extends HookConsumerWidget {
 
       final controller = ref.read(customersControllerProvider.notifier);
 
-      bool success;
+      Customer? savedCustomer;
       if (isEditing) {
-        success = await controller.updateCustomer(customerData);
+        final success = await controller.updateCustomer(customerData);
+        if (success) savedCustomer = customerData;
       } else {
-        final created = await controller.createCustomer(customerData);
-        success = created != null;
+        savedCustomer = await controller.createCustomer(customerData);
       }
 
-      if (!success) {
+      if (savedCustomer == null) {
         if (context.mounted) {
           isSaving.value = false;
           showFormErrorDialog(
@@ -109,6 +117,8 @@ class CustomerFormDialog extends HookConsumerWidget {
         }
         return;
       }
+
+      onSaved?.call(savedCustomer);
 
       if (context.mounted) {
         isSaving.value = false;
