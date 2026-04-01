@@ -284,13 +284,24 @@ return ScaffoldMessenger(
 
 - **All PRs must target the `staging` branch**, not `main`.
 - When creating PRs with `gh pr create`, always use `--base staging`.
-- **Before creating a PR, always ask the user which version label to apply:**
-  - `version:patch` — Bug fixes, small tweaks (e.g., `1.2.3` → `1.2.4`)
-  - `version:minor` — New features, enhancements (e.g., `1.2.3` → `1.3.0`)
-  - `version:major` — Breaking changes, major releases (e.g., `1.2.3` → `2.0.0`)
-  - **No label** — Skip deploy; the PR will merge without triggering a build (staging only)
-  - For PRs targeting `main`, a version label is **required** — the deploy will fail without one.
-  - Add the label using: `gh pr edit <number> --add-label "version:patch"`
+- **Before creating a PR, always ask the user ALL of the following questions:**
+
+  1. **Version label** (required question):
+     - `version:patch` — Bug fixes, small tweaks (e.g., `1.2.3` → `1.2.4`)
+     - `version:minor` — New features, enhancements (e.g., `1.2.3` → `1.3.0`)
+     - `version:major` — Breaking changes, major releases (e.g., `1.2.3` → `2.0.0`)
+     - **No label** — Skip deploy; the PR will merge without triggering a build (staging only)
+     - For PRs targeting `main`, a version label is **required** — the deploy will fail without one.
+
+  2. **Deploy to production?** (required question):
+     - **Yes** — Add the `deploy` label. After staging merge, a staging→main PR is auto-created with version labels forwarded.
+     - **No** — Only deploy to staging; no auto-promotion to main.
+
+  3. **Set as minimum version?** (required question):
+     - **Yes** — Add the `minimum version` label. Forces all users on older versions to update.
+     - **No** — Users on older versions can continue without updating.
+
+  - Add labels using: `gh pr edit <number> --add-label "version:patch,deploy,minimum version"`
 
 ### QA Notes
 
