@@ -253,6 +253,7 @@ jobs:
       major: ${{ steps.calc_prod.outputs.major }}
       minor: ${{ steps.calc_prod.outputs.minor }}
       commit_sha: ${{ steps.get_sha.outputs.sha }}
+      is_minimum_version: ${{ steps.check_min_ver.outputs.is_minimum_version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -303,6 +304,17 @@ jobs:
 
           echo "bump=$BUMP" >> $GITHUB_OUTPUT
           echo "::notice::Version bump type: $BUMP"
+
+      - name: Check minimum version label
+        id: check_min_ver
+        run: |
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"minimum version"'; then
+            echo "is_minimum_version=true" >> $GITHUB_OUTPUT
+            echo "::notice::This release will also update the minimum required version"
+          else
+            echo "is_minimum_version=false" >> $GITHUB_OUTPUT
+          fi
 
       # ROBUST VERSION CALCULATION
       - name: Calculate Prod Version
@@ -468,12 +480,19 @@ jobs:
           NEW_PATCH: ${{ needs.deploy-production.outputs.new_patch }}
           MAJOR: ${{ needs.deploy-production.outputs.major }}
           MINOR: ${{ needs.deploy-production.outputs.minor }}
+          IS_MIN_VER: ${{ needs.deploy-production.outputs.is_minimum_version }}
           URL: ${{ secrets.VERSION_MANAGER_URL }}
           ID: ${{ secrets.VERSION_COLLECTION_ID }}
           TOKEN: ${{ secrets.PB_TOKEN }}
         run: |
-           PAYLOAD=$(jq -n --argjson major "$MAJOR" --argjson minor "$MINOR" --argjson patch "$NEW_PATCH" \
-             '{major: $major, minor: $minor, patch: $patch}')
+           if [ "$IS_MIN_VER" == "true" ]; then
+             echo "::notice::Updating minimum version to $MAJOR.$MINOR.$NEW_PATCH"
+             PAYLOAD=$(jq -n --argjson major "$MAJOR" --argjson minor "$MINOR" --argjson patch "$NEW_PATCH" \
+               '{major: $major, minor: $minor, patch: $patch, minimumMajor: $major, minimumMinor: $minor, minimumPatch: $patch}')
+           else
+             PAYLOAD=$(jq -n --argjson major "$MAJOR" --argjson minor "$MINOR" --argjson patch "$NEW_PATCH" \
+               '{major: $major, minor: $minor, patch: $patch}')
+           fi
 
            if [ -z "$TOKEN" ]; then
               curl -s -X PATCH "$URL/$ID" -H "Content-Type: application/json" -d "$PAYLOAD"
