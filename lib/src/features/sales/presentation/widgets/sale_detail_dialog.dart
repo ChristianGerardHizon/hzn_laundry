@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../pos/domain/sale.dart';
+import '../../../pos/presentation/payments_controller.dart';
+import '../../../pos/presentation/services/thermal_print_service.dart';
+import '../../../settings/presentation/controllers/branch_provider.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../settings/presentation/controllers/printer_config_provider.dart';
+import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
+import '../controllers/sale_service_items_provider.dart';
+import 'record_payment_sheet.dart';
 import 'sale_detail_content.dart';
 
 /// Dialog that displays sale details in a compact format.
 ///
 /// Shows the core sale information and provides a "View Full Details"
 /// button to navigate to the full sale detail page.
-class SaleDetailDialog extends ConsumerWidget {
+class SaleDetailDialog extends HookConsumerWidget {
   const SaleDetailDialog({
     super.key,
     required this.saleId,
@@ -33,7 +46,7 @@ class SaleDetailDialog extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with title and close button
+            // Header with title, print buttons, and close button
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -55,6 +68,12 @@ class SaleDetailDialog extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  // Print menu
+                  if (saleAsync.value != null)
+                    _DialogPrintMenu(
+                      sale: saleAsync.value!,
+                      saleId: saleId,
+                    ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
@@ -113,30 +132,84 @@ class SaleDetailDialog extends ConsumerWidget {
               ),
             ),
 
-            // Footer with "View Full Details" button
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                ),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    SaleDetailRoute(id: saleId).go(context);
-                  },
-                  child: const Text('View Full Details'),
-                ),
-              ),
+            // Footer with payment + view details buttons
+            _DialogFooter(
+              saleId: saleId,
+              sale: saleAsync.value,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Footer with optional "Record Payment" button and "View Full Details".
+class _DialogFooter extends ConsumerWidget {
+  const _DialogFooter({
+    required this.saleId,
+    required this.sale,
+  });
+
+  final String saleId;
+  final Sale? sale;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final showPayment = sale != null && !sale!.isPaid;
+    final totalPaidAsync = showPayment
+        ? ref.watch(saleTotalPaidProvider(saleId))
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showPayment) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final totalPaid = totalPaidAsync?.value ?? 0;
+                  final balanceDue = sale!.totalAmount - totalPaid;
+                  final result = await showRecordPaymentSheet(
+                    context,
+                    sale: sale!,
+                    balanceDue: balanceDue,
+                  );
+                  if (result == true) {
+                    ref.invalidate(saleProvider(saleId));
+                    ref.invalidate(salePaymentsProvider(saleId));
+                    ref.invalidate(kanbanSalesProvider);
+                  }
+                },
+                icon: const Icon(Icons.payment),
+                label: const Text('Record Payment'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: () {
+                Navigator.of(context).pop();
+                SaleDetailRoute(id: saleId).go(context);
+              },
+              child: const Text('View Full Details'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -153,4 +226,113 @@ Future<void> showSaleDetailDialog(
     context: context,
     builder: (context) => SaleDetailDialog(saleId: saleId),
   );
+}
+
+// ── Print menu for the dialog header ─────────────────────────────────────────
+
+class _DialogPrintMenu extends HookConsumerWidget {
+  const _DialogPrintMenu({
+    required this.sale,
+    required this.saleId,
+  });
+
+  final Sale sale;
+  final String saleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPrinting = useState(false);
+    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final currentAuth = ref.watch(currentAuthProvider);
+    final branchId = ref.watch(currentBranchIdProvider);
+    final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final serviceItemsAsync = ref.watch(saleServiceItemsProvider(saleId));
+    final saleItemsAsync = ref.watch(saleItemsProvider(saleId));
+
+    Future<void> printCopy(OrderReceiptCopy copyType) async {
+      final printer = defaultPrinterAsync.value;
+      if (printer == null) {
+        showErrorSnackBar(context,
+            message: 'No default printer configured');
+        return;
+      }
+
+      final serviceItems = serviceItemsAsync.value ?? [];
+      final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
+      final addOnItems = saleItemsAsync.value ?? [];
+
+      // Derive unit label from service's quantity unit or weightBased flag
+      final service = firstService?.service;
+      final unitLabel = service?.quantityUnit?.shortPlural ??
+          (service?.weightBased == true ? 'KG' : 'PCS');
+
+      isPrinting.value = true;
+      final printService = ref.read(thermalPrintServiceProvider.notifier);
+      final currentBranch = branchAsync.value;
+
+      final result = await printService.printOrderReceipt(
+        printer: printer,
+        customerName: sale.customerName ?? 'Walk-in',
+        serviceName: firstService?.serviceName ?? 'Laundry',
+        quantity: firstService?.quantity.toDouble() ?? 1.0,
+        unitLabel: unitLabel,
+        totalAmount: sale.totalAmount.toDouble(),
+        copyType: copyType,
+        businessName: currentBranch?.name,
+        branchAddress: currentBranch?.address,
+        contactNumber: currentBranch?.contactNumber,
+        cashierName: currentAuth?.user.name,
+        specialInstructions: sale.notes,
+        addOnItems: addOnItems,
+      );
+
+      isPrinting.value = false;
+      if (!context.mounted) return;
+
+      if (result is PrintFailure) {
+        showErrorSnackBar(context, message: result.message);
+      } else {
+        final label = copyType == OrderReceiptCopy.customer
+            ? 'Customer copy'
+            : 'Store copy';
+        showSuccessSnackBar(context, message: '$label printed');
+      }
+    }
+
+    return PopupMenuButton<OrderReceiptCopy>(
+      icon: isPrinting.value
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.print, size: 20),
+      tooltip: 'Print',
+      enabled: !isPrinting.value,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      onSelected: printCopy,
+      itemBuilder: (context) => const [
+        PopupMenuItem<OrderReceiptCopy>(
+          value: OrderReceiptCopy.customer,
+          child: ListTile(
+            leading: Icon(Icons.receipt_long),
+            title: Text('Print Customer Copy'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        PopupMenuItem<OrderReceiptCopy>(
+          value: OrderReceiptCopy.store,
+          child: ListTile(
+            leading: Icon(Icons.local_laundry_service),
+            title: Text('Print Store Copy'),
+            subtitle: Text('Machine tag'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
+    );
+  }
 }

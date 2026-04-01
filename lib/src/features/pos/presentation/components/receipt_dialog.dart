@@ -30,6 +30,8 @@ class _ReceiptPdfPayload {
     required this.createdDate,
     required this.totalAmount,
     required this.isPaid,
+    required this.items,
+    required this.serviceItems,
     this.notes,
   });
 
@@ -37,6 +39,8 @@ class _ReceiptPdfPayload {
   final DateTime createdDate;
   final double totalAmount;
   final bool isPaid;
+  final List<SaleItem> items;
+  final List<SaleServiceItem> serviceItems;
   final String? notes;
 }
 
@@ -83,6 +87,98 @@ Future<Uint8List> _buildReceiptPdfBytes(_ReceiptPdfPayload payload) async {
           pw.SizedBox(height: 10),
           pw.Divider(),
           pw.SizedBox(height: 10),
+          // Items table header
+          if (payload.items.isNotEmpty || payload.serviceItems.isNotEmpty) ...[
+            pw.Row(
+              children: [
+                pw.Expanded(
+                  flex: 5,
+                  child: pw.Text(
+                    'Item',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+                pw.SizedBox(
+                  width: 50,
+                  child: pw.Text(
+                    'Qty',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+                pw.SizedBox(
+                  width: 80,
+                  child: pw.Text(
+                    'Amount',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Divider(),
+            pw.SizedBox(height: 6),
+            // Product items
+            ...payload.items.map(
+              (item) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      flex: 5,
+                      child: pw.Text(item.productName),
+                    ),
+                    pw.SizedBox(
+                      width: 50,
+                      child: pw.Text(
+                        'x${item.quantity.toInt()}',
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: 80,
+                      child: pw.Text(
+                        currencyFormat.format(item.subtotal),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Service items
+            ...payload.serviceItems.map(
+              (item) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Row(
+                  children: [
+                    pw.Expanded(
+                      flex: 5,
+                      child: pw.Text(item.serviceName),
+                    ),
+                    pw.SizedBox(
+                      width: 50,
+                      child: pw.Text(
+                        'x${item.quantity.toInt()}',
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.SizedBox(
+                      width: 80,
+                      child: pw.Text(
+                        currencyFormat.format(item.subtotal),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+          ],
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
@@ -141,15 +237,18 @@ Future<void> showReceiptDialog(
     useRootNavigator: true,
     barrierDismissible: false,
     builder: (context) => Dialog(
-      insetPadding: const EdgeInsets.all(8),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       clipBehavior: Clip.antiAlias,
-      child: ScaffoldMessenger(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: ReceiptDialog(
-            sale: sale,
-            saleItems: saleItems,
-            saleServiceItems: saleServiceItems,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: ScaffoldMessenger(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: ReceiptDialog(
+              sale: sale,
+              saleItems: saleItems,
+              saleServiceItems: saleServiceItems,
+            ),
           ),
         ),
       ),
@@ -173,7 +272,6 @@ class ReceiptDialog extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final size = MediaQuery.sizeOf(context);
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final isPrinting = useState(false);
     final hasAutoPrinted = useState(false);
@@ -284,6 +382,8 @@ class ReceiptDialog extends HookConsumerWidget {
           createdDate: sale.created ?? DateTime.now(),
           totalAmount: sale.totalAmount.toDouble(),
           isPaid: sale.isPaid,
+          items: saleItems,
+          serviceItems: saleServiceItems,
           notes: sale.notes,
         ),
         generate: _buildReceiptPdfBytes,
@@ -298,11 +398,9 @@ class ReceiptDialog extends HookConsumerWidget {
     final hasDefaultPrinter = defaultPrinterAsync.value != null;
 
     return DialogCloseHandler(
-      child: SizedBox(
-        width: size.width,
-        height: size.height,
-        child: Column(
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -390,7 +488,7 @@ class ReceiptDialog extends HookConsumerWidget {
             const SizedBox(height: 24),
 
             // Receipt details
-            Expanded(
+            Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
@@ -497,8 +595,7 @@ class ReceiptDialog extends HookConsumerWidget {
                       ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

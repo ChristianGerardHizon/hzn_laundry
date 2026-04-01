@@ -197,7 +197,6 @@ class UserRepositoryImpl implements UserRepository {
         final body = <String, dynamic>{
           'name': user.name,
           'username': user.username,
-          'email': user.email,
           'password': password,
           'passwordConfirm': password,
           'role': user.roleId,
@@ -221,7 +220,6 @@ class UserRepositoryImpl implements UserRepository {
         final body = <String, dynamic>{
           'name': user.name,
           'username': user.username,
-          'email': user.email,
           'role': user.roleId,
           'branch': user.branchId,
           'verified': user.verified,

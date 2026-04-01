@@ -18,13 +18,10 @@ class User with UserMappable {
   /// The user's username for authentication.
   final String username;
 
-  /// The user's email address (optional).
-  final String? email;
-
   /// The user's avatar URL (pre-computed).
   final String? avatarUrl;
 
-  /// Whether the user's email has been verified.
+  /// Whether the user's account has been verified.
   final bool verified;
 
   /// The user's branch ID (if assigned to a branch).
@@ -34,7 +31,6 @@ class User with UserMappable {
     required this.id,
     required this.name,
     required this.username,
-    this.email,
     this.avatarUrl,
     this.verified = false,
     this.branch,

@@ -8,6 +8,8 @@ part 'user_role_provider.g.dart';
 /// Provider for a single user role by ID.
 @riverpod
 Future<UserRole?> userRole(Ref ref, String id) async {
+  if (id.isEmpty) return null;
+
   final repository = ref.read(userRoleRepositoryProvider);
   final result = await repository.fetchOne(id);
 

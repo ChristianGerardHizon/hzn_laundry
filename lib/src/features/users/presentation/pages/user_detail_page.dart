@@ -6,7 +6,6 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/users.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
-import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/user.dart';
 import '../../domain/user_tab.dart';
 import '../controllers/paginated_users_controller.dart';
@@ -170,23 +169,11 @@ class UserDetailPage extends HookConsumerWidget {
               ),
               title: Text(user.verified ? 'Mark as Unverified' : 'Mark as Verified'),
               subtitle: Text(user.verified
-                  ? 'Remove email verification status'
-                  : 'Manually verify this user\'s email'),
+                  ? 'Remove verification status'
+                  : 'Manually verify this user'),
               onTap: () {
                 Navigator.pop(context);
                 _showToggleVerificationDialog(context, ref, user);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.email),
-              title: const Text('Send Verification Email'),
-              subtitle: user.verified
-                  ? const Text('User is already verified')
-                  : null,
-              enabled: !user.verified,
-              onTap: () {
-                Navigator.pop(context);
-                _sendVerificationEmail(context, ref, user);
               },
             ),
             ListTile(
@@ -281,37 +268,6 @@ class UserDetailPage extends HookConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _sendVerificationEmail(
-      BuildContext context, WidgetRef ref, User user) async {
-    if (user.email == null) {
-      if (context.mounted) {
-        showErrorSnackBar(
-          context,
-          message: 'User does not have an email address',
-        );
-      }
-      return;
-    }
-
-    final success = await ref
-        .read(authControllerProvider.notifier)
-        .requestVerification(user.email!);
-
-    if (context.mounted) {
-      if (success) {
-        showSuccessSnackBar(
-          context,
-          message: 'Verification email sent to ${user.email}',
-        );
-      } else {
-        showErrorSnackBar(
-          context,
-          message: 'Failed to send verification email',
-        );
-      }
-    }
   }
 
   void _showDeleteConfirmation(

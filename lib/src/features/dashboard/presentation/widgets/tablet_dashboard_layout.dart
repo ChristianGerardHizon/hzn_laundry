@@ -5,7 +5,6 @@ import '../../../settings/presentation/controllers/current_branch_controller.dar
 import 'dashboard_footer.dart';
 import 'inventory_alerts_section.dart';
 import 'kanban_board_section.dart';
-import 'kpi_summary_section.dart';
 import 'quick_actions_section.dart';
 
 /// Single-pane tablet layout for the dashboard.
@@ -65,10 +64,6 @@ class TabletDashboardLayout extends HookConsumerWidget {
 
           // Quick Actions Section
           const QuickActionsSection(),
-          const SizedBox(height: 24),
-
-          // KPI Summary Section
-          const KpiSummarySection(),
           const SizedBox(height: 24),
 
           // Order Board (Kanban)

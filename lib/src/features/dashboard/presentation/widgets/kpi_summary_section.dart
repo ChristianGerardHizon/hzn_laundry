@@ -3,34 +3,32 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
-import '../controllers/new_customers_controller.dart';
 import '../controllers/todays_sales_controller.dart';
 import 'kpi_card.dart';
 
 /// Section displaying KPI summary cards on the dashboard.
 ///
 /// Shows:
-/// - Today's sales count and total
-/// - New customers registered today
+/// - Today's sales revenue total
+/// - Today's transaction count
 class KpiSummarySection extends ConsumerWidget {
   const KpiSummarySection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final salesSummaryAsync = ref.watch(todaySalesSummaryProvider);
-    final newCustomersAsync = ref.watch(todaysNewCustomersCountProvider);
 
     const spacing = 12.0;
 
     final cards = <Widget>[
-      // Today's sales
+      // Today's revenue
       Expanded(
         child: salesSummaryAsync.when(
           data: (summary) => KpiCard(
-            title: "Today's Sales",
-            value: summary.count.toString(),
+            title: "Today's Revenue",
+            value: _formatCurrency(summary.total),
             icon: Icons.point_of_sale,
-            subtitle: _formatCurrency(summary.total),
+            subtitle: '${summary.count} transactions',
             compact: true,
             color: Colors.green,
             onTap: () => const SalesHistoryRoute().go(context),
@@ -38,28 +36,29 @@ class KpiSummarySection extends ConsumerWidget {
           loading: () => _buildLoadingCard(),
           error: (_, __) => _buildErrorCard(
             context,
-            "Today's Sales",
+            "Today's Revenue",
             Icons.point_of_sale,
           ),
         ),
       ),
       const SizedBox(width: spacing),
-      // New customers today
+      // Today's transactions
       Expanded(
-        child: newCustomersAsync.when(
-          data: (count) => KpiCard(
-            title: 'New Customers',
-            value: count.toString(),
-            icon: Icons.person_add_outlined,
-            subtitle: 'Registered today',
+        child: salesSummaryAsync.when(
+          data: (summary) => KpiCard(
+            title: "Today's Transactions",
+            value: summary.count.toString(),
+            icon: Icons.receipt_long,
+            subtitle: _formatCurrency(summary.total),
             compact: true,
             color: Colors.blue,
+            onTap: () => const SalesHistoryRoute().go(context),
           ),
           loading: () => _buildLoadingCard(),
           error: (_, __) => _buildErrorCard(
             context,
-            'New Customers',
-            Icons.person_add_outlined,
+            "Today's Transactions",
+            Icons.receipt_long,
           ),
         ),
       ),

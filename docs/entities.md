@@ -105,7 +105,7 @@ All system users with role-based access.
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | User name |
-| `email` | String | Yes | Email address |
+| `username` | String | Yes | Username for authentication |
 | `avatar` | String | No | Avatar filename |
 | `verified` | bool | Yes | Email verification status |
 | `role` | String (FK) | Yes | FK to UserRole |
@@ -133,7 +133,7 @@ Role definitions with permissions.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Role name (e.g., "Admin", "Veterinarian", "Staff") |
+| `name` | String | Yes | Role name (e.g., "Admin", "Manager", "Cashier", "Attendant") |
 | `description` | String | No | Role description |
 | `permissions` | List\<String> | Yes | List of permission keys |
 | `isSystem` | bool | Yes | Whether this is a system-defined role (cannot be deleted) |
@@ -147,19 +147,20 @@ Role definitions with permissions.
 
 **Default Roles:**
 - `admin` - Full system access
-- `veterinarian` - Patient management, records, prescriptions
-- `staff` - Basic operations, appointments, inventory
-- `cashier` - Sales and POS only
+- `manager` - Full operational access (no user/role/branch management)
+- `cashier` - POS operations, customer management, view inventory
+- `attendant` - Floor operations, order status updates, view-only access
 
 **Permission Keys:**
 ```
-patients.view, patients.create, patients.edit, patients.delete
-records.view, records.create, records.edit, records.delete
-prescriptions.view, prescriptions.create, prescriptions.edit, prescriptions.delete
-appointments.view, appointments.create, appointments.edit, appointments.delete
+customers.view, customers.create, customers.edit, customers.delete
 products.view, products.create, products.edit, products.delete
+services.view, services.create, services.edit, services.delete
 inventory.view, inventory.adjust
 sales.view, sales.create
+machines.view, machines.create, machines.edit, machines.delete
+storages.view, storages.create, storages.edit, storages.delete
+reports.view
 users.view, users.create, users.edit, users.delete
 roles.view, roles.create, roles.edit, roles.delete
 branches.view, branches.create, branches.edit, branches.delete
