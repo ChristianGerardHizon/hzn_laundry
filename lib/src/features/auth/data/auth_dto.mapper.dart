@@ -43,12 +43,6 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
     'username',
     _$username,
   );
-  static String? _$email(AuthDto v) => v.email;
-  static const Field<AuthDto, String> _f$email = Field(
-    'email',
-    _$email,
-    opt: true,
-  );
   static String _$avatar(AuthDto v) => v.avatar;
   static const Field<AuthDto, String> _f$avatar = Field(
     'avatar',
@@ -84,7 +78,6 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
     #collectionName: _f$collectionName,
     #name: _f$name,
     #username: _f$username,
-    #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
     #role: _f$role,
@@ -99,7 +92,6 @@ class AuthDtoMapper extends ClassMapperBase<AuthDto> {
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
       username: data.dec(_f$username),
-      email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
       role: data.dec(_f$role),
@@ -171,7 +163,6 @@ abstract class AuthDtoCopyWith<$R, $In extends AuthDto, $Out>
     String? collectionName,
     String? name,
     String? username,
-    String? email,
     String? avatar,
     bool? verified,
     String? role,
@@ -196,7 +187,6 @@ class _AuthDtoCopyWithImpl<$R, $Out>
     String? collectionName,
     String? name,
     String? username,
-    Object? email = $none,
     String? avatar,
     bool? verified,
     Object? role = $none,
@@ -209,7 +199,6 @@ class _AuthDtoCopyWithImpl<$R, $Out>
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
       if (username != null) #username: username,
-      if (email != $none) #email: email,
       if (avatar != null) #avatar: avatar,
       if (verified != null) #verified: verified,
       if (role != $none) #role: role,
@@ -224,7 +213,6 @@ class _AuthDtoCopyWithImpl<$R, $Out>
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
     username: data.get(#username, or: $value.username),
-    email: data.get(#email, or: $value.email),
     avatar: data.get(#avatar, or: $value.avatar),
     verified: data.get(#verified, or: $value.verified),
     role: data.get(#role, or: $value.role),

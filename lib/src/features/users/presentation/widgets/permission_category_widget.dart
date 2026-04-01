@@ -19,7 +19,7 @@ class PermissionCategoryWidget extends StatelessWidget {
     this.initiallyExpanded = false,
   });
 
-  /// The category name (e.g., "Patients", "Users").
+  /// The category name (e.g., "Customers", "Users").
   final String category;
 
   /// List of Permission objects in this category.
@@ -118,20 +118,22 @@ class PermissionCategoryWidget extends StatelessWidget {
         return Icons.settings;
       case 'Users':
         return Icons.people;
-      case 'Patients':
-        return Icons.pets;
-      case 'Records':
-        return Icons.medical_services;
-      case 'Prescriptions':
-        return Icons.medication;
-      case 'Appointments':
-        return Icons.calendar_today;
+      case 'Customers':
+        return Icons.people_alt;
       case 'Products':
         return Icons.inventory;
+      case 'Services':
+        return Icons.local_laundry_service;
       case 'Inventory':
         return Icons.warehouse;
       case 'Sales':
         return Icons.point_of_sale;
+      case 'Machines':
+        return Icons.local_laundry_service;
+      case 'Storages':
+        return Icons.shelves;
+      case 'Reports':
+        return Icons.bar_chart;
       case 'Roles':
         return Icons.admin_panel_settings;
       case 'Branches':
@@ -285,20 +287,22 @@ class PermissionCategoryDisplayWidget extends StatelessWidget {
         return Icons.settings;
       case 'Users':
         return Icons.people;
-      case 'Patients':
-        return Icons.pets;
-      case 'Records':
-        return Icons.medical_services;
-      case 'Prescriptions':
-        return Icons.medication;
-      case 'Appointments':
-        return Icons.calendar_today;
+      case 'Customers':
+        return Icons.people_alt;
       case 'Products':
         return Icons.inventory;
+      case 'Services':
+        return Icons.local_laundry_service;
       case 'Inventory':
         return Icons.warehouse;
       case 'Sales':
         return Icons.point_of_sale;
+      case 'Machines':
+        return Icons.local_laundry_service;
+      case 'Storages':
+        return Icons.shelves;
+      case 'Reports':
+        return Icons.bar_chart;
       case 'Roles':
         return Icons.admin_panel_settings;
       case 'Branches':

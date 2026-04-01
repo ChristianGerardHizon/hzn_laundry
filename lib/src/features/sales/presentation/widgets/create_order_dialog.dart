@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,12 +15,55 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../customers/domain/customer.dart';
 import '../../../customers/presentation/controllers/customers_controller.dart';
+import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
+import '../../../pos/data/repositories/sales_repository.dart';
+import '../../../pos/domain/order_status.dart';
+import '../../../pos/domain/sale.dart';
+import '../../../pos/domain/sale_item.dart';
+import '../../../products/data/repositories/product_repository.dart';
+import '../../../products/domain/product.dart';
+import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service.dart';
 import '../../../services/presentation/controllers/services_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
+import '../../../pos/presentation/components/variable_price_dialog.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
+import '../../presentation/controllers/paginated_sales_controller.dart';
+
+/// Generates a receipt number in format: S-YYMMDD-XXXX
+String _generateReceiptNumber() {
+  final now = DateTime.now();
+  final year = (now.year % 100).toString().padLeft(2, '0');
+  final month = now.month.toString().padLeft(2, '0');
+  final day = now.day.toString().padLeft(2, '0');
+  final datePart = '$year$month$day';
+
+  final random = Random();
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  final suffix =
+      List.generate(4, (_) => chars[random.nextInt(chars.length)]).join();
+
+  return 'S-$datePart-$suffix';
+}
+
+/// A product added to the order with its quantity.
+class _OrderProductItem {
+  _OrderProductItem({
+    required this.product,
+    this.quantity = 1,
+    this.customPrice,
+  });
+
+  final Product product;
+  int quantity;
+  final num? customPrice;
+
+  num get effectivePrice => customPrice ?? product.price;
+  num get subtotal => effectivePrice * quantity;
+}
 
 /// Shows the Create New Order dialog.
 ///
@@ -38,11 +83,17 @@ class _CreateOrderDialogScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) => const Dialog(
-        insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        clipBehavior: Clip.antiAlias,
-        child: _CreateOrderDialog(),
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width > 600;
+
+    return Dialog(
+      insetPadding: isWide
+          ? const EdgeInsets.symmetric(horizontal: 80, vertical: 24)
+          : const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: const _CreateOrderDialog(),
       ),
     );
   }
@@ -54,9 +105,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final size = MediaQuery.sizeOf(context);
-    final isDesktop = size.width > 600;
-
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final isSaving = useState(false);
 
@@ -69,6 +117,9 @@ class _CreateOrderDialog extends HookConsumerWidget {
     // Quantity & notes
     final quantity = useState<double>(1.0);
     final orderDate = useMemoized(() => DateTime.now());
+
+    // Product items
+    final productItems = useState<List<_OrderProductItem>>([]);
 
     // Tracks whether order was created → show success page
     final orderCreated = useState(false);
@@ -109,53 +160,128 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
       if (!formKey.currentState!.saveAndValidate()) return;
 
+      final auth = ref.read(currentAuthProvider);
+      if (auth == null) {
+        showErrorSnackBar(context,
+            message: 'Not authenticated', useRootMessenger: false);
+        return;
+      }
+
+      final branchId = ref.read(currentBranchIdProvider);
+      if (branchId == null) {
+        showErrorSnackBar(context,
+            message: 'No branch selected', useRootMessenger: false);
+        return;
+      }
+
       isSaving.value = true;
 
-      // TODO: Implement order creation via controller/repository
-      await Future.delayed(const Duration(milliseconds: 500));
+      final service = selectedService.value!;
+      final customer = selectedCustomer.value!;
+      final qty = quantity.value;
+      final serviceTotal = (service.price * qty).toDouble();
+      final productsTotal = productItems.value.fold<double>(
+        0.0,
+        (sum, item) => sum + item.subtotal.toDouble(),
+      );
+      final total = serviceTotal + productsTotal;
+      final notes = formKey
+          .currentState?.fields['specialInstructions']?.value as String?;
+
+      final receiptNumber = _generateReceiptNumber();
+
+      final sale = Sale(
+        id: '',
+        receiptNumber: receiptNumber,
+        branchId: branchId,
+        cashierId: auth.user.id,
+        totalAmount: total,
+        status: 'pending',
+        orderStatus: OrderStatus.pending,
+        isPaid: false,
+        customerId: customer.id,
+        customerName: customer.name,
+        notes: notes,
+      );
+
+      final serviceItem = SaleServiceItem(
+        id: '',
+        saleId: '',
+        serviceId: service.id,
+        serviceName: service.name,
+        quantity: qty,
+        unitPrice: service.price,
+        subtotal: serviceTotal,
+      );
+
+      final saleItems = productItems.value
+          .map((item) => SaleItem(
+                id: '',
+                saleId: '',
+                productId: item.product.id,
+                productName: item.product.name,
+                quantity: item.quantity,
+                unitPrice: item.effectivePrice,
+                subtotal: item.subtotal,
+              ))
+          .toList();
+
+      final repo = ref.read(salesRepositoryProvider);
+      final result = await repo.createSale(
+        sale,
+        saleItems,
+        serviceItems: [serviceItem],
+      );
 
       isSaving.value = false;
 
       if (!context.mounted) return;
 
-      orderCreated.value = true;
+      result.fold(
+        (failure) {
+          showErrorSnackBar(context,
+              message: failure.messageString, useRootMessenger: false);
+        },
+        (_) {
+          // Refresh dashboard and sales list
+          ref.invalidate(kanbanSalesProvider);
+          ref.invalidate(notPickedUpCountProvider);
+          ref.invalidate(todaySalesSummaryProvider);
+          ref.invalidate(paginatedSalesControllerProvider);
+
+          orderCreated.value = true;
+        },
+      );
     }
 
-    final estimatedTotal = selectedService.value == null
+    final serviceTotal = selectedService.value == null
         ? 0.0
         : (selectedService.value!.price * quantity.value).toDouble();
+    final productsTotal = productItems.value.fold<double>(
+      0.0,
+      (sum, item) => sum + item.subtotal.toDouble(),
+    );
+    final estimatedTotal = serviceTotal + productsTotal;
 
     // ── Success page after order creation ──────────────────────────────
     if (orderCreated.value) {
       return DialogCloseHandler(
-        child: Scaffold(
-          body: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isDesktop ? 600 : double.infinity,
-              maxHeight: size.height * 0.92,
-            ),
-            child: _OrderSuccessPage(
-              customer: selectedCustomer.value!,
-              service: selectedService.value!,
-              quantity: quantity.value,
-              orderDate: orderDate,
-              specialInstructions: formKey.currentState
-                  ?.fields['specialInstructions']?.value as String?,
-              estimatedTotal: estimatedTotal,
-            ),
-          ),
+        child: _OrderSuccessPage(
+          customer: selectedCustomer.value!,
+          service: selectedService.value!,
+          quantity: quantity.value,
+          orderDate: orderDate,
+          specialInstructions: formKey.currentState
+              ?.fields['specialInstructions']?.value as String?,
+          estimatedTotal: estimatedTotal,
+          productItems: productItems.value,
         ),
       );
     }
 
     // ── Order form ──────────────────────────────────────────────────────
     return DialogCloseHandler(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: isDesktop ? 600 : double.infinity,
-          maxHeight: size.height * 0.92,
-        ),
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -214,42 +340,24 @@ class _CreateOrderDialog extends HookConsumerWidget {
                       const SizedBox(height: 20),
 
                       // Quantity & Order Date
-                      if (isDesktop)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _QuantityStepper(
-                                quantity: quantity,
-                                unitLabel: selectedService
-                                        .value?.quantityUnit?.shortPlural ??
-                                    (selectedService.value?.weightBased == true
-                                        ? 'KG'
-                                        : 'PCS'),
-                                enabled: !isSaving.value,
-                                onChanged: () => isDirty.value = true,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _OrderDateDisplay(date: orderDate),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        _QuantityStepper(
-                          quantity: quantity,
-                          unitLabel: selectedService
-                                  .value?.quantityUnit?.shortPlural ??
-                              (selectedService.value?.weightBased == true
-                                  ? 'KG'
-                                  : 'PCS'),
-                          enabled: !isSaving.value,
-                          onChanged: () => isDirty.value = true,
-                        ),
-                        const SizedBox(height: 20),
-                        _OrderDateDisplay(date: orderDate),
-                      ],
+                      _QuantityStepper(
+                        quantity: quantity,
+                        unitLabel: selectedService
+                                .value?.quantityUnit?.shortPlural ??
+                            (selectedService.value?.weightBased == false
+                                ? 'PCS'
+                                : 'kg'),
+                        enabled: !isSaving.value,
+                        onChanged: () => isDirty.value = true,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Products (optional add-ons)
+                      _ProductsSection(
+                        productItems: productItems,
+                        enabled: !isSaving.value,
+                        onChanged: () => isDirty.value = true,
+                      ),
                       const SizedBox(height: 20),
 
                       // Special instructions
@@ -257,6 +365,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
                         enabled: !isSaving.value,
                         onChanged: () => isDirty.value = true,
                       ),
+                      const SizedBox(height: 20),
+
+                      // Order date (read-only)
+                      _OrderDateDisplay(date: orderDate),
                     ],
                   ),
                 ),
@@ -273,7 +385,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -960,6 +1071,715 @@ class _SpecialInstructionsField extends StatelessWidget {
   }
 }
 
+// ── Add-ons section ─────────────────────────────────────────────────────────
+
+class _ProductsSection extends StatelessWidget {
+  const _ProductsSection({
+    required this.productItems,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final ValueNotifier<List<_OrderProductItem>> productItems;
+  final bool enabled;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final items = productItems.value;
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final addOnsTotal =
+        items.fold<num>(0, (sum, item) => sum + item.subtotal);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with add button
+        Row(
+          children: [
+            Text(
+              'Add-ons',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (items.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${items.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
+            TextButton.icon(
+              onPressed: enabled
+                  ? () => _showAddOnsSheet(context)
+                  : null,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+
+        // Added items list
+        if (items.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 12,
+                      color: theme.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                    ),
+                  _AddOnItemRow(
+                    item: items[i],
+                    currencyFormat: currencyFormat,
+                    enabled: enabled,
+                    onIncrement: () {
+                      final updated =
+                          List<_OrderProductItem>.from(items);
+                      updated[i] = _OrderProductItem(
+                        product: items[i].product,
+                        quantity: items[i].quantity + 1,
+                        customPrice: items[i].customPrice,
+                      );
+                      productItems.value = updated;
+                      onChanged();
+                    },
+                    onDecrement: () {
+                      final updated =
+                          List<_OrderProductItem>.from(items);
+                      if (items[i].quantity <= 1) {
+                        updated.removeAt(i);
+                      } else {
+                        updated[i] = _OrderProductItem(
+                          product: items[i].product,
+                          quantity: items[i].quantity - 1,
+                          customPrice: items[i].customPrice,
+                        );
+                      }
+                      productItems.value = updated;
+                      onChanged();
+                    },
+                    onRemove: () {
+                      final updated =
+                          List<_OrderProductItem>.from(items);
+                      updated.removeAt(i);
+                      productItems.value = updated;
+                      onChanged();
+                    },
+                  ),
+                ],
+                // Subtotal
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Subtotal: ',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(addOnsTotal),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showAddOnsSheet(BuildContext context) async {
+    final result = await showDialog<List<_OrderProductItem>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _AddOnsPickerDialog(
+        currentItems: productItems.value,
+      ),
+    );
+    if (result != null) {
+      productItems.value = result;
+      onChanged();
+    }
+  }
+}
+
+/// A single add-on item row with quantity controls.
+class _AddOnItemRow extends StatelessWidget {
+  const _AddOnItemRow({
+    required this.item,
+    required this.currencyFormat,
+    required this.enabled,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onRemove,
+  });
+
+  final _OrderProductItem item;
+  final NumberFormat currencyFormat;
+  final bool enabled;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.product.name,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                '${currencyFormat.format(item.effectivePrice)} each',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Quantity stepper
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: theme.colorScheme.outlineVariant, width: 0.5),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: enabled ? onDecrement : null,
+                borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(6)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  child: Icon(Icons.remove,
+                      size: 14,
+                      color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '${item.quantity}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: enabled ? onIncrement : null,
+                borderRadius: const BorderRadius.horizontal(
+                    right: Radius.circular(6)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  child: Icon(Icons.add,
+                      size: 14, color: theme.colorScheme.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 60,
+          child: Text(
+            currencyFormat.format(item.subtotal),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.end,
+          ),
+        ),
+        SizedBox(
+          width: 28,
+          child: IconButton(
+            icon: Icon(Icons.close,
+                size: 14, color: theme.colorScheme.onSurfaceVariant),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints:
+                const BoxConstraints(minWidth: 24, minHeight: 24),
+            onPressed: enabled ? onRemove : null,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dialog for picking add-on products.
+class _AddOnsPickerDialog extends HookConsumerWidget {
+  const _AddOnsPickerDialog({required this.currentItems});
+
+  final List<_OrderProductItem> currentItems;
+
+  int _qtyForProduct(List<_OrderProductItem> items, String productId) {
+    int total = 0;
+    for (final item in items) {
+      if (item.product.id == productId) total += item.quantity;
+    }
+    return total;
+  }
+
+  bool _hasChanges(List<_OrderProductItem> current) {
+    if (current.length != currentItems.length) return true;
+    for (int i = 0; i < current.length; i++) {
+      if (current[i].product.id != currentItems[i].product.id ||
+          current[i].quantity != currentItems[i].quantity) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final searchController = useTextEditingController();
+    final searchQuery = useState('');
+    final productsAsync = useState<List<Product>?>(null);
+    final isLoading = useState(true);
+    final items = useState(List<_OrderProductItem>.from(currentItems));
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+
+    useEffect(() {
+      () async {
+        final repo = ref.read(productRepositoryProvider);
+        final result = await repo.fetchAll(
+          filter: "isDeleted = false && forSale = true",
+          sort: 'name',
+        );
+        result.fold(
+          (_) {},
+          (products) => productsAsync.value = products,
+        );
+        isLoading.value = false;
+      }();
+      return null;
+    }, []);
+
+    final allProducts = productsAsync.value ?? [];
+    final filtered = searchQuery.value.isEmpty
+        ? allProducts
+        : allProducts.where((p) {
+            final q = searchQuery.value.toLowerCase();
+            return p.name.toLowerCase().contains(q);
+          }).toList();
+
+    final addedCount =
+        items.value.fold<int>(0, (sum, item) => sum + item.quantity);
+    final subtotal =
+        items.value.fold<num>(0, (sum, item) => sum + item.subtotal);
+
+    Future<void> handleDiscard() async {
+      if (!_hasChanges(items.value)) {
+        Navigator.of(context).pop();
+        return;
+      }
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Discard changes?'),
+          content: const Text(
+              'You have unsaved add-on changes. Do you want to discard them?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Keep editing'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Discard'),
+            ),
+          ],
+        ),
+      );
+      if (discard == true && context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Add-ons',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (addedCount > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$addedCount item${addedCount == 1 ? '' : 's'}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: handleDiscard,
+                  ),
+                ],
+              ),
+            ),
+            // Search
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search add-ons...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  isDense: true,
+                ),
+                onChanged: (v) => searchQuery.value = v,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Product list
+            Expanded(
+              child: isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : filtered.isEmpty
+                      ? Center(
+                          child: Text(
+                            allProducts.isEmpty
+                                ? 'No add-ons available'
+                                : 'No matching add-ons',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (_, i) {
+                            final product = filtered[i];
+                            final qty = _qtyForProduct(
+                                items.value, product.id);
+                            final isAdded = qty > 0;
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          product.name,
+                                          style: theme
+                                              .textTheme.bodyMedium
+                                              ?.copyWith(
+                                            fontWeight: isAdded
+                                                ? FontWeight.w600
+                                                : null,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          product.isVariablePrice
+                                              ? 'Variable price'
+                                              : currencyFormat.format(
+                                                  product.price),
+                                          style: theme
+                                              .textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isAdded)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme
+                                            .primaryContainer
+                                            .withValues(alpha: 0.5),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(
+                                              qty == 1
+                                                  ? Icons.delete_outline
+                                                  : Icons.remove,
+                                              size: 18,
+                                              color: qty == 1
+                                                  ? theme
+                                                      .colorScheme.error
+                                                  : theme.colorScheme
+                                                      .primary,
+                                            ),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            constraints:
+                                                const BoxConstraints(
+                                                    minWidth: 36,
+                                                    minHeight: 36),
+                                            onPressed: () {
+                                              final updated = List<
+                                                      _OrderProductItem>
+                                                  .from(items.value);
+                                              final idx = updated
+                                                  .lastIndexWhere(
+                                                      (e) =>
+                                                          e.product.id ==
+                                                          product.id);
+                                              if (idx != -1) {
+                                                if (updated[idx]
+                                                        .quantity <=
+                                                    1) {
+                                                  updated
+                                                      .removeAt(idx);
+                                                } else {
+                                                  updated[idx] =
+                                                      _OrderProductItem(
+                                                    product:
+                                                        updated[idx]
+                                                            .product,
+                                                    quantity:
+                                                        updated[idx]
+                                                                .quantity -
+                                                            1,
+                                                    customPrice:
+                                                        updated[idx]
+                                                            .customPrice,
+                                                  );
+                                                }
+                                              }
+                                              items.value = updated;
+                                            },
+                                          ),
+                                          Text(
+                                            '$qty',
+                                            style: theme
+                                                .textTheme.titleSmall
+                                                ?.copyWith(
+                                              fontWeight:
+                                                  FontWeight.w700,
+                                              color: theme
+                                                  .colorScheme.primary,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.add,
+                                              size: 18,
+                                              color: theme
+                                                  .colorScheme.primary,
+                                            ),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            constraints:
+                                                const BoxConstraints(
+                                                    minWidth: 36,
+                                                    minHeight: 36),
+                                            onPressed: () {
+                                              final updated = List<
+                                                      _OrderProductItem>
+                                                  .from(items.value);
+                                              final idx = updated
+                                                  .lastIndexWhere(
+                                                      (e) =>
+                                                          e.product.id ==
+                                                          product.id);
+                                              if (idx != -1) {
+                                                updated[idx] =
+                                                    _OrderProductItem(
+                                                  product:
+                                                      updated[idx]
+                                                          .product,
+                                                  quantity:
+                                                      updated[idx]
+                                                              .quantity +
+                                                          1,
+                                                  customPrice:
+                                                      updated[idx]
+                                                          .customPrice,
+                                                );
+                                              }
+                                              items.value = updated;
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.add_circle_outline,
+                                        color:
+                                            theme.colorScheme.primary,
+                                      ),
+                                      onPressed: () async {
+                                        num? price;
+                                        if (product.isVariablePrice) {
+                                          price =
+                                              await showVariablePriceDialog(
+                                            context,
+                                            productName: product.name,
+                                          );
+                                          if (price == null) return;
+                                        }
+                                        final updated = List<
+                                                _OrderProductItem>
+                                            .from(items.value);
+                                        updated.add(
+                                            _OrderProductItem(
+                                          product: product,
+                                          customPrice: price,
+                                        ));
+                                        items.value = updated;
+                                      },
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+            // Footer with subtotal and save/discard
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (items.value.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Subtotal',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          currencyFormat.format(subtotal),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: handleDiscard,
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () =>
+                        Navigator.of(context).pop(items.value),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Order date display ────────────────────────────────────────────────────────
 
 class _OrderDateDisplay extends StatelessWidget {
@@ -1138,6 +1958,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     required this.orderDate,
     required this.estimatedTotal,
     this.specialInstructions,
+    this.productItems = const [],
   });
 
   final Customer customer;
@@ -1146,6 +1967,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final DateTime orderDate;
   final double estimatedTotal;
   final String? specialInstructions;
+  final List<_OrderProductItem> productItems;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1162,6 +1984,19 @@ class _OrderSuccessPage extends HookConsumerWidget {
 
     final unitLabel = service.quantityUnit?.shortPlural ??
         (service.weightBased == true ? 'KG' : 'PCS');
+
+    // Convert product items to SaleItem for receipt printing
+    final addOnSaleItems = productItems
+        .map((item) => SaleItem(
+              id: '',
+              saleId: '',
+              productId: item.product.id,
+              productName: item.product.name,
+              quantity: item.quantity,
+              unitPrice: item.effectivePrice,
+              subtotal: item.subtotal,
+            ))
+        .toList();
 
     Future<void> handleThermalPrint({bool showSuccessMessage = true}) async {
       final printer = defaultPrinterAsync.value;
@@ -1189,6 +2024,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         contactNumber: currentBranch?.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: specialInstructions,
+        addOnItems: addOnSaleItems,
       );
 
       if (customerResult is PrintFailure) {
@@ -1216,6 +2052,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
           contactNumber: currentBranch?.contactNumber,
           cashierName: currentAuth?.user.name,
           specialInstructions: specialInstructions,
+          addOnItems: addOnSaleItems,
         );
 
         if (storeResult is PrintFailure) {
@@ -1297,15 +2134,17 @@ class _OrderSuccessPage extends HookConsumerWidget {
         const SizedBox(height: 16),
 
         // ── Success icon ────────────────────────────────────────────────
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            shape: BoxShape.circle,
+        Center(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_rounded,
+                size: 40, color: theme.colorScheme.primary),
           ),
-          child: Icon(Icons.check_rounded,
-              size: 40, color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 16),
 

@@ -96,6 +96,7 @@ class _KanbanFilterChips extends ConsumerWidget {
           onSelected: () => ref
               .read(kanbanFilterProvider.notifier)
               .setFilter(KanbanFilterMode.notPickedUp),
+          count: ref.watch(notPickedUpCountProvider).asData?.value,
         ),
       ],
     );
@@ -108,12 +109,14 @@ class _FilterChip extends StatelessWidget {
     required this.icon,
     required this.isSelected,
     required this.onSelected,
+    this.count,
   });
 
   final String label;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onSelected;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +133,27 @@ class _FilterChip extends StatelessWidget {
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 4),
           Text(label),
+          if (count != null && count! > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: isSelected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
       onSelected: (_) => onSelected(),

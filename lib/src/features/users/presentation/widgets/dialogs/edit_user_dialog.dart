@@ -34,7 +34,6 @@ class EditUserDialog extends HookConsumerWidget {
       initialValues: {
         'name': user.name,
         'username': user.username,
-        'email': user.email,
         'role': user.roleId,
         'branch': user.branchId,
       },
@@ -68,7 +67,6 @@ class EditUserDialog extends HookConsumerWidget {
         id: user.id,
         name: (values['name'] as String).trim(),
         username: (values['username'] as String).trim().toLowerCase(),
-        email: (values['email'] as String?)?.trim().toLowerCase(),
         avatar: user.avatar,
         verified: user.verified,
         roleId: values['role'] as String?,
@@ -168,7 +166,6 @@ class EditUserDialog extends HookConsumerWidget {
                 initialValue: {
                   'name': user.name,
                   'username': user.username,
-                  'email': user.email,
                   'role': user.roleId,
                   'branch': user.branchId,
                 },
@@ -220,22 +217,6 @@ class EditUserDialog extends HookConsumerWidget {
                             errorText: 'Username must be at least 3 characters',
                           ),
                         ]),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Email (optional)
-                      FormBuilderTextField(
-                        name: 'email',
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.email),
-                        ),
-                        enabled: !isSaving.value,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: FormBuilderValidators.email(
-                          errorText: 'Invalid email format',
-                        ),
                       ),
                       const SizedBox(height: 8),
 
@@ -410,7 +391,7 @@ class EditUserDialog extends HookConsumerWidget {
                         child: Column(
                           children: [
                             _StatusRow(
-                              label: 'Email Verified',
+                              label: 'Verified',
                               value: user.verified ? 'Yes' : 'No',
                               icon: user.verified
                                   ? Icons.check_circle
@@ -449,7 +430,6 @@ class EditUserDialog extends HookConsumerWidget {
   static const _fieldLabels = {
     'name': 'Name',
     'username': 'Username',
-    'email': 'Email',
     'role': 'Role',
     'branch': 'Branch',
   };

@@ -197,7 +197,7 @@ class SalesRepositoryImpl implements SalesRepository {
             'sale': saleRecord.id,
             'service': item.serviceId,
             'serviceName': item.serviceName,
-            'quantity': item.quantity,
+            'quantity': item.quantity.toInt(),
             'unitPrice': item.unitPrice,
             'subtotal': item.subtotal,
           };
@@ -523,7 +523,7 @@ class SalesRepositoryImpl implements SalesRepository {
       () async {
         final records = await _saleServiceItems.getFullList(
           filter: 'sale = "$saleId"',
-          expand: 'service,machine,storage',
+          expand: 'service.quantityUnit,machine,storage',
         );
         return records.map(_toSaleServiceItemEntity).toList();
       },

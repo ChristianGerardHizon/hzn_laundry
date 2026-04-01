@@ -118,11 +118,8 @@ class CustomerListPanel extends HookConsumerWidget {
     );
   }
 
-  void _showCreateSheet(BuildContext context, WidgetRef ref) async {
-    final result = await showCustomerFormSheet(context);
-    if (result == true) {
-      ref.read(customersControllerProvider.notifier).refresh();
-    }
+  void _showCreateSheet(BuildContext context, WidgetRef ref) {
+    showCustomerFormDialog(context);
   }
 }
 

@@ -8,6 +8,8 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
+import '../../../pos/domain/sale_item.dart';
+import '../../../services/domain/sale_service_item.dart';
 import '../../../pos/domain/order_status_history.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
@@ -1471,8 +1473,15 @@ class _PrintMenuButton extends HookConsumerWidget {
       }
 
       // Get service item info for the receipt
-      final serviceItems = serviceItemsAsync.value ?? [];
+      final serviceItems =
+          (serviceItemsAsync.value as List<SaleServiceItem>?) ?? [];
       final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
+      final addOnItems = (saleItemsAsync.value as List<SaleItem>?) ?? [];
+
+      // Derive unit label from service's quantity unit or weightBased flag
+      final service = firstService?.service;
+      final unitLabel = service?.quantityUnit?.shortPlural ??
+          (service?.weightBased == true ? 'KG' : 'PCS');
 
       isPrinting.value = true;
       final printService = ref.read(thermalPrintServiceProvider.notifier);
@@ -1483,7 +1492,7 @@ class _PrintMenuButton extends HookConsumerWidget {
         customerName: sale.customerName ?? 'Walk-in',
         serviceName: firstService?.serviceName ?? 'Laundry',
         quantity: firstService?.quantity.toDouble() ?? 1.0,
-        unitLabel: 'PCS',
+        unitLabel: unitLabel,
         totalAmount: sale.totalAmount.toDouble(),
         copyType: copyType,
         businessName: currentBranch?.name,
@@ -1491,6 +1500,7 @@ class _PrintMenuButton extends HookConsumerWidget {
         contactNumber: currentBranch?.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: sale.notes,
+        addOnItems: addOnItems,
       );
 
       isPrinting.value = false;

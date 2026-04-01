@@ -115,6 +115,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? contactNumber,
     String? cashierName,
     String? specialInstructions,
+    List<SaleItem> addOnItems = const [],
   }) async {
     if (!printer.hasAddress) {
       return const PrintFailure('Printer address not configured');
@@ -133,6 +134,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       cashierName: cashierName,
       specialInstructions: specialInstructions,
       copyType: copyType,
+      addOnItems: addOnItems,
     );
 
     return _printBytes(printer, bytes);
@@ -503,6 +505,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? contactNumber,
     String? cashierName,
     String? specialInstructions,
+    List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
     final generator = Generator(
@@ -559,6 +562,24 @@ class ThermalPrintService extends _$ThermalPrintService {
           width: PosTextSize.size2,
         ),
       );
+
+      // Add-on items
+      if (addOnItems.isNotEmpty) {
+        bytes += generator.hr();
+        bytes += generator.text(
+          'ADD-ONS:',
+          styles: const PosStyles(
+            align: PosAlign.center,
+            bold: true,
+          ),
+        );
+        for (final item in addOnItems) {
+          bytes += generator.text(
+            '${item.productName} x${item.quantity.toInt()}',
+            styles: const PosStyles(align: PosAlign.center),
+          );
+        }
+      }
 
       bytes += generator.hr();
 
@@ -678,6 +699,49 @@ class ThermalPrintService extends _$ThermalPrintService {
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]);
+
+      // Add-on items
+      if (addOnItems.isNotEmpty) {
+        bytes += generator.hr();
+        bytes += generator.row([
+          PosColumn(
+            text: 'ADD-ONS',
+            width: 6,
+            styles: const PosStyles(bold: true),
+          ),
+          PosColumn(
+            text: 'QTY',
+            width: 2,
+            styles: const PosStyles(bold: true, align: PosAlign.center),
+          ),
+          PosColumn(
+            text: 'AMOUNT',
+            width: 4,
+            styles: const PosStyles(bold: true, align: PosAlign.right),
+          ),
+        ]);
+        bytes += generator.hr();
+
+        for (final item in addOnItems) {
+          String addOnName = item.productName;
+          if (addOnName.length > 16) {
+            addOnName = '${addOnName.substring(0, 14)}..';
+          }
+          bytes += generator.row([
+            PosColumn(text: addOnName, width: 6),
+            PosColumn(
+              text: 'x${item.quantity.toInt()}',
+              width: 2,
+              styles: const PosStyles(align: PosAlign.center),
+            ),
+            PosColumn(
+              text: currencyFormat.format(item.subtotal),
+              width: 4,
+              styles: const PosStyles(align: PosAlign.right),
+            ),
+          ]);
+        }
+      }
 
       bytes += generator.hr();
 

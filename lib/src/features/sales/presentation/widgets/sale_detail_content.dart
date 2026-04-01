@@ -180,7 +180,7 @@ class _ItemsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Items',
+          'Addons',
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
@@ -192,12 +192,12 @@ class _ItemsSection extends StatelessWidget {
             ),
             error: (error, _) => Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Error loading items: $error'),
+              child: Text('Error loading addons: $error'),
             ),
             data: (items) => items.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.all(16),
-                    child: Text('No items'),
+                    child: Text('No addons'),
                   )
                 : ListView.separated(
                     shrinkWrap: true,

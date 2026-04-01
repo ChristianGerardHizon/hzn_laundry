@@ -63,13 +63,14 @@ class PaymentsController extends _$PaymentsController {
       paymentProofFile: paymentProofFile,
     );
 
+    if (!ref.mounted) return null;
+
     return result.fold(
       (failure) {
         state = AsyncError(failure, StackTrace.current);
         return null;
       },
       (payment) {
-        // Invalidate the payments list to trigger refresh
         ref.invalidate(salePaymentsProvider(saleId));
         return payment;
       },
@@ -81,13 +82,14 @@ class PaymentsController extends _$PaymentsController {
     final repo = ref.read(paymentRepositoryProvider);
     final result = await repo.delete(paymentId);
 
+    if (!ref.mounted) return false;
+
     return result.fold(
       (failure) {
         state = AsyncError(failure, StackTrace.current);
         return false;
       },
       (_) {
-        // Invalidate the payments list to trigger refresh
         ref.invalidate(salePaymentsProvider(saleId));
         return true;
       },

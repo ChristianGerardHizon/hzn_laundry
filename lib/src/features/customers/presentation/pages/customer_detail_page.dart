@@ -142,19 +142,11 @@ class CustomerDetailPage extends HookConsumerWidget {
     );
   }
 
-  void _showEditSheet(BuildContext context, WidgetRef ref) async {
+  void _showEditSheet(BuildContext context, WidgetRef ref) {
     final customer = ref.read(customerProvider(customerId)).value;
     if (customer == null) return;
 
-    final result = await showCustomerFormSheet(
-      context,
-      customer: customer,
-    );
-
-    if (result == true) {
-      ref.invalidate(customerProvider(customerId));
-      ref.read(customersControllerProvider.notifier).refresh();
-    }
+    showCustomerFormDialog(context, customer: customer);
   }
 
   void _handleMenuAction(

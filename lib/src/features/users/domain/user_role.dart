@@ -25,7 +25,7 @@ class UserRole with UserRoleMappable {
   /// PocketBase record ID.
   final String id;
 
-  /// Role name (e.g., "Admin", "Veterinarian", "Staff").
+  /// Role name (e.g., "Admin", "Manager", "Cashier", "Attendant").
   final String name;
 
   /// Role description.
@@ -84,35 +84,23 @@ class UserRole with UserRoleMappable {
 
 /// Permission keys used in the system.
 abstract class Permissions {
-  // Patient permissions
-  static const patientsView = 'patients.view';
-  static const patientsCreate = 'patients.create';
-  static const patientsEdit = 'patients.edit';
-  static const patientsDelete = 'patients.delete';
-
-  // Records permissions
-  static const recordsView = 'records.view';
-  static const recordsCreate = 'records.create';
-  static const recordsEdit = 'records.edit';
-  static const recordsDelete = 'records.delete';
-
-  // Prescriptions permissions
-  static const prescriptionsView = 'prescriptions.view';
-  static const prescriptionsCreate = 'prescriptions.create';
-  static const prescriptionsEdit = 'prescriptions.edit';
-  static const prescriptionsDelete = 'prescriptions.delete';
-
-  // Appointments permissions
-  static const appointmentsView = 'appointments.view';
-  static const appointmentsCreate = 'appointments.create';
-  static const appointmentsEdit = 'appointments.edit';
-  static const appointmentsDelete = 'appointments.delete';
+  // Customers permissions
+  static const customersView = 'customers.view';
+  static const customersCreate = 'customers.create';
+  static const customersEdit = 'customers.edit';
+  static const customersDelete = 'customers.delete';
 
   // Products permissions
   static const productsView = 'products.view';
   static const productsCreate = 'products.create';
   static const productsEdit = 'products.edit';
   static const productsDelete = 'products.delete';
+
+  // Services permissions
+  static const servicesView = 'services.view';
+  static const servicesCreate = 'services.create';
+  static const servicesEdit = 'services.edit';
+  static const servicesDelete = 'services.delete';
 
   // Inventory permissions
   static const inventoryView = 'inventory.view';
@@ -121,6 +109,21 @@ abstract class Permissions {
   // Sales permissions
   static const salesView = 'sales.view';
   static const salesCreate = 'sales.create';
+
+  // Machines permissions
+  static const machinesView = 'machines.view';
+  static const machinesCreate = 'machines.create';
+  static const machinesEdit = 'machines.edit';
+  static const machinesDelete = 'machines.delete';
+
+  // Storages permissions
+  static const storagesView = 'storages.view';
+  static const storagesCreate = 'storages.create';
+  static const storagesEdit = 'storages.edit';
+  static const storagesDelete = 'storages.delete';
+
+  // Reports permissions
+  static const reportsView = 'reports.view';
 
   // Users permissions
   static const usersView = 'users.view';
@@ -149,23 +152,19 @@ abstract class Permissions {
 
   /// All permissions grouped by category (keys only).
   static const Map<String, List<String>> allByCategory = {
-    'Patients': [patientsView, patientsCreate, patientsEdit, patientsDelete],
-    'Records': [recordsView, recordsCreate, recordsEdit, recordsDelete],
-    'Prescriptions': [
-      prescriptionsView,
-      prescriptionsCreate,
-      prescriptionsEdit,
-      prescriptionsDelete,
-    ],
-    'Appointments': [
-      appointmentsView,
-      appointmentsCreate,
-      appointmentsEdit,
-      appointmentsDelete,
+    'Customers': [
+      customersView,
+      customersCreate,
+      customersEdit,
+      customersDelete,
     ],
     'Products': [productsView, productsCreate, productsEdit, productsDelete],
+    'Services': [servicesView, servicesCreate, servicesEdit, servicesDelete],
     'Inventory': [inventoryView, inventoryAdjust],
     'Sales': [salesView, salesCreate],
+    'Machines': [machinesView, machinesCreate, machinesEdit, machinesDelete],
+    'Storages': [storagesView, storagesCreate, storagesEdit, storagesDelete],
+    'Reports': [reportsView],
     'Users': [usersView, usersCreate, usersEdit, usersDelete],
     'Roles': [rolesView, rolesCreate, rolesEdit, rolesDelete],
     'Branches': [branchesView, branchesCreate, branchesEdit, branchesDelete],
@@ -210,120 +209,33 @@ abstract class Permissions {
   /// Private: Build the full permission list with metadata.
   static List<Permission> _buildPermissionList() {
     return [
-      // Patients
+      // Customers
       const Permission(
-        key: patientsView,
-        name: 'View Patients',
-        category: 'Patients',
-        description: 'View patient profiles and basic information',
+        key: customersView,
+        name: 'View Customers',
+        category: 'Customers',
+        description: 'View customer profiles and information',
         icon: Icons.visibility,
       ),
       const Permission(
-        key: patientsCreate,
-        name: 'Create Patients',
-        category: 'Patients',
-        description: 'Register new patient records',
-        icon: Icons.add,
+        key: customersCreate,
+        name: 'Create Customers',
+        category: 'Customers',
+        description: 'Register new customers',
+        icon: Icons.person_add,
       ),
       const Permission(
-        key: patientsEdit,
-        name: 'Edit Patients',
-        category: 'Patients',
-        description: 'Modify existing patient information',
+        key: customersEdit,
+        name: 'Edit Customers',
+        category: 'Customers',
+        description: 'Modify existing customer information',
         icon: Icons.edit,
       ),
       const Permission(
-        key: patientsDelete,
-        name: 'Delete Patients',
-        category: 'Patients',
-        description: 'Remove patient records (soft delete)',
-        icon: Icons.delete,
-      ),
-      // Records
-      const Permission(
-        key: recordsView,
-        name: 'View Records',
-        category: 'Records',
-        description: 'View medical records and history',
-        icon: Icons.visibility,
-      ),
-      const Permission(
-        key: recordsCreate,
-        name: 'Create Records',
-        category: 'Records',
-        description: 'Create new medical records',
-        icon: Icons.add,
-      ),
-      const Permission(
-        key: recordsEdit,
-        name: 'Edit Records',
-        category: 'Records',
-        description: 'Modify existing medical records',
-        icon: Icons.edit,
-      ),
-      const Permission(
-        key: recordsDelete,
-        name: 'Delete Records',
-        category: 'Records',
-        description: 'Remove medical records (soft delete)',
-        icon: Icons.delete,
-      ),
-      // Prescriptions
-      const Permission(
-        key: prescriptionsView,
-        name: 'View Prescriptions',
-        category: 'Prescriptions',
-        description: 'View prescription information',
-        icon: Icons.visibility,
-      ),
-      const Permission(
-        key: prescriptionsCreate,
-        name: 'Create Prescriptions',
-        category: 'Prescriptions',
-        description: 'Create new prescriptions',
-        icon: Icons.add,
-      ),
-      const Permission(
-        key: prescriptionsEdit,
-        name: 'Edit Prescriptions',
-        category: 'Prescriptions',
-        description: 'Modify existing prescriptions',
-        icon: Icons.edit,
-      ),
-      const Permission(
-        key: prescriptionsDelete,
-        name: 'Delete Prescriptions',
-        category: 'Prescriptions',
-        description: 'Remove prescriptions (soft delete)',
-        icon: Icons.delete,
-      ),
-      // Appointments
-      const Permission(
-        key: appointmentsView,
-        name: 'View Appointments',
-        category: 'Appointments',
-        description: 'View appointment schedules',
-        icon: Icons.visibility,
-      ),
-      const Permission(
-        key: appointmentsCreate,
-        name: 'Create Appointments',
-        category: 'Appointments',
-        description: 'Schedule new appointments',
-        icon: Icons.add,
-      ),
-      const Permission(
-        key: appointmentsEdit,
-        name: 'Edit Appointments',
-        category: 'Appointments',
-        description: 'Modify appointment details',
-        icon: Icons.edit,
-      ),
-      const Permission(
-        key: appointmentsDelete,
-        name: 'Delete Appointments',
-        category: 'Appointments',
-        description: 'Cancel or remove appointments',
+        key: customersDelete,
+        name: 'Delete Customers',
+        category: 'Customers',
+        description: 'Remove customer records (soft delete)',
         icon: Icons.delete,
       ),
       // Products
@@ -355,6 +267,35 @@ abstract class Permissions {
         description: 'Remove products from catalog',
         icon: Icons.delete,
       ),
+      // Services
+      const Permission(
+        key: servicesView,
+        name: 'View Services',
+        category: 'Services',
+        description: 'View laundry service catalog',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: servicesCreate,
+        name: 'Create Services',
+        category: 'Services',
+        description: 'Add new laundry services',
+        icon: Icons.add,
+      ),
+      const Permission(
+        key: servicesEdit,
+        name: 'Edit Services',
+        category: 'Services',
+        description: 'Modify service information and pricing',
+        icon: Icons.edit,
+      ),
+      const Permission(
+        key: servicesDelete,
+        name: 'Delete Services',
+        category: 'Services',
+        description: 'Remove services (soft delete)',
+        icon: Icons.delete,
+      ),
       // Inventory
       const Permission(
         key: inventoryView,
@@ -384,6 +325,72 @@ abstract class Permissions {
         category: 'Sales',
         description: 'Process sales transactions',
         icon: Icons.add,
+      ),
+      // Machines
+      const Permission(
+        key: machinesView,
+        name: 'View Machines',
+        category: 'Machines',
+        description: 'View laundry machines and availability',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: machinesCreate,
+        name: 'Create Machines',
+        category: 'Machines',
+        description: 'Add new laundry machines',
+        icon: Icons.add,
+      ),
+      const Permission(
+        key: machinesEdit,
+        name: 'Edit Machines',
+        category: 'Machines',
+        description: 'Modify machine information and status',
+        icon: Icons.edit,
+      ),
+      const Permission(
+        key: machinesDelete,
+        name: 'Delete Machines',
+        category: 'Machines',
+        description: 'Remove machines (soft delete)',
+        icon: Icons.delete,
+      ),
+      // Storages
+      const Permission(
+        key: storagesView,
+        name: 'View Storages',
+        category: 'Storages',
+        description: 'View storage locations',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: storagesCreate,
+        name: 'Create Storages',
+        category: 'Storages',
+        description: 'Add new storage locations',
+        icon: Icons.add,
+      ),
+      const Permission(
+        key: storagesEdit,
+        name: 'Edit Storages',
+        category: 'Storages',
+        description: 'Modify storage location information',
+        icon: Icons.edit,
+      ),
+      const Permission(
+        key: storagesDelete,
+        name: 'Delete Storages',
+        category: 'Storages',
+        description: 'Remove storage locations (soft delete)',
+        icon: Icons.delete,
+      ),
+      // Reports
+      const Permission(
+        key: reportsView,
+        name: 'View Reports',
+        category: 'Reports',
+        description: 'View sales reports and analytics',
+        icon: Icons.bar_chart,
       ),
       // Users
       const Permission(

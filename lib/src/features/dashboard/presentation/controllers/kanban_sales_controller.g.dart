@@ -63,6 +63,47 @@ abstract class _$KanbanFilter extends $Notifier<KanbanFilterMode> {
   }
 }
 
+/// Count of orders not yet picked up (pending + processing + ready).
+/// Used to display a badge on the "Not Picked Up" filter chip.
+
+@ProviderFor(notPickedUpCount)
+final notPickedUpCountProvider = NotPickedUpCountProvider._();
+
+/// Count of orders not yet picked up (pending + processing + ready).
+/// Used to display a badge on the "Not Picked Up" filter chip.
+
+final class NotPickedUpCountProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Count of orders not yet picked up (pending + processing + ready).
+  /// Used to display a badge on the "Not Picked Up" filter chip.
+  NotPickedUpCountProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'notPickedUpCountProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$notPickedUpCountHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    return notPickedUpCount(ref);
+  }
+}
+
+String _$notPickedUpCountHash() => r'8604ad3fc9624135fd0a7d99831ae5f363f01b0b';
+
 /// Fetches active sales grouped by order status based on the selected filter.
 /// - [KanbanFilterMode.today]: All orders created today.
 /// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
@@ -112,4 +153,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'65713aa5a7c0e12413c246ff750418cb25f0a16f';
+String _$kanbanSalesHash() => r'40eced4597b4fd092425e94608ad97cf6636e091';

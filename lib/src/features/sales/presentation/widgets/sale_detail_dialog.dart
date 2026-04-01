@@ -5,13 +5,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
+import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
+import 'record_payment_sheet.dart';
 import 'sale_detail_content.dart';
 
 /// Dialog that displays sale details in a compact format.
@@ -128,30 +132,84 @@ class SaleDetailDialog extends HookConsumerWidget {
               ),
             ),
 
-            // Footer with "View Full Details" button
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                ),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    SaleDetailRoute(id: saleId).go(context);
-                  },
-                  child: const Text('View Full Details'),
-                ),
-              ),
+            // Footer with payment + view details buttons
+            _DialogFooter(
+              saleId: saleId,
+              sale: saleAsync.value,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Footer with optional "Record Payment" button and "View Full Details".
+class _DialogFooter extends ConsumerWidget {
+  const _DialogFooter({
+    required this.saleId,
+    required this.sale,
+  });
+
+  final String saleId;
+  final Sale? sale;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final showPayment = sale != null && !sale!.isPaid;
+    final totalPaidAsync = showPayment
+        ? ref.watch(saleTotalPaidProvider(saleId))
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showPayment) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final totalPaid = totalPaidAsync?.value ?? 0;
+                  final balanceDue = sale!.totalAmount - totalPaid;
+                  final result = await showRecordPaymentSheet(
+                    context,
+                    sale: sale!,
+                    balanceDue: balanceDue,
+                  );
+                  if (result == true) {
+                    ref.invalidate(saleProvider(saleId));
+                    ref.invalidate(salePaymentsProvider(saleId));
+                    ref.invalidate(kanbanSalesProvider);
+                  }
+                },
+                icon: const Icon(Icons.payment),
+                label: const Text('Record Payment'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: () {
+                Navigator.of(context).pop();
+                SaleDetailRoute(id: saleId).go(context);
+              },
+              child: const Text('View Full Details'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -189,6 +247,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
     final serviceItemsAsync = ref.watch(saleServiceItemsProvider(saleId));
+    final saleItemsAsync = ref.watch(saleItemsProvider(saleId));
 
     Future<void> printCopy(OrderReceiptCopy copyType) async {
       final printer = defaultPrinterAsync.value;
@@ -200,6 +259,12 @@ class _DialogPrintMenu extends HookConsumerWidget {
 
       final serviceItems = serviceItemsAsync.value ?? [];
       final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
+      final addOnItems = saleItemsAsync.value ?? [];
+
+      // Derive unit label from service's quantity unit or weightBased flag
+      final service = firstService?.service;
+      final unitLabel = service?.quantityUnit?.shortPlural ??
+          (service?.weightBased == true ? 'KG' : 'PCS');
 
       isPrinting.value = true;
       final printService = ref.read(thermalPrintServiceProvider.notifier);
@@ -210,7 +275,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
         customerName: sale.customerName ?? 'Walk-in',
         serviceName: firstService?.serviceName ?? 'Laundry',
         quantity: firstService?.quantity.toDouble() ?? 1.0,
-        unitLabel: 'PCS',
+        unitLabel: unitLabel,
         totalAmount: sale.totalAmount.toDouble(),
         copyType: copyType,
         businessName: currentBranch?.name,
@@ -218,6 +283,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
         contactNumber: currentBranch?.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: sale.notes,
+        addOnItems: addOnItems,
       );
 
       isPrinting.value = false;

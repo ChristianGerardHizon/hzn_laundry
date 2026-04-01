@@ -58,7 +58,7 @@ class QuickActionsSection extends ConsumerWidget {
                   icon: Icons.person_add,
                   label: 'New Customer',
                   color: Colors.blue,
-                  onTap: () => showCustomerFormSheet(context),
+                  onTap: () => showCustomerFormDialog(context),
                 ),
               ],
             ),

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../../core/utils/date_utils.dart';
 import '../../../pos/data/dto/sale_dto.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
@@ -66,6 +67,27 @@ class KanbanFilter extends _$KanbanFilter {
   }
 }
 
+/// Count of orders not yet picked up (pending + processing + ready).
+/// Used to display a badge on the "Not Picked Up" filter chip.
+@riverpod
+Future<int> notPickedUpCount(Ref ref) async {
+  final branchId = ref.watch(currentBranchIdProvider);
+  final pb = ref.read(pocketbaseProvider);
+
+  var filter = "status != 'voided' && orderStatus != 'pickedUp'";
+  if (branchId != null) {
+    filter = '$filter && branch = "$branchId"';
+  }
+
+  final result = await pb.collection(PocketBaseCollections.sales).getList(
+        page: 1,
+        perPage: 1,
+        filter: filter,
+      );
+
+  return result.totalItems;
+}
+
 /// Fetches active sales grouped by order status based on the selected filter.
 /// - [KanbanFilterMode.today]: All orders created today.
 /// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
@@ -87,8 +109,8 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       final todayEnd = todayStart.add(const Duration(days: 1));
-      final startUtc = todayStart.toUtc().toIso8601String();
-      final endUtc = todayEnd.toUtc().toIso8601String();
+      final startUtc = todayStart.toPocketBaseUtc();
+      final endUtc = todayEnd.toPocketBaseUtc();
       filter = '$filter && created >= "$startUtc" && created < "$endUtc"';
     case KanbanFilterMode.notPickedUp:
       filter = '$filter && orderStatus != "pickedUp"';

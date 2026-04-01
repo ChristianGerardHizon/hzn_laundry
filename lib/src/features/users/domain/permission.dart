@@ -18,14 +18,14 @@ class Permission with PermissionMappable {
     this.icon,
   });
 
-  /// The permission key (e.g., "patients.view").
+  /// The permission key (e.g., "customers.view").
   /// This is what gets stored in PocketBase.
   final String key;
 
-  /// Display name (e.g., "View Patients").
+  /// Display name (e.g., "View Customers").
   final String name;
 
-  /// Category for grouping (e.g., "Patients", "Users").
+  /// Category for grouping (e.g., "Customers", "Users").
   final String category;
 
   /// Optional description explaining what this permission grants.

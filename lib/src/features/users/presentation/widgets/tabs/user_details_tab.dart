@@ -69,7 +69,7 @@ class UserDetailsTab extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.email ?? user.username,
+                    user.username,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -207,11 +207,6 @@ class UserDetailsTab extends HookConsumerWidget {
         value: user.username,
       ),
       _DetailItem(
-        icon: Icons.email,
-        label: 'Email',
-        value: user.email ?? 'Not set',
-      ),
-      _DetailItem(
         icon: Icons.admin_panel_settings,
         label: 'Role',
         value: user.displayRole,
@@ -223,7 +218,7 @@ class UserDetailsTab extends HookConsumerWidget {
       ),
       _DetailItem(
         icon: Icons.verified_user,
-        label: 'Email Status',
+        label: 'Account Status',
         value: user.verificationStatus,
       ),
       _DetailItem(
@@ -327,14 +322,6 @@ class UserDetailsTab extends HookConsumerWidget {
               icon: const Icon(Icons.lock_reset),
               label: const Text('Reset Password'),
             ),
-            if (!user.verified)
-              OutlinedButton.icon(
-                onPressed: () {
-                  showWarningSnackBar(context, message: 'Send verification email coming soon');
-                },
-                icon: const Icon(Icons.email),
-                label: const Text('Send Verification'),
-              ),
           ],
         ),
       ],

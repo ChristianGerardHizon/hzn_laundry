@@ -156,7 +156,7 @@ Plan and track multi-visit treatment courses.
 
 **Modes:**
 - **Users** (`/organization/users`) - User CRUD, role assignment, branch association
-- **Roles** (`/organization/roles`) - Role and permission management (Admin, Veterinarian, Staff, Cashier)
+- **Roles** (`/organization/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/organization/branches`) - Multi-location support with address and contact info
 - **Machines** (`/organization/machines`) - Laundry machine management (washer, dryer, other) with availability tracking
 - **Storages** (`/organization/storages`) - Storage location management for ready laundry items
@@ -565,6 +565,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Apr 01 | Users & Roles | Replaced old vet-clinic roles (Veterinarian, Staff, Cashier) with laundry-appropriate roles: Admin, Manager, Cashier, Attendant. Added test user accounts for each role |
 | Feb 05 | Order Status History | Added orderStatusHistory collection and timeline UI on sale detail page to track every status change (sale status and order status) with auto-logging on create and update |
 | Feb 05 | Machines & Storages | Added machines and storage locations management under Organization with CRUD, plus machine/storage assignment dialogs when transitioning sale order status to processing/ready |
 | Feb 04 | SSH Web Deployment | Added SSH-based auto-deployment of web builds and PocketBase migrations to staging/production servers via rsync in CI/CD pipeline |

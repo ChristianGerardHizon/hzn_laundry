@@ -26,11 +26,6 @@ abstract class AuthRepository {
   /// Initializes auth state from storage on app startup.
   FutureEither<AuthState> initialize();
 
-  /// Requests a password reset email.
-  FutureEither<void> requestPasswordReset(String email);
-
-  /// Requests email verification.
-  FutureEither<void> requestVerification(String email);
 }
 
 /// Provides the auth repository instance.
@@ -130,23 +125,4 @@ class AuthRepositoryImpl implements AuthRepository {
     ).run();
   }
 
-  @override
-  FutureEither<void> requestPasswordReset(String email) async {
-    return TaskEither.tryCatch(
-      () async {
-        await _collection.requestPasswordReset(email);
-      },
-      Failure.handle,
-    ).run();
-  }
-
-  @override
-  FutureEither<void> requestVerification(String email) async {
-    return TaskEither.tryCatch(
-      () async {
-        await _collection.requestVerification(email);
-      },
-      Failure.handle,
-    ).run();
-  }
 }

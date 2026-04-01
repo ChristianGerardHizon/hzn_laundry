@@ -28,12 +28,6 @@ class UserMapper extends ClassMapperBase<User> {
   static const Field<User, String> _f$name = Field('name', _$name);
   static String _$username(User v) => v.username;
   static const Field<User, String> _f$username = Field('username', _$username);
-  static String? _$email(User v) => v.email;
-  static const Field<User, String> _f$email = Field(
-    'email',
-    _$email,
-    opt: true,
-  );
   static String? _$avatarUrl(User v) => v.avatarUrl;
   static const Field<User, String> _f$avatarUrl = Field(
     'avatarUrl',
@@ -59,7 +53,6 @@ class UserMapper extends ClassMapperBase<User> {
     #id: _f$id,
     #name: _f$name,
     #username: _f$username,
-    #email: _f$email,
     #avatarUrl: _f$avatarUrl,
     #verified: _f$verified,
     #branch: _f$branch,
@@ -70,7 +63,6 @@ class UserMapper extends ClassMapperBase<User> {
       id: data.dec(_f$id),
       name: data.dec(_f$name),
       username: data.dec(_f$username),
-      email: data.dec(_f$email),
       avatarUrl: data.dec(_f$avatarUrl),
       verified: data.dec(_f$verified),
       branch: data.dec(_f$branch),
@@ -127,7 +119,6 @@ abstract class UserCopyWith<$R, $In extends User, $Out>
     String? id,
     String? name,
     String? username,
-    String? email,
     String? avatarUrl,
     bool? verified,
     String? branch,
@@ -146,7 +137,6 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     String? id,
     String? name,
     String? username,
-    Object? email = $none,
     Object? avatarUrl = $none,
     bool? verified,
     Object? branch = $none,
@@ -155,7 +145,6 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
       if (id != null) #id: id,
       if (name != null) #name: name,
       if (username != null) #username: username,
-      if (email != $none) #email: email,
       if (avatarUrl != $none) #avatarUrl: avatarUrl,
       if (verified != null) #verified: verified,
       if (branch != $none) #branch: branch,
@@ -166,7 +155,6 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
     username: data.get(#username, or: $value.username),
-    email: data.get(#email, or: $value.email),
     avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
     verified: data.get(#verified, or: $value.verified),
     branch: data.get(#branch, or: $value.branch),
