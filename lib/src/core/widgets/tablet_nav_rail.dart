@@ -67,11 +67,6 @@ class TabletNavRail extends ConsumerWidget {
                 label: Text(t.navigation.dashboard),
               ),
               NavigationRailDestination(
-                icon: const Icon(Icons.point_of_sale_outlined),
-                selectedIcon: const Icon(Icons.point_of_sale),
-                label: Text(t.navigation.sales),
-              ),
-              NavigationRailDestination(
                 icon: const Icon(Icons.receipt_long_outlined),
                 selectedIcon: const Icon(Icons.receipt_long),
                 label: Text(t.navigation.salesHistory),
@@ -100,6 +95,11 @@ class TabletNavRail extends ConsumerWidget {
                 icon: const Icon(Icons.business_outlined),
                 selectedIcon: const Icon(Icons.business),
                 label: Text(t.navigation.organization),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.loyalty_outlined),
+                selectedIcon: const Icon(Icons.loyalty),
+                label: const Text('Promos'),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.settings_outlined),

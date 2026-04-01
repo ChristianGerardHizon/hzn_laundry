@@ -15,8 +15,8 @@ import '../routing/routes/products.routes.dart';
 import '../routing/routes/customers.routes.dart';
 import '../routing/routes/services.routes.dart';
 import '../routing/routes/reports.routes.dart';
-import '../routing/routes/sales.routes.dart';
 import '../routing/routes/sales_history.routes.dart';
+import '../routing/routes/promos.routes.dart';
 import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
 import '../widgets/mobile_bottom_nav.dart';
@@ -58,26 +58,26 @@ class _AppRootState extends ConsumerState<AppRoot> {
   /// Route paths in order of navigation index.
   static const _routePaths = [
     DashboardRoute.path, // 0: /
-    SalesRoute.path, // 1: /cashier
-    SalesHistoryRoute.path, // 2: /sales
-    ProductsRoute.path, // 3: /products
-    ServicesRoute.path, // 4: /services
-    CustomersRoute.path, // 5: /customers
-    ReportsRoute.path, // 6: /reports
-    OrganizationRoute.path, // 7: /organization
+    SalesHistoryRoute.path, // 1: /sales
+    ProductsRoute.path, // 2: /products
+    ServicesRoute.path, // 3: /services
+    CustomersRoute.path, // 4: /customers
+    ReportsRoute.path, // 5: /reports
+    OrganizationRoute.path, // 6: /organization
+    PromosRoute.path, // 7: /promos
     SystemRoute.path, // 8: /system
   ];
 
   /// Routes in order of navigation index.
   static const _routes = <GoRouteData>[
     DashboardRoute(), // 0
-    SalesRoute(), // 1
-    SalesHistoryRoute(), // 2
-    ProductsRoute(), // 3
-    ServicesRoute(), // 4
-    CustomersRoute(), // 5
-    ReportsRoute(), // 6
-    OrganizationRoute(), // 7
+    SalesHistoryRoute(), // 1
+    ProductsRoute(), // 2
+    ServicesRoute(), // 3
+    CustomersRoute(), // 4
+    ReportsRoute(), // 5
+    OrganizationRoute(), // 6
+    PromosRoute(), // 7
     SystemRoute(), // 8
   ];
 

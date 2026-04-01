@@ -544,21 +544,23 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       bytes += generator.emptyLines(1);
 
-      // Service & quantity
+      // Service name — large and bold for visibility from a distance
       bytes += generator.text(
-        serviceName,
+        serviceName.toUpperCase(),
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
-          height: PosTextSize.size1,
+          height: PosTextSize.size2,
           width: PosTextSize.size2,
         ),
       );
+      // Quantity — large for easy reading
       bytes += generator.text(
         '${quantity.toStringAsFixed(1)} $unitLabel',
         styles: const PosStyles(
           align: PosAlign.center,
-          height: PosTextSize.size1,
+          bold: true,
+          height: PosTextSize.size2,
           width: PosTextSize.size2,
         ),
       );

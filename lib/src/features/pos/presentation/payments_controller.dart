@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../data/repositories/payment_repository.dart';
 import '../domain/payment.dart';
 import '../domain/payment_method.dart';
@@ -35,7 +36,7 @@ Future<num> saleTotalPaid(Ref ref, String saleId) async {
 }
 
 /// Controller for managing payments for a sale.
-@riverpod
+@Riverpod(keepAlive: true)
 class PaymentsController extends _$PaymentsController {
   @override
   FutureOr<void> build() {
@@ -72,6 +73,7 @@ class PaymentsController extends _$PaymentsController {
       },
       (payment) {
         ref.invalidate(salePaymentsProvider(saleId));
+        ref.invalidate(salesSummaryProvider);
         return payment;
       },
     );
@@ -91,6 +93,7 @@ class PaymentsController extends _$PaymentsController {
       },
       (_) {
         ref.invalidate(salePaymentsProvider(saleId));
+        ref.invalidate(salesSummaryProvider);
         return true;
       },
     );

@@ -175,7 +175,7 @@ class _ServiceItemMachineRow extends HookConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${item.serviceName} (x${item.quantity})',
+          '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
           style: theme.textTheme.titleSmall,
         ),
         const SizedBox(height: 4),

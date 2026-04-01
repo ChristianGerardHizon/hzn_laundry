@@ -30,6 +30,7 @@ class ServiceDto with ServiceDtoMappable {
   final bool allowExcess;
   final String? quantityUnit;
   final QuantityUnit? quantityUnitExpanded;
+  final bool isDefault;
   final bool isDeleted;
   final String? created;
   final String? updated;
@@ -52,6 +53,7 @@ class ServiceDto with ServiceDtoMappable {
     this.allowExcess = false,
     this.quantityUnit,
     this.quantityUnitExpanded,
+    this.isDefault = false,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -92,6 +94,7 @@ class ServiceDto with ServiceDtoMappable {
       allowExcess: json['allowExcess'] as bool? ?? false,
       quantityUnit: json['quantityUnit'] as String?,
       quantityUnitExpanded: quantityUnitExpanded,
+      isDefault: json['isDefault'] as bool? ?? false,
       isDeleted: json['isDeleted'] as bool? ?? false,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
@@ -116,6 +119,7 @@ class ServiceDto with ServiceDtoMappable {
       allowExcess: allowExcess,
       quantityUnitId: quantityUnit,
       quantityUnit: quantityUnitExpanded,
+      isDefault: isDefault,
       isDeleted: isDeleted,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
