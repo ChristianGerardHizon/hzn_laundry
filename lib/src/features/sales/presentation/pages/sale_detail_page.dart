@@ -262,7 +262,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                             return ListTile(
                               title: Text(item.productName),
                               subtitle: Text(
-                                '${currencyFormat.format(item.unitPrice)} × ${item.quantity}',
+                                '${currencyFormat.format(item.unitPrice)} × ${item.quantity.toInt()}',
                               ),
                               trailing: Text(
                                 currencyFormat.format(item.subtotal),
@@ -350,7 +350,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              '${currencyFormat.format(item.unitPrice)} x ${item.quantity}',
+                                              '${currencyFormat.format(item.unitPrice)} x ${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'}',
                                               style: theme
                                                   .textTheme.bodySmall
                                                   ?.copyWith(

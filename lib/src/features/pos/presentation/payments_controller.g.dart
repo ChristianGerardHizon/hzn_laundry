@@ -188,7 +188,7 @@ final class PaymentsControllerProvider
           argument: null,
           retry: null,
           name: r'paymentsControllerProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -202,7 +202,7 @@ final class PaymentsControllerProvider
 }
 
 String _$paymentsControllerHash() =>
-    r'a3aca813bb3fbb6ae5243b9983454cb758c8ca8c';
+    r'84c3ca39fce0fbda2d826aac5b22a7e26da10e0b';
 
 /// Controller for managing payments for a sale.
 

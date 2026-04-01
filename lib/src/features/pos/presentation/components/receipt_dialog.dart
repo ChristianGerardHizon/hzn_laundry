@@ -160,7 +160,7 @@ Future<Uint8List> _buildReceiptPdfBytes(_ReceiptPdfPayload payload) async {
                     pw.SizedBox(
                       width: 50,
                       child: pw.Text(
-                        'x${item.quantity.toInt()}',
+                        'x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'}',
                         textAlign: pw.TextAlign.center,
                       ),
                     ),

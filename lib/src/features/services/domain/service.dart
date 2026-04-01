@@ -25,6 +25,7 @@ class Service with ServiceMappable {
     this.allowExcess = false,
     this.quantityUnitId,
     this.quantityUnit,
+    this.isDefault = false,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -74,6 +75,9 @@ class Service with ServiceMappable {
 
   /// Quantity unit (expanded from FK).
   final QuantityUnit? quantityUnit;
+
+  /// Whether this is the default service (auto-selected in Create Order).
+  final bool isDefault;
 
   /// Soft delete flag.
   final bool isDeleted;

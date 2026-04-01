@@ -63,20 +63,20 @@ abstract class _$KanbanFilter extends $Notifier<KanbanFilterMode> {
   }
 }
 
-/// Count of orders not yet picked up (pending + processing + ready).
-/// Used to display a badge on the "Not Picked Up" filter chip.
+/// Count of backlog orders (not yet picked up, created before today).
+/// Used to display a badge on the "Backlogs" filter chip.
 
 @ProviderFor(notPickedUpCount)
 final notPickedUpCountProvider = NotPickedUpCountProvider._();
 
-/// Count of orders not yet picked up (pending + processing + ready).
-/// Used to display a badge on the "Not Picked Up" filter chip.
+/// Count of backlog orders (not yet picked up, created before today).
+/// Used to display a badge on the "Backlogs" filter chip.
 
 final class NotPickedUpCountProvider
     extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
     with $FutureModifier<int>, $FutureProvider<int> {
-  /// Count of orders not yet picked up (pending + processing + ready).
-  /// Used to display a badge on the "Not Picked Up" filter chip.
+  /// Count of backlog orders (not yet picked up, created before today).
+  /// Used to display a badge on the "Backlogs" filter chip.
   NotPickedUpCountProvider._()
       : super(
           from: null,
@@ -102,11 +102,53 @@ final class NotPickedUpCountProvider
   }
 }
 
-String _$notPickedUpCountHash() => r'8604ad3fc9624135fd0a7d99831ae5f363f01b0b';
+String _$notPickedUpCountHash() => r'9cb739f743c7f07c92414aa79fc1a11cf329b04e';
+
+/// Count of orders created today.
+/// Used to display a badge on the "Today's Orders" filter chip.
+
+@ProviderFor(todayCount)
+final todayCountProvider = TodayCountProvider._();
+
+/// Count of orders created today.
+/// Used to display a badge on the "Today's Orders" filter chip.
+
+final class TodayCountProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Count of orders created today.
+  /// Used to display a badge on the "Today's Orders" filter chip.
+  TodayCountProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'todayCountProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$todayCountHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    return todayCount(ref);
+  }
+}
+
+String _$todayCountHash() => r'c203317df4f8d33a98517af5e26e43e2531c80bf';
 
 /// Fetches active sales grouped by order status based on the selected filter.
-/// - [KanbanFilterMode.today]: All orders created today.
-/// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
+/// - [KanbanFilterMode.today]: All orders created today (any status).
+/// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.
+/// The two filters are mutually exclusive — no order appears in both.
 /// Filtered by current branch, sorted by most recent first.
 /// Also fetches service items for processing/ready sales to display machine/storage.
 
@@ -114,8 +156,9 @@ String _$notPickedUpCountHash() => r'8604ad3fc9624135fd0a7d99831ae5f363f01b0b';
 final kanbanSalesProvider = KanbanSalesProvider._();
 
 /// Fetches active sales grouped by order status based on the selected filter.
-/// - [KanbanFilterMode.today]: All orders created today.
-/// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
+/// - [KanbanFilterMode.today]: All orders created today (any status).
+/// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.
+/// The two filters are mutually exclusive — no order appears in both.
 /// Filtered by current branch, sorted by most recent first.
 /// Also fetches service items for processing/ready sales to display machine/storage.
 
@@ -123,8 +166,9 @@ final class KanbanSalesProvider extends $FunctionalProvider<
         AsyncValue<KanbanSalesData>, KanbanSalesData, FutureOr<KanbanSalesData>>
     with $FutureModifier<KanbanSalesData>, $FutureProvider<KanbanSalesData> {
   /// Fetches active sales grouped by order status based on the selected filter.
-  /// - [KanbanFilterMode.today]: All orders created today.
-  /// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
+  /// - [KanbanFilterMode.today]: All orders created today (any status).
+  /// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.
+  /// The two filters are mutually exclusive — no order appears in both.
   /// Filtered by current branch, sorted by most recent first.
   /// Also fetches service items for processing/ready sales to display machine/storage.
   KanbanSalesProvider._()
@@ -153,4 +197,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'40eced4597b4fd092425e94608ad97cf6636e091';
+String _$kanbanSalesHash() => r'b46c5779022f55712e4b3d8aefebfc496c3ec2ac';

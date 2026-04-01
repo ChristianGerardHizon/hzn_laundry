@@ -7,7 +7,7 @@ on:
 
 jobs:
   promote:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'promote-to-main')
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'deploy')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -31,12 +31,12 @@ jobs:
             exit 0
           fi
 
-          gh pr create \
+          PR_URL=$(gh pr create \
             --repo "${{ github.repository }}" \
             --head staging \
             --base main \
             --title "Release: promote staging to main" \
-            --body "$(cat <<'EOF'
+            --body "$(cat <<EOF
           ## Auto-promoted from staging
 
           This PR was automatically created after merging PR #${{ github.event.pull_request.number }} into staging.
@@ -45,4 +45,35 @@ jobs:
 
           Please review and merge to trigger production deployment.
           EOF
-          )"
+          )")
+
+          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+
+          echo "Created PR #$PR_NUMBER"
+
+          # Forward version and minimum version labels from source PR
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          FORWARD_LABELS=""
+
+          if echo "$LABELS" | grep -q '"version:major"'; then
+            FORWARD_LABELS="version:major"
+          elif echo "$LABELS" | grep -q '"version:minor"'; then
+            FORWARD_LABELS="version:minor"
+          elif echo "$LABELS" | grep -q '"version:patch"'; then
+            FORWARD_LABELS="version:patch"
+          fi
+
+          if echo "$LABELS" | grep -q '"minimum version"'; then
+            if [ -n "$FORWARD_LABELS" ]; then
+              FORWARD_LABELS="$FORWARD_LABELS,minimum version"
+            else
+              FORWARD_LABELS="minimum version"
+            fi
+          fi
+
+          if [ -n "$FORWARD_LABELS" ]; then
+            gh pr edit "$PR_NUMBER" \
+              --repo "${{ github.repository }}" \
+              --add-label "$FORWARD_LABELS"
+            echo "Forwarded labels: $FORWARD_LABELS"
+          fi

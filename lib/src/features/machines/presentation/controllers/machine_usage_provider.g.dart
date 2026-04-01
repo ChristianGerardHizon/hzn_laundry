@@ -76,7 +76,7 @@ final class MachineUsageProvider extends $FunctionalProvider<
   }
 }
 
-String _$machineUsageHash() => r'e4bf84244fa634dcae4ede5d80a442472e809ee3';
+String _$machineUsageHash() => r'9060f620f41dcd4aad8a20783f914ab8197f5963';
 
 /// Provider that checks if a machine is currently in use.
 ///

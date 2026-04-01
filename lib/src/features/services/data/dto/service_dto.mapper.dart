@@ -121,6 +121,13 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
     _$quantityUnitExpanded,
     opt: true,
   );
+  static bool _$isDefault(ServiceDto v) => v.isDefault;
+  static const Field<ServiceDto, bool> _f$isDefault = Field(
+    'isDefault',
+    _$isDefault,
+    opt: true,
+    def: false,
+  );
   static bool _$isDeleted(ServiceDto v) => v.isDeleted;
   static const Field<ServiceDto, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -160,6 +167,7 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
     #allowExcess: _f$allowExcess,
     #quantityUnit: _f$quantityUnit,
     #quantityUnitExpanded: _f$quantityUnitExpanded,
+    #isDefault: _f$isDefault,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -184,6 +192,7 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
       allowExcess: data.dec(_f$allowExcess),
       quantityUnit: data.dec(_f$quantityUnit),
       quantityUnitExpanded: data.dec(_f$quantityUnitExpanded),
+      isDefault: data.dec(_f$isDefault),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -270,6 +279,7 @@ abstract class ServiceDtoCopyWith<$R, $In extends ServiceDto, $Out>
     bool? allowExcess,
     String? quantityUnit,
     QuantityUnit? quantityUnitExpanded,
+    bool? isDefault,
     bool? isDeleted,
     String? created,
     String? updated,
@@ -309,6 +319,7 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
     bool? allowExcess,
     Object? quantityUnit = $none,
     Object? quantityUnitExpanded = $none,
+    bool? isDefault,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -332,6 +343,7 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
       if (quantityUnit != $none) #quantityUnit: quantityUnit,
       if (quantityUnitExpanded != $none)
         #quantityUnitExpanded: quantityUnitExpanded,
+      if (isDefault != null) #isDefault: isDefault,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -362,6 +374,7 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
       #quantityUnitExpanded,
       or: $value.quantityUnitExpanded,
     ),
+    isDefault: data.get(#isDefault, or: $value.isDefault),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

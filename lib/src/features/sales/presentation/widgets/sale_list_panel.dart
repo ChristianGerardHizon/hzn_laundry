@@ -16,6 +16,17 @@ import '../controllers/sale_sort_controller.dart';
 import 'sale_status_chip.dart';
 import 'dialogs/sale_search_fields_dialog.dart';
 
+/// Extracts a short display order number from the full receipt number.
+/// e.g. "S-260401-X7KP" → "#X7KP"
+String _shortOrderNumber(String receiptNumber) {
+  final parts = receiptNumber.split('-');
+  if (parts.length >= 3) return '#${parts.last}';
+  if (receiptNumber.length > 4) {
+    return '#${receiptNumber.substring(receiptNumber.length - 4)}';
+  }
+  return receiptNumber;
+}
+
 /// Sale list panel with search header and infinite scroll.
 ///
 /// Used in both mobile list page and tablet two-pane layout.
@@ -148,21 +159,23 @@ class SaleListPanel extends HookConsumerWidget {
                           ? theme.colorScheme.primary
                           : theme.colorScheme.surfaceContainerHighest,
                       child: Icon(
-                        Icons.receipt,
+                        sale.customerDisplay != null
+                            ? Icons.person
+                            : Icons.receipt,
                         color: isSelected
                             ? theme.colorScheme.onPrimary
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     title: Text(
-                      sale.receiptNumber,
+                      sale.customerDisplay ?? _shortOrderNumber(sale.receiptNumber),
                       style: TextStyle(
                         fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+                            isSelected ? FontWeight.bold : FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
-                      '${sale.created != null ? dateFormat.format(sale.created!) : "Unknown"} • ${sale.isPaid ? 'Paid' : 'Unpaid'}',
+                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.created != null ? dateFormat.format(sale.created!) : "Unknown"} • ${sale.isPaid ? 'Paid' : 'Unpaid'}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
