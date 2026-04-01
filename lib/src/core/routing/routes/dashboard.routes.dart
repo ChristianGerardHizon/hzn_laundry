@@ -6,9 +6,11 @@ import '../../../features/dashboard/presentation/controllers/dashboard_kpi_provi
 import '../../../features/dashboard/presentation/controllers/inventory_alerts_controller.dart';
 import '../../../features/dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/todays_sales_controller.dart';
+import '../../../features/dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../../../features/dashboard/presentation/widgets/inventory_alerts_section.dart';
 import '../../../features/dashboard/presentation/widgets/kanban_board_section.dart';
 import '../../../features/dashboard/presentation/widgets/quick_actions_section.dart';
+import '../../../features/dashboard/presentation/widgets/sales_summary_section.dart';
 import '../../../features/dashboard/presentation/widgets/tablet_dashboard_layout.dart';
 import '../../../features/dashboard/presentation/widgets/dashboard_footer.dart';
 import '../../../features/settings/presentation/controllers/current_branch_controller.dart';
@@ -56,6 +58,7 @@ class DashboardPage extends ConsumerWidget {
           // Refresh all dashboard data
           ref.invalidate(inventoryAlertsSummaryProvider);
           ref.invalidate(todaySalesSummaryProvider);
+          ref.invalidate(salesSummaryProvider);
           ref.invalidate(kanbanSalesProvider);
           ref.invalidate(productsNearExpirationCountProvider);
           ref.invalidate(productsExpiredCountProvider);
@@ -73,6 +76,10 @@ class DashboardPage extends ConsumerWidget {
 
               // Quick Actions Section
               const QuickActionsSection(),
+              const SizedBox(height: 24),
+
+              // Sales Summary Section
+              const SalesSummarySection(),
               const SizedBox(height: 24),
 
               // Order Board (Kanban)

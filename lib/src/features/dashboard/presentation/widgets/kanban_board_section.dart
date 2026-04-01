@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -8,6 +9,7 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
 import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
 import '../../../sales/presentation/widgets/assign_storages_dialog.dart';
@@ -20,13 +22,29 @@ import '../controllers/kanban_sales_controller.dart';
 ///
 /// On tablet/desktop: Shows columns side-by-side in a horizontal scrollable row.
 /// On mobile: Shows columns in a vertical scrollable list.
-class KanbanBoardSection extends ConsumerWidget {
+class KanbanBoardSection extends HookConsumerWidget {
   const KanbanBoardSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kanbanAsync = ref.watch(kanbanSalesProvider);
     final filterMode = ref.watch(kanbanFilterProvider);
+    final isRefreshing = kanbanAsync.isLoading && kanbanAsync.hasValue;
+
+    // Spinning animation for the refresh icon
+    final animController = useAnimationController(
+      duration: const Duration(milliseconds: 800),
+    );
+
+    useEffect(() {
+      if (isRefreshing) {
+        animController.repeat();
+      } else {
+        animController.stop();
+        animController.reset();
+      }
+      return null;
+    }, [isRefreshing]);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -49,6 +67,20 @@ class KanbanBoardSection extends ConsumerWidget {
                     ),
               ),
               const Spacer(),
+              RotationTransition(
+                turns: animController,
+                child: IconButton(
+                  icon: const Icon(Icons.refresh, size: 20),
+                  tooltip: 'Refresh orders',
+                  onPressed: isRefreshing
+                      ? null
+                      : () {
+                          ref.invalidate(kanbanSalesProvider);
+                          ref.invalidate(notPickedUpCountProvider);
+                          ref.invalidate(todayCountProvider);
+                        },
+                ),
+              ),
               TextButton(
                 onPressed: () => const SalesHistoryRoute().go(context),
                 child: const Text('View All'),
@@ -59,11 +91,17 @@ class KanbanBoardSection extends ConsumerWidget {
           // Filter chips
           _KanbanFilterChips(currentFilter: filterMode),
           const SizedBox(height: 12),
-          // Board content
-          kanbanAsync.when(
-            data: (data) => _KanbanBoard(data: data, filterMode: filterMode),
-            loading: () => const _LoadingState(),
-            error: (_, __) => const SizedBox.shrink(),
+          // Board content — keep showing previous data during refresh
+          AnimatedOpacity(
+            opacity: isRefreshing ? 0.5 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: kanbanAsync.when(
+              skipLoadingOnRefresh: true,
+              data: (data) =>
+                  _KanbanBoard(data: data, filterMode: filterMode),
+              loading: () => const _LoadingState(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
           ),
         ],
       ),
@@ -87,10 +125,11 @@ class _KanbanFilterChips extends ConsumerWidget {
           onSelected: () => ref
               .read(kanbanFilterProvider.notifier)
               .setFilter(KanbanFilterMode.today),
+          count: ref.watch(todayCountProvider).asData?.value,
         ),
         const SizedBox(width: 8),
         _FilterChip(
-          label: 'Not Picked Up',
+          label: 'Backlogs',
           icon: Icons.pending_actions,
           isSelected: currentFilter == KanbanFilterMode.notPickedUp,
           onSelected: () => ref
@@ -172,12 +211,8 @@ class _KanbanBoard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isTablet = Breakpoints.isTabletOrLarger(context);
 
-    // In "not picked up" mode, hide the Picked Up column
-    final statuses = filterMode == KanbanFilterMode.notPickedUp
-        ? OrderStatus.values
-            .where((s) => s != OrderStatus.pickedUp)
-            .toList()
-        : OrderStatus.values;
+    // Show all columns in both modes (backlogs includes Picked Up so users can drag orders there)
+    final statuses = OrderStatus.values;
 
     if (isTablet) {
       return _TabletKanbanLayout(
@@ -343,9 +378,13 @@ class _KanbanColumn extends ConsumerWidget {
       (failure) {
         showErrorSnackBar(context, message: failure.messageString);
         ref.invalidate(kanbanSalesProvider);
+        ref.invalidate(notPickedUpCountProvider);
+        ref.invalidate(todayCountProvider);
       },
       (_) {
         ref.invalidate(kanbanSalesProvider);
+        ref.invalidate(notPickedUpCountProvider);
+        ref.invalidate(todayCountProvider);
       },
     );
   }
@@ -450,6 +489,7 @@ class _KanbanColumn extends ConsumerWidget {
                       return _SaleCard(
                         sale: sale,
                         serviceItems: kanbanData.serviceItemsForSale(sale.id),
+                        saleItems: kanbanData.saleItemsForSale(sale.id),
                         showOverdue: filterMode == KanbanFilterMode.notPickedUp,
                       );
                     },
@@ -466,6 +506,8 @@ class _KanbanColumn extends ConsumerWidget {
                           sale: displayedSales[i],
                           serviceItems: kanbanData
                               .serviceItemsForSale(displayedSales[i].id),
+                          saleItems: kanbanData
+                              .saleItemsForSale(displayedSales[i].id),
                           showOverdue: filterMode == KanbanFilterMode.notPickedUp,
                         ),
                       ],
@@ -495,11 +537,13 @@ class _SaleCard extends StatelessWidget {
   const _SaleCard({
     required this.sale,
     this.serviceItems = const [],
+    this.saleItems = const [],
     this.showOverdue = false,
   });
 
   final Sale sale;
   final List<SaleServiceItem> serviceItems;
+  final List<SaleItem> saleItems;
   final bool showOverdue;
 
   @override
@@ -517,6 +561,7 @@ class _SaleCard extends StatelessWidget {
             child: _SaleCardContent(
               sale: sale,
               serviceItems: serviceItems,
+              saleItems: saleItems,
               showOverdue: showOverdue,
             ),
           ),
@@ -527,12 +572,14 @@ class _SaleCard extends StatelessWidget {
         child: _SaleCardContent(
           sale: sale,
           serviceItems: serviceItems,
+          saleItems: saleItems,
           showOverdue: showOverdue,
         ),
       ),
       child: _SaleCardContent(
         sale: sale,
         serviceItems: serviceItems,
+        saleItems: saleItems,
         showOverdue: showOverdue,
       ),
     );
@@ -544,11 +591,13 @@ class _SaleCardContent extends StatelessWidget {
   const _SaleCardContent({
     required this.sale,
     this.serviceItems = const [],
+    this.saleItems = const [],
     this.showOverdue = false,
   });
 
   final Sale sale;
   final List<SaleServiceItem> serviceItems;
+  final List<SaleItem> saleItems;
   final bool showOverdue;
 
   /// Whether this order is overdue (created before today and not picked up).
@@ -609,6 +658,20 @@ class _SaleCardContent extends StatelessWidget {
     return completed.isNotEmpty && completed.length < itemsWithMachines.length;
   }
 
+  /// Extracts a short display order number from the full receipt number.
+  /// e.g. "S-260401-X7KP" → "#X7KP"
+  String _shortOrderNumber(String receiptNumber) {
+    final parts = receiptNumber.split('-');
+    if (parts.length >= 3) {
+      return '#${parts.last}';
+    }
+    // Fallback: show last 4 characters
+    if (receiptNumber.length > 4) {
+      return '#${receiptNumber.substring(receiptNumber.length - 4)}';
+    }
+    return receiptNumber;
+  }
+
   IconData? _getAssignmentIcon() {
     if (sale.orderStatus == OrderStatus.processing) {
       return Icons.local_laundry_service;
@@ -657,19 +720,42 @@ class _SaleCardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Receipt number & payment badge
+              // Customer name (highlighted)
+              if (sale.customerDisplay != null) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        sale.customerDisplay!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              // Short order number & payment badge
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      sale.receiptNumber,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    _shortOrderNumber(sale.receiptNumber),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                      fontFamily: 'monospace',
                     ),
                   ),
+                  const Spacer(),
                   if (_isOverdue) ...[
                     const _OverdueBadge(),
                     const SizedBox(width: 4),
@@ -677,17 +763,32 @@ class _SaleCardContent extends StatelessWidget {
                   _PaymentBadge(isPaid: sale.isPaid),
                 ],
               ),
-              const SizedBox(height: 4),
-              // Customer name
-              if (sale.customerDisplay != null)
-                Text(
-                  sale.customerDisplay!,
-                  style: theme.textTheme.bodySmall?.copyWith(
+              // Services & Addons summary
+              if (serviceItems.isNotEmpty || saleItems.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                if (serviceItems.isNotEmpty)
+                  _ItemSummaryRow(
+                    icon: Icons.local_laundry_service,
+                    label: serviceItems
+                        .map((e) {
+                          final qty = e.service?.formatQuantity(e.quantity) ??
+                              '${e.quantity}';
+                          return '${e.serviceName} x$qty';
+                        })
+                        .join(', '),
+                    color: theme.colorScheme.primary,
+                  ),
+                if (saleItems.isNotEmpty) ...[
+                  if (serviceItems.isNotEmpty) const SizedBox(height: 2),
+                  _ItemSummaryRow(
+                    icon: Icons.add_circle_outline,
+                    label: saleItems
+                        .map((e) => '${e.productName} x${e.quantity}')
+                        .join(', '),
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                ],
+              ],
               // Machine or Storage assignment info
               if (assignmentInfo != null && assignmentIcon != null) ...[
                 const SizedBox(height: 6),
@@ -761,6 +862,38 @@ class _SaleCardContent extends StatelessWidget {
       return 'Yesterday';
     }
     return DateFormat('MMM d').format(local);
+  }
+}
+
+class _ItemSummaryRow extends StatelessWidget {
+  const _ItemSummaryRow({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 }
 

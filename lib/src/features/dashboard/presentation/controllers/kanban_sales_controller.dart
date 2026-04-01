@@ -1,11 +1,14 @@
+import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../pos/data/dto/sale_dto.dart';
+import '../../../pos/data/dto/sale_item_dto.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../pos/domain/sale_item.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -29,6 +32,7 @@ class KanbanSalesData {
     required this.ready,
     required this.pickedUp,
     this.serviceItemsBySale = const {},
+    this.saleItemsBySale = const {},
   });
 
   final List<Sale> pending;
@@ -38,6 +42,9 @@ class KanbanSalesData {
 
   /// Map of sale ID to its service items (for displaying machine/storage info).
   final Map<String, List<SaleServiceItem>> serviceItemsBySale;
+
+  /// Map of sale ID to its sale items / addons.
+  final Map<String, List<SaleItem>> saleItemsBySale;
 
   /// Returns the sales list for a given status.
   List<Sale> salesForStatus(OrderStatus status) => switch (status) {
@@ -50,6 +57,10 @@ class KanbanSalesData {
   /// Returns service items for a given sale.
   List<SaleServiceItem> serviceItemsForSale(String saleId) =>
       serviceItemsBySale[saleId] ?? [];
+
+  /// Returns sale items (addons) for a given sale.
+  List<SaleItem> saleItemsForSale(String saleId) =>
+      saleItemsBySale[saleId] ?? [];
 
   /// Total count of all sales.
   int get totalCount =>
@@ -67,14 +78,47 @@ class KanbanFilter extends _$KanbanFilter {
   }
 }
 
-/// Count of orders not yet picked up (pending + processing + ready).
-/// Used to display a badge on the "Not Picked Up" filter chip.
+/// Count of backlog orders (not yet picked up, created before today).
+/// Used to display a badge on the "Backlogs" filter chip.
 @riverpod
 Future<int> notPickedUpCount(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  var filter = "status != 'voided' && orderStatus != 'pickedUp'";
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final startUtc = todayStart.toPocketBaseUtc();
+
+  var filter =
+      "status != 'voided' && orderStatus != 'pickedUp' && created < '$startUtc'";
+  if (branchId != null) {
+    filter = '$filter && branch = "$branchId"';
+  }
+
+  final result = await pb.collection(PocketBaseCollections.sales).getList(
+        page: 1,
+        perPage: 1,
+        filter: filter,
+      );
+
+  return result.totalItems;
+}
+
+/// Count of orders created today.
+/// Used to display a badge on the "Today's Orders" filter chip.
+@riverpod
+Future<int> todayCount(Ref ref) async {
+  final branchId = ref.watch(currentBranchIdProvider);
+  final pb = ref.read(pocketbaseProvider);
+
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final todayEnd = todayStart.add(const Duration(days: 1));
+  final startUtc = todayStart.toPocketBaseUtc();
+  final endUtc = todayEnd.toPocketBaseUtc();
+
+  var filter =
+      "status != 'voided' && created >= '$startUtc' && created < '$endUtc'";
   if (branchId != null) {
     filter = '$filter && branch = "$branchId"';
   }
@@ -89,8 +133,9 @@ Future<int> notPickedUpCount(Ref ref) async {
 }
 
 /// Fetches active sales grouped by order status based on the selected filter.
-/// - [KanbanFilterMode.today]: All orders created today.
-/// - [KanbanFilterMode.notPickedUp]: All orders not yet picked up (any date).
+/// - [KanbanFilterMode.today]: All orders created today (any status).
+/// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.
+/// The two filters are mutually exclusive — no order appears in both.
 /// Filtered by current branch, sorted by most recent first.
 /// Also fetches service items for processing/ready sales to display machine/storage.
 @riverpod
@@ -113,7 +158,13 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
       final endUtc = todayEnd.toPocketBaseUtc();
       filter = '$filter && created >= "$startUtc" && created < "$endUtc"';
     case KanbanFilterMode.notPickedUp:
-      filter = '$filter && orderStatus != "pickedUp"';
+      // Show only orders created before today that haven't been picked up
+      // (today's orders are shown in the "Today's Orders" tab)
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final startUtc = todayStart.toPocketBaseUtc();
+      filter =
+          '$filter && orderStatus != "pickedUp" && created < "$startUtc"';
   }
 
   final records =
@@ -133,25 +184,38 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
   final pickedUp =
       sales.where((s) => s.orderStatus == OrderStatus.pickedUp).toList();
 
-  // Fetch service items for processing and ready sales to show machine/storage
-  final saleIdsNeedingServiceItems = [
-    ...processing.map((s) => s.id),
-    ...ready.map((s) => s.id),
-  ];
+  // Fetch service items and sale items for all sales
+  final allSaleIds = sales.map((s) => s.id).toList();
 
   final Map<String, List<SaleServiceItem>> serviceItemsBySale = {};
+  final Map<String, List<SaleItem>> saleItemsBySale = {};
 
-  if (saleIdsNeedingServiceItems.isNotEmpty) {
-    // Build filter for all relevant sale IDs
+  if (allSaleIds.isNotEmpty) {
     final saleIdFilters =
-        saleIdsNeedingServiceItems.map((id) => 'sale = "$id"').join(' || ');
-    final serviceItemRecords = await pb
-        .collection(PocketBaseCollections.saleServiceItems)
-        .getFullList(filter: '($saleIdFilters)');
+        allSaleIds.map((id) => 'sale = "$id"').join(' || ');
 
-    for (final record in serviceItemRecords) {
-      final item = SaleServiceItemDto.fromRecord(record).toEntity();
+    // Fetch service items and sale items in parallel
+    final results = await Future.wait([
+      pb.collection(PocketBaseCollections.saleServiceItems).getFullList(
+            filter: '($saleIdFilters)',
+            expand: 'service',
+          ),
+      pb
+          .collection(PocketBaseCollections.saleItems)
+          .getFullList(filter: '($saleIdFilters)'),
+    ]);
+
+    for (final record in results[0]) {
+      final serviceExpanded = record.get<RecordModel?>('expand.service');
+      final item = SaleServiceItemDto.fromRecord(record).toEntity(
+            serviceExpanded: serviceExpanded,
+          );
       serviceItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
+    }
+
+    for (final record in results[1]) {
+      final item = SaleItemDto.fromRecord(record).toEntity();
+      saleItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
   }
 
@@ -161,5 +225,6 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
     ready: ready,
     pickedUp: pickedUp,
     serviceItemsBySale: serviceItemsBySale,
+    saleItemsBySale: saleItemsBySale,
   );
 }

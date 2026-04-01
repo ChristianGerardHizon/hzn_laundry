@@ -10,6 +10,7 @@ import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/data/repositories/product_lot_repository.dart';
 import '../../products/data/repositories/product_repository.dart';
 import '../../services/domain/sale_service_item.dart';
+import '../../dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../data/repositories/payment_repository.dart';
 import '../data/repositories/sales_repository.dart';
 import '../domain/order_status.dart';
@@ -185,6 +186,9 @@ class CheckoutController extends _$CheckoutController {
 
         // Mark cart as converted and clear it
         await cartNotifier.markAsConverted();
+
+        // Refresh dashboard sales summary
+        ref.invalidate(salesSummaryProvider);
 
         // Re-fetch the sale to get updated isPaid status
         final updatedSaleResult = await salesRepo.getSale(createdSale.id);

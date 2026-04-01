@@ -110,6 +110,13 @@ class ServiceMapper extends ClassMapperBase<Service> {
     _$quantityUnit,
     opt: true,
   );
+  static bool _$isDefault(Service v) => v.isDefault;
+  static const Field<Service, bool> _f$isDefault = Field(
+    'isDefault',
+    _$isDefault,
+    opt: true,
+    def: false,
+  );
   static bool _$isDeleted(Service v) => v.isDeleted;
   static const Field<Service, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -147,6 +154,7 @@ class ServiceMapper extends ClassMapperBase<Service> {
     #allowExcess: _f$allowExcess,
     #quantityUnitId: _f$quantityUnitId,
     #quantityUnit: _f$quantityUnit,
+    #isDefault: _f$isDefault,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -169,6 +177,7 @@ class ServiceMapper extends ClassMapperBase<Service> {
       allowExcess: data.dec(_f$allowExcess),
       quantityUnitId: data.dec(_f$quantityUnitId),
       quantityUnit: data.dec(_f$quantityUnit),
+      isDefault: data.dec(_f$isDefault),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -249,6 +258,7 @@ abstract class ServiceCopyWith<$R, $In extends Service, $Out>
     bool? allowExcess,
     String? quantityUnitId,
     QuantityUnit? quantityUnit,
+    bool? isDefault,
     bool? isDeleted,
     DateTime? created,
     DateTime? updated,
@@ -284,6 +294,7 @@ class _ServiceCopyWithImpl<$R, $Out>
     bool? allowExcess,
     Object? quantityUnitId = $none,
     Object? quantityUnit = $none,
+    bool? isDefault,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -304,6 +315,7 @@ class _ServiceCopyWithImpl<$R, $Out>
       if (allowExcess != null) #allowExcess: allowExcess,
       if (quantityUnitId != $none) #quantityUnitId: quantityUnitId,
       if (quantityUnit != $none) #quantityUnit: quantityUnit,
+      if (isDefault != null) #isDefault: isDefault,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -329,6 +341,7 @@ class _ServiceCopyWithImpl<$R, $Out>
     allowExcess: data.get(#allowExcess, or: $value.allowExcess),
     quantityUnitId: data.get(#quantityUnitId, or: $value.quantityUnitId),
     quantityUnit: data.get(#quantityUnit, or: $value.quantityUnit),
+    isDefault: data.get(#isDefault, or: $value.isDefault),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

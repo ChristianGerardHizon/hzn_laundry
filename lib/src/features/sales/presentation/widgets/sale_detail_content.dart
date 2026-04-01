@@ -63,21 +63,21 @@ class SaleDetailContent extends ConsumerWidget {
           ),
           SizedBox(height: compact ? 12 : 16),
 
-          // Items Section
-          _ItemsSection(
-            saleItemsAsync: saleItemsAsync,
-            currencyFormat: currencyFormat,
-            compact: compact,
-          ),
-          SizedBox(height: compact ? 12 : 16),
-
-          // Service Items Section
+          // Services Section
           _ServiceItemsSection(
             sale: sale,
             serviceItemsAsync: serviceItemsAsync,
             currencyFormat: currencyFormat,
             compact: compact,
           ),
+
+          // Addons Section
+          _ItemsSection(
+            saleItemsAsync: saleItemsAsync,
+            currencyFormat: currencyFormat,
+            compact: compact,
+          ),
+          SizedBox(height: compact ? 12 : 16),
 
           // Special Instructions Section
           _SpecialInstructionsSection(
@@ -210,7 +210,7 @@ class _ItemsSection extends StatelessWidget {
                         dense: compact,
                         title: Text(item.productName),
                         subtitle: Text(
-                          '${currencyFormat.format(item.unitPrice)} × ${item.quantity}',
+                          '${currencyFormat.format(item.unitPrice)} × ${item.quantity.toInt()}',
                         ),
                         trailing: Text(
                           currencyFormat.format(item.subtotal),
@@ -254,7 +254,7 @@ class _ServiceItemsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Service Items',
+              'Services',
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -405,7 +405,7 @@ class _ServiceItemTile extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${currencyFormat.format(item.unitPrice)} x ${item.quantity}',
+                      '${currencyFormat.format(item.unitPrice)} x ${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
