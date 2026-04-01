@@ -1,8 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
-import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
-import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import 'inventory_alerts_controller.dart';
 
 part 'dashboard_kpi_provider.g.dart';
@@ -23,84 +20,10 @@ Future<int> productsExpiredCount(Ref ref) async {
   return ref.watch(expiredAlertsCountProvider.future);
 }
 
-/// Count of active patients.
-/// Uses vw_active_patients_count view for optimized query.
-/// Filtered by the current branch.
-@riverpod
-Future<int> activePatientsCount(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
-  final pb = ref.read(pocketbaseProvider);
-  final records = await pb
-      .collection(PocketBaseCollections.vwActivePatientsCount)
-      .getFullList(
-        filter: branchId != null ? 'branch = "$branchId"' : null,
-      );
-  if (records.isEmpty) return 0;
-  return records.first.getIntValue('active_count');
-}
-
 /// Count of products with low stock.
 /// Delegates to the unified inventory alerts controller for both lot-tracked
 /// and non-lot-tracked products.
 @riverpod
 Future<int> lowStockProductsCount(Ref ref) async {
   return ref.watch(lowStockAlertsCountProvider.future);
-}
-
-/// Record class for today's appointments breakdown.
-class TodayAppointmentsBreakdown {
-  const TodayAppointmentsBreakdown({
-    required this.scheduled,
-    required this.completed,
-    required this.missed,
-    required this.cancelled,
-  });
-
-  final int scheduled;
-  final int completed;
-  final int missed;
-  final int cancelled;
-
-  int get total => scheduled + completed + missed + cancelled;
-}
-
-/// Today's appointments breakdown by status.
-/// Uses vw_todays_appointments view for optimized query.
-/// Filtered by the current branch.
-@riverpod
-Future<TodayAppointmentsBreakdown> todayAppointmentsBreakdown(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
-  final pb = ref.read(pocketbaseProvider);
-  final records = await pb
-      .collection(PocketBaseCollections.vwTodaysAppointments)
-      .getFullList(
-        filter: branchId != null ? 'branch = "$branchId"' : null,
-      );
-
-  var scheduled = 0;
-  var completed = 0;
-  var missed = 0;
-  var cancelled = 0;
-
-  for (final record in records) {
-    final status = record.getStringValue('status');
-    final count = record.getIntValue('count');
-    switch (status) {
-      case 'scheduled':
-        scheduled = count;
-      case 'completed':
-        completed = count;
-      case 'missed':
-        missed = count;
-      case 'cancelled':
-        cancelled = count;
-    }
-  }
-
-  return TodayAppointmentsBreakdown(
-    scheduled: scheduled,
-    completed: completed,
-    missed: missed,
-    cancelled: cancelled,
-  );
 }

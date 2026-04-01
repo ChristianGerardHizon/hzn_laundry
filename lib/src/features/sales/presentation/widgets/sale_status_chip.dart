@@ -28,6 +28,8 @@ class SaleStatusChip extends StatelessWidget {
 
   (Color, IconData) _getStatusStyle(String status) {
     switch (status.toLowerCase()) {
+      case 'pending':
+        return (Colors.amber, Icons.schedule);
       case 'completed':
         return (Colors.green, Icons.check_circle);
       case 'refunded':
@@ -41,6 +43,8 @@ class SaleStatusChip extends StatelessWidget {
 
   String _formatStatus(String status) {
     switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
       case 'completed':
         return 'Completed';
       case 'refunded':

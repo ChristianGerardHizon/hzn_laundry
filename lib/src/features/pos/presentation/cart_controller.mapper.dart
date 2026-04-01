@@ -2,6 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_protected_member
 // ignore_for_file: unused_element, unnecessary_cast, override_on_non_overriding_member
 // ignore_for_file: strict_raw_type, inference_failure_on_untyped_parameter
 
@@ -15,6 +16,7 @@ class CartStateMapper extends ClassMapperBase<CartState> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = CartStateMapper._());
       CartItemMapper.ensureInitialized();
+      CartServiceItemMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -35,6 +37,13 @@ class CartStateMapper extends ClassMapperBase<CartState> {
     opt: true,
     def: const [],
   );
+  static List<CartServiceItem> _$serviceItems(CartState v) => v.serviceItems;
+  static const Field<CartState, List<CartServiceItem>> _f$serviceItems = Field(
+    'serviceItems',
+    _$serviceItems,
+    opt: true,
+    def: const [],
+  );
   static bool _$isSyncing(CartState v) => v.isSyncing;
   static const Field<CartState, bool> _f$isSyncing = Field(
     'isSyncing',
@@ -47,6 +56,7 @@ class CartStateMapper extends ClassMapperBase<CartState> {
   final MappableFields<CartState> fields = const {
     #cartId: _f$cartId,
     #items: _f$items,
+    #serviceItems: _f$serviceItems,
     #isSyncing: _f$isSyncing,
   };
 
@@ -54,6 +64,7 @@ class CartStateMapper extends ClassMapperBase<CartState> {
     return CartState(
       cartId: data.dec(_f$cartId),
       items: data.dec(_f$items),
+      serviceItems: data.dec(_f$serviceItems),
       isSyncing: data.dec(_f$isSyncing),
     );
   }
@@ -119,7 +130,18 @@ abstract class CartStateCopyWith<$R, $In extends CartState, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, CartItem, CartItemCopyWith<$R, CartItem, CartItem>>
   get items;
-  $R call({String? cartId, List<CartItem>? items, bool? isSyncing});
+  ListCopyWith<
+    $R,
+    CartServiceItem,
+    CartServiceItemCopyWith<$R, CartServiceItem, CartServiceItem>
+  >
+  get serviceItems;
+  $R call({
+    String? cartId,
+    List<CartItem>? items,
+    List<CartServiceItem>? serviceItems,
+    bool? isSyncing,
+  });
   CartStateCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
 
@@ -139,18 +161,35 @@ class _CartStateCopyWithImpl<$R, $Out>
     (v) => call(items: v),
   );
   @override
-  $R call({Object? cartId = $none, List<CartItem>? items, bool? isSyncing}) =>
-      $apply(
-        FieldCopyWithData({
-          if (cartId != $none) #cartId: cartId,
-          if (items != null) #items: items,
-          if (isSyncing != null) #isSyncing: isSyncing,
-        }),
-      );
+  ListCopyWith<
+    $R,
+    CartServiceItem,
+    CartServiceItemCopyWith<$R, CartServiceItem, CartServiceItem>
+  >
+  get serviceItems => ListCopyWith(
+    $value.serviceItems,
+    (v, t) => v.copyWith.$chain(t),
+    (v) => call(serviceItems: v),
+  );
+  @override
+  $R call({
+    Object? cartId = $none,
+    List<CartItem>? items,
+    List<CartServiceItem>? serviceItems,
+    bool? isSyncing,
+  }) => $apply(
+    FieldCopyWithData({
+      if (cartId != $none) #cartId: cartId,
+      if (items != null) #items: items,
+      if (serviceItems != null) #serviceItems: serviceItems,
+      if (isSyncing != null) #isSyncing: isSyncing,
+    }),
+  );
   @override
   CartState $make(CopyWithData data) => CartState(
     cartId: data.get(#cartId, or: $value.cartId),
     items: data.get(#items, or: $value.items),
+    serviceItems: data.get(#serviceItems, or: $value.serviceItems),
     isSyncing: data.get(#isSyncing, or: $value.isSyncing),
   );
 

@@ -22,7 +22,9 @@
       "Bash(xargs cat:*)",
       "Bash(sort:*)",
       "Bash(xargs git add:*)",
-      "WebFetch(domain:pub.dev)"
+      "WebFetch(domain:pub.dev)",
+      "mcp__ide__getDiagnostics",
+      "WebSearch"
     ],
     "deny": [
       "Bash(rm:*)",

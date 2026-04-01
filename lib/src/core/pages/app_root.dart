@@ -5,12 +5,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/pos/presentation/cart_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
-import '../routing/routes/appointments.routes.dart';
+import '../../features/version_lock/domain/version_check_result.dart';
+import '../../features/version_lock/presentation/controllers/update_dismissed_provider.dart';
+import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
+import '../../features/version_lock/presentation/widgets/optional_update_dialog.dart';
 import '../routing/routes/dashboard.routes.dart';
-import '../routing/routes/messages.routes.dart';
 import '../routing/routes/organization.routes.dart';
-import '../routing/routes/patients.routes.dart';
 import '../routing/routes/products.routes.dart';
+import '../routing/routes/customers.routes.dart';
+import '../routing/routes/services.routes.dart';
 import '../routing/routes/reports.routes.dart';
 import '../routing/routes/sales.routes.dart';
 import '../routing/routes/sales_history.routes.dart';
@@ -43,32 +46,39 @@ class _AppRootState extends ConsumerState<AppRoot> {
   /// Key for the scaffold to control drawer.
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    // Dismiss keyboard when entering authenticated shell (e.g., after login)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+  }
+
   /// Route paths in order of navigation index.
   static const _routePaths = [
     DashboardRoute.path, // 0: /
-    PatientsRoute.path, // 1: /patients
-    AppointmentsRoute.path, // 2: /appointments
-    SalesRoute.path, // 3: /cashier
-    ProductsRoute.path, // 4: /products
-    SalesHistoryRoute.path, // 5: /sales
-    MessagesRoute.path, // 6: /messages
-    ReportsRoute.path, // 7: /reports
-    OrganizationRoute.path, // 8: /organization
-    SystemRoute.path, // 9: /system
+    SalesRoute.path, // 1: /cashier
+    SalesHistoryRoute.path, // 2: /sales
+    ProductsRoute.path, // 3: /products
+    ServicesRoute.path, // 4: /services
+    CustomersRoute.path, // 5: /customers
+    ReportsRoute.path, // 6: /reports
+    OrganizationRoute.path, // 7: /organization
+    SystemRoute.path, // 8: /system
   ];
 
   /// Routes in order of navigation index.
   static const _routes = <GoRouteData>[
     DashboardRoute(), // 0
-    PatientsRoute(), // 1
-    AppointmentsRoute(), // 2
-    SalesRoute(), // 3
-    ProductsRoute(), // 4
-    SalesHistoryRoute(), // 5
-    MessagesRoute(), // 6
-    ReportsRoute(), // 7
-    OrganizationRoute(), // 8
-    SystemRoute(), // 9
+    SalesRoute(), // 1
+    SalesHistoryRoute(), // 2
+    ProductsRoute(), // 3
+    ServicesRoute(), // 4
+    CustomersRoute(), // 5
+    ReportsRoute(), // 6
+    OrganizationRoute(), // 7
+    SystemRoute(), // 8
   ];
 
   /// Gets the selected index based on current route location.
@@ -105,6 +115,20 @@ class _AppRootState extends ConsumerState<AppRoot> {
   Widget build(BuildContext context) {
     // Initialize cart controller early to load any active cart
     ref.watch(cartControllerProvider);
+
+    // Listen for optional update availability
+    ref.listen(versionCheckProvider, (previous, next) {
+      final result = next.value;
+      if (result == null) return;
+      if (result.status != VersionCheckStatus.updateAvailable) return;
+      if (ref.read(updateDismissedProvider)) return;
+
+      ref.read(updateDismissedProvider.notifier).dismiss();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showOptionalUpdateDialog(context, result);
+      });
+    });
 
     final isMobile = Breakpoints.isMobile(context);
 

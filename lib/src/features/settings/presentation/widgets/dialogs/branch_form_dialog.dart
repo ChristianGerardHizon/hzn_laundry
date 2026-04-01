@@ -36,7 +36,6 @@ class BranchFormDialog extends HookConsumerWidget {
       initialValues: isEditing
           ? {
               'name': branch!.name,
-              'displayName': branch!.displayName ?? '',
               'address': branch!.address,
               'contactNumber': branch!.contactNumber,
               'operatingHours': branch!.operatingHours ?? '',
@@ -70,7 +69,6 @@ class BranchFormDialog extends HookConsumerWidget {
         name: (values['name'] as String).trim(),
         address: (values['address'] as String).trim(),
         contactNumber: (values['contactNumber'] as String).trim(),
-        displayName: _nullIfEmpty(values['displayName'] as String?),
         operatingHours: _nullIfEmpty(values['operatingHours'] as String?),
         cutOffTime: _nullIfEmpty(values['cutOffTime'] as String?),
       );
@@ -198,22 +196,6 @@ class BranchFormDialog extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Display Name field
-                        FormBuilderTextField(
-                          name: 'displayName',
-                          initialValue: branch?.displayName,
-                          decoration: const InputDecoration(
-                            labelText: 'Display Name',
-                            hintText:
-                                'Enter formal business name for documents',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.badge),
-                          ),
-                          enabled: !isSaving.value,
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 16),
-
                         // Address field
                         FormBuilderTextField(
                           name: 'address',
@@ -295,7 +277,6 @@ class BranchFormDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
-    'displayName': 'Display Name',
     'address': 'Address',
     'contactNumber': 'Contact Number',
     'operatingHours': 'Operating Hours',

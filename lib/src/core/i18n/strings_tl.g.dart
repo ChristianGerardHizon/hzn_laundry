@@ -85,7 +85,7 @@ class _TranslationsCommonTl implements TranslationsCommonEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get appName => 'SannJoseVet';
+	@override String get appName => 'Hi-Zone Laundry';
 	@override String get placeholderText => 'N/A';
 	@override String get save => 'I-save';
 	@override String get cancel => 'Kanselahin';
@@ -136,7 +136,7 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get conflict => 'May nangyaring conflict. Maaaring umiiral na ang resource.';
 	@override String get timeout => 'Nag-timeout ang request. Pakisubukang muli.';
 	@override String get noInternet => 'Walang koneksyon sa internet.';
-	@override String get invalidCredentials => 'Di-wastong email o password.';
+	@override String get invalidCredentials => 'Di-wastong username o password.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
 	@override String get tooManyRequests => 'Masyadong maraming request. Maghintay ng ilang sandali.';
@@ -149,6 +149,7 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
+	@override String get userName => 'Username';
 	@override String get email => 'Email';
 	@override String get password => 'Password';
 	@override String get passwordConfirmation => 'Password confirmation';
@@ -178,8 +179,6 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 
 	// Translations
 	@override String get dashboard => 'Dashboard';
-	@override String get patients => 'Mga Pasyente';
-	@override String get appointments => 'Appts';
 	@override String get products => 'Mga Produkto';
 	@override String get inventory => 'Imbentaryo';
 	@override String get settings => 'Mga Setting';
@@ -191,10 +190,10 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get more => 'Iba Pa';
 	@override String get sales => 'Cashier';
 	@override String get salesHistory => 'Mga Benta';
-	@override String get messages => 'Mga Mensahe';
 	@override String get organization => 'Organisasyon';
+	@override String get services => 'Mga Serbisyo';
+	@override String get customers => 'Mga Customer';
 	@override String get system => 'Sistema';
-	@override String get patientConfig => 'Config ng Pasyente';
 	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
 }
@@ -268,7 +267,7 @@ extension on TranslationsTl {
 			'auth.signInToContinue' => 'Mag-sign in upang magpatuloy',
 			'auth.signingIn' => 'Nagsa-sign in...',
 			'auth.verificationEmailSent' => 'Naipadala na ang verification email sa iyong email address',
-			'common.appName' => 'SannJoseVet',
+			'common.appName' => 'Hi-Zone Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'I-save',
 			'common.cancel' => 'Kanselahin',
@@ -310,10 +309,11 @@ extension on TranslationsTl {
 			'failures.conflict' => 'May nangyaring conflict. Maaaring umiiral na ang resource.',
 			'failures.timeout' => 'Nag-timeout ang request. Pakisubukang muli.',
 			'failures.noInternet' => 'Walang koneksyon sa internet.',
-			'failures.invalidCredentials' => 'Di-wastong email o password.',
+			'failures.invalidCredentials' => 'Di-wastong username o password.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',
 			'failures.tooManyRequests' => 'Masyadong maraming request. Maghintay ng ilang sandali.',
+			'fields.userName' => 'Username',
 			'fields.email' => 'Email',
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
@@ -334,8 +334,6 @@ extension on TranslationsTl {
 			'fields.description' => 'Paglalarawan',
 			'fields.category' => 'Kategorya',
 			'navigation.dashboard' => 'Dashboard',
-			'navigation.patients' => 'Mga Pasyente',
-			'navigation.appointments' => 'Appts',
 			'navigation.products' => 'Mga Produkto',
 			'navigation.inventory' => 'Imbentaryo',
 			'navigation.settings' => 'Mga Setting',
@@ -347,10 +345,10 @@ extension on TranslationsTl {
 			'navigation.more' => 'Iba Pa',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Mga Benta',
-			'navigation.messages' => 'Mga Mensahe',
 			'navigation.organization' => 'Organisasyon',
+			'navigation.services' => 'Mga Serbisyo',
+			'navigation.customers' => 'Mga Customer',
 			'navigation.system' => 'Sistema',
-			'navigation.patientConfig' => 'Config ng Pasyente',
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',
 			'sort.sortBy' => 'Ayusin Ayon Sa',

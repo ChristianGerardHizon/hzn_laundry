@@ -2,6 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_protected_member
 // ignore_for_file: unused_element, unnecessary_cast, override_on_non_overriding_member
 // ignore_for_file: strict_raw_type, inference_failure_on_untyped_parameter
 
@@ -45,12 +46,6 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
     'contactNumber',
     _$contactNumber,
   );
-  static String? _$displayName(BranchDto v) => v.displayName;
-  static const Field<BranchDto, String> _f$displayName = Field(
-    'displayName',
-    _$displayName,
-    opt: true,
-  );
   static String? _$operatingHours(BranchDto v) => v.operatingHours;
   static const Field<BranchDto, String> _f$operatingHours = Field(
     'operatingHours',
@@ -91,7 +86,6 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
     #name: _f$name,
     #address: _f$address,
     #contactNumber: _f$contactNumber,
-    #displayName: _f$displayName,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
     #isDeleted: _f$isDeleted,
@@ -107,7 +101,6 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
       name: data.dec(_f$name),
       address: data.dec(_f$address),
       contactNumber: data.dec(_f$contactNumber),
-      displayName: data.dec(_f$displayName),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
       isDeleted: data.dec(_f$isDeleted),
@@ -182,7 +175,6 @@ abstract class BranchDtoCopyWith<$R, $In extends BranchDto, $Out>
     String? name,
     String? address,
     String? contactNumber,
-    String? displayName,
     String? operatingHours,
     String? cutOffTime,
     bool? isDeleted,
@@ -208,7 +200,6 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     String? name,
     String? address,
     String? contactNumber,
-    Object? displayName = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
     bool? isDeleted,
@@ -222,7 +213,6 @@ class _BranchDtoCopyWithImpl<$R, $Out>
       if (name != null) #name: name,
       if (address != null) #address: address,
       if (contactNumber != null) #contactNumber: contactNumber,
-      if (displayName != $none) #displayName: displayName,
       if (operatingHours != $none) #operatingHours: operatingHours,
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
       if (isDeleted != null) #isDeleted: isDeleted,
@@ -238,7 +228,6 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     name: data.get(#name, or: $value.name),
     address: data.get(#address, or: $value.address),
     contactNumber: data.get(#contactNumber, or: $value.contactNumber),
-    displayName: data.get(#displayName, or: $value.displayName),
     operatingHours: data.get(#operatingHours, or: $value.operatingHours),
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),

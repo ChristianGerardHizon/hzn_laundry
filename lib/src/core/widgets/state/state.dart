@@ -2,7 +2,7 @@
 ///
 /// This library exports all state-related widgets for easy importing:
 /// ```dart
-/// import 'package:sannjosevet/src/core/widgets/state/state.dart';
+/// import 'package:hizonelaundry/src/core/widgets/state/state.dart';
 /// ```
 library;
 

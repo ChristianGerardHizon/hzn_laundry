@@ -2,7 +2,7 @@
 ///
 /// This library exports all form-related widgets for easy importing:
 /// ```dart
-/// import 'package:sannjosevet/src/core/widgets/form/form.dart';
+/// import 'package:hizonelaundry/src/core/widgets/form/form.dart';
 /// ```
 library;
 

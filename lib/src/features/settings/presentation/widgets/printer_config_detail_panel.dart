@@ -121,11 +121,12 @@ class _PrinterDetailContent extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isPrinting = useState(false);
+    final printService = ref.read(thermalPrintServiceProvider.notifier);
+    final autoCut = useState(printService.autoCut);
 
     Future<void> handleTestPrint() async {
       isPrinting.value = true;
 
-      final printService = ref.read(thermalPrintServiceProvider.notifier);
       final result = await printService.printTestPage(config);
 
       isPrinting.value = false;
@@ -248,7 +249,27 @@ class _PrinterDetailContent extends HookConsumerWidget {
               label: 'Paper Width',
               value: config.paperWidth.displayName,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+
+            // Auto-cut toggle
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: Icon(
+                Icons.content_cut,
+                size: 20,
+                color: theme.colorScheme.outline,
+              ),
+              title: const Text('Auto Cut'),
+              subtitle: const Text(
+                'Automatically cut paper after printing',
+              ),
+              value: autoCut.value,
+              onChanged: (value) {
+                printService.setAutoCut(value);
+                autoCut.value = value;
+              },
+            ),
+            const SizedBox(height: 16),
 
             // Test Print button
             SizedBox(

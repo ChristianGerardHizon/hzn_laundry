@@ -20,7 +20,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.mobileapp.sannjosevet</string>
+		<string>$(AppIdentifierPrefix)com.mobileapp.hizonelaundry</string>
 	</array>
 </dict>
 </plist>

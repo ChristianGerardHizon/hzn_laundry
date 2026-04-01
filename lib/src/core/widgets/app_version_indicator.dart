@@ -7,7 +7,7 @@ import '../packages/pocketbase/pocketbase_provider.dart';
 /// Reusable widget displaying server domain, app version, and environment.
 ///
 /// Shows:
-/// - Server domain: `staging.sannjoseanimalclinic.com`
+/// - Server domain: `staging.hizonelaundry.sannjoseanimalclinic.com`
 /// - Version and build number: `v1.0.0+1`
 /// - Environment badge (only for non-prod): `DEV` or `STAGING`
 class AppVersionIndicator extends ConsumerWidget {

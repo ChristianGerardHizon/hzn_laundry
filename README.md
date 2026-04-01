@@ -1,6 +1,6 @@
-# SannJoseVet
+# Hi-Zone Laundry
 
-A Flutter multi-platform veterinary/pet care management system supporting Android, iOS, macOS, Linux, Windows, and Web.
+A Flutter multi-platform laundry management system supporting Android, iOS, macOS, Linux, Windows, and Web.
 
 ## Tech Stack
 

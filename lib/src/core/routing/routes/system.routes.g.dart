@@ -18,16 +18,6 @@ RouteBase get $systemShellRoute => ShellRouteData.$route(
           factory: $SystemRoute._fromState,
           routes: [
             GoRouteData.$route(
-              path: 'species',
-              factory: $SpeciesRoute._fromState,
-              routes: [
-                GoRouteData.$route(
-                  path: ':id',
-                  factory: $SpeciesDetailRoute._fromState,
-                ),
-              ],
-            ),
-            GoRouteData.$route(
               path: 'product-categories',
               factory: $ProductCategoriesRoute._fromState,
               routes: [
@@ -38,22 +28,12 @@ RouteBase get $systemShellRoute => ShellRouteData.$route(
               ],
             ),
             GoRouteData.$route(
-              path: 'message-templates',
-              factory: $MessageTemplatesRoute._fromState,
+              path: 'quantity-units',
+              factory: $QuantityUnitsRoute._fromState,
               routes: [
                 GoRouteData.$route(
                   path: ':id',
-                  factory: $MessageTemplateDetailRoute._fromState,
-                ),
-              ],
-            ),
-            GoRouteData.$route(
-              path: 'treatment-types',
-              factory: $TreatmentTypesRoute._fromState,
-              routes: [
-                GoRouteData.$route(
-                  path: ':id',
-                  factory: $TreatmentTypeDetailRoute._fromState,
+                  factory: $QuantityUnitDetailRoute._fromState,
                 ),
               ],
             ),
@@ -64,6 +44,16 @@ RouteBase get $systemShellRoute => ShellRouteData.$route(
                 GoRouteData.$route(
                   path: ':id',
                   factory: $PrinterDetailRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
+              path: 'cashier-groups',
+              factory: $CashierGroupsRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':id',
+                  factory: $CashierGroupDetailRoute._fromState,
                 ),
               ],
             ),
@@ -91,55 +81,6 @@ mixin $SystemRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/system',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $SpeciesRoute on GoRouteData {
-  static SpeciesRoute _fromState(GoRouterState state) => const SpeciesRoute();
-
-  @override
-  String get location => GoRouteData.$location(
-        '/system/species',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $SpeciesDetailRoute on GoRouteData {
-  static SpeciesDetailRoute _fromState(GoRouterState state) =>
-      SpeciesDetailRoute(
-        id: state.pathParameters['id']!,
-      );
-
-  SpeciesDetailRoute get _self => this as SpeciesDetailRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-        '/system/species/${Uri.encodeComponent(_self.id)}',
       );
 
   @override
@@ -206,13 +147,13 @@ mixin $ProductCategoryDetailRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin $MessageTemplatesRoute on GoRouteData {
-  static MessageTemplatesRoute _fromState(GoRouterState state) =>
-      const MessageTemplatesRoute();
+mixin $QuantityUnitsRoute on GoRouteData {
+  static QuantityUnitsRoute _fromState(GoRouterState state) =>
+      const QuantityUnitsRoute();
 
   @override
   String get location => GoRouteData.$location(
-        '/system/message-templates',
+        '/system/quantity-units',
       );
 
   @override
@@ -229,67 +170,17 @@ mixin $MessageTemplatesRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin $MessageTemplateDetailRoute on GoRouteData {
-  static MessageTemplateDetailRoute _fromState(GoRouterState state) =>
-      MessageTemplateDetailRoute(
+mixin $QuantityUnitDetailRoute on GoRouteData {
+  static QuantityUnitDetailRoute _fromState(GoRouterState state) =>
+      QuantityUnitDetailRoute(
         id: state.pathParameters['id']!,
       );
 
-  MessageTemplateDetailRoute get _self => this as MessageTemplateDetailRoute;
+  QuantityUnitDetailRoute get _self => this as QuantityUnitDetailRoute;
 
   @override
   String get location => GoRouteData.$location(
-        '/system/message-templates/${Uri.encodeComponent(_self.id)}',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $TreatmentTypesRoute on GoRouteData {
-  static TreatmentTypesRoute _fromState(GoRouterState state) =>
-      const TreatmentTypesRoute();
-
-  @override
-  String get location => GoRouteData.$location(
-        '/system/treatment-types',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $TreatmentTypeDetailRoute on GoRouteData {
-  static TreatmentTypeDetailRoute _fromState(GoRouterState state) =>
-      TreatmentTypeDetailRoute(
-        id: state.pathParameters['id']!,
-      );
-
-  TreatmentTypeDetailRoute get _self => this as TreatmentTypeDetailRoute;
-
-  @override
-  String get location => GoRouteData.$location(
-        '/system/treatment-types/${Uri.encodeComponent(_self.id)}',
+        '/system/quantity-units/${Uri.encodeComponent(_self.id)}',
       );
 
   @override
@@ -340,6 +231,56 @@ mixin $PrinterDetailRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/system/printers/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $CashierGroupsRoute on GoRouteData {
+  static CashierGroupsRoute _fromState(GoRouterState state) =>
+      const CashierGroupsRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/system/cashier-groups',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $CashierGroupDetailRoute on GoRouteData {
+  static CashierGroupDetailRoute _fromState(GoRouterState state) =>
+      CashierGroupDetailRoute(
+        id: state.pathParameters['id']!,
+      );
+
+  CashierGroupDetailRoute get _self => this as CashierGroupDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+        '/system/cashier-groups/${Uri.encodeComponent(_self.id)}',
       );
 
   @override

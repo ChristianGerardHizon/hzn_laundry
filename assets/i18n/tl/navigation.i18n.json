@@ -1,7 +1,5 @@
 {
     "dashboard": "Dashboard",
-    "patients": "Mga Pasyente",
-    "appointments": "Appts",
     "products": "Mga Produkto",
     "inventory": "Imbentaryo",
     "settings": "Mga Setting",
@@ -13,10 +11,10 @@
     "more": "Iba Pa",
     "sales": "Cashier",
     "salesHistory": "Mga Benta",
-    "messages": "Mga Mensahe",
     "organization": "Organisasyon",
+    "services": "Mga Serbisyo",
+    "customers": "Mga Customer",
     "system": "Sistema",
-    "patientConfig": "Config ng Pasyente",
     "account": "Account",
     "noBranch": "Walang Sangay"
 }

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/constants/constants.dart';
 import '../../../../core/routing/routes/system.routes.dart';
-import '../../../patients/presentation/controllers/patient_treatments_controller.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../pos/presentation/controllers/pos_groups_controller.dart';
+import '../../../pos/presentation/widgets/cashier_group_detail_panel.dart';
 import '../../../products/domain/product_category.dart';
-import '../../domain/message_template.dart';
-import '../controllers/message_templates_controller.dart';
 import '../controllers/product_categories_controller.dart';
-import '../controllers/species_controller.dart';
 import '../controllers/printer_configs_controller.dart';
+import '../controllers/quantity_units_controller.dart';
 import 'empty_system_state.dart';
-import 'dialogs/message_template_form_dialog.dart';
+import 'dialogs/quantity_unit_form_dialog.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 import 'dialogs/product_category_form_dialog.dart';
 import 'import_landing_panel.dart';
@@ -21,7 +21,7 @@ import 'theme_settings_panel.dart';
 
 /// Three-panel tablet layout for system settings.
 ///
-/// Panel 1 (72px): Navigation rail for Species/Categories/Templates selection
+/// Panel 1 (72px): Navigation rail for Categories/Printers/Appearance/Import selection
 /// Panel 2 (320px): List panel based on current mode
 /// Panel 3 (expanded): Detail panel from router or empty state
 class TabletSystemLayout extends ConsumerWidget {
@@ -41,20 +41,18 @@ class TabletSystemLayout extends ConsumerWidget {
 
     // Determine current mode from path
     final SystemMode currentMode;
-    if (path.contains('/product-categories')) {
-      currentMode = SystemMode.productCategories;
-    } else if (path.contains('/message-templates')) {
-      currentMode = SystemMode.messageTemplates;
-    } else if (path.contains('/treatment-types')) {
-      currentMode = SystemMode.treatmentTypes;
+    if (path.contains('/quantity-units')) {
+      currentMode = SystemMode.quantityUnits;
     } else if (path.contains('/printers')) {
       currentMode = SystemMode.printers;
+    } else if (path.contains('/cashier-groups')) {
+      currentMode = SystemMode.cashierGroups;
     } else if (path.contains('/appearance')) {
       currentMode = SystemMode.appearance;
     } else if (path.contains('/import')) {
       currentMode = SystemMode.import;
     } else {
-      currentMode = SystemMode.speciesBreeds;
+      currentMode = SystemMode.productCategories;
     }
 
     return Row(
@@ -64,16 +62,14 @@ class TabletSystemLayout extends ConsumerWidget {
           currentMode: currentMode,
           onModeChanged: (mode) {
             switch (mode) {
-              case SystemMode.speciesBreeds:
-                const SpeciesRoute().go(context);
               case SystemMode.productCategories:
                 const ProductCategoriesRoute().go(context);
-              case SystemMode.messageTemplates:
-                const MessageTemplatesRoute().go(context);
-              case SystemMode.treatmentTypes:
-                const TreatmentTypesRoute().go(context);
+              case SystemMode.quantityUnits:
+                const QuantityUnitsRoute().go(context);
               case SystemMode.printers:
                 const PrinterSettingsRoute().go(context);
+              case SystemMode.cashierGroups:
+                const CashierGroupsRoute().go(context);
               case SystemMode.appearance:
                 const AppearanceRoute().go(context);
               case SystemMode.import:
@@ -90,23 +86,33 @@ class TabletSystemLayout extends ConsumerWidget {
         ] else if (currentMode == SystemMode.import) ...[
           // Import mode: Show landing panel directly (no list/detail split)
           const Expanded(child: ImportLandingPanel()),
+        ] else if (currentMode == SystemMode.cashierGroups) ...[
+          // Cashier groups mode: List + detail split
+          SizedBox(
+            width: 320,
+            child: _CashierGroupListWrapper(selectedId: selectedId),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: selectedId != null
+                ? CashierGroupDetailPanel(groupId: selectedId)
+                : EmptySystemState(mode: currentMode),
+          ),
         ] else ...[
           SizedBox(
             width: 320,
             child: switch (currentMode) {
-              SystemMode.speciesBreeds =>
-                _SpeciesListWrapper(selectedId: selectedId),
               SystemMode.productCategories =>
                 _ProductCategoryListWrapper(selectedId: selectedId),
-              SystemMode.messageTemplates =>
-                _MessageTemplateListWrapper(selectedId: selectedId),
-              SystemMode.treatmentTypes =>
-                _TreatmentTypeListWrapper(selectedId: selectedId),
+              SystemMode.quantityUnits =>
+                _QuantityUnitListWrapper(selectedId: selectedId),
               SystemMode.printers =>
                 _PrinterListWrapper(selectedId: selectedId),
               SystemMode.appearance =>
                 const SizedBox.shrink(), // Handled above
               SystemMode.import =>
+                const SizedBox.shrink(), // Handled above
+              SystemMode.cashierGroups =>
                 const SizedBox.shrink(), // Handled above
             },
           ),
@@ -120,111 +126,6 @@ class TabletSystemLayout extends ConsumerWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-/// Wrapper for SpeciesListPanel with system-specific navigation.
-class _SpeciesListWrapper extends ConsumerWidget {
-  const _SpeciesListWrapper({required this.selectedId});
-
-  final String? selectedId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final speciesAsync = ref.watch(speciesControllerProvider);
-    final controller = ref.read(speciesControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Species'),
-        automaticallyImplyLeading: false,
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'species_fab',
-        onPressed: () => const SpeciesDetailRoute(id: 'new').go(context),
-        child: const Icon(Icons.add),
-      ),
-      body: speciesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (speciesList) {
-          if (speciesList.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.pets_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No species yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a species',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: speciesList.length,
-              itemBuilder: (context, index) {
-                final species = speciesList[index];
-                final isSelected = species.id == selectedId;
-
-                return ListTile(
-                  selected: isSelected,
-                  selectedTileColor:
-                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  leading: CircleAvatar(
-                    backgroundColor: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.pets_outlined,
-                      color: isSelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  title: Text(species.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => SpeciesDetailRoute(id: species.id).go(context),
-                );
-              },
-            ),
-          );
-        },
-      ),
     );
   }
 }
@@ -393,284 +294,6 @@ class _CategoryListTile extends StatelessWidget {
   }
 }
 
-/// Wrapper for MessageTemplateListPanel with system-specific navigation.
-class _MessageTemplateListWrapper extends ConsumerWidget {
-  const _MessageTemplateListWrapper({required this.selectedId});
-
-  final String? selectedId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final templatesAsync = ref.watch(messageTemplatesControllerProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Message Templates'),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showCreateSheet(context),
-            tooltip: 'Add Template',
-          ),
-        ],
-      ),
-      body: templatesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () =>
-                    ref.invalidate(messageTemplatesControllerProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (templates) {
-          if (templates.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 48,
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No templates yet',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Group by category
-          final grouped = ref
-              .read(messageTemplatesControllerProvider.notifier)
-              .groupedByCategory;
-          final categories = grouped.keys.toList()..sort();
-
-          return RefreshIndicator(
-            onRefresh: () => ref
-                .read(messageTemplatesControllerProvider.notifier)
-                .refresh(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                final categoryTemplates = grouped[category]!;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (index > 0) const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        MessageTemplateCategories.labels[category] ??
-                            category,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    ...categoryTemplates.map((template) {
-                      final isSelected = template.id == selectedId;
-                      return _MessageTemplateListTile(
-                        template: template,
-                        isSelected: isSelected,
-                        onTap: () =>
-                            MessageTemplateDetailRoute(id: template.id).go(context),
-                      );
-                    }),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showCreateSheet(BuildContext context) {
-    showMessageTemplateFormDialog(context);
-  }
-}
-
-class _MessageTemplateListTile extends StatelessWidget {
-  const _MessageTemplateListTile({
-    required this.template,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final MessageTemplate template;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      color: isSelected ? theme.colorScheme.primaryContainer : null,
-      child: ListTile(
-        dense: true,
-        leading: Icon(
-          Icons.message_outlined,
-          color: isSelected
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.outline,
-          size: 20,
-        ),
-        title: Text(
-          template.name,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w600 : null,
-          ),
-        ),
-        subtitle: Text(
-          template.content,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// Wrapper for TreatmentTypeListPanel with system-specific navigation.
-class _TreatmentTypeListWrapper extends ConsumerWidget {
-  const _TreatmentTypeListWrapper({required this.selectedId});
-
-  final String? selectedId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final treatmentsAsync = ref.watch(patientTreatmentsControllerProvider);
-    final controller = ref.read(patientTreatmentsControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Treatment Types'),
-        automaticallyImplyLeading: false,
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'treatment_type_fab',
-        onPressed: () => const TreatmentTypeDetailRoute(id: 'new').go(context),
-        child: const Icon(Icons.add),
-      ),
-      body: treatmentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (treatments) {
-          if (treatments.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.medical_services_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No treatment types yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a treatment type',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: treatments.length,
-              itemBuilder: (context, index) {
-                final treatment = treatments[index];
-                final isSelected = treatment.id == selectedId;
-
-                return ListTile(
-                  selected: isSelected,
-                  selectedTileColor:
-                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  leading: CircleAvatar(
-                    backgroundColor: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.medical_services_outlined,
-                      color: isSelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  title: Text(treatment.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      TreatmentTypeDetailRoute(id: treatment.id).go(context),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 /// Wrapper for PrinterListPanel with system-specific navigation.
 class _PrinterListWrapper extends ConsumerWidget {
   const _PrinterListWrapper({required this.selectedId});
@@ -803,5 +426,286 @@ class _PrinterListWrapper extends ConsumerWidget {
 
   void _showCreateSheet(BuildContext context) {
     showPrinterConfigFormDialog(context);
+  }
+}
+
+/// Wrapper for QuantityUnitListPanel with system-specific navigation.
+class _QuantityUnitListWrapper extends ConsumerWidget {
+  const _QuantityUnitListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final unitsAsync = ref.watch(quantityUnitsControllerProvider);
+    final controller = ref.read(quantityUnitsControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quantity Units'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'quantity_unit_fab',
+        onPressed: () => showQuantityUnitFormDialog(context),
+        tooltip: 'Add Unit',
+        child: const Icon(Icons.add),
+      ),
+      body: unitsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (units) {
+          if (units.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.straighten_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No quantity units yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a unit',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: units.length,
+              itemBuilder: (context, index) {
+                final unit = units[index];
+                final isSelected = unit.id == selectedId;
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.straighten,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(unit.name),
+                  subtitle: Text(unit.shortPlural),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => QuantityUnitDetailRoute(id: unit.id).go(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Wrapper for cashier group list in tablet layout.
+class _CashierGroupListWrapper extends ConsumerWidget {
+  const _CashierGroupListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final groupsAsync = ref.watch(posGroupsControllerProvider);
+    final controller = ref.read(posGroupsControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cashier Layout'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'cashier_group_list_fab',
+        onPressed: () => _showCreateDialog(context),
+        tooltip: 'Add Group',
+        child: const Icon(Icons.add),
+      ),
+      body: groupsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (groups) {
+          if (groups.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.dashboard_customize_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No groups yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a group',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                final isSelected = group.id == selectedId;
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.dashboard_customize,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(group.name),
+                  subtitle: Text(
+                    '${group.items.length} item${group.items.length == 1 ? '' : 's'}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      CashierGroupDetailRoute(id: group.id).go(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateDialog(BuildContext context) {
+    // Import is at the top of the file
+    showDialog(
+      context: context,
+      builder: (context) => const _CreateGroupDialog(),
+    );
+  }
+}
+
+class _CreateGroupDialog extends HookConsumerWidget {
+  const _CreateGroupDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nameController = useTextEditingController();
+    final isSaving = useState(false);
+
+    Future<void> handleSave() async {
+      final name = nameController.text.trim();
+      if (name.isEmpty) return;
+
+      isSaving.value = true;
+      final error = await ref
+          .read(posGroupsControllerProvider.notifier)
+          .createGroup(name);
+      isSaving.value = false;
+
+      if (error == null && context.mounted) {
+        Navigator.of(context).pop();
+      } else if (context.mounted) {
+        showErrorSnackBar(context, message: error ?? 'Unknown error');
+      }
+    }
+
+    return AlertDialog(
+      title: const Text('New Group'),
+      content: TextField(
+        controller: nameController,
+        decoration: const InputDecoration(
+          labelText: 'Group Name *',
+          hintText: 'e.g., Detergents, Wash Services',
+        ),
+        autofocus: true,
+        onSubmitted: (_) => handleSave(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: isSaving.value ? null : handleSave,
+          child: isSaving.value
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create'),
+        ),
+      ],
+    );
   }
 }

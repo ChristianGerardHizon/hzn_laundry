@@ -3,9 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../widgets/report_period_selector.dart';
-import '../widgets/views/appointment_report_view.dart';
 import '../widgets/views/inventory_report_view.dart';
-import '../widgets/views/patient_report_view.dart';
 import '../widgets/views/sales_report_view.dart';
 
 /// Main reports page with tabbed navigation for different report types.
@@ -14,7 +12,7 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 4);
+    final tabController = useTabController(initialLength: 2);
 
     return Scaffold(
       appBar: AppBar(
@@ -27,14 +25,6 @@ class ReportsPage extends HookConsumerWidget {
             Tab(
               icon: Icon(Icons.attach_money),
               text: 'Sales',
-            ),
-            Tab(
-              icon: Icon(Icons.pets),
-              text: 'Patients',
-            ),
-            Tab(
-              icon: Icon(Icons.calendar_today),
-              text: 'Appointments',
             ),
             Tab(
               icon: Icon(Icons.inventory_2),
@@ -58,8 +48,6 @@ class ReportsPage extends HookConsumerWidget {
         controller: tabController,
         children: const [
           SalesReportView(),
-          PatientReportView(),
-          AppointmentReportView(),
           InventoryReportView(),
         ],
       ),

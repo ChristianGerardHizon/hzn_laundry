@@ -4,6 +4,7 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/utils/currency_format.dart';
+import '../../../services/domain/cart_service_item.dart';
 import '../cart_controller.dart';
 import 'checkout_dialog.dart';
 import 'variable_price_dialog.dart';
@@ -21,8 +22,11 @@ class CartView extends ConsumerWidget {
       error: (error, stack) => Center(child: Text('Error: $error')),
       data: (cartState) {
         final cartItems = cartState.items;
+        final serviceItems = cartState.serviceItems;
         final total = cartState.total;
+        final totalCount = cartState.totalItemCount;
         final isSyncing = cartState.isSyncing;
+        final isEmpty = cartState.isEmpty;
 
         return Column(
           children: [
@@ -33,7 +37,7 @@ class CartView extends ConsumerWidget {
               ),
 
             Expanded(
-              child: cartItems.isEmpty
+              child: isEmpty
                   ? Center(
                       child: SingleChildScrollView(
                         child: Padding(
@@ -57,7 +61,7 @@ class CartView extends ConsumerWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Add products from the grid',
+                                'Add products or services from the grid',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant
                                       .withValues(alpha: 0.7),
@@ -68,317 +72,51 @@ class CartView extends ConsumerWidget {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: cartItems.length,
+                  : ListView(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemBuilder: (context, index) {
-                        final item = cartItems[index];
-                        final product = item.product;
-                        if (product == null) return const SizedBox.shrink();
+                      children: [
+                        // Service items
+                        ...serviceItems.map((item) =>
+                          _buildServiceItemCard(
+                            context, ref, theme, item, isSyncing)),
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
+                        // Products section
+                        if (cartItems.isNotEmpty && serviceItems.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                            child: Row(
                               children: [
-                                // Row 1: Product name + delete button
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            product.name,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          // Show lot number if item is from a specific lot
-                                          if (item.hasLot &&
-                                              item.lotNumber != null) ...[
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.inventory_2_outlined,
-                                                  size: 12,
-                                                  color:
-                                                      theme.colorScheme.primary,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Flexible(
-                                                  child: Text(
-                                                    'Lot: ${item.lotNumber}',
-                                                    style: theme
-                                                        .textTheme.labelSmall
-                                                        ?.copyWith(
-                                                      color: theme
-                                                          .colorScheme.primary,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                    // Delete button - aligned to top right
-                                    SizedBox(
-                                      width: 28,
-                                      height: 28,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.close,
-                                          color: theme
-                                              .colorScheme.onSurfaceVariant,
-                                          size: 16,
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                        onPressed: isSyncing
-                                            ? null
-                                            : () {
-                                                ref
-                                                    .read(cartControllerProvider
-                                                        .notifier)
-                                                    .removeItemById(item.id);
-                                              },
-                                        tooltip: 'Remove item',
-                                      ),
-                                    ),
-                                  ],
+                                Icon(
+                                  Icons.inventory_2,
+                                  size: 14,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
-
-                                const SizedBox(height: 8),
-
-                                // Row 2: Unit price, quantity controls, and total
-                                Row(
-                                  children: [
-                                    // Unit price (tappable to edit for variable-price products)
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: (item.hasCustomPrice ||
-                                                (product.isVariablePrice))
-                                            ? () async {
-                                                final newPrice =
-                                                    await showVariablePriceDialog(
-                                                  context,
-                                                  productName: product.name,
-                                                  currentPrice:
-                                                      item.effectivePrice,
-                                                );
-                                                if (newPrice != null) {
-                                                  ref
-                                                      .read(
-                                                          cartControllerProvider
-                                                              .notifier)
-                                                      .updateCustomPrice(
-                                                          item.id, newPrice);
-                                                }
-                                              }
-                                            : null,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                '${item.effectivePrice.toCurrency()} each',
-                                                style: theme
-                                                    .textTheme.bodySmall
-                                                    ?.copyWith(
-                                                  color: theme.colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (item.hasCustomPrice ||
-                                                product.isVariablePrice) ...[
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.edit,
-                                                size: 12,
-                                                color: theme
-                                                    .colorScheme.primary,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 8),
-
-                                    // Quantity controls - styled stepper
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color:
-                                              theme.colorScheme.outlineVariant,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          // Minus button
-                                          InkWell(
-                                            onTap: isSyncing
-                                                ? null
-                                                : () {
-                                                    ref
-                                                        .read(
-                                                            cartControllerProvider
-                                                                .notifier)
-                                                        .updateQuantityById(
-                                                          item.id,
-                                                          item.quantity
-                                                                  .toInt() -
-                                                              1,
-                                                        );
-                                                  },
-                                            borderRadius:
-                                                const BorderRadius.horizontal(
-                                              left: Radius.circular(7),
-                                            ),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(6),
-                                              child: Icon(
-                                                Icons.remove,
-                                                size: 16,
-                                                color: isSyncing
-                                                    ? theme.colorScheme
-                                                        .onSurfaceVariant
-                                                        .withValues(alpha: 0.5)
-                                                    : theme.colorScheme
-                                                        .onSurfaceVariant,
-                                              ),
-                                            ),
-                                          ),
-
-                                          // Quantity display (tappable to edit)
-                                          InkWell(
-                                            onTap: isSyncing
-                                                ? null
-                                                : () async {
-                                                    final newQuantity =
-                                                        await _showQuantityDialog(
-                                                      context,
-                                                      item.quantity.toInt(),
-                                                    );
-                                                    if (newQuantity != null &&
-                                                        newQuantity !=
-                                                            item.quantity
-                                                                .toInt()) {
-                                                      ref
-                                                          .read(
-                                                              cartControllerProvider
-                                                                  .notifier)
-                                                          .updateQuantityById(
-                                                            item.id,
-                                                            newQuantity,
-                                                          );
-                                                    }
-                                                  },
-                                            child: Container(
-                                              constraints: const BoxConstraints(
-                                                  minWidth: 32),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8),
-                                              child: Text(
-                                                '${item.quantity.toInt()}',
-                                                textAlign: TextAlign.center,
-                                                style: theme
-                                                    .textTheme.bodyMedium
-                                                    ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                  color:
-                                                      theme.colorScheme.primary,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-
-                                          // Plus button
-                                          InkWell(
-                                            onTap: isSyncing
-                                                ? null
-                                                : () {
-                                                    ref
-                                                        .read(
-                                                            cartControllerProvider
-                                                                .notifier)
-                                                        .updateQuantityById(
-                                                          item.id,
-                                                          item.quantity
-                                                                  .toInt() +
-                                                              1,
-                                                        );
-                                                  },
-                                            borderRadius:
-                                                const BorderRadius.horizontal(
-                                              right: Radius.circular(7),
-                                            ),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(6),
-                                              child: Icon(
-                                                Icons.add,
-                                                size: 16,
-                                                color: isSyncing
-                                                    ? theme.colorScheme
-                                                        .onSurfaceVariant
-                                                        .withValues(alpha: 0.5)
-                                                    : theme.colorScheme.primary,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 8),
-
-                                    // Item total - right aligned with min width
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        minWidth: 80,
-                                      ),
-                                      child: Text(
-                                        item.total.toCurrency(),
-                                        style:
-                                            theme.textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Products',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Divider(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        );
-                      },
+
+                        ...cartItems.map((item) {
+                          final product = item.product;
+                          if (product == null) return const SizedBox.shrink();
+
+                          return _buildProductItemCard(
+                            context, ref, theme, item, product, isSyncing);
+                        }),
+                      ],
                     ),
             ),
 
@@ -401,7 +139,7 @@ class CartView extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          'Total (${cartItems.length} items)',
+                          'Total ($totalCount items)',
                           style: theme.textTheme.titleMedium,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -422,7 +160,7 @@ class CartView extends ConsumerWidget {
                   Row(
                     children: [
                       // Clear cart button
-                      if (cartItems.isNotEmpty)
+                      if (!isEmpty)
                         Expanded(
                           child: OutlinedButton(
                             onPressed: isSyncing
@@ -458,13 +196,13 @@ class CartView extends ConsumerWidget {
                             child: const Text('Clear'),
                           ),
                         ),
-                      if (cartItems.isNotEmpty) const SizedBox(width: 12),
+                      if (!isEmpty) const SizedBox(width: 12),
 
                       // Checkout button
                       Expanded(
                         flex: 2,
                         child: FilledButton.icon(
-                          onPressed: cartItems.isEmpty || isSyncing
+                          onPressed: isEmpty || isSyncing
                               ? null
                               : () => showCheckoutDialog(context),
                           icon: const Icon(Icons.shopping_cart_checkout),
@@ -481,10 +219,375 @@ class CartView extends ConsumerWidget {
       },
     );
   }
+
+  Widget _buildProductItemCard(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    dynamic item,
+    dynamic product,
+    bool isSyncing,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Row 1: Product name + delete button
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (item.hasLot && item.lotNumber != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 12,
+                              color: theme.colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Lot: ${item.lotNumber}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 16,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: isSyncing
+                        ? null
+                        : () {
+                            ref
+                                .read(cartControllerProvider.notifier)
+                                .removeItemById(item.id);
+                          },
+                    tooltip: 'Remove item',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Row 2: Unit price, quantity controls, and total
+            _buildItemControls(
+              context, ref, theme, isSyncing,
+              itemId: item.id,
+              effectivePrice: item.effectivePrice,
+              quantity: item.quantity,
+              total: item.total,
+              isVariablePrice: item.hasCustomPrice || product.isVariablePrice,
+              itemName: product.name,
+              unitLabel: product.quantityUnit?.shortSingular,
+              onUpdateQuantity: (q) => ref
+                  .read(cartControllerProvider.notifier)
+                  .updateQuantityById(item.id, q),
+              onUpdatePrice: (p) => ref
+                  .read(cartControllerProvider.notifier)
+                  .updateCustomPrice(item.id, p),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceItemCard(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    CartServiceItem item,
+    bool isSyncing,
+  ) {
+    final service = item.service;
+    final serviceName = service?.name ?? 'Service';
+    final isVariablePrice =
+        item.hasCustomPrice || (service?.isVariablePrice ?? false);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Row 1: Service name + badge + delete button
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.miscellaneous_services,
+                        size: 14,
+                        color: theme.colorScheme.tertiary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          serviceName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 16,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: isSyncing
+                        ? null
+                        : () {
+                            ref
+                                .read(cartControllerProvider.notifier)
+                                .removeServiceItemById(item.id);
+                          },
+                    tooltip: 'Remove item',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Row 2: Unit price, quantity controls, and total
+            _buildItemControls(
+              context, ref, theme, isSyncing,
+              itemId: item.id,
+              effectivePrice: item.effectivePrice,
+              quantity: item.quantity,
+              total: item.total,
+              isVariablePrice: isVariablePrice,
+              itemName: serviceName,
+              unitLabel: service?.quantityUnit?.shortSingular,
+              maxQuantity: service?.maxQuantity,
+              onUpdateQuantity: (q) => ref
+                  .read(cartControllerProvider.notifier)
+                  .updateServiceQuantityById(item.id, q),
+              onUpdatePrice: (p) => ref
+                  .read(cartControllerProvider.notifier)
+                  .updateServiceCustomPrice(item.id, p),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemControls(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    bool isSyncing, {
+    required String itemId,
+    required num effectivePrice,
+    required num quantity,
+    required num total,
+    required bool isVariablePrice,
+    required String itemName,
+    String? unitLabel,
+    int? maxQuantity,
+    required void Function(int) onUpdateQuantity,
+    required void Function(num) onUpdatePrice,
+  }) {
+    // Build the "per unit" text - use unit label if available, otherwise "each"
+    final perUnitText = unitLabel != null && unitLabel.isNotEmpty
+        ? '${effectivePrice.toCurrency()} per $unitLabel'
+        : '${effectivePrice.toCurrency()} each';
+
+    final atMax = maxQuantity != null && quantity.toInt() >= maxQuantity;
+
+    return Row(
+      children: [
+        // Unit price (tappable to edit for variable-price items)
+        Expanded(
+          child: GestureDetector(
+            onTap: isVariablePrice
+                ? () async {
+                    final newPrice = await showVariablePriceDialog(
+                      context,
+                      productName: itemName,
+                      currentPrice: effectivePrice,
+                    );
+                    if (newPrice != null) {
+                      onUpdatePrice(newPrice);
+                    }
+                  }
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    perUnitText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (isVariablePrice) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.edit,
+                    size: 12,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Quantity controls
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: isSyncing
+                    ? null
+                    : () => onUpdateQuantity(quantity.toInt() - 1),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(7),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.remove,
+                    size: 16,
+                    color: isSyncing
+                        ? theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: isSyncing
+                    ? null
+                    : () async {
+                        final newQuantity = await _showQuantityDialog(
+                          context,
+                          quantity.toInt(),
+                          unitLabel: unitLabel,
+                          maxQuantity: maxQuantity,
+                        );
+                        if (newQuantity != null &&
+                            newQuantity != quantity.toInt()) {
+                          onUpdateQuantity(newQuantity);
+                        }
+                      },
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '${quantity.toInt()}',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: isSyncing || atMax
+                    ? null
+                    : () => onUpdateQuantity(quantity.toInt() + 1),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(7),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    Icons.add,
+                    size: 16,
+                    color: isSyncing || atMax
+                        ? theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Item total
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 80),
+          child: Text(
+            total.toCurrency(),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Shows a dialog to edit the quantity of a cart item.
-Future<int?> _showQuantityDialog(BuildContext context, int currentQuantity) async {
+///
+/// If [unitLabel] is provided, it will be shown as a suffix in the input field.
+Future<int?> _showQuantityDialog(
+  BuildContext context,
+  int currentQuantity, {
+  String? unitLabel,
+  int? maxQuantity,
+}) async {
   final formKey = GlobalKey<FormBuilderState>();
 
   return showDialog<int>(
@@ -496,9 +599,11 @@ Future<int?> _showQuantityDialog(BuildContext context, int currentQuantity) asyn
         child: FormBuilderTextField(
           name: 'quantity',
           initialValue: currentQuantity.toString(),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Quantity',
             hintText: 'Enter quantity',
+            suffixText: unitLabel != null && unitLabel.isNotEmpty ? unitLabel : null,
+            helperText: maxQuantity != null ? 'Max: $maxQuantity' : null,
           ),
           keyboardType: TextInputType.number,
           autofocus: true,
@@ -506,6 +611,8 @@ Future<int?> _showQuantityDialog(BuildContext context, int currentQuantity) asyn
             FormBuilderValidators.required(),
             FormBuilderValidators.numeric(),
             FormBuilderValidators.min(0),
+            if (maxQuantity != null)
+              FormBuilderValidators.max(maxQuantity),
           ]),
         ),
       ),

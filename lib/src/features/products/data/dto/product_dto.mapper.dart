@@ -2,6 +2,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 // ignore_for_file: type=lint
+// ignore_for_file: invalid_use_of_protected_member
 // ignore_for_file: unused_element, unnecessary_cast, override_on_non_overriding_member
 // ignore_for_file: strict_raw_type, inference_failure_on_untyped_parameter
 
@@ -14,6 +15,7 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
   static ProductDtoMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = ProductDtoMapper._());
+      QuantityUnitMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -118,6 +120,19 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
     opt: true,
     def: false,
   );
+  static String? _$quantityUnit(ProductDto v) => v.quantityUnit;
+  static const Field<ProductDto, String> _f$quantityUnit = Field(
+    'quantityUnit',
+    _$quantityUnit,
+    opt: true,
+  );
+  static QuantityUnit? _$quantityUnitExpanded(ProductDto v) =>
+      v.quantityUnitExpanded;
+  static const Field<ProductDto, QuantityUnit> _f$quantityUnitExpanded = Field(
+    'quantityUnitExpanded',
+    _$quantityUnitExpanded,
+    opt: true,
+  );
   static bool _$isDeleted(ProductDto v) => v.isDeleted;
   static const Field<ProductDto, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -157,6 +172,8 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
     #quantity: _f$quantity,
     #expiration: _f$expiration,
     #trackByLot: _f$trackByLot,
+    #quantityUnit: _f$quantityUnit,
+    #quantityUnitExpanded: _f$quantityUnitExpanded,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -181,6 +198,8 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
       quantity: data.dec(_f$quantity),
       expiration: data.dec(_f$expiration),
       trackByLot: data.dec(_f$trackByLot),
+      quantityUnit: data.dec(_f$quantityUnit),
+      quantityUnitExpanded: data.dec(_f$quantityUnitExpanded),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -247,6 +266,8 @@ extension ProductDtoValueCopy<$R, $Out>
 
 abstract class ProductDtoCopyWith<$R, $In extends ProductDto, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  QuantityUnitCopyWith<$R, QuantityUnit, QuantityUnit>?
+  get quantityUnitExpanded;
   $R call({
     String? id,
     String? collectionId,
@@ -265,6 +286,8 @@ abstract class ProductDtoCopyWith<$R, $In extends ProductDto, $Out>
     num? quantity,
     String? expiration,
     bool? trackByLot,
+    String? quantityUnit,
+    QuantityUnit? quantityUnitExpanded,
     bool? isDeleted,
     String? created,
     String? updated,
@@ -280,6 +303,11 @@ class _ProductDtoCopyWithImpl<$R, $Out>
   @override
   late final ClassMapperBase<ProductDto> $mapper =
       ProductDtoMapper.ensureInitialized();
+  @override
+  QuantityUnitCopyWith<$R, QuantityUnit, QuantityUnit>?
+  get quantityUnitExpanded => $value.quantityUnitExpanded?.copyWith.$chain(
+    (v) => call(quantityUnitExpanded: v),
+  );
   @override
   $R call({
     String? id,
@@ -299,6 +327,8 @@ class _ProductDtoCopyWithImpl<$R, $Out>
     Object? quantity = $none,
     Object? expiration = $none,
     bool? trackByLot,
+    Object? quantityUnit = $none,
+    Object? quantityUnitExpanded = $none,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -321,6 +351,9 @@ class _ProductDtoCopyWithImpl<$R, $Out>
       if (quantity != $none) #quantity: quantity,
       if (expiration != $none) #expiration: expiration,
       if (trackByLot != null) #trackByLot: trackByLot,
+      if (quantityUnit != $none) #quantityUnit: quantityUnit,
+      if (quantityUnitExpanded != $none)
+        #quantityUnitExpanded: quantityUnitExpanded,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -345,6 +378,11 @@ class _ProductDtoCopyWithImpl<$R, $Out>
     quantity: data.get(#quantity, or: $value.quantity),
     expiration: data.get(#expiration, or: $value.expiration),
     trackByLot: data.get(#trackByLot, or: $value.trackByLot),
+    quantityUnit: data.get(#quantityUnit, or: $value.quantityUnit),
+    quantityUnitExpanded: data.get(
+      #quantityUnitExpanded,
+      or: $value.quantityUnitExpanded,
+    ),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

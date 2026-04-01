@@ -8,21 +8,12 @@ enum PaymentMethod {
   cash,
   card,
   bankTransfer,
-  check,
-}
+  check;
 
-/// Extension to get display names for payment methods.
-extension PaymentMethodX on PaymentMethod {
-  String get displayName {
-    switch (this) {
-      case PaymentMethod.cash:
-        return 'Cash';
-      case PaymentMethod.card:
-        return 'Card';
-      case PaymentMethod.bankTransfer:
-        return 'Bank Transfer';
-      case PaymentMethod.check:
-        return 'Check';
-    }
-  }
+  String get displayName => switch (this) {
+        PaymentMethod.cash => 'Cash',
+        PaymentMethod.card => 'Card',
+        PaymentMethod.bankTransfer => 'Bank Transfer',
+        PaymentMethod.check => 'Check',
+      };
 }

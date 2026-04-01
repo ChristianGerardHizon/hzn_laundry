@@ -1,7 +1,5 @@
 {
     "dashboard": "Dashboard",
-    "patients": "Patients",
-    "appointments": "Appts",
     "products": "Products",
     "inventory": "Inventory",
     "settings": "Settings",
@@ -13,10 +11,10 @@
     "more": "More",
     "sales": "Cashier",
     "salesHistory": "Sales",
-    "messages": "Messages",
     "organization": "Organization",
+    "services": "Services",
+    "customers": "Customers",
     "system": "System",
-    "patientConfig": "Patient Config",
     "account": "Account",
     "noBranch": "No Branch"
 }

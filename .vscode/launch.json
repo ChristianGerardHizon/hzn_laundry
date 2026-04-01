@@ -23,7 +23,7 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.sannjoseanimalclinic.com"
+                "--dart-define=API_URL=https://staging.hizonelaundry.sannjoseanimalclinic.com"
             ]
         },
         {
@@ -35,7 +35,7 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.sannjoseanimalclinic.com"
+                "--dart-define=API_URL=https://staging.hizonelaundry.sannjoseanimalclinic.com"
             ]
         },
         {
@@ -46,7 +46,7 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://www.sannjoseanimalclinic.com"
+                "--dart-define=API_URL=https://hizonelaundry.sannjoseanimalclinic.com"
             ]
         },
         {
@@ -58,7 +58,7 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://www.sannjoseanimalclinic.com"
+                "--dart-define=API_URL=https://hizonelaundry.sannjoseanimalclinic.com"
             ]
         },
         {

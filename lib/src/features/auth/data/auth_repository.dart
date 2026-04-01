@@ -14,8 +14,8 @@ part 'auth_repository.g.dart';
 
 /// Repository interface for authentication operations.
 abstract class AuthRepository {
-  /// Attempts to login with email and password.
-  FutureEither<AuthState> login(String email, String password);
+  /// Attempts to login with username and password.
+  FutureEither<AuthState> login(String username, String password);
 
   /// Logs out the current user.
   FutureEither<void> logout();
@@ -26,11 +26,6 @@ abstract class AuthRepository {
   /// Initializes auth state from storage on app startup.
   FutureEither<AuthState> initialize();
 
-  /// Requests a password reset email.
-  FutureEither<void> requestPasswordReset(String email);
-
-  /// Requests email verification.
-  FutureEither<void> requestVerification(String email);
 }
 
 /// Provides the auth repository instance.
@@ -62,11 +57,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  FutureEither<AuthState> login(String email, String password) async {
+  FutureEither<AuthState> login(String username, String password) async {
     return TaskEither.tryCatch(
       () async {
         final result = await _collection.authWithPassword(
-          email,
+          username,
           password,
           expand: _expand,
         );
@@ -130,23 +125,4 @@ class AuthRepositoryImpl implements AuthRepository {
     ).run();
   }
 
-  @override
-  FutureEither<void> requestPasswordReset(String email) async {
-    return TaskEither.tryCatch(
-      () async {
-        await _collection.requestPasswordReset(email);
-      },
-      Failure.handle,
-    ).run();
-  }
-
-  @override
-  FutureEither<void> requestVerification(String email) async {
-    return TaskEither.tryCatch(
-      () async {
-        await _collection.requestVerification(email);
-      },
-      Failure.handle,
-    ).run();
-  }
 }

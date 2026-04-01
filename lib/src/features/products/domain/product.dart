@@ -1,5 +1,6 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
+import '../../quantity_units/domain/quantity_unit.dart';
 import 'product_status.dart';
 
 part 'product.mapper.dart';
@@ -25,6 +26,8 @@ class Product with ProductMappable {
     this.quantity,
     this.expiration,
     this.trackByLot = false,
+    this.quantityUnitId,
+    this.quantityUnit,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -75,6 +78,12 @@ class Product with ProductMappable {
 
   /// Whether to track inventory by lot numbers.
   final bool trackByLot;
+
+  /// Quantity unit FK ID.
+  final String? quantityUnitId;
+
+  /// Quantity unit (expanded from FK).
+  final QuantityUnit? quantityUnit;
 
   /// Soft delete flag.
   final bool isDeleted;
@@ -172,5 +181,17 @@ class Product with ProductMappable {
   String get quantityDisplay {
     if (quantity == null) return 'N/A';
     return quantity!.toStringAsFixed(0);
+  }
+
+  /// Formats a quantity with the appropriate unit label.
+  ///
+  /// Uses the assigned quantity unit if available, otherwise falls back to "pcs".
+  String formatQuantity(num qty, {bool useShort = true}) {
+    if (quantityUnit != null) {
+      return quantityUnit!.format(qty, useShort: useShort);
+    }
+    // Fallback for products without a quantity unit
+    final isPlural = qty != 1;
+    return '${qty.toInt()} ${isPlural ? "pcs" : "pc"}';
   }
 }

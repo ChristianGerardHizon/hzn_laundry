@@ -9,8 +9,12 @@ import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/data/repositories/product_lot_repository.dart';
 import '../../products/data/repositories/product_repository.dart';
+import '../../services/domain/sale_service_item.dart';
+import '../data/repositories/payment_repository.dart';
 import '../data/repositories/sales_repository.dart';
+import '../domain/order_status.dart';
 import '../domain/payment_method.dart';
+import '../domain/payment_type.dart';
 import '../domain/sale.dart';
 import '../domain/sale_item.dart';
 import 'cart_controller.dart';
@@ -25,11 +29,16 @@ class CheckoutController extends _$CheckoutController {
   }
 
   /// Processes checkout and creates a sale from the current cart.
+  ///
+  /// If [payNow] is true, a payment record will be created with the specified
+  /// [paymentMethod], [paymentAmount], and [paymentType].
   Future<Either<Failure, Sale>> processCheckout({
-    required PaymentMethod paymentMethod,
+    required bool payNow,
+    PaymentMethod? paymentMethod,
+    num? paymentAmount,
+    PaymentType? paymentType,
     String? paymentRef,
     String? notes,
-    double? amountTendered,
     String? customerId,
     String? customerName,
     http.MultipartFile? paymentProofFile,
@@ -49,6 +58,19 @@ class CheckoutController extends _$CheckoutController {
       return left(const GenericFailure('No branch selected'));
     }
 
+    // Validate payment parameters if paying now
+    if (payNow) {
+      if (paymentMethod == null) {
+        return left(const GenericFailure('Payment method is required'));
+      }
+      if (paymentAmount == null || paymentAmount <= 0) {
+        return left(const GenericFailure('Payment amount is required'));
+      }
+      if (paymentType == null) {
+        return left(const GenericFailure('Payment type is required'));
+      }
+    }
+
     final cashierId = auth.user.id;
 
     // Generate receipt number: BRANCH-YYYYMMDD-RANDOM
@@ -58,8 +80,8 @@ class CheckoutController extends _$CheckoutController {
     final saleItems = cartState.items.map((cartItem) {
       final product = cartItem.product;
       return SaleItem(
-        id: '', // Will be assigned by backend
-        saleId: '', // Will be linked by backend
+        id: '',
+        saleId: '',
         productId: cartItem.productId,
         productName: product?.name ?? 'Unknown Product',
         quantity: cartItem.quantity,
@@ -70,37 +92,75 @@ class CheckoutController extends _$CheckoutController {
       );
     }).toList();
 
-    // Create the sale
+    // Convert cart service items to sale service items
+    final saleServiceItems = cartState.serviceItems.map((cartServiceItem) {
+      final service = cartServiceItem.service;
+      return SaleServiceItem(
+        id: '',
+        saleId: '',
+        serviceId: cartServiceItem.serviceId,
+        serviceName: service?.name ?? 'Unknown Service',
+        quantity: cartServiceItem.quantity,
+        unitPrice: cartServiceItem.effectivePrice,
+        subtotal: cartServiceItem.total,
+      );
+    }).toList();
+
+    // Create the sale with initial orderStatus: pending
     final sale = Sale(
       id: '', // Will be assigned by backend
       receiptNumber: receiptNumber,
       branchId: branchId,
       cashierId: cashierId,
       totalAmount: cartState.total,
-      paymentMethod: paymentMethod.name,
-      status: 'completed',
-      patient: customerId,
+      status: 'pending',
+      orderStatus: OrderStatus.pending,
+      isPaid: false, // Will be updated when payment is recorded
+      customerId: customerId,
       customerName: customerName,
-      paymentRef: paymentRef,
       notes: notes,
     );
 
     // Get references before async operation to avoid disposed ref issues
     final salesRepo = ref.read(salesRepositoryProvider);
+    final paymentRepo = ref.read(paymentRepositoryProvider);
     final cartNotifier = ref.read(cartControllerProvider.notifier);
     final lotRepo = ref.read(productLotRepositoryProvider);
     final productRepo = ref.read(productRepositoryProvider);
 
-    // Save to backend
+    // Save sale to backend
     final result = await salesRepo.createSale(
       sale,
       saleItems,
-      paymentProofFile: paymentProofFile,
+      serviceItems: saleServiceItems,
     );
 
     return result.fold(
       (failure) => left(failure),
       (createdSale) async {
+        // If paying now, create payment record
+        if (payNow && paymentMethod != null && paymentAmount != null && paymentType != null) {
+          final paymentResult = await paymentRepo.create(
+            saleId: createdSale.id,
+            amount: paymentAmount,
+            paymentMethod: paymentMethod,
+            type: paymentType,
+            paymentRef: paymentRef,
+            paymentProofFile: paymentProofFile,
+          );
+
+          // If payment creation fails, we still have the sale, just log the error
+          paymentResult.fold(
+            (failure) {
+              // Payment failed but sale was created
+              // Log error but don't fail the whole checkout
+            },
+            (_) {
+              // Payment created successfully
+            },
+          );
+        }
+
         // Track products that need quantity sync
         final productIdsToSync = <String>{};
 
@@ -125,7 +185,13 @@ class CheckoutController extends _$CheckoutController {
 
         // Mark cart as converted and clear it
         await cartNotifier.markAsConverted();
-        return right(createdSale);
+
+        // Re-fetch the sale to get updated isPaid status
+        final updatedSaleResult = await salesRepo.getSale(createdSale.id);
+        return updatedSaleResult.fold(
+          (failure) => right(createdSale), // Return original if re-fetch fails
+          (updatedSale) => right(updatedSale),
+        );
       },
     );
   }

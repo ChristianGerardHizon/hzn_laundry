@@ -1,6 +1,6 @@
-# SanJoseVet - Application Overview
+# Hi-Zone Laundry - Application Overview
 
-A comprehensive Flutter multi-platform veterinary/pet care management system supporting Android, iOS, macOS, Linux, Windows, and Web.
+A comprehensive Flutter multi-platform laundry management system supporting Android, iOS, macOS, Linux, Windows, and Web.
 
 ---
 
@@ -62,6 +62,29 @@ Inventory and product management with lot tracking.
   - Hierarchical category organization
 - **Key Models**: `Product`, `ProductCategory`, `ProductLot`, `ProductAdjustment`
 
+#### Services (`/services`)
+Service management and POS integration for laundry services.
+
+- **Sub-features**:
+  - Services list with category filtering and search
+  - Service categories management
+  - Variable price and weight-based service support
+  - Estimated duration tracking
+- **Key Models**: `Service`, `ServiceCategory`, `CartServiceItem`, `SaleServiceItem`
+- **POS Integration**: Services appear in a separate tab in the cashier alongside products
+
+#### Customers (`/customers`)
+Customer management with sales history tracking.
+
+- **Sub-features**:
+  - Customers list with search by name or phone
+  - Customer detail with info and full sales history
+  - Create/edit customer via bottom sheet form
+  - Inline customer creation from POS checkout
+- **Key Models**: `Customer`
+- **POS Integration**: Customer selection is required at checkout with search/autocomplete and quick "New Customer" creation
+- **Master-Detail Layout**: Tablet shows list + detail side-by-side; mobile navigates between pages
+
 #### Dashboard (`/`)
 Home screen with quick summary and today's appointments.
 
@@ -74,20 +97,28 @@ Home screen with quick summary and today's appointments.
 ### Secondary Features
 
 #### Point of Sale / Cashier (`/cashier`)
-Complete POS system for processing sales.
+Complete POS system for processing sales of products and services.
 
 - **Features**:
+  - **Customizable Cashier Layout** (POS Groups): Create named groups of products/services per branch to define the cashier page layout. Groups display as scrollable sections with sticky headers. Items can belong to multiple groups. Falls back to default Products/Services tabs when no groups are configured.
+  - Products/Services tab toggle (SegmentedButton) — default mode when no groups exist
   - Product grid with search and category filtering
-  - Shopping cart management
+  - Service grid with search
+  - Search dropdown overlay (grouped mode) — searches across all products and services, results show in a dropdown with type icons
+  - Shopping cart with mixed product + service items
   - Lot selection with FEFO ordering for lot-tracked products
+  - Variable price support for both products and services
   - Multiple payment methods (cash, card, check, etc.)
   - Receipt generation and printing
 - **Components**:
-  - `ProductGrid` - Product selection
-  - `CartView` - Shopping cart
-  - `CheckoutSheet` - Payment processing
-  - `LotSelectionSheet` - FEFO lot selection
-  - `ReceiptSheet` - Receipt display/print
+  - `ProductGrid` - Product selection (default mode)
+  - `ServiceGrid` - Service selection (default mode)
+  - `GroupedCashierView` - Scrollable grouped sections with product/service cards (grouped mode)
+  - `CashierSearchDropdown` - Search overlay for grouped mode
+  - `CartView` - Shopping cart (products + services)
+  - `CheckoutDialog` - Payment processing
+  - `LotSelectionDialog` - FEFO lot selection
+  - `ReceiptDialog` - Receipt display/print
 
 #### Sales History (`/sales`)
 View and manage completed transactions.
@@ -125,8 +156,10 @@ Plan and track multi-visit treatment courses.
 
 **Modes:**
 - **Users** (`/organization/users`) - User CRUD, role assignment, branch association
-- **Roles** (`/organization/roles`) - Role and permission management (Admin, Veterinarian, Staff, Cashier)
+- **Roles** (`/organization/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/organization/branches`) - Multi-location support with address and contact info
+- **Machines** (`/organization/machines`) - Laundry machine management (washer, dryer, other) with availability tracking
+- **Storages** (`/organization/storages`) - Storage location management for ready laundry items
 
 #### System Settings (`/system`)
 3-panel tablet layout for system configuration.
@@ -140,6 +173,7 @@ Plan and track multi-visit treatment courses.
 - **Species & Breeds** (`/system/species`) - Pet species catalog with breeds linked to species
 - **Product Categories** (`/system/product-categories`) - Hierarchical product categories
 - **Message Templates** (`/system/message-templates`) - Pre-defined messages for appointments
+- **Cashier Layout** (`/system/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
 
 ---
 
@@ -190,12 +224,14 @@ Located in `/lib/src/core/`
 
 ### 18+ Collections across 6 Domains
 
-#### Organization Domain (3 collections)
+#### Organization Domain (5 collections)
 | Collection | Description |
 |------------|-------------|
 | `User` | System users (all types) |
 | `UserRole` | Role definitions with permissions |
 | `Branch` | Business branches/locations |
+| `Machine` | Laundry machines (washer, dryer, other) |
+| `StorageLocation` | Storage locations for laundry items |
 
 #### Patient Domain (8 collections)
 | Collection | Description |
@@ -223,12 +259,26 @@ Located in `/lib/src/core/`
 |------------|-------------|
 | `AppointmentSchedule` | Appointment bookings |
 
-#### Sales Domain (3 collections)
+#### Service Domain (2 collections)
+| Collection | Description |
+|------------|-------------|
+| `Service` | Laundry services (wash, dry, fold, etc.) |
+| `ServiceCategory` | Service categories |
+
+#### POS Domain (2 collections)
+| Collection | Description |
+|------------|-------------|
+| `PosGroup` | Named groups for cashier layout (per-branch) |
+| `PosGroupItem` | Many-to-many link between groups and products/services |
+
+#### Sales Domain (5 collections)
 | Collection | Description |
 |------------|-------------|
 | `Sale` | Transaction records |
-| `SaleItem` | Items in transaction |
-| `Cart` / `CartItem` | Shopping cart (temporary) |
+| `SaleItem` | Product items in transaction |
+| `SaleServiceItem` | Service items in transaction |
+| `Cart` / `CartItem` | Shopping cart (temporary, products) |
+| `CartServiceItem` | Shopping cart (temporary, services) |
 
 #### Treatment Plans Domain (3 collections)
 | Collection | Description |
@@ -267,7 +317,7 @@ Located in `/lib/src/core/`
 - **Appointment Detail**: Full appointment info
 - **Cashier/POS**: Product grid and checkout
 - **Sales List**: Transaction history
-- **Sale Detail**: Receipt view
+- **Sale Detail**: Receipt view with status history timeline
 
 ### Organization (3-panel layout)
 - Users Management (list/detail)
@@ -351,6 +401,9 @@ App Root (Shell)
     │   ├── /products/:id (Detail)
     │   ├── /products/categories
     │   └── /products/adjustments
+    ├── /services
+    │   ├── /services (List)
+    │   └── /services/:id (Detail)
     ├── /cashier (POS)
     ├── /sales
     │   ├── /sales (List)
@@ -368,8 +421,10 @@ App Root (Shell)
         │   └── /system/species/:id
         ├── /system/product-categories
         │   └── /system/product-categories/:id
-        └── /system/message-templates
-            └── /system/message-templates/:id
+        ├── /system/message-templates
+        │   └── /system/message-templates/:id
+        └── /system/cashier-groups
+            └── /system/cashier-groups/:id
 ```
 
 ### Navigation Components
@@ -391,8 +446,8 @@ Organization and System sections use a 3-panel layout:
 | Panel 2 | 320px | List panel with AppBar title and FAB |
 | Panel 3 | Expanded | Detail panel or empty state |
 
-- **Organization modes**: Users, Roles, Branches
-- **System modes**: Species & Breeds, Product Categories, Message Templates
+- **Organization modes**: Users, Roles, Branches, Machines, Storages
+- **System modes**: Species & Breeds, Product Categories, Message Templates, Cashier Layout (POS Groups)
 
 ### Primary Navigation
 1. 🏠 Dashboard - `/`
@@ -510,6 +565,14 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Apr 01 | Users & Roles | Replaced old vet-clinic roles (Veterinarian, Staff, Cashier) with laundry-appropriate roles: Admin, Manager, Cashier, Attendant. Added test user accounts for each role |
+| Feb 05 | Order Status History | Added orderStatusHistory collection and timeline UI on sale detail page to track every status change (sale status and order status) with auto-logging on create and update |
+| Feb 05 | Machines & Storages | Added machines and storage locations management under Organization with CRUD, plus machine/storage assignment dialogs when transitioning sale order status to processing/ready |
+| Feb 04 | SSH Web Deployment | Added SSH-based auto-deployment of web builds and PocketBase migrations to staging/production servers via rsync in CI/CD pipeline |
+| Feb 04 | Deployment Docs | Added CI/CD and deployment documentation (`docs/deployment.md`) covering GitHub Actions workflows, secrets, version management, and branching strategy |
+| Feb 02 | Customers Feature | Customer CRUD with sales history, required customer at POS checkout with search and inline creation |
+| Feb 02 | Cashier Groups | Customizable cashier layout with POS groups per branch — scrollable sections, search dropdown, settings page under System, falls back to default tabs when no groups configured |
+| Feb 02 | Services Feature | Full services CRUD (wash, dry, fold, iron) with categories, variable pricing, POS integration via Products/Services tab toggle, cart support, and checkout flow |
 | Jan 24 | 3-Panel Layouts | Organization and System now use 3-panel tablet layouts with nav rail, list, and detail panels |
 | Jan 24 | Branches Moved | Branches management moved from System to Organization section |
 | Jan 24 | Nav Panel Labels | Navigation panels now show icon + text labels for better clarity |

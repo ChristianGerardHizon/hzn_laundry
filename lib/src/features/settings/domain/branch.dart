@@ -12,7 +12,6 @@ class Branch with BranchMappable {
     required this.name,
     required this.address,
     required this.contactNumber,
-    this.displayName,
     this.operatingHours,
     this.cutOffTime,
     this.isDeleted = false,
@@ -31,9 +30,6 @@ class Branch with BranchMappable {
 
   /// Branch contact number.
   final String contactNumber;
-
-  /// Display name for formal/external use (e.g., "San Jose Veterinary Clinic").
-  final String? displayName;
 
   /// Operating hours (e.g., "Mon-Sat 8:00 AM - 5:00 PM").
   final String? operatingHours;

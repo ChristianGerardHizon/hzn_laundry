@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/routing/routes/appointments.routes.dart';
-import '../../../../core/routing/routes/patients.routes.dart';
-import '../../../../core/routing/routes/sales.routes.dart';
-import '../../../appointments/presentation/controllers/appointments_controller.dart';
-import '../../../appointments/presentation/widgets/dialogs/create_appointment_dialog.dart';
-import '../../../patients/presentation/widgets/dialogs/create_patient_dialog.dart';
+import '../../../customers/presentation/widgets/customer_form_sheet.dart';
+import '../../../sales/presentation/widgets/create_order_dialog.dart';
 
 /// Section displaying quick action buttons on the dashboard.
 ///
 /// Provides fast access to common tasks:
-/// - Create new appointment
-/// - Create new patient
 /// - Open POS/Cashier
 /// - Show dashboard overview (tablet only)
 class QuickActionsSection extends ConsumerWidget {
@@ -21,7 +15,7 @@ class QuickActionsSection extends ConsumerWidget {
     this.onShowOverview,
   });
 
-  /// Optional callback to show the dashboard overview (clears appointment selection).
+  /// Optional callback to show the dashboard overview (clears selection).
   /// Only shown when this callback is provided (tablet layout).
   final VoidCallback? onShowOverview;
 
@@ -54,55 +48,23 @@ class QuickActionsSection extends ConsumerWidget {
                   const SizedBox(width: 12),
                 ],
                 _QuickActionButton(
-                  icon: Icons.calendar_month,
-                  label: 'New Appointment',
-                  color: Colors.blue,
-                  onTap: () => _showCreateAppointmentDialog(context, ref),
-                ),
-                const SizedBox(width: 12),
-                _QuickActionButton(
-                  icon: Icons.pets,
-                  label: 'New Patient',
-                  color: Colors.teal,
-                  onTap: () => showCreatePatientDialog(context),
-                ),
-                const SizedBox(width: 12),
-                _QuickActionButton(
-                  icon: Icons.point_of_sale,
+                  icon: Icons.add_shopping_cart,
                   label: 'New Sale',
                   color: Colors.green,
-                  onTap: () => const SalesRoute().go(context),
+                  onTap: () => showCreateOrderDialog(context),
                 ),
                 const SizedBox(width: 12),
                 _QuickActionButton(
-                  icon: Icons.list_alt,
-                  label: 'Appointments',
-                  color: Colors.purple,
-                  onTap: () => const AppointmentsRoute().go(context),
-                ),
-                const SizedBox(width: 12),
-                _QuickActionButton(
-                  icon: Icons.person_search,
-                  label: 'Find Patient',
-                  color: Colors.orange,
-                  onTap: () => const PatientsRoute().go(context),
+                  icon: Icons.person_add,
+                  label: 'New Customer',
+                  color: Colors.blue,
+                  onTap: () => showCustomerFormDialog(context),
                 ),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  void _showCreateAppointmentDialog(BuildContext context, WidgetRef ref) {
-    showCreateAppointmentDialog(
-      context,
-      onSave: (appointment) async {
-        return await ref
-            .read(appointmentsControllerProvider.notifier)
-            .createAppointmentAndReturn(appointment);
-      },
     );
   }
 }

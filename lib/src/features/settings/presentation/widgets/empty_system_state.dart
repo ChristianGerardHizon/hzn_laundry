@@ -17,30 +17,25 @@ class EmptySystemState extends StatelessWidget {
     final theme = Theme.of(context);
 
     final (icon, title, subtitle) = switch (mode) {
-      SystemMode.speciesBreeds => (
-          Icons.pets_outlined,
-          'Select a species',
-          'Choose a species from the list to view breeds and details',
-        ),
       SystemMode.productCategories => (
           Icons.inventory_2_outlined,
           'Select a category',
           'Choose a category from the list to view details',
         ),
-      SystemMode.messageTemplates => (
-          Icons.chat_bubble_outline,
-          'Select a template',
-          'Choose a template from the list to view and edit',
-        ),
-      SystemMode.treatmentTypes => (
-          Icons.medical_services_outlined,
-          'Select a treatment type',
-          'Choose a treatment type from the list to view and edit',
+      SystemMode.quantityUnits => (
+          Icons.straighten_outlined,
+          'Select a unit',
+          'Choose a quantity unit from the list to view details',
         ),
       SystemMode.printers => (
           Icons.print_outlined,
           'Select a printer',
           'Choose a printer from the list to view and configure',
+        ),
+      SystemMode.cashierGroups => (
+          Icons.point_of_sale_outlined,
+          'Select a group',
+          'Choose a group from the list to view and manage items',
         ),
       SystemMode.appearance => (
           Icons.palette_outlined,

@@ -5,6 +5,7 @@ task.md
 *.keystore
 key.properties
 keystore-secrets.txt
+github_secrets.txt
 *.log
 *.pyc
 *.swp
@@ -54,15 +55,21 @@ app.*.map.json
 /android/app/.build/
 
 # Dev Server
-# ignore any file or directory whose name starts with "pocketbas" anywhere in server/
 # ignore everything in /server
 /server/**
 
 # allow Git to traverse into subfolders
 !/server/**/
 
-# un-ignore the three platform folders and all their contents
+# un-ignore platform binaries
 !/server/mac/pocketbase
 !/server/windows/pocketbase
 !/server/linux/pocketbase
+
+# un-ignore pb_migrations
+!/server/pb_migrations/**
+
+# un-ignore pb_hooks
+!/server/pb_hooks/**
 .grepai/
+pocketbase.env

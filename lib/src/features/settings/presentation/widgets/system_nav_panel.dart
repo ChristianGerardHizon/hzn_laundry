@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 
 /// System management modes.
 enum SystemMode {
-  speciesBreeds,
   productCategories,
-  messageTemplates,
-  treatmentTypes,
+  quantityUnits,
   printers,
+  cashierGroups,
   appearance,
   import,
 }
 
 /// Vertical navigation panel for selecting system mode.
 ///
-/// Displays icons for Species & Breeds, Product Categories, and
-/// Message Templates in a NavigationRail-style layout.
+/// Displays icons for Product Categories, Printers, Appearance, and Import
+/// in a NavigationRail-style layout.
 class SystemNavPanel extends StatelessWidget {
   const SystemNavPanel({
     super.key,
@@ -48,15 +47,6 @@ class SystemNavPanel extends StatelessWidget {
           ),
           const Divider(),
           const SizedBox(height: 8),
-          // Species & Breeds button
-          _NavButton(
-            icon: Icons.pets_outlined,
-            selectedIcon: Icons.pets,
-            label: 'Species',
-            isSelected: currentMode == SystemMode.speciesBreeds,
-            onTap: () => onModeChanged(SystemMode.speciesBreeds),
-          ),
-          const SizedBox(height: 4),
           // Product Categories button
           _NavButton(
             icon: Icons.inventory_2_outlined,
@@ -66,22 +56,13 @@ class SystemNavPanel extends StatelessWidget {
             onTap: () => onModeChanged(SystemMode.productCategories),
           ),
           const SizedBox(height: 4),
-          // Message Templates button
+          // Quantity Units button
           _NavButton(
-            icon: Icons.chat_bubble_outline,
-            selectedIcon: Icons.chat_bubble,
-            label: 'Templates',
-            isSelected: currentMode == SystemMode.messageTemplates,
-            onTap: () => onModeChanged(SystemMode.messageTemplates),
-          ),
-          const SizedBox(height: 4),
-          // Treatment Types button
-          _NavButton(
-            icon: Icons.medical_services_outlined,
-            selectedIcon: Icons.medical_services,
-            label: 'Treatments',
-            isSelected: currentMode == SystemMode.treatmentTypes,
-            onTap: () => onModeChanged(SystemMode.treatmentTypes),
+            icon: Icons.straighten_outlined,
+            selectedIcon: Icons.straighten,
+            label: 'Units',
+            isSelected: currentMode == SystemMode.quantityUnits,
+            onTap: () => onModeChanged(SystemMode.quantityUnits),
           ),
           const SizedBox(height: 4),
           // Printers button
@@ -91,6 +72,15 @@ class SystemNavPanel extends StatelessWidget {
             label: 'Printers',
             isSelected: currentMode == SystemMode.printers,
             onTap: () => onModeChanged(SystemMode.printers),
+          ),
+          const SizedBox(height: 4),
+          // Cashier Groups button
+          _NavButton(
+            icon: Icons.point_of_sale_outlined,
+            selectedIcon: Icons.point_of_sale,
+            label: 'Cashier',
+            isSelected: currentMode == SystemMode.cashierGroups,
+            onTap: () => onModeChanged(SystemMode.cashierGroups),
           ),
           const SizedBox(height: 4),
           // Appearance button

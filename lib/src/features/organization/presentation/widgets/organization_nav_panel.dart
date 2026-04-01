@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/i18n/strings.g.dart';
 
 /// Organization management modes.
-enum OrganizationMode { users, roles, branches }
+enum OrganizationMode { users, roles, branches, machines, storages }
 
 /// Vertical navigation panel for selecting organization mode.
 ///
@@ -67,6 +67,24 @@ class OrganizationNavPanel extends StatelessWidget {
             label: t.navigation.branches,
             isSelected: currentMode == OrganizationMode.branches,
             onTap: () => onModeChanged(OrganizationMode.branches),
+          ),
+          const SizedBox(height: 4),
+          // Machines button
+          _NavButton(
+            icon: Icons.local_laundry_service_outlined,
+            selectedIcon: Icons.local_laundry_service,
+            label: 'Machines',
+            isSelected: currentMode == OrganizationMode.machines,
+            onTap: () => onModeChanged(OrganizationMode.machines),
+          ),
+          const SizedBox(height: 4),
+          // Storages button
+          _NavButton(
+            icon: Icons.inventory_2_outlined,
+            selectedIcon: Icons.inventory_2,
+            label: 'Storages',
+            isSelected: currentMode == OrganizationMode.storages,
+            onTap: () => onModeChanged(OrganizationMode.storages),
           ),
           const Spacer(),
         ],

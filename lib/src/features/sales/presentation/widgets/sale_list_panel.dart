@@ -162,7 +162,7 @@ class SaleListPanel extends HookConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      '${sale.created != null ? dateFormat.format(sale.created!) : "Unknown"} • ${_formatPaymentMethod(sale.paymentMethod)}',
+                      '${sale.created != null ? dateFormat.format(sale.created!) : "Unknown"} • ${sale.isPaid ? 'Paid' : 'Unpaid'}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -190,20 +190,6 @@ class SaleListPanel extends HookConsumerWidget {
     );
   }
 
-  String _formatPaymentMethod(String method) {
-    switch (method.toLowerCase()) {
-      case 'cash':
-        return 'Cash';
-      case 'card':
-        return 'Card';
-      case 'banktransfer':
-        return 'Bank Transfer';
-      case 'check':
-        return 'Check';
-      default:
-        return method;
-    }
-  }
 }
 
 void _showSortDialog(BuildContext context, WidgetRef ref) {

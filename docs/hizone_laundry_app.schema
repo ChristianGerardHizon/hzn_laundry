@@ -1,0 +1,471 @@
+# ============================================================================
+# Hi-Zone Laundry App - Database Schema
+# Backend: PocketBase
+# Field Naming: camelCase
+# DateTime: ISO8601 UTC (converted to local in app)
+# ============================================================================
+
+
+# ============================================================================
+# ENUMS
+# ============================================================================
+
+enum PaymentMethod {
+  cash
+  card
+  transfer
+  gcash
+  other
+}
+
+enum SaleStatus {
+  completed
+  refunded
+  voided
+}
+
+enum CartStatus {
+  active
+  converted
+  abandoned
+}
+
+enum ProductAdjustmentType {
+  product
+  productStock
+}
+
+enum PrinterConnectionType {
+  bluetooth
+  network
+}
+
+enum PaperWidth {
+  mm58
+  mm80
+}
+
+enum ProductInventoryStatus {
+  inStock
+  outOfStock
+  lowStock
+  noThreshold
+}
+
+
+# ============================================================================
+# AUTH COLLECTIONS
+# ============================================================================
+
+collection users [type: auth] {
+  # --- system fields ---
+  id             text        [required, primaryKey, pattern: "^[a-z0-9]+$", length: 15]
+  password       password    [required, hidden, minLength: 8]
+  tokenKey       text        [required, hidden, minLength: 30, maxLength: 60]
+  email          email       [required]
+  emailVisibility bool
+  verified       bool
+
+  # --- custom fields ---
+  name           text
+  avatar         file        [maxSelect: 1]
+  isDeleted      bool
+  branch         relation    -> branches   [maxSelect: 1]
+  role           relation    -> userRoles  [maxSelect: 1]
+
+  # --- auto fields ---
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+# ============================================================================
+# BASE COLLECTIONS
+# ============================================================================
+
+collection userRoles [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  user           relation    -> users           [maxSelect: 1]
+  name           text
+  description    text
+  isSystem       bool
+  isDeleted      bool
+  permissions    json        # Array of permission strings
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+# Permission keys:
+#   patients.{view,create,edit,delete}
+#   records.{view,create,edit,delete}
+#   prescriptions.{view,create,edit,delete}
+#   appointments.{view,create,edit,delete}
+#   products.{view,create,edit,delete}
+#   inventory.{view,adjust}
+#   sales.{view,create}
+#   users.{view,create,edit,delete}
+#   roles.{view,create,edit,delete}
+#   branches.{view,create,edit,delete}
+#   settings.{view,edit}
+#   system.admin
+
+
+collection branches [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  name           text
+  displayName    text
+  address        text
+  contactNumber  text
+  operatingHours text
+  cutOffTime     text
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection products [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  name           text
+  description    text
+  sku            text
+  category       relation    -> productCategories  [maxSelect: 1]
+  image          file        [maxSelect: 1]
+  branch         relation    -> branches            [maxSelect: 1]
+  price          number
+  unit           text
+  forSale        bool
+  stockThreshold number
+  trackStock     bool
+  requireStock   bool
+  trackByLot     bool
+  quantity       number      # For non-lot-tracked products
+  expiration     date        # For non-lot-tracked products
+  isDisposed     bool
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection productCategories [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  name           text
+  parent         relation    -> productCategories  [maxSelect: 1, self-referencing]
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection productLots [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  product        relation    -> products  [maxSelect: 1]
+  lotNumber      text
+  quantity       number
+  expiration     date
+  notes          text
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection productStocks [type: base] {
+  # Legacy collection (predecessor to productLots)
+  id             text        [required, primaryKey, length: 15]
+  product        relation    -> products  [maxSelect: 1]
+  lotNo          text
+  quantity       number
+  expiration     date
+  supplier       text
+  isDisposed     bool
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection productAdjustments [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  type           select      [values: ProductAdjustmentType, maxSelect: 1]
+  oldValue       number
+  newValue       number
+  reason         text
+  product        relation    -> products      [maxSelect: 1, optional]
+  productStock   relation    -> productStocks [maxSelect: 1, optional]
+  productLot     relation    -> productLots   [maxSelect: 1, optional]
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection sales [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  receiptNumber  text
+  branch         relation    -> branches  [maxSelect: 1]
+  cashier        relation    -> users     [maxSelect: 1]
+  customerName   text
+  totalAmount    number
+  paymentMethod  select      [values: PaymentMethod, maxSelect: 1]
+  paymentRef     text
+  status         select      [values: SaleStatus, maxSelect: 1]
+  notes          text
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection saleItems [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  sale           relation    -> sales       [maxSelect: 1]
+  product        relation    -> products    [maxSelect: 1]
+  productName    text        # Snapshot at time of sale
+  quantity       number
+  unitPrice      number
+  subtotal       number
+  productLot     relation    -> productLots [maxSelect: 1, optional]
+  lotNumber      number      # Snapshot at time of sale
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection carts [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  user           relation    -> users     [maxSelect: 1]
+  branch         relation    -> branches  [maxSelect: 1]
+  status         select      [values: CartStatus, maxSelect: 1]
+  totalAmount    number
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection cartItems [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  cart           relation    -> carts        [maxSelect: 1]
+  product        relation    -> products     [maxSelect: 1]
+  quantity       number
+  productLot     relation    -> productLots  [maxSelect: 1, optional]
+  lotNumber      number
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection printerConfigs [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  name           text
+  connectionType select      [values: PrinterConnectionType, maxSelect: 1]
+  address        text        # IP address or MAC address
+  port           number
+  paperWidth     select      [values: PaperWidth, maxSelect: 1]
+  isDefault      bool
+  isEnabled      bool
+  branch         relation    -> branches  [maxSelect: 1]
+  isDeleted      bool
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+collection systemVersions [type: base] {
+  id             text        [required, primaryKey, length: 15]
+  buildNumber    number
+  artifacts      json
+
+  created        autodate    [onCreate]
+  updated        autodate    [onCreate, onUpdate]
+}
+
+
+# ============================================================================
+# VIEW COLLECTIONS (read-only SQL views)
+# ============================================================================
+
+view productInventoryStatus {
+  # Computed inventory status per product (handles both lot and non-lot tracked)
+  id              text
+  product         relation    -> products
+  productName     text
+  totalQuantity   json
+  totalExpired    json
+  stockThreshold  number
+  status          json        # inStock | outOfStock | lowStock | noThreshold
+  forSale         bool
+  isDeleted       bool
+  created         autodate
+  updated         autodate
+}
+
+
+view vw_inventory_status {
+  # Aggregated inventory with lot statistics
+  id                    text
+  name                  text
+  trackByLot            bool
+  stockThreshold        number
+  price                 number
+  category              relation    -> productCategories
+  branch                relation    -> branches
+  expiration            date
+  quantity              number
+  lot_total_quantity    json
+  lot_count             json
+  expired_lots          json
+  near_expiration_lots  json
+  earliest_expiration   json
+  created               autodate
+  updated               autodate
+}
+
+
+view vw_sales_daily_summary {
+  # Daily sales aggregated by branch and payment method
+  id                      text
+  sale_date               json
+  paymentMethod           select    [values: PaymentMethod]
+  branch                  relation  -> branches
+  transaction_count       number
+  total_revenue           json
+  avg_transaction_value   json
+}
+
+
+view vw_todays_sales {
+  # Today's completed sales summary by branch
+  id                text
+  branch            relation    -> branches
+  transaction_count number
+  total_revenue     json
+}
+
+
+view vw_top_selling_products {
+  # Top selling products by quantity and revenue
+  id                    text
+  productName           text
+  product_id            relation    -> products
+  branch                relation    -> branches
+  sale_date             json
+  total_quantity_sold   json
+  total_revenue         json
+  transaction_count     number
+}
+
+
+view vw_lot_quantity_totals {
+  # Total quantities per product from all active lots
+  id                    text        # product id
+  branch                relation    -> branches
+  total_quantity        json
+  lot_count             number
+  earliest_expiration   json
+  latest_expiration     json
+}
+
+
+view vw_low_stock_products {
+  # Non-lot-tracked products below stock threshold
+  id              text
+  name            text
+  quantity        number
+  stockThreshold  number
+  branch          relation    -> branches
+}
+
+
+view vw_low_stock_lot_products {
+  # Lot-tracked products below stock threshold (aggregate)
+  id              text
+  name            text
+  stockThreshold  number
+  branch          relation    -> branches
+  total_quantity  json
+}
+
+
+view vw_expired_lots {
+  # Lots past their expiration date
+  id              text
+  product_id      relation    -> products
+  product_name    text
+  lotNumber       text
+  quantity        number
+  expiration      date
+  branch          relation    -> branches
+}
+
+
+view vw_near_expiration_lots {
+  # Lots expiring within 30 days
+  id              text
+  product_id      relation    -> products
+  product_name    text
+  lotNumber       text
+  quantity        number
+  expiration      date
+  branch          relation    -> branches
+}
+
+
+# ============================================================================
+# RELATIONSHIP DIAGRAM
+# ============================================================================
+#
+#   users
+#     ├── role ──────────► userRoles
+#     └── branch ────────► branches
+#
+#   products
+#     ├── category ──────► productCategories (self-ref via parent)
+#     └── branch ────────► branches
+#
+#   productLots
+#     └── product ───────► products
+#
+#   productStocks (legacy)
+#     └── product ───────► products
+#
+#   productAdjustments
+#     ├── product ───────► products         (optional)
+#     ├── productStock ──► productStocks    (optional)
+#     └── productLot ────► productLots      (optional)
+#
+#   sales
+#     ├── branch ────────► branches
+#     └── cashier ───────► users
+#
+#   saleItems
+#     ├── sale ──────────► sales
+#     ├── product ───────► products
+#     └── productLot ────► productLots      (optional)
+#
+#   carts
+#     ├── user ──────────► users
+#     └── branch ────────► branches
+#
+#   cartItems
+#     ├── cart ──────────► carts
+#     ├── product ───────► products
+#     └── productLot ────► productLots      (optional)
+#
+#   printerConfigs
+#     └── branch ────────► branches
+#
+# ============================================================================

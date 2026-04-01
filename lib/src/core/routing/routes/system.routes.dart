@@ -2,25 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../constants/constants.dart';
 import '../../../features/products/domain/product_category.dart';
-import '../../../features/settings/domain/message_template.dart';
-import '../../../features/settings/presentation/controllers/message_templates_controller.dart';
 import '../../../features/settings/presentation/controllers/product_categories_controller.dart';
-import '../../../features/patients/presentation/controllers/patient_treatments_controller.dart';
-import '../../../features/settings/presentation/controllers/species_controller.dart';
 import '../../../features/settings/presentation/pages/system_shell.dart';
-import '../../../features/settings/presentation/widgets/message_template_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/dialogs/product_category_form_dialog.dart';
 import '../../../features/settings/presentation/widgets/product_category_detail_panel.dart';
-import '../../../features/settings/presentation/widgets/dialogs/message_template_form_dialog.dart';
-import '../../../features/settings/presentation/widgets/species_detail_panel.dart';
-import '../../../features/settings/presentation/widgets/treatment_type_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/printer_config_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/theme_settings_panel.dart';
 import '../../../features/settings/presentation/controllers/printer_configs_controller.dart';
 import '../../../features/settings/presentation/widgets/dialogs/printer_config_form_dialog.dart';
+import '../../../features/pos/presentation/pages/cashier_groups_settings_page.dart';
+import '../../../features/pos/presentation/widgets/cashier_group_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/import_landing_panel.dart';
+import '../../../features/settings/presentation/widgets/quantity_unit_detail_panel.dart';
+import '../../../features/settings/presentation/controllers/quantity_units_controller.dart';
+import '../../../features/settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
+import '../../../features/quantity_units/domain/quantity_unit.dart';
 import '../../utils/breakpoints.dart';
 
 part 'system.routes.g.dart';
@@ -34,13 +31,6 @@ part 'system.routes.g.dart';
     TypedGoRoute<SystemRoute>(
       path: SystemRoute.path,
       routes: [
-        // Species with detail (breeds managed within species detail)
-        TypedGoRoute<SpeciesRoute>(
-          path: 'species',
-          routes: [
-            TypedGoRoute<SpeciesDetailRoute>(path: ':id'),
-          ],
-        ),
         // Product categories with detail
         TypedGoRoute<ProductCategoriesRoute>(
           path: 'product-categories',
@@ -48,18 +38,11 @@ part 'system.routes.g.dart';
             TypedGoRoute<ProductCategoryDetailRoute>(path: ':id'),
           ],
         ),
-        // Message templates with detail
-        TypedGoRoute<MessageTemplatesRoute>(
-          path: 'message-templates',
+        // Quantity units with detail
+        TypedGoRoute<QuantityUnitsRoute>(
+          path: 'quantity-units',
           routes: [
-            TypedGoRoute<MessageTemplateDetailRoute>(path: ':id'),
-          ],
-        ),
-        // Treatment types with detail
-        TypedGoRoute<TreatmentTypesRoute>(
-          path: 'treatment-types',
-          routes: [
-            TypedGoRoute<TreatmentTypeDetailRoute>(path: ':id'),
+            TypedGoRoute<QuantityUnitDetailRoute>(path: ':id'),
           ],
         ),
         // Printer settings with detail
@@ -67,6 +50,13 @@ part 'system.routes.g.dart';
           path: 'printers',
           routes: [
             TypedGoRoute<PrinterDetailRoute>(path: ':id'),
+          ],
+        ),
+        // Cashier layout groups with detail
+        TypedGoRoute<CashierGroupsRoute>(
+          path: 'cashier-groups',
+          routes: [
+            TypedGoRoute<CashierGroupDetailRoute>(path: ':id'),
           ],
         ),
         // Appearance/theme settings
@@ -88,8 +78,8 @@ class SystemShellRoute extends ShellRouteData {
 
 /// System root route.
 ///
-/// On tablet: Redirects to /system/species (3-panel layout)
-/// On mobile: Shows landing page with Species/Categories/Templates options
+/// On tablet: Redirects to /system/product-categories (3-panel layout)
+/// On mobile: Shows landing page with Categories/Printers/Appearance/Import options
 class SystemRoute extends GoRouteData with $SystemRoute {
   const SystemRoute();
 
@@ -99,7 +89,7 @@ class SystemRoute extends GoRouteData with $SystemRoute {
   String? redirect(BuildContext context, GoRouterState state) {
     // Only redirect on tablet - mobile shows landing page
     if (Breakpoints.isTabletOrLarger(context) && state.uri.path == path) {
-      return '$path/species';
+      return '$path/product-categories';
     }
     return null;
   }
@@ -108,33 +98,6 @@ class SystemRoute extends GoRouteData with $SystemRoute {
   Widget build(BuildContext context, GoRouterState state) {
     // Mobile: Show landing page with options
     return const _MobileSystemLandingPage();
-  }
-}
-
-/// Species management route.
-class SpeciesRoute extends GoRouteData with $SpeciesRoute {
-  const SpeciesRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show species list
-    return const _MobileSpeciesListPage();
-  }
-}
-
-/// Species detail route.
-class SpeciesDetailRoute extends GoRouteData with $SpeciesDetailRoute {
-  const SpeciesDetailRoute({required this.id});
-
-  final String id;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return SpeciesDetailPanel(speciesId: id);
   }
 }
 
@@ -166,9 +129,9 @@ class ProductCategoryDetailRoute extends GoRouteData
   }
 }
 
-/// Message templates management route.
-class MessageTemplatesRoute extends GoRouteData with $MessageTemplatesRoute {
-  const MessageTemplatesRoute();
+/// Quantity units management route.
+class QuantityUnitsRoute extends GoRouteData with $QuantityUnitsRoute {
+  const QuantityUnitsRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
@@ -176,49 +139,21 @@ class MessageTemplatesRoute extends GoRouteData with $MessageTemplatesRoute {
     if (Breakpoints.isTabletOrLarger(context)) {
       return const SizedBox.shrink();
     }
-    // Mobile: Show templates list
-    return const _MobileMessageTemplatesListPage();
+    // Mobile: Show quantity units list
+    return const _MobileQuantityUnitsListPage();
   }
 }
 
-/// Message template detail route.
-class MessageTemplateDetailRoute extends GoRouteData
-    with $MessageTemplateDetailRoute {
-  const MessageTemplateDetailRoute({required this.id});
+/// Quantity unit detail route.
+class QuantityUnitDetailRoute extends GoRouteData
+    with $QuantityUnitDetailRoute {
+  const QuantityUnitDetailRoute({required this.id});
 
   final String id;
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return MessageTemplateDetailPanel(templateId: id);
-  }
-}
-
-/// Treatment types management route.
-class TreatmentTypesRoute extends GoRouteData with $TreatmentTypesRoute {
-  const TreatmentTypesRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show treatment types list
-    return const _MobileTreatmentTypesListPage();
-  }
-}
-
-/// Treatment type detail route.
-class TreatmentTypeDetailRoute extends GoRouteData
-    with $TreatmentTypeDetailRoute {
-  const TreatmentTypeDetailRoute({required this.id});
-
-  final String id;
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return TreatmentTypeDetailPanel(treatmentId: id);
+    return QuantityUnitDetailPanel(unitId: id);
   }
 }
 
@@ -274,6 +209,34 @@ class ImportRoute extends GoRouteData with $ImportRoute {
   }
 }
 
+/// Cashier groups management route.
+class CashierGroupsRoute extends GoRouteData with $CashierGroupsRoute {
+  const CashierGroupsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    // On tablet, handled by shell - return empty
+    if (Breakpoints.isTabletOrLarger(context)) {
+      return const SizedBox.shrink();
+    }
+    // Mobile: Show cashier groups list
+    return const CashierGroupsSettingsPage();
+  }
+}
+
+/// Cashier group detail route.
+class CashierGroupDetailRoute extends GoRouteData
+    with $CashierGroupDetailRoute {
+  const CashierGroupDetailRoute({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return CashierGroupDetailPanel(groupId: id);
+  }
+}
+
 // ============================================================================
 // Mobile Pages
 // ============================================================================
@@ -294,14 +257,6 @@ class _MobileSystemLandingPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _SystemOptionCard(
-            icon: Icons.pets,
-            title: 'Species & Breeds',
-            description: 'Manage patient species and their breeds',
-            color: theme.colorScheme.primary,
-            onTap: () => const SpeciesRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
             icon: Icons.inventory_2,
             title: 'Product Categories',
             description: 'Manage product category hierarchy',
@@ -310,19 +265,11 @@ class _MobileSystemLandingPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _SystemOptionCard(
-            icon: Icons.chat_bubble,
-            title: 'Message Templates',
-            description: 'Manage SMS message templates',
-            color: theme.colorScheme.tertiary,
-            onTap: () => const MessageTemplatesRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
-            icon: Icons.medical_services,
-            title: 'Treatment Types',
-            description: 'Manage patient treatment categories',
-            color: Colors.teal,
-            onTap: () => const TreatmentTypesRoute().go(context),
+            icon: Icons.straighten,
+            title: 'Quantity Units',
+            description: 'Manage units of measurement',
+            color: Colors.cyan,
+            onTap: () => const QuantityUnitsRoute().go(context),
           ),
           const SizedBox(height: 16),
           _SystemOptionCard(
@@ -331,6 +278,14 @@ class _MobileSystemLandingPage extends StatelessWidget {
             description: 'Configure thermal receipt printers',
             color: Colors.orange,
             onTap: () => const PrinterSettingsRoute().go(context),
+          ),
+          const SizedBox(height: 16),
+          _SystemOptionCard(
+            icon: Icons.point_of_sale,
+            title: 'Cashier Layout',
+            description: 'Customize cashier page groups',
+            color: Colors.teal,
+            onTap: () => const CashierGroupsRoute().go(context),
           ),
           const SizedBox(height: 16),
           _SystemOptionCard(
@@ -419,100 +374,6 @@ class _SystemOptionCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Mobile species list page.
-class _MobileSpeciesListPage extends ConsumerWidget {
-  const _MobileSpeciesListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final speciesAsync = ref.watch(speciesControllerProvider);
-    final controller = ref.read(speciesControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Species & Breeds'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'species_fab',
-        onPressed: () => const SpeciesDetailRoute(id: 'new').push(context),
-        child: const Icon(Icons.add),
-      ),
-      body: speciesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (speciesList) {
-          if (speciesList.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.pets_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No species yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a species',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: speciesList.length,
-              itemBuilder: (context, index) {
-                final species = speciesList[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.pets_outlined,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  title: Text(species.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      SpeciesDetailRoute(id: species.id).push(context),
-                );
-              },
-            ),
-          );
-        },
       ),
     );
   }
@@ -667,264 +528,6 @@ class _MobileCategoryListTile extends StatelessWidget {
   }
 }
 
-/// Mobile message templates list page.
-class _MobileMessageTemplatesListPage extends ConsumerWidget {
-  const _MobileMessageTemplatesListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final templatesAsync = ref.watch(messageTemplatesControllerProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Message Templates'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showCreateSheet(context),
-            tooltip: 'Add Template',
-          ),
-        ],
-      ),
-      body: templatesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () =>
-                    ref.invalidate(messageTemplatesControllerProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (templates) {
-          if (templates.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 64,
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No templates yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a template',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Group by category
-          final grouped = ref
-              .read(messageTemplatesControllerProvider.notifier)
-              .groupedByCategory;
-          final categories = grouped.keys.toList()..sort();
-
-          return RefreshIndicator(
-            onRefresh: () => ref
-                .read(messageTemplatesControllerProvider.notifier)
-                .refresh(),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                final categoryTemplates = grouped[category]!;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (index > 0) const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        MessageTemplateCategories.labels[category] ??
-                            category,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    ...categoryTemplates.map((template) =>
-                        _MobileTemplateListTile(
-                          template: template,
-                          onTap: () => MessageTemplateDetailRoute(id: template.id)
-                              .push(context),
-                        )),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showCreateSheet(BuildContext context) {
-    showMessageTemplateFormDialog(context);
-  }
-}
-
-class _MobileTemplateListTile extends StatelessWidget {
-  const _MobileTemplateListTile({
-    required this.template,
-    required this.onTap,
-  });
-
-  final MessageTemplate template;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      child: ListTile(
-        dense: true,
-        leading: Icon(
-          Icons.message_outlined,
-          color: theme.colorScheme.outline,
-          size: 20,
-        ),
-        title: Text(template.name),
-        subtitle: Text(
-          template.content,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// Mobile treatment types list page.
-class _MobileTreatmentTypesListPage extends ConsumerWidget {
-  const _MobileTreatmentTypesListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final treatmentsAsync = ref.watch(patientTreatmentsControllerProvider);
-    final controller = ref.read(patientTreatmentsControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Treatment Types'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'treatment_type_fab',
-        onPressed: () => const TreatmentTypeDetailRoute(id: 'new').push(context),
-        child: const Icon(Icons.add),
-      ),
-      body: treatmentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (treatments) {
-          if (treatments.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.medical_services_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No treatment types yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a treatment type',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: treatments.length,
-              itemBuilder: (context, index) {
-                final treatment = treatments[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.medical_services_outlined,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  title: Text(treatment.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      TreatmentTypeDetailRoute(id: treatment.id).push(context),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 /// Mobile printer list page.
 class _MobilePrinterListPage extends ConsumerWidget {
   const _MobilePrinterListPage();
@@ -1059,6 +662,122 @@ class _MobileImportPage extends StatelessWidget {
         title: const Text('Import Products'),
       ),
       body: const ImportLandingPanel(),
+    );
+  }
+}
+
+/// Mobile quantity units list page.
+class _MobileQuantityUnitsListPage extends ConsumerWidget {
+  const _MobileQuantityUnitsListPage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final unitsAsync = ref.watch(quantityUnitsControllerProvider);
+    final controller = ref.read(quantityUnitsControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quantity Units'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'quantity_unit_fab',
+        onPressed: () => showQuantityUnitFormDialog(context),
+        tooltip: 'Add Unit',
+        child: const Icon(Icons.add),
+      ),
+      body: unitsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (units) {
+          if (units.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.straighten_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No quantity units yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a unit',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: units.length,
+              itemBuilder: (context, index) {
+                final unit = units[index];
+                return _MobileQuantityUnitListTile(
+                  unit: unit,
+                  onTap: () =>
+                      QuantityUnitDetailRoute(id: unit.id).push(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MobileQuantityUnitListTile extends StatelessWidget {
+  const _MobileQuantityUnitListTile({
+    required this.unit,
+    required this.onTap,
+  });
+
+  final QuantityUnit unit;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        child: Icon(
+          Icons.straighten,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+      title: Text(unit.name),
+      subtitle: Text(unit.shortPlural),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

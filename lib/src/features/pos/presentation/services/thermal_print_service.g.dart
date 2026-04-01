@@ -37,7 +37,7 @@ final class ThermalPrintServiceProvider
 }
 
 String _$thermalPrintServiceHash() =>
-    r'75c3e06be1a855abc68f33ad696039c6e98beb0c';
+    r'd703ae3d7033c7660b777aa600862d274361da19';
 
 /// Service for thermal printing operations.
 

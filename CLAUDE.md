@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/claude-code) when working 
 
 ## Project Overview
 
-This is **sannjosevet** - a Flutter multi-platform veterinary/pet care management system. The application supports Android, iOS, macOS, Linux, Windows, and Web platforms.
+This is **hizonelaundry** - a Flutter multi-platform laundry management system. The application supports Android, iOS, macOS, Linux, Windows, and Web platforms.
 
 ## Tech Stack
 
@@ -228,6 +228,34 @@ FormBuilderTextField(
 - Use `Failure` class from `core/foundation/failure.dart`
 - Return `Either<Failure, T>` for operations that can fail (using fpdart)
 
+### Snackbars in Dialogs & Bottom Sheets
+- **IMPORTANT:** Dialogs and bottom sheets that show snackbars **must** wrap their content in `ScaffoldMessenger` so snackbars render above the dialog overlay instead of behind it.
+- Use `useRootMessenger: false` on all snackbar utility calls (`showSuccessSnackBar`, `showErrorSnackBar`, etc.) inside dialogs/sheets so they target the local `ScaffoldMessenger`.
+- Use `Builder` to get a new `BuildContext` below the `ScaffoldMessenger`.
+- **Skip this pattern** if the dialog never shows snackbars, or if wrapping would cause layout issues (e.g., conflicts with `IntrinsicHeight`). In those cases, note why it was skipped.
+
+**Pattern for AlertDialog / Dialog:**
+```dart
+return ScaffoldMessenger(
+  child: Builder(
+    builder: (context) => AlertDialog(
+      // ... dialog content
+    ),
+  ),
+);
+```
+
+**Pattern for full-screen dialogs or bottom sheets:**
+```dart
+return ScaffoldMessenger(
+  child: Builder(
+    builder: (context) => Padding(
+      // ... sheet content
+    ),
+  ),
+);
+```
+
 ### Unimplemented Features
 - **IMPORTANT:** Always add a `// TODO:` comment when a feature is not yet implemented
 - Use descriptive TODO comments that explain what needs to be done
@@ -256,6 +284,37 @@ FormBuilderTextField(
 
 - **All PRs must target the `staging` branch**, not `main`.
 - When creating PRs with `gh pr create`, always use `--base staging`.
+- **Before creating a PR, always ask the user which version label to apply:**
+  - `version:patch` — Bug fixes, small tweaks (e.g., `1.2.3` → `1.2.4`)
+  - `version:minor` — New features, enhancements (e.g., `1.2.3` → `1.3.0`)
+  - `version:major` — Breaking changes, major releases (e.g., `1.2.3` → `2.0.0`)
+  - **No label** — Skip deploy; the PR will merge without triggering a build (staging only)
+  - For PRs targeting `main`, a version label is **required** — the deploy will fail without one.
+  - Add the label using: `gh pr edit <number> --add-label "version:patch"`
+
+### QA Notes
+
+When creating a PR, always include a **QA Notes** section in the PR description that tells testers what to verify. Generate these notes based on the actual changes in the PR:
+
+1. **Analyze the diff** — look at every file changed in the PR
+2. **Identify user-facing changes** — UI updates, new screens, changed behavior, updated URLs/configs
+3. **List specific test steps** — concrete actions a QA tester should perform, not vague descriptions
+4. **Include environment details** — if configs/URLs changed, note what the expected values should be
+5. **Call out regressions to watch for** — areas that might break due to the changes
+
+**Format:**
+```markdown
+## QA Notes
+### What changed
+- Brief summary of each change
+
+### Test steps
+- [ ] Step-by-step actions to verify each change
+- [ ] Include expected results for each step
+
+### Regression risks
+- Areas that could be affected by these changes
+```
 
 ## Testing
 
@@ -295,7 +354,41 @@ Example update for Recent Updates table:
 
 
 ## Testing
- check docs/testing.md for the testing account 
+ check docs/testing.md for the testing account
+
+## PocketBase API Access
+
+**IMPORTANT:** When any PocketBase schema or data change is needed (creating collections, modifying fields, seeding data, etc.), **always use the PocketBase API directly** — never modify the database through migrations alone without verifying via the API first.
+
+### Test Superuser Credentials
+
+Credentials are stored in `pocketbase.env` (gitignored — never commit this file):
+
+```
+email=test@test.com
+password=password101
+```
+
+### Authenticating
+
+```bash
+# Authenticate and get a token
+curl -X POST http://127.0.0.1:8090/api/admins/auth-with-password \
+  -H "Content-Type: application/json" \
+  -d '{"identity":"test@test.com","password":"password101"}'
+```
+
+Use the returned `token` as a Bearer token for subsequent requests:
+
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8090/api/collections
+```
+
+### Guidelines
+
+- **Always use the test superuser** from `pocketbase.env` for API interactions during development
+- **Prefer the PocketBase API** over direct DB manipulation for schema changes, collection management, and data seeding
+- `pocketbase.env` is gitignored — keep credentials out of source control
 
 
 ## grepai - Semantic Code Search

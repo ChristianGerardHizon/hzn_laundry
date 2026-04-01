@@ -24,6 +24,13 @@ This document contains all entities (domain models) in the project with their fi
 | Product | ProductStock | `product_stocks` | Stock lots with expiration |
 | Product | ProductInventory | `product_inventories` | Inventory status view |
 | Product | ProductAdjustment | `product_adjustments` | Stock adjustments |
+| Service | Service | `services` | Laundry services (wash, dry, fold, iron) |
+| Service | ServiceCategory | `service_categories` | Service categories |
+| Service | CartServiceItem | `cart_service_items` | Service items in shopping cart |
+| Service | SaleServiceItem | `sale_service_items` | Service items in completed sale |
+| Sales | OrderStatusHistory | `orderStatusHistory` | Status change audit trail for sales |
+| Machine | Machine | `machines` | Laundry machines (washer, dryer, etc.) |
+| Storage | StorageLocation | `storages` | Storage locations for laundry items |
 | Appointment | AppointmentSchedule | `appointment_schedules` | Appointment bookings |
 | System | ChangeLog | `change_logs` | Audit trail |
 | System | SystemVersion | `system_versions` | App version tracking |
@@ -98,7 +105,7 @@ All system users with role-based access.
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | User name |
-| `email` | String | Yes | Email address |
+| `username` | String | Yes | Username for authentication |
 | `avatar` | String | No | Avatar filename |
 | `verified` | bool | Yes | Email verification status |
 | `role` | String (FK) | Yes | FK to UserRole |
@@ -126,7 +133,7 @@ Role definitions with permissions.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Role name (e.g., "Admin", "Veterinarian", "Staff") |
+| `name` | String | Yes | Role name (e.g., "Admin", "Manager", "Cashier", "Attendant") |
 | `description` | String | No | Role description |
 | `permissions` | List\<String> | Yes | List of permission keys |
 | `isSystem` | bool | Yes | Whether this is a system-defined role (cannot be deleted) |
@@ -140,19 +147,20 @@ Role definitions with permissions.
 
 **Default Roles:**
 - `admin` - Full system access
-- `veterinarian` - Patient management, records, prescriptions
-- `staff` - Basic operations, appointments, inventory
-- `cashier` - Sales and POS only
+- `manager` - Full operational access (no user/role/branch management)
+- `cashier` - POS operations, customer management, view inventory
+- `attendant` - Floor operations, order status updates, view-only access
 
 **Permission Keys:**
 ```
-patients.view, patients.create, patients.edit, patients.delete
-records.view, records.create, records.edit, records.delete
-prescriptions.view, prescriptions.create, prescriptions.edit, prescriptions.delete
-appointments.view, appointments.create, appointments.edit, appointments.delete
+customers.view, customers.create, customers.edit, customers.delete
 products.view, products.create, products.edit, products.delete
+services.view, services.create, services.edit, services.delete
 inventory.view, inventory.adjust
 sales.view, sales.create
+machines.view, machines.create, machines.edit, machines.delete
+storages.view, storages.create, storages.edit, storages.delete
+reports.view
 users.view, users.create, users.edit, users.delete
 roles.view, roles.create, roles.edit, roles.delete
 branches.view, branches.create, branches.edit, branches.delete
@@ -506,6 +514,82 @@ Stock adjustment records.
 
 ---
 
+## Sales Domain
+
+### OrderStatusHistory
+
+Audit trail for status changes on sales (both sale status and order status).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `sale` | String (FK) | Yes | FK to Sale (cascade delete) |
+| `statusType` | StatusType | Yes | Type of status changed |
+| `fromStatus` | String | Yes | Previous status value |
+| `toStatus` | String | Yes | New status value |
+| `description` | String | No | Human-readable description |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `orderStatusHistory`
+
+**Relationships:**
+- `sale` -> Sale (cascade delete)
+
+**Enum:** `StatusType { saleStatus, orderStatus }`
+
+---
+
+## Machine & Storage Domain
+
+### Machine
+
+Laundry machines (washers, dryers, etc.) assigned to branches.
+
+**Collection:** `machines`
+**File:** `lib/src/features/machines/domain/machine.dart`
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `id` | String | Yes | auto | PocketBase record ID |
+| `name` | String | Yes | - | Machine name (e.g., "Washer #1") |
+| `type` | MachineType | Yes | - | Machine type (washer, dryer, other) |
+| `branchId` | String? | No | - | Relation to Branch |
+| `isAvailable` | bool | No | true | Whether machine is currently available |
+| `isDeleted` | bool | No | false | Soft delete flag |
+| `created` | DateTime? | No | auto | Creation timestamp |
+| `updated` | DateTime? | No | auto | Last update timestamp |
+
+**Enum: MachineType** (`machine_type.dart`)
+- `washer` - Washing machine
+- `dryer` - Dryer machine
+- `other` - Other machine type
+
+### StorageLocation
+
+Storage locations (shelves, racks) for laundry items.
+
+**Collection:** `storages`
+**File:** `lib/src/features/storages/domain/storage_location.dart`
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `id` | String | Yes | auto | PocketBase record ID |
+| `name` | String | Yes | - | Location name (e.g., "Shelf A-1") |
+| `branchId` | String? | No | - | Relation to Branch |
+| `isAvailable` | bool | No | true | Whether location is available |
+| `isDeleted` | bool | No | false | Soft delete flag |
+| `created` | DateTime? | No | auto | Creation timestamp |
+| `updated` | DateTime? | No | auto | Last update timestamp |
+
+**SaleServiceItem Machine/Storage Fields:**
+- `machineId` (String?) - Assigned machine relation
+- `machineName` (String?) - Snapshot of machine name at assignment
+- `storageId` (String?) - Assigned storage relation
+- `storageName` (String?) - Snapshot of storage name at assignment
+
+---
+
 ## Appointment Domain
 
 ### AppointmentSchedule
@@ -610,8 +694,8 @@ Embedded artifact information (not a separate collection).
 
 ## Summary
 
-**Total Collections:** 18
-**Total Enums:** 5
+**Total Collections:** 19
+**Total Enums:** 6
 
 | Enum | Values |
 |------|--------|
@@ -620,3 +704,4 @@ Embedded artifact information (not a separate collection).
 | ProductAdjustmentType | product, productStock |
 | AppointmentScheduleStatus | scheduled, completed, missed, cancelled |
 | ChangeLogType | create, update, delete |
+| StatusType | saleStatus, orderStatus |

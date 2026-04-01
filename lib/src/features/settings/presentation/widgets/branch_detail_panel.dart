@@ -165,16 +165,6 @@ class _BranchDetailsBody extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (branch.displayName != null &&
-                            branch.displayName!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            branch.displayName!,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -202,13 +192,6 @@ class _BranchDetailsBody extends StatelessWidget {
                     label: 'Name',
                     value: branch.name,
                   ),
-                  if (branch.displayName != null &&
-                      branch.displayName!.isNotEmpty)
-                    _DetailRow(
-                      icon: Icons.badge,
-                      label: 'Display Name',
-                      value: branch.displayName!,
-                    ),
                   _DetailRow(
                     icon: Icons.location_on,
                     label: 'Address',

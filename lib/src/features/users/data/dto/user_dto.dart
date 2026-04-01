@@ -15,7 +15,7 @@ class UserDto with UserDtoMappable {
   final String collectionId;
   final String collectionName;
   final String name;
-  final String email;
+  final String username;
   final String? avatar;
   final bool verified;
   final String? role;
@@ -33,7 +33,7 @@ class UserDto with UserDtoMappable {
     required this.collectionId,
     required this.collectionName,
     required this.name,
-    required this.email,
+    required this.username,
     this.avatar,
     this.verified = false,
     this.role,
@@ -62,7 +62,7 @@ class UserDto with UserDtoMappable {
       collectionId: json['collectionId'] as String? ?? '',
       collectionName: json['collectionName'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      email: json['email'] as String? ?? '',
+      username: json['username'] as String? ?? '',
       avatar: json['avatar'] as String?,
       verified: json['verified'] as bool? ?? false,
       role: json['role'] as String?,
@@ -80,7 +80,7 @@ class UserDto with UserDtoMappable {
     return User(
       id: id,
       name: name,
-      email: email,
+      username: username,
       avatar: _buildAvatarUrl(baseUrl),
       verified: verified,
       roleId: role,

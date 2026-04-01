@@ -64,7 +64,7 @@ final class UserRoleProvider extends $FunctionalProvider<AsyncValue<UserRole?>,
   }
 }
 
-String _$userRoleHash() => r'b4c49e5431183bac3d3ba9cdb9f40a03724eef26';
+String _$userRoleHash() => r'46c847a7f7a88af5b006cb6f1608c996be2e4f6f';
 
 /// Provider for a single user role by ID.
 

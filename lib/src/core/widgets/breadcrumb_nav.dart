@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../i18n/strings.g.dart';
-import '../routing/routes/appointments.routes.dart';
 import '../routing/routes/organization.routes.dart';
-import '../routing/routes/patients.routes.dart';
 import '../routing/routes/products.routes.dart';
 import '../routing/routes/sales.routes.dart';
 import '../routing/routes/system.routes.dart';
@@ -116,7 +114,6 @@ class BreadcrumbNav extends StatelessWidget {
     }
 
     // Build breadcrumbs based on path segments
-    // All top-level routes (dashboard, patients, appointments, etc.) are at the same level
     String currentPath = '';
     for (int i = 0; i < segments.length; i++) {
       final segment = segments[i];
@@ -153,20 +150,6 @@ class BreadcrumbNav extends StatelessWidget {
 
     // Handle known routes
     switch (segment) {
-      case 'patients':
-        return BreadcrumbItem(
-          label: t.navigation.patients,
-          path: PatientsRoute.path,
-          onTap: () => const PatientsRoute().go(context),
-        );
-
-      case 'appointments':
-        return BreadcrumbItem(
-          label: t.navigation.appointments,
-          path: AppointmentsRoute.path,
-          onTap: () => const AppointmentsRoute().go(context),
-        );
-
       case 'products':
         return BreadcrumbItem(
           label: t.navigation.products,
@@ -195,64 +178,9 @@ class BreadcrumbNav extends StatelessWidget {
           onTap: () => const SystemRoute().go(context),
         );
 
-      case 'records':
-        // This is the "records" segment before the recordId
-        // We skip it since RecordDetail shows the actual record
-        return null;
-
       default:
-        // Handle dynamic segments (IDs)
-        return _handleDynamicSegment(
-          context: context,
-          segment: segment,
-          segments: segments,
-          index: index,
-          pathParameters: pathParameters,
-        );
+        return null;
     }
-  }
-
-  BreadcrumbItem? _handleDynamicSegment({
-    required BuildContext context,
-    required String segment,
-    required List<String> segments,
-    required int index,
-    required Map<String, String> pathParameters,
-  }) {
-    // Check what the previous segment was to determine context
-    if (index > 0) {
-      final previousSegment = segments[index - 1];
-
-      switch (previousSegment) {
-        case 'patients':
-          // This is a patient ID
-          final patientId = pathParameters['id'] ?? segment;
-          return BreadcrumbItem(
-            label: _formatId(patientId),
-            path: '/patients/$patientId',
-            onTap: () => PatientDetailRoute(id: patientId).go(context),
-          );
-
-        case 'records':
-          // This is a record ID
-          final recordId = pathParameters['recordId'] ?? segment;
-          final patientId = pathParameters['id'] ?? '';
-          return BreadcrumbItem(
-            label: 'Record ${_formatId(recordId)}',
-            path: '/patients/$patientId/records/$recordId',
-          );
-      }
-    }
-
-    return null;
-  }
-
-  /// Formats an ID for display (shortens if too long).
-  String _formatId(String id) {
-    if (id.length > 8) {
-      return '${id.substring(0, 8)}...';
-    }
-    return id;
   }
 }
 

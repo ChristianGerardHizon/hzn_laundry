@@ -16,7 +16,12 @@ void showCsvImportDialog(BuildContext context) {
   showConstrainedDialog(
     context: context,
     fullScreen: true,
-    builder: (context) => const CsvImportDialog(),
+    builder: (context) => const ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: CsvImportDialog(),
+      ),
+    ),
   );
 }
 
@@ -142,8 +147,7 @@ class CsvImportDialog extends HookConsumerWidget {
                     context.pop();
                     showSuccessSnackBar(
                       context,
-                      message:
-                          '${importState.importedCount} products imported',
+                      message: '${importState.importedCount} products imported',
                     );
                   },
                 ),
@@ -196,7 +200,8 @@ class _StepIndicator extends StatelessWidget {
             ),
             child: Center(
               child: i < currentStep
-                  ? Icon(Icons.check, size: 16, color: theme.colorScheme.onPrimary)
+                  ? Icon(Icons.check,
+                      size: 16, color: theme.colorScheme.onPrimary)
                   : Text(
                       '${i + 1}',
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -296,7 +301,8 @@ class _FileSelectionStep extends StatelessWidget {
       onFilePicked(csvContent);
     } catch (e) {
       if (context.mounted) {
-        showErrorSnackBar(context, message: 'Failed to read file: $e');
+        showErrorSnackBar(context,
+            message: 'Failed to read file: $e', useRootMessenger: false);
       }
     }
   }
@@ -326,9 +332,8 @@ class _ParseSummaryStep extends StatelessWidget {
       return const Center(child: Text('No data'));
     }
 
-    final noCategory = result.entries
-        .where((e) => e.categoryName == null)
-        .length;
+    final noCategory =
+        result.entries.where((e) => e.categoryName == null).length;
 
     return Column(
       children: [
@@ -601,9 +606,8 @@ class _ReviewStep extends StatelessWidget {
                 title: Text(
                   entry.name,
                   style: TextStyle(
-                    decoration: entry.isSelected
-                        ? null
-                        : TextDecoration.lineThrough,
+                    decoration:
+                        entry.isSelected ? null : TextDecoration.lineThrough,
                     color: entry.isSelected ? null : theme.colorScheme.outline,
                   ),
                 ),
@@ -708,9 +712,7 @@ class _ImportProgressStep extends StatelessWidget {
           Icon(
             isCompleted ? Icons.check_circle : Icons.file_download,
             size: 80,
-            color: isCompleted
-                ? Colors.green
-                : theme.colorScheme.primary,
+            color: isCompleted ? Colors.green : theme.colorScheme.primary,
           ),
           const SizedBox(height: 24),
 

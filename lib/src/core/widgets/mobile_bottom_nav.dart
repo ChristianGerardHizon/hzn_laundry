@@ -4,11 +4,10 @@ import '../i18n/strings.g.dart';
 
 /// Bottom navigation bar for mobile layout.
 ///
-/// Displays 5 primary navigation destinations:
+/// Displays 4 primary navigation destinations:
 /// - Dashboard (Home)
-/// - Patients
-/// - Appointments
 /// - Cashier
+/// - Products
 /// - More (opens drawer for additional options)
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({
@@ -31,11 +30,11 @@ class MobileBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Translations.of(context);
     return NavigationBar(
-      selectedIndex: selectedIndex < 4 ? selectedIndex : 4,
+      selectedIndex: selectedIndex < 3 ? selectedIndex : 3,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       height: 60,
       onDestinationSelected: (index) {
-        if (index == 4) {
+        if (index == 3) {
           // "More" tapped - open drawer
           onMoreTap?.call();
         } else {
@@ -49,19 +48,14 @@ class MobileBottomNav extends StatelessWidget {
           label: t.navigation.dashboard,
         ),
         NavigationDestination(
-          icon: const Icon(Icons.pets_outlined),
-          selectedIcon: const Icon(Icons.pets),
-          label: t.navigation.patients,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.calendar_today_outlined),
-          selectedIcon: const Icon(Icons.calendar_today),
-          label: t.navigation.appointments,
-        ),
-        NavigationDestination(
           icon: const Icon(Icons.point_of_sale_outlined),
           selectedIcon: const Icon(Icons.point_of_sale),
           label: t.navigation.sales,
+        ),
+        NavigationDestination(
+          icon: const Icon(Icons.receipt_long_outlined),
+          selectedIcon: const Icon(Icons.receipt_long),
+          label: t.navigation.salesHistory,
         ),
         NavigationDestination(
           icon: const Icon(Icons.more_horiz),

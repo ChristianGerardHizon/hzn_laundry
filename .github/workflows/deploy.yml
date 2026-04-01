@@ -15,10 +15,46 @@ permissions:
 
 jobs:
   # ==========================================
+  # PREFLIGHT: Check version label before staging deploy
+  # ==========================================
+  preflight-staging:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.base_ref == 'staging')
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.bump_type.outputs.skip }}
+      bump: ${{ steps.bump_type.outputs.bump }}
+    steps:
+      - name: Detect version bump type
+        id: bump_type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            BUMP="patch"
+            echo "::notice::Manual dispatch — defaulting to patch bump"
+          else
+            LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+
+            if echo "$LABELS" | grep -q '"version:major"'; then
+              BUMP="major"
+            elif echo "$LABELS" | grep -q '"version:minor"'; then
+              BUMP="minor"
+            elif echo "$LABELS" | grep -q '"version:patch"'; then
+              BUMP="patch"
+            else
+              echo "::notice::No version label found — skipping staging deploy"
+              echo "skip=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "::notice::Version bump type: $BUMP"
+
+  # ==========================================
   # JOB 1: STAGING TRACK
   # ==========================================
   deploy-staging:
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.base_ref == 'staging')
+    needs: preflight-staging
+    if: needs.preflight-staging.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +65,6 @@ jobs:
       - name: Verify deploy secrets exist
         run: |
           MISSING=""
-          if [ -z "${{ secrets.DEPLOY_PAT }}" ]; then MISSING="$MISSING DEPLOY_PAT"; fi
           if [ -z "${{ secrets.VERSION_MANAGER_URL }}" ]; then MISSING="$MISSING VERSION_MANAGER_URL"; fi
           if [ -z "${{ secrets.VERSION_COLLECTION_ID }}" ]; then MISSING="$MISSING VERSION_COLLECTION_ID"; fi
           if [ -z "${{ secrets.POCKETBASE_URL_STAGING }}" ]; then MISSING="$MISSING POCKETBASE_URL_STAGING"; fi
@@ -37,40 +72,78 @@ jobs:
           if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then MISSING="$MISSING KEYSTORE_PASSWORD"; fi
           if [ -z "${{ secrets.KEY_ALIAS }}" ]; then MISSING="$MISSING KEY_ALIAS"; fi
           if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then MISSING="$MISSING KEY_PASSWORD"; fi
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then MISSING="$MISSING SSH_HOST"; fi
+          if [ -z "${{ secrets.SSH_USER }}" ]; then MISSING="$MISSING SSH_USER"; fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then MISSING="$MISSING SSH_PRIVATE_KEY"; fi
           if [ -n "$MISSING" ]; then
             echo "::error::Missing required secrets:$MISSING"
             exit 1
           fi
+      # --- PREFLIGHT CHECKS END ---
 
-      - name: Verify destination repository is accessible
+      # ROBUST VERSION CALCULATION
+      - name: Calculate Staging Version
+        id: calc_staging
         env:
-          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
+          URL: ${{ secrets.VERSION_MANAGER_URL }}
+          ID: ${{ secrets.VERSION_COLLECTION_ID }}
+          BUMP: ${{ needs.preflight-staging.outputs.bump }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/ChristianGerardHizon/sannjose_server")
-
-          if [ "$STATUS" != "200" ]; then
-            echo "::error::Cannot access destination repo ChristianGerardHizon/sannjose_server (HTTP $STATUS)."
-            echo "::error::Verify that DEPLOY_PAT is valid and has repo access."
+          if [ -z "$URL" ] || [ -z "$ID" ]; then
+            echo "::error::Secrets VERSION_MANAGER_URL or VERSION_COLLECTION_ID are missing!"
             exit 1
           fi
-          echo "Destination repository is accessible."
 
-      - name: Verify destination branch exists
+          RESPONSE=$(curl -s "$URL/$ID")
+          MAJOR=$(echo $RESPONSE | jq -r '.major')
+          MINOR=$(echo $RESPONSE | jq -r '.minor')
+          PATCH=$(echo $RESPONSE | jq -r '.patch')
+
+          if [ "$MAJOR" == "null" ]; then
+             echo "::error::Failed to parse version. Response: $RESPONSE"
+             exit 1
+          fi
+
+          # Apply version bump based on PR label
+          case "$BUMP" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            *)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          STAGING_VER="$MAJOR.$MINOR.$PATCH-staging"
+          STAGING_VER_BASE="$MAJOR.$MINOR.$PATCH"
+
+          echo "STAGING_VER=$STAGING_VER" >> $GITHUB_ENV
+          echo "STAGING_VER_BASE=$STAGING_VER_BASE" >> $GITHUB_ENV
+          echo "Calculated Staging Version: $STAGING_VER (bump: $BUMP)"
+
+      - name: Resolve unique staging tag
         env:
-          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          TAG="staging-${{ env.STAGING_VER_BASE }}"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/ChristianGerardHizon/sannjose_server/branches/staging")
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$TAG")
 
-          if [ "$STATUS" != "200" ]; then
-            echo "::warning::Branch 'staging' not found (HTTP $STATUS). The deploy action will attempt to create it."
-          else
-            echo "Destination branch 'staging' exists."
+          if [ "$STATUS" == "200" ]; then
+            # Tag exists, append run number to make it unique
+            TAG="${TAG}-build.${{ github.run_number }}"
+            echo "::notice::Tag already exists, using $TAG instead."
           fi
-      # --- PREFLIGHT CHECKS END ---
+
+          echo "STAGING_TAG=$TAG" >> $GITHUB_ENV
+          echo "Resolved staging tag: $TAG"
 
       # --- SETUP & CACHE START ---
       - uses: actions/setup-java@v4
@@ -93,66 +166,15 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      - name: Cache Flutter build
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/
-            .dart_tool/
-          key: ${{ runner.os }}-flutter-build-staging-${{ hashFiles('lib/**', 'pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-flutter-build-staging-
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
+          sudo apt-get clean
+          df -h
 
       - name: Install dependencies
         run: flutter pub get
       # --- SETUP & CACHE END ---
-
-      # ROBUST VERSION CALCULATION
-      - name: Calculate Staging Version
-        id: calc_staging
-        env:
-          URL: ${{ secrets.VERSION_MANAGER_URL }}
-          ID: ${{ secrets.VERSION_COLLECTION_ID }}
-        run: |
-          if [ -z "$URL" ] || [ -z "$ID" ]; then
-            echo "::error::Secrets VERSION_MANAGER_URL or VERSION_COLLECTION_ID are missing!"
-            exit 1
-          fi
-
-          RESPONSE=$(curl -s "$URL/$ID")
-          MAJOR=$(echo $RESPONSE | jq -r '.major')
-          MINOR=$(echo $RESPONSE | jq -r '.minor')
-          PATCH=$(echo $RESPONSE | jq -r '.patch')
-
-          if [ "$MAJOR" == "null" ]; then
-             echo "::error::Failed to parse version. Response: $RESPONSE"
-             exit 1
-          fi
-
-          NEXT_PATCH=$((PATCH + 1))
-          STAGING_VER="$MAJOR.$MINOR.$NEXT_PATCH-staging"
-          STAGING_VER_BASE="$MAJOR.$MINOR.$NEXT_PATCH"
-
-          echo "STAGING_VER=$STAGING_VER" >> $GITHUB_ENV
-          echo "STAGING_VER_BASE=$STAGING_VER_BASE" >> $GITHUB_ENV
-          echo "Calculated Staging Version: $STAGING_VER"
-
-      - name: Resolve unique staging tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="staging-${{ env.STAGING_VER_BASE }}"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$TAG")
-
-          if [ "$STATUS" == "200" ]; then
-            # Tag exists, append run number to make it unique
-            TAG="${TAG}-build.${{ github.run_number }}"
-            echo "::notice::Tag already exists, using $TAG instead."
-          fi
-
-          echo "STAGING_TAG=$TAG" >> $GITHUB_ENV
-          echo "Resolved staging tag: $TAG"
 
       # DECODE KEYSTORE FOR RELEASE SIGNING
       - name: Decode Keystore
@@ -171,23 +193,40 @@ jobs:
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --build-name=${{ env.STAGING_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=staging --dart-define=API_URL=${{ secrets.POCKETBASE_URL_STAGING }}
 
-      # DEPLOY
-      - name: Prepare Folder
-        run: mv build/web pb_public
-
-      - name: Deploy to Server Staging
-        uses: cpina/github-action-push-to-another-repository@v1.7.2
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.DEPLOY_PAT }}
+      # --- SSH DEPLOY START ---
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          source-directory: 'pb_public'
-          destination-github-username: 'ChristianGerardHizon'
-          destination-repository-name: 'sannjose_server'
-          target-branch: 'staging'
-          target-directory: 'pb_public'
-          create-target-branch-if-needed: true
-          commit-message: "Deploy Staging: ${{ env.STAGING_VER }}"
-          user-email: 'bot@gymsystem.com'
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy web build to staging server
+        run: |
+          rsync -avz --delete \
+            build/web/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_public/
+
+      - name: Deploy migrations to staging server
+        run: |
+          rsync -avz --delete \
+            server/pb_migrations/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_migrations/
+
+      - name: Deploy hooks to staging server
+        run: |
+          rsync -avz --delete \
+            server/pb_hooks/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_hooks/
+
+      - name: Restart PocketBase staging service
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            'sudo systemctl restart pocketbase_hizonelaundry-staging.service'
+      # --- SSH DEPLOY END ---
 
       # RELEASE
       - name: Create Staging Release
@@ -228,7 +267,6 @@ jobs:
       - name: Verify deploy secrets exist
         run: |
           MISSING=""
-          if [ -z "${{ secrets.DEPLOY_PAT }}" ]; then MISSING="$MISSING DEPLOY_PAT"; fi
           if [ -z "${{ secrets.VERSION_MANAGER_URL }}" ]; then MISSING="$MISSING VERSION_MANAGER_URL"; fi
           if [ -z "${{ secrets.VERSION_COLLECTION_ID }}" ]; then MISSING="$MISSING VERSION_COLLECTION_ID"; fi
           if [ -z "${{ secrets.POCKETBASE_URL_PROD }}" ]; then MISSING="$MISSING POCKETBASE_URL_PROD"; fi
@@ -236,40 +274,80 @@ jobs:
           if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then MISSING="$MISSING KEYSTORE_PASSWORD"; fi
           if [ -z "${{ secrets.KEY_ALIAS }}" ]; then MISSING="$MISSING KEY_ALIAS"; fi
           if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then MISSING="$MISSING KEY_PASSWORD"; fi
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then MISSING="$MISSING SSH_HOST"; fi
+          if [ -z "${{ secrets.SSH_USER }}" ]; then MISSING="$MISSING SSH_USER"; fi
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then MISSING="$MISSING SSH_PRIVATE_KEY"; fi
           if [ -n "$MISSING" ]; then
             echo "::error::Missing required secrets:$MISSING"
             exit 1
           fi
+      # --- PREFLIGHT CHECKS END ---
 
-      - name: Verify destination repository is accessible
-        env:
-          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
+      # --- VERSION CHECKS (before setup — no dependencies on Java/Flutter) ---
+      # DETECT VERSION BUMP TYPE FROM PR LABELS
+      - name: Detect version bump type
+        id: bump_type
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/ChristianGerardHizon/sannjose_server")
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
 
-          if [ "$STATUS" != "200" ]; then
-            echo "::error::Cannot access destination repo ChristianGerardHizon/sannjose_server (HTTP $STATUS)."
-            echo "::error::Verify that DEPLOY_PAT is valid and has repo access."
+          if echo "$LABELS" | grep -q '"version:major"'; then
+            BUMP="major"
+          elif echo "$LABELS" | grep -q '"version:minor"'; then
+            BUMP="minor"
+          elif echo "$LABELS" | grep -q '"version:patch"'; then
+            BUMP="patch"
+          else
+            echo "::error::Missing version label! Add one of: version:patch, version:minor, version:major"
             exit 1
           fi
-          echo "Destination repository is accessible."
 
-      - name: Verify destination branch exists
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "::notice::Version bump type: $BUMP"
+
+      # ROBUST VERSION CALCULATION
+      - name: Calculate Prod Version
+        id: calc_prod
         env:
-          GH_TOKEN: ${{ secrets.DEPLOY_PAT }}
+          URL: ${{ secrets.VERSION_MANAGER_URL }}
+          ID: ${{ secrets.VERSION_COLLECTION_ID }}
+          BUMP: ${{ steps.bump_type.outputs.bump }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/repos/ChristianGerardHizon/sannjose_server/branches/main")
-
-          if [ "$STATUS" != "200" ]; then
-            echo "::warning::Branch 'main' not found on destination repo (HTTP $STATUS). Deploy may fail."
-          else
-            echo "Destination branch 'main' exists."
+          if [ -z "$URL" ] || [ -z "$ID" ]; then
+            echo "::error::Secrets Missing!"
+            exit 1
           fi
-      # --- PREFLIGHT CHECKS END ---
+
+          RESPONSE=$(curl -s "$URL/$ID")
+          MAJOR=$(echo $RESPONSE | jq -r '.major')
+          MINOR=$(echo $RESPONSE | jq -r '.minor')
+          PATCH=$(echo $RESPONSE | jq -r '.patch')
+
+          if [ "$MAJOR" == "null" ]; then exit 1; fi
+
+          # Apply version bump based on PR label
+          case "$BUMP" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            *)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          PROD_VER="$MAJOR.$MINOR.$PATCH"
+
+          echo "PROD_VER=$PROD_VER" >> $GITHUB_ENV
+          echo "prod_ver=$PROD_VER" >> $GITHUB_OUTPUT
+          echo "new_patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=$MINOR" >> $GITHUB_OUTPUT
+      # --- VERSION CHECKS END ---
 
       # --- SETUP & CACHE START ---
       - uses: actions/setup-java@v4
@@ -292,46 +370,15 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: ${{ runner.os }}-pub-
 
-      - name: Cache Flutter build
-        uses: actions/cache@v4
-        with:
-          path: |
-            build/
-            .dart_tool/
-          key: ${{ runner.os }}-flutter-build-prod-${{ hashFiles('lib/**', 'pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-flutter-build-prod-
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/share/boost
+          sudo apt-get clean
+          df -h
 
       - name: Install dependencies
         run: flutter pub get
       # --- SETUP & CACHE END ---
-
-      # ROBUST VERSION CALCULATION
-      - name: Calculate Prod Version
-        id: calc_prod
-        env:
-          URL: ${{ secrets.VERSION_MANAGER_URL }}
-          ID: ${{ secrets.VERSION_COLLECTION_ID }}
-        run: |
-          if [ -z "$URL" ] || [ -z "$ID" ]; then
-            echo "::error::Secrets Missing!"
-            exit 1
-          fi
-
-          RESPONSE=$(curl -s "$URL/$ID")
-          MAJOR=$(echo $RESPONSE | jq -r '.major')
-          MINOR=$(echo $RESPONSE | jq -r '.minor')
-          PATCH=$(echo $RESPONSE | jq -r '.patch')
-
-          if [ "$MAJOR" == "null" ]; then exit 1; fi
-
-          NEW_PATCH=$((PATCH + 1))
-          PROD_VER="$MAJOR.$MINOR.$NEW_PATCH"
-
-          echo "PROD_VER=$PROD_VER" >> $GITHUB_ENV
-          echo "prod_ver=$PROD_VER" >> $GITHUB_OUTPUT
-          echo "new_patch=$NEW_PATCH" >> $GITHUB_OUTPUT
-          echo "major=$MAJOR" >> $GITHUB_OUTPUT
-          echo "minor=$MINOR" >> $GITHUB_OUTPUT
 
       # DECODE KEYSTORE FOR RELEASE SIGNING
       - name: Decode Keystore
@@ -350,28 +397,47 @@ jobs:
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
 
+      # --- SSH DEPLOY START ---
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy web build to production server
+        run: |
+          rsync -avz --delete \
+            build/web/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_public/
+
+      - name: Deploy migrations to production server
+        run: |
+          rsync -avz --delete \
+            server/pb_migrations/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_migrations/
+
+      - name: Deploy hooks to production server
+        run: |
+          rsync -avz --delete \
+            server/pb_hooks/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_hooks/
+
+      - name: Restart PocketBase production service
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            'sudo systemctl restart pocketbase_hizonelaundry.service'
+      # --- SSH DEPLOY END ---
+
       # UPLOAD & DEPLOY
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Prepare Folder
-        run: mv build/web pb_public
-
-      - name: Deploy to Server Main
-        uses: cpina/github-action-push-to-another-repository@v1.7.2
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.DEPLOY_PAT }}
-        with:
-          source-directory: 'pb_public'
-          destination-github-username: 'ChristianGerardHizon'
-          destination-repository-name: 'sannjose_server'
-          target-branch: 'main'
-          target-directory: 'pb_public'
-          commit-message: "Deploy Production: ${{ env.PROD_VER }}"
-          user-email: 'bot@gymsystem.com'
 
   # ==========================================
   # JOB 3: RELEASE & SYNC

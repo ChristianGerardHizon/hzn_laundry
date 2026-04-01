@@ -78,7 +78,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   RecordService get _collection =>
       _pb.collection(PocketBaseCollections.products);
-  String get _expand => 'category';
+  String get _expand => 'category,quantityUnit';
 
   // Cache for product list
   List<Product>? _cachedProducts;
@@ -211,6 +211,7 @@ class ProductRepositoryImpl implements ProductRepository {
           'quantity': product.quantity,
           'expiration': product.expiration.toUtcIso8601OrNull(),
           'trackByLot': product.trackByLot,
+          'quantityUnit': product.quantityUnitId,
           'isDeleted': false,
         };
 
@@ -239,6 +240,7 @@ class ProductRepositoryImpl implements ProductRepository {
           'quantity': product.quantity,
           'expiration': product.expiration.toUtcIso8601OrNull(),
           'trackByLot': product.trackByLot,
+          'quantityUnit': product.quantityUnitId,
         };
 
         final record =

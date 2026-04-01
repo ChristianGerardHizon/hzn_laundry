@@ -98,7 +98,7 @@ class _AdminBranchDropdown extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      branch.displayName ?? branch.name,
+                      branch.name,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -148,7 +148,7 @@ class _BranchDisplay extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              branch.displayName ?? branch.name,
+              branch.name,
               style: theme.textTheme.bodyMedium,
               overflow: TextOverflow.ellipsis,
             ),

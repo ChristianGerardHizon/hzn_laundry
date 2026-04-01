@@ -2,28 +2,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/storage/secure_storage_provider.dart';
-import '../../../appointments/presentation/controllers/appointments_controller.dart';
-import '../../../appointments/presentation/controllers/daily_appointments_controller.dart';
-import '../../../appointments/presentation/controllers/paginated_appointments_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
-import '../../../dashboard/presentation/controllers/dashboard_kpi_provider.dart';
 import '../../../dashboard/presentation/controllers/inventory_alerts_controller.dart';
 import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
-import '../../../messages/presentation/controllers/messages_controller.dart';
-import '../../../patients/presentation/controllers/paginated_patients_controller.dart';
-import '../../../reports/presentation/controllers/appointment_report_controller.dart';
-import '../../../reports/presentation/controllers/inventory_report_controller.dart';
-import '../../../reports/presentation/controllers/patient_report_controller.dart';
-import '../../../reports/presentation/controllers/sales_report_controller.dart';
-import '../../../patients/presentation/controllers/patient_treatments_controller.dart';
-import '../../../patients/presentation/controllers/top_treatment_types_provider.dart';
+import '../../../dashboard/presentation/controllers/top_selling_controller.dart';
 import '../../../products/presentation/controllers/paginated_products_controller.dart';
+import '../../../reports/presentation/controllers/inventory_report_controller.dart';
+import '../../../reports/presentation/controllers/sales_report_controller.dart';
 import '../../../sales/presentation/controllers/paginated_sales_controller.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
 import '../../domain/branch.dart';
 import 'branches_controller.dart';
-import 'message_templates_controller.dart';
 
 part 'current_branch_controller.g.dart';
 
@@ -78,7 +68,9 @@ class CurrentBranchController extends _$CurrentBranchController {
 
     // Get full user to access roleId
     final fullUser = await ref.read(userProvider(auth.user.id).future);
-    if (fullUser == null || fullUser.roleId == null) return false;
+    if (fullUser == null || fullUser.roleId == null || fullUser.roleId!.isEmpty) {
+      return false;
+    }
 
     // Get user's role to check isAdmin
     final userRole = await ref.read(userRoleProvider(fullUser.roleId!).future);
@@ -105,30 +97,18 @@ class CurrentBranchController extends _$CurrentBranchController {
 
   void _invalidateBranchDependentProviders() {
     // Invalidate all list controllers so they refetch with new branch filter
-    ref.invalidate(paginatedPatientsControllerProvider);
     ref.invalidate(paginatedProductsControllerProvider);
-    ref.invalidate(patientTreatmentsControllerProvider);
-    ref.invalidate(topTreatmentTypeIdsProvider);
-    ref.invalidate(paginatedAppointmentsControllerProvider);
-    ref.invalidate(dailyAppointmentsControllerProvider);
     ref.invalidate(paginatedSalesControllerProvider);
 
     // Invalidate dashboard providers
-    ref.invalidate(appointmentsControllerProvider);
-    ref.invalidate(activePatientsCountProvider);
-    ref.invalidate(todayAppointmentsBreakdownProvider);
     ref.invalidate(todaySalesSummaryProvider);
     ref.invalidate(todaySalesProvider);
     ref.invalidate(inventoryAlertsSummaryProvider);
-
-    // Invalidate message providers
-    ref.invalidate(messagesControllerProvider);
-    ref.invalidate(messageTemplatesControllerProvider);
+    ref.invalidate(topSellingProductsProvider);
+    ref.invalidate(topSellingServicesProvider);
 
     // Invalidate report providers
     ref.invalidate(salesReportProvider);
-    ref.invalidate(patientReportProvider);
-    ref.invalidate(appointmentReportProvider);
     ref.invalidate(inventoryReportProvider);
   }
 }

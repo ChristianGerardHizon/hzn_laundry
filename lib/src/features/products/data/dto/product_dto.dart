@@ -2,6 +2,8 @@ import 'package:dart_mappable/dart_mappable.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../core/utils/date_utils.dart';
+import '../../../quantity_units/data/dto/quantity_unit_dto.dart';
+import '../../../quantity_units/domain/quantity_unit.dart';
 import '../../domain/product.dart';
 
 part 'product_dto.mapper.dart';
@@ -28,6 +30,8 @@ class ProductDto with ProductDtoMappable {
   final num? quantity;
   final String? expiration;
   final bool trackByLot;
+  final String? quantityUnit;
+  final QuantityUnit? quantityUnitExpanded;
   final bool isDeleted;
   final String? created;
   final String? updated;
@@ -50,6 +54,8 @@ class ProductDto with ProductDtoMappable {
     this.quantity,
     this.expiration,
     this.trackByLot = false,
+    this.quantityUnit,
+    this.quantityUnitExpanded,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -62,6 +68,15 @@ class ProductDto with ProductDtoMappable {
     // Get expanded category name using the get<T>() method
     final categoryExpanded = record.get<String>('expand.category.name');
     final categoryName = categoryExpanded.isNotEmpty ? categoryExpanded : null;
+
+    // Get expanded quantity unit
+    QuantityUnit? quantityUnitExpanded;
+    final expandData = json['expand'] as Map<String, dynamic>?;
+    if (expandData != null && expandData['quantityUnit'] != null) {
+      final unitData = expandData['quantityUnit'] as Map<String, dynamic>;
+      final unitRecord = RecordModel.fromJson(unitData);
+      quantityUnitExpanded = QuantityUnitDto.fromRecord(unitRecord).toEntity();
+    }
 
     return ProductDto(
       id: json['id'] as String? ?? '',
@@ -81,6 +96,8 @@ class ProductDto with ProductDtoMappable {
       quantity: json['quantity'] as num?,
       expiration: json['expiration'] as String?,
       trackByLot: json['trackByLot'] as bool? ?? false,
+      quantityUnit: json['quantityUnit'] as String?,
+      quantityUnitExpanded: quantityUnitExpanded,
       isDeleted: json['isDeleted'] as bool? ?? false,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
@@ -105,6 +122,8 @@ class ProductDto with ProductDtoMappable {
       quantity: quantity,
       expiration: parseToLocal(expiration),
       trackByLot: trackByLot,
+      quantityUnitId: quantityUnit,
+      quantityUnit: quantityUnitExpanded,
       isDeleted: isDeleted,
       created: parseToLocal(created),
       updated: parseToLocal(updated),

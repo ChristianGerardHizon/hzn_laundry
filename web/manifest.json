@@ -1,11 +1,11 @@
 {
-    "name": "sannjosevet",
-    "short_name": "sannjosevet",
+    "name": "Hi-Zone Laundry",
+    "short_name": "Hi-Zone Laundry",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",
-    "description": "system",
+    "description": "Hi-Zone Laundry",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
