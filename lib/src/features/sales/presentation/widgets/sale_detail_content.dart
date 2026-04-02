@@ -340,6 +340,7 @@ class _ServiceItemTile extends HookConsumerWidget {
             if (serviceItems.isNotEmpty && context.mounted) {
               final storageResult = await showAssignStoragesDialog(
                 context,
+                saleId: sale.id,
                 serviceItems: serviceItems,
               );
               if (storageResult != null && context.mounted) {

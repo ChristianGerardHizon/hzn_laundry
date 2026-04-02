@@ -74,12 +74,12 @@ class DashboardPage extends ConsumerWidget {
               const _MobileDashboardHeader(),
               const SizedBox(height: 16),
 
-              // Quick Actions Section
-              const QuickActionsSection(),
+              // Sales Summary Section (collapsible)
+              const SalesSummarySection(),
               const SizedBox(height: 24),
 
-              // Sales Summary Section
-              const SalesSummarySection(),
+              // Quick Actions Section
+              const QuickActionsSection(),
               const SizedBox(height: 24),
 
               // Order Board (Kanban)

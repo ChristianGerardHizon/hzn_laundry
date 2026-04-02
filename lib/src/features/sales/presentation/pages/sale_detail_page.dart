@@ -677,6 +677,7 @@ class _SaleDetailContent extends HookConsumerWidget {
         if (serviceItems.isNotEmpty) {
           final result = await showAssignStoragesDialog(
             context,
+            saleId: sale.id,
             serviceItems: serviceItems,
           );
           if (result == null || !context.mounted) return;
@@ -1395,6 +1396,7 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
             if (serviceItems.isNotEmpty && context.mounted) {
               final storageResult = await showAssignStoragesDialog(
                 context,
+                saleId: saleId,
                 serviceItems: serviceItems,
               );
               if (storageResult != null && context.mounted) {

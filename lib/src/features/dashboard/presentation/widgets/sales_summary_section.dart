@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/sales_summary_controller.dart';
@@ -11,41 +13,70 @@ import 'kpi_card.dart';
 ///
 /// Each KPI card (Total Sales, Total Paid, Total Unpaid) is tappable
 /// and opens a modal with the filtered breakdown list.
-class SalesSummarySection extends ConsumerWidget {
+/// The section can be collapsed/expanded by tapping the header.
+class SalesSummarySection extends HookConsumerWidget {
   const SalesSummarySection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(salesSummaryProvider);
     final theme = Theme.of(context);
+    final isExpanded = useState(true);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section header
-          Row(
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                size: 20,
-                color: theme.colorScheme.primary,
+          // Section header (tappable to toggle)
+          InkWell(
+            onTap: () => isExpanded.value = !isExpanded.value,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.analytics_outlined,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Today's Sales Summary",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: isExpanded.value ? 0.0 : -0.25,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.expand_more,
+                      size: 20,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                "Today's Sales Summary",
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 12),
-          summaryAsync.when(
-            data: (data) => _SalesSummaryContent(data: data),
-            loading: () => const _LoadingCards(),
-            error: (_, __) => const SizedBox.shrink(),
+          AnimatedCrossFade(
+            firstChild: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: summaryAsync.when(
+                data: (data) => _SalesSummaryContent(data: data),
+                loading: () => const _LoadingCards(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: isExpanded.value
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 200),
           ),
         ],
       ),
@@ -64,66 +95,76 @@ class _SalesSummaryContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Breakpoints.isMobile(context);
+
+    final cards = [
+      KpiCard(
+        title: 'Total Sales',
+        value: _formatCurrency(data.totalSales),
+        icon: Icons.point_of_sale,
+        subtitle: '${data.items.length} orders',
+        compact: true,
+        color: Colors.blue,
+        onTap: () => _showBreakdownModal(
+          context,
+          title: 'Total Sales',
+          icon: Icons.point_of_sale,
+          color: Colors.blue,
+          items: data.items,
+          total: data.totalSales,
+        ),
+      ),
+      KpiCard(
+        title: 'Total Paid',
+        value: _formatCurrency(data.totalPaid),
+        icon: Icons.check_circle_outline,
+        subtitle: '${data.items.where((i) => i.isPaid).length} paid',
+        compact: true,
+        color: Colors.green,
+        onTap: () => _showBreakdownModal(
+          context,
+          title: 'Total Paid',
+          icon: Icons.check_circle_outline,
+          color: Colors.green,
+          items: data.items.where((i) => i.isPaid).toList(),
+          total: data.totalPaid,
+        ),
+      ),
+      KpiCard(
+        title: 'Total Unpaid',
+        value: _formatCurrency(data.totalUnpaid),
+        icon: Icons.pending_outlined,
+        subtitle: '${data.items.where((i) => !i.isPaid).length} unpaid',
+        compact: true,
+        color: Colors.orange,
+        onTap: () => _showBreakdownModal(
+          context,
+          title: 'Total Unpaid',
+          icon: Icons.pending_outlined,
+          color: Colors.orange,
+          items: data.items.where((i) => !i.isPaid).toList(),
+          total: data.totalUnpaid,
+        ),
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: [
+          for (int i = 0; i < cards.length; i++) ...[
+            cards[i],
+            if (i < cards.length - 1) const SizedBox(height: 8),
+          ],
+        ],
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          child: KpiCard(
-            title: 'Total Sales',
-            value: _formatCurrency(data.totalSales),
-            icon: Icons.point_of_sale,
-            subtitle: '${data.items.length} orders',
-            compact: true,
-            color: Colors.blue,
-            onTap: () => _showBreakdownModal(
-              context,
-              title: 'Total Sales',
-              icon: Icons.point_of_sale,
-              color: Colors.blue,
-              items: data.items,
-              total: data.totalSales,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: KpiCard(
-            title: 'Total Paid',
-            value: _formatCurrency(data.totalPaid),
-            icon: Icons.check_circle_outline,
-            subtitle:
-                '${data.items.where((i) => i.isPaid).length} paid',
-            compact: true,
-            color: Colors.green,
-            onTap: () => _showBreakdownModal(
-              context,
-              title: 'Total Paid',
-              icon: Icons.check_circle_outline,
-              color: Colors.green,
-              items: data.items.where((i) => i.isPaid).toList(),
-              total: data.totalPaid,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: KpiCard(
-            title: 'Total Unpaid',
-            value: _formatCurrency(data.totalUnpaid),
-            icon: Icons.pending_outlined,
-            subtitle:
-                '${data.items.where((i) => !i.isPaid).length} unpaid',
-            compact: true,
-            color: Colors.orange,
-            onTap: () => _showBreakdownModal(
-              context,
-              title: 'Total Unpaid',
-              icon: Icons.pending_outlined,
-              color: Colors.orange,
-              items: data.items.where((i) => !i.isPaid).toList(),
-              total: data.totalUnpaid,
-            ),
-          ),
-        ),
+        for (int i = 0; i < cards.length; i++) ...[
+          Expanded(child: cards[i]),
+          if (i < cards.length - 1) const SizedBox(width: 8),
+        ],
       ],
     );
   }
@@ -466,6 +507,18 @@ class _LoadingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (Breakpoints.isMobile(context)) {
+      return const Column(
+        children: [
+          _LoadingCard(),
+          SizedBox(height: 8),
+          _LoadingCard(),
+          SizedBox(height: 8),
+          _LoadingCard(),
+        ],
+      );
+    }
+
     return const Row(
       children: [
         Expanded(child: _LoadingCard()),

@@ -51,6 +51,7 @@ class QuickActionsSection extends ConsumerWidget {
                   icon: Icons.add_shopping_cart,
                   label: 'New Sale',
                   color: Colors.green,
+                  filled: true,
                   onTap: () => showCreateOrderDialog(context),
                 ),
                 const SizedBox(width: 12),
@@ -75,20 +76,25 @@ class _QuickActionButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.filled = false,
   });
 
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bgColor = filled ? color : color.withValues(alpha: 0.1);
+    final fgColor = filled ? Colors.white : color;
 
     return Material(
-      color: color.withValues(alpha: 0.1),
+      color: bgColor,
       borderRadius: BorderRadius.circular(12),
+      elevation: filled ? 2 : 0,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -99,14 +105,14 @@ class _QuickActionButton extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: color,
+                color: fgColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: color,
+                  color: fgColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
