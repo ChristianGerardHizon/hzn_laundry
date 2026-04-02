@@ -13,33 +13,37 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - name: Get version from latest staging release
+      - name: Calculate next version
         id: get_version
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ secrets.VERSION_MANAGER_URL }}
+          ID: ${{ secrets.VERSION_COLLECTION_ID }}
         run: |
-          # Wait for the deploy workflow to create the staging release
-          # Try up to 30 times with 20s intervals (10 min max)
-          for i in $(seq 1 30); do
-            TAG=$(gh release list \
-              --repo "${{ github.repository }}" \
-              --limit 5 \
-              --json tagName,isPrerelease,createdAt \
-              --jq '[.[] | select(.isPrerelease)] | sort_by(.createdAt) | last | .tagName // empty')
+          # Read current version from the same source as the deploy workflow
+          RESPONSE=$(curl -s "$URL/$ID")
+          MAJOR=$(echo $RESPONSE | jq -r '.major')
+          MINOR=$(echo $RESPONSE | jq -r '.minor')
+          PATCH=$(echo $RESPONSE | jq -r '.patch')
 
-            if [ -n "$TAG" ]; then
-              VERSION=$(echo "$TAG" | sed 's/^staging-//' | sed 's/-build\..*//')
-              echo "version=$VERSION" >> $GITHUB_OUTPUT
-              echo "Found staging version: $VERSION (attempt $i)"
-              exit 0
-            fi
+          if [ "$MAJOR" == "null" ]; then
+            echo "version=unknown" >> $GITHUB_OUTPUT
+            echo "::warning::Failed to read version from API"
+            exit 0
+          fi
 
-            echo "Waiting for staging release... (attempt $i/30)"
-            sleep 20
-          done
+          # Determine bump type from the PR labels
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"version:major"'; then
+            MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+          elif echo "$LABELS" | grep -q '"version:minor"'; then
+            MINOR=$((MINOR + 1)); PATCH=0
+          elif echo "$LABELS" | grep -q '"version:patch"'; then
+            PATCH=$((PATCH + 1))
+          fi
 
-          echo "version=unknown" >> $GITHUB_OUTPUT
-          echo "::warning::Could not determine staging version from releases"
+          VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Calculated next version: $VERSION"
 
       - name: Create PR from staging to main
         env:
