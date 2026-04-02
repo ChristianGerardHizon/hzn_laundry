@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../../core/pdf/pdf_task_runner.dart';
+import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
@@ -443,7 +444,7 @@ class ReceiptDialog extends HookConsumerWidget {
                     const SizedBox(width: 8),
                     TextButton(
                       onPressed: () {
-                        context.pop();
+                        DialogDismissingObserver.dismissAllDialogs();
                         const PrinterSettingsRoute().go(context);
                       },
                       child: const Text('Setup Printer'),

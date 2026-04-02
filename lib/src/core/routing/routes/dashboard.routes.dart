@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../features/dashboard/presentation/controllers/dashboard_kpi_provider.dart';
+import '../../../features/dashboard/presentation/controllers/dashboard_realtime_provider.dart';
 import '../../../features/dashboard/presentation/controllers/inventory_alerts_controller.dart';
 import '../../../features/dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/todays_sales_controller.dart';
@@ -43,6 +44,10 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Activate PocketBase realtime subscriptions for dashboard data.
+    // Automatically unsubscribes when navigating away.
+    ref.watch(dashboardRealtimeProvider);
+
     final isTablet = Breakpoints.isTabletOrLarger(context);
 
     if (isTablet) {

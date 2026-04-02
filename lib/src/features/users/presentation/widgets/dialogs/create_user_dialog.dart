@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../core/hooks/use_form_dirty_guard.dart';
 import '../../../../../core/i18n/strings.g.dart';
+import '../../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../../core/routing/routes/organization.routes.dart';
 import '../../../../../core/routing/routes/users.routes.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
@@ -82,7 +83,7 @@ class CreateUserDialog extends HookConsumerWidget {
 
       if (context.mounted) {
         isSaving.value = false;
-        context.pop();
+        DialogDismissingObserver.dismissAllDialogs();
 
         showSuccessSnackBar(context, message: 'User created successfully');
 

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
@@ -2522,7 +2523,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
               else
                 TextButton(
                   onPressed: () {
-                    context.pop();
+                    DialogDismissingObserver.dismissAllDialogs();
                     const PrinterSettingsRoute().go(context);
                   },
                   child: const Text('Setup Printer'),
