@@ -111,7 +111,7 @@ Future<int> notPickedUpCount(Ref ref) async {
   final startUtc = todayStart.toPocketBaseUtc();
 
   var filter =
-      "status != 'voided' && orderStatus != 'pickedUp' && created < '$startUtc'";
+      "status != 'voided' && created < '$startUtc' && (orderStatus != 'pickedUp' || pickedUpAt >= '$startUtc')";
   if (branchId != null) {
     filter = '$filter && branch = "$branchId"';
   }
@@ -185,7 +185,7 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
       final todayStart = DateTime(now.year, now.month, now.day);
       final startUtc = todayStart.toPocketBaseUtc();
       filter =
-          '$filter && orderStatus != "pickedUp" && created < "$startUtc"';
+          '$filter && created < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
   }
 
   final records =
