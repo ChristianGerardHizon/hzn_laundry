@@ -12,6 +12,9 @@ import '../../../services/domain/sale_service_item.dart';
 
 /// Dialog for assigning machines to sale service items.
 ///
+/// Shows tappable machine chips grouped by type. Each service item can have
+/// one machine assigned. Users tap a service item, then tap a machine to assign.
+///
 /// Returns `true` if assignments were made or skipped, `null` if cancelled.
 class AssignMachinesDialog extends HookConsumerWidget {
   const AssignMachinesDialog({
@@ -25,8 +28,11 @@ class AssignMachinesDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final machinesAsync = ref.watch(machinesControllerProvider);
-    final assignments = useState<Map<String, String?>>({});
+    // Map of service item ID to list of assigned machine IDs
+    final assignments = useState<Map<String, List<String>>>({});
     final isSaving = useState(false);
+    // Currently selected service item index for assignment
+    final activeItemIndex = useState(0);
 
     Future<void> handleAssign() async {
       final repo = ref.read(salesRepositoryProvider);
@@ -35,19 +41,21 @@ class AssignMachinesDialog extends HookConsumerWidget {
       final machines = machinesAsync.value ?? [];
 
       for (final item in serviceItems) {
-        final machineId = assignments.value[item.id];
-        if (machineId != null && machineId.isNotEmpty) {
-          final machine = machines.firstWhere((m) => m.id == machineId);
-          final result = await repo.assignMachineToServiceItem(
+        final machineIds = assignments.value[item.id] ?? [];
+        if (machineIds.isNotEmpty) {
+          final machineNames = machineIds
+              .map((id) => machines.firstWhere((m) => m.id == id).name)
+              .toList();
+          final result = await repo.assignMachinesToServiceItem(
             item.id,
-            machineId,
-            machine.name,
+            machineIds,
+            machineNames,
           );
           if (result.isLeft()) {
             if (context.mounted) {
               isSaving.value = false;
               showErrorSnackBar(context,
-                  message: 'Failed to assign machine to ${item.serviceName}',
+                  message: 'Failed to assign machines to ${item.serviceName}',
                   useRootMessenger: false);
               return;
             }
@@ -83,35 +91,75 @@ class AssignMachinesDialog extends HookConsumerWidget {
                   );
                 }
 
+                final availableMachines =
+                    machines.where((m) => m.isAvailable).toList();
+
                 return SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Assign a machine to each service item:',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      // Service item selector (only show if multiple)
+                      if (serviceItems.length > 1) ...[
+                        Text(
+                          'Select service to assign machines:',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            for (int i = 0; i < serviceItems.length; i++)
+                              _ServiceItemChip(
+                                item: serviceItems[i],
+                                isActive: activeItemIndex.value == i,
+                                assignedCount:
+                                    (assignments.value[serviceItems[i].id] ??
+                                            [])
+                                        .length,
+                                onTap: isSaving.value
+                                    ? null
+                                    : () => activeItemIndex.value = i,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1),
+                        const SizedBox(height: 16),
+                      ],
+                      // Current service item label
+                      _ActiveServiceLabel(
+                        item: serviceItems[activeItemIndex.value],
                       ),
-                      const SizedBox(height: 16),
-                      ...serviceItems.map((item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _ServiceItemMachineRow(
-                              item: item,
-                              machines: machines,
-                              selectedMachineId: assignments.value[item.id],
-                              onChanged: isSaving.value
-                                  ? null
-                                  : (machineId) {
-                                      final newAssignments =
-                                          Map<String, String?>.from(
-                                              assignments.value);
-                                      newAssignments[item.id] = machineId;
-                                      assignments.value = newAssignments;
-                                    },
-                            ),
-                          )),
+                      const SizedBox(height: 12),
+                      // Machine grid - tappable chips (multi-select)
+                      _MachineGrid(
+                        machines: availableMachines,
+                        selectedIds: assignments.value[
+                                serviceItems[activeItemIndex.value].id] ??
+                            [],
+                        disabled: isSaving.value,
+                        onToggle: (machineId) {
+                          final itemId =
+                              serviceItems[activeItemIndex.value].id;
+                          final current = Map<String, List<String>>.from(
+                              assignments.value);
+                          final list =
+                              List<String>.from(current[itemId] ?? []);
+
+                          if (list.contains(machineId)) {
+                            list.remove(machineId);
+                          } else {
+                            list.add(machineId);
+                          }
+
+                          current[itemId] = list;
+                          assignments.value = current;
+                        },
+                      ),
                     ],
                   ),
                 );
@@ -144,118 +192,271 @@ class AssignMachinesDialog extends HookConsumerWidget {
   }
 }
 
-class _ServiceItemMachineRow extends HookConsumerWidget {
-  const _ServiceItemMachineRow({
+class _ServiceItemChip extends StatelessWidget {
+  const _ServiceItemChip({
     required this.item,
-    required this.machines,
-    required this.selectedMachineId,
-    required this.onChanged,
+    required this.isActive,
+    required this.assignedCount,
+    required this.onTap,
   });
 
   final SaleServiceItem item;
-  final List<Machine> machines;
-  final String? selectedMachineId;
-  final ValueChanged<String?>? onChanged;
+  final bool isActive;
+  final int assignedCount;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Find the selected machine to check strictSingleUse
-    final selectedMachine = selectedMachineId != null && selectedMachineId!.isNotEmpty
-        ? machines.where((m) => m.id == selectedMachineId).firstOrNull
-        : null;
+    return FilterChip(
+      selected: isActive,
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+          ),
+          if (assignedCount > 0) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$assignedCount',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      onSelected: onTap != null ? (_) => onTap!() : null,
+    );
+  }
+}
 
-    // Only watch usage if the selected machine has strictSingleUse enabled
-    final usageAsync = selectedMachine?.strictSingleUse == true
-        ? ref.watch(machineUsageProvider(selectedMachineId!))
-        : null;
+class _ActiveServiceLabel extends StatelessWidget {
+  const _ActiveServiceLabel({required this.item});
+
+  final SaleServiceItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Icon(
+          Icons.local_laundry_service,
+          size: 18,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          'Tap to select (multi)',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MachineGrid extends StatelessWidget {
+  const _MachineGrid({
+    required this.machines,
+    required this.selectedIds,
+    required this.disabled,
+    required this.onToggle,
+  });
+
+  final List<Machine> machines;
+  final List<String> selectedIds;
+  final bool disabled;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    // Group machines by type
+    final grouped = <String, List<Machine>>{};
+    for (final machine in machines) {
+      final key = machine.type.displayName;
+      grouped.putIfAbsent(key, () => []).add(machine);
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final entry in grouped.entries) ...[
+          _MachineTypeSection(
+            typeName: entry.key,
+            machines: entry.value,
+            selectedIds: selectedIds,
+            disabled: disabled,
+            onToggle: onToggle,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _MachineTypeSection extends StatelessWidget {
+  const _MachineTypeSection({
+    required this.typeName,
+    required this.machines,
+    required this.selectedIds,
+    required this.disabled,
+    required this.onToggle,
+  });
+
+  final String typeName;
+  final List<Machine> machines;
+  final List<String> selectedIds;
+  final bool disabled;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
-          style: theme.textTheme.titleSmall,
-        ),
-        const SizedBox(height: 4),
-        DropdownButtonFormField<String>(
-          initialValue: selectedMachineId,
-          decoration: const InputDecoration(
-            hintText: 'Select machine',
-            border: OutlineInputBorder(),
-            isDense: true,
+          typeName,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
-          items: [
-            const DropdownMenuItem<String>(
-              value: '',
-              child: Text('None'),
-            ),
-            ...machines.where((m) => m.isAvailable).map((machine) {
-              return DropdownMenuItem<String>(
-                value: machine.id,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (machine.strictSingleUse) ...[
-                      Icon(
-                        Icons.lock_outline,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Flexible(
-                      child: Text(
-                        '${machine.name} (${machine.type.displayName})',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-          onChanged: onChanged,
         ),
-        // Show warning if strictSingleUse machine is in use
-        if (usageAsync != null)
-          usageAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.only(top: 4),
-              child: SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: machines.map((machine) {
+            final isSelected = selectedIds.contains(machine.id);
+            return _MachineChip(
+              machine: machine,
+              isSelected: isSelected,
+              disabled: disabled,
+              onTap: () => onToggle(machine.id),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _MachineChip extends HookConsumerWidget {
+  const _MachineChip({
+    required this.machine,
+    required this.isSelected,
+    required this.disabled,
+    required this.onTap,
+  });
+
+  final Machine machine;
+  final bool isSelected;
+  final bool disabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
+    // Only check usage for strictSingleUse machines
+    final usageAsync = machine.strictSingleUse
+        ? ref.watch(machineUsageProvider(machine.id))
+        : null;
+
+    final isInUse = usageAsync?.value?.isInUse ?? false;
+    final usageInfo = usageAsync?.value;
+
+    return Tooltip(
+      message: isInUse && usageInfo != null
+          ? 'Processing ${usageInfo.displaySummary}'
+          : '',
+      child: Material(
+        color: isSelected
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : isInUse
+                        ? theme.colorScheme.error.withValues(alpha: 0.5)
+                        : Colors.transparent,
+                width: isSelected ? 2 : 1,
               ),
             ),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (usage) {
-              if (!usage.isInUse) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber,
-                      size: 16,
-                      color: theme.colorScheme.error,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        'Machine is processing ${usage.displaySummary}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected) ...[
+                  Icon(
+                    Icons.check_circle,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (isInUse && !isSelected) ...[
+                  Icon(
+                    Icons.warning_amber,
+                    size: 16,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                if (machine.strictSingleUse && !isSelected && !isInUse) ...[
+                  Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  machine.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
+                  ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
-      ],
+        ),
+      ),
     );
   }
 }

@@ -84,7 +84,7 @@ Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
   // Query saleServiceItems where machine = machineId
   // and expand the sale relation to check orderStatus
   final records = await pb.collection(PocketBaseCollections.saleServiceItems).getFullList(
-    filter: 'machine = "$machineId"',
+    filter: 'machine ~ "$machineId"',
     expand: 'sale',
   );
 

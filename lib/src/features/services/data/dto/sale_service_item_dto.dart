@@ -21,7 +21,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final num quantity;
   final num unitPrice;
   final num subtotal;
-  final String? machine;
+  final List<String> machine;
   final String? machineName;
   final String? storage;
   final String? storageName;
@@ -39,7 +39,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
-    this.machine,
+    this.machine = const [],
     this.machineName,
     this.storage,
     this.storageName,
@@ -59,7 +59,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       quantity: record.getDoubleValue('quantity'),
       unitPrice: record.getDoubleValue('unitPrice'),
       subtotal: record.getDoubleValue('subtotal'),
-      machine: record.getStringValue('machine'),
+      machine: record.getListValue<String>('machine'),
       machineName: record.getStringValue('machineName'),
       storage: record.getStringValue('storage'),
       storageName: record.getStringValue('storageName'),
@@ -85,7 +85,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       service: serviceExpanded != null
           ? ServiceDto.fromRecord(serviceExpanded).toEntity()
           : null,
-      machineId: machine != null && machine!.isNotEmpty ? machine : null,
+      machineId: machine.isNotEmpty ? machine.first : null,
       machineName: machineName,
       machine: machineExpanded != null
           ? MachineDto.fromRecord(machineExpanded).toEntity()
