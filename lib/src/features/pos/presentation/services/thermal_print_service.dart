@@ -537,8 +537,8 @@ class ThermalPrintService extends _$ThermalPrintService {
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
+          height: PosTextSize.size4,
+          width: PosTextSize.size4,
         ),
       );
 
@@ -565,23 +565,59 @@ class ThermalPrintService extends _$ThermalPrintService {
         ),
       );
 
+      // ── Price breakdown ──────────────────────────────────────────────
+      bytes += generator.hr();
+
+      final storeAddOnsTotal =
+          addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+      final storeServiceSubtotal = totalAmount - storeAddOnsTotal;
+
+      // Service price
+      bytes += generator.row([
+        PosColumn(text: serviceName, width: 8),
+        PosColumn(
+          text: currencyFormat.format(storeServiceSubtotal),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+
       // Add-on items
       if (addOnItems.isNotEmpty) {
-        bytes += generator.hr();
-        bytes += generator.text(
-          'ADD-ONS:',
-          styles: const PosStyles(
-            align: PosAlign.center,
-            bold: true,
-          ),
-        );
         for (final item in addOnItems) {
-          bytes += generator.text(
-            '${item.productName} x${item.quantity.toInt()}',
-            styles: const PosStyles(align: PosAlign.center),
-          );
+          bytes += generator.row([
+            PosColumn(
+              text: '${item.productName} x${item.quantity.toInt()}',
+              width: 8,
+            ),
+            PosColumn(
+              text: currencyFormat.format(item.subtotal),
+              width: 4,
+              styles: const PosStyles(align: PosAlign.right),
+            ),
+          ]);
         }
       }
+
+      bytes += generator.hr();
+
+      // Total — large and bold for easy reading
+      bytes += generator.text(
+        'TOTAL',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      );
+      bytes += generator.text(
+        currencyFormat.format(totalAmount),
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
 
       bytes += generator.hr();
 
@@ -636,13 +672,6 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       bytes += generator.hr(ch: '=');
 
-      bytes += generator.text(
-        'CUSTOMER COPY',
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      );
-
-      bytes += generator.emptyLines(1);
-
       // Order info
       bytes += generator.text(
         'ORDER RECEIPT',
@@ -683,6 +712,11 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       bytes += generator.hr();
 
+      // Service subtotal excludes add-on prices
+      final addOnsTotal =
+          addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+      final serviceSubtotal = totalAmount - addOnsTotal;
+
       String name = serviceName;
       if (name.length > 16) {
         name = '${name.substring(0, 14)}..';
@@ -696,7 +730,7 @@ class ThermalPrintService extends _$ThermalPrintService {
           styles: const PosStyles(align: PosAlign.center),
         ),
         PosColumn(
-          text: currencyFormat.format(totalAmount),
+          text: currencyFormat.format(serviceSubtotal),
           width: 4,
           styles: const PosStyles(align: PosAlign.right),
         ),
@@ -747,20 +781,23 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       bytes += generator.hr();
 
-      // Total
-      bytes += generator.row([
-        PosColumn(
-          text: 'TOTAL:',
-          width: 6,
-          styles: const PosStyles(bold: true),
+      // Total — large and bold
+      bytes += generator.text(
+        'TOTAL',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
         ),
-        PosColumn(text: '', width: 2),
-        PosColumn(
-          text: currencyFormat.format(totalAmount),
-          width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right),
+      );
+      bytes += generator.text(
+        currencyFormat.format(totalAmount),
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
         ),
-      ]);
+      );
 
       bytes += generator.hr();
 

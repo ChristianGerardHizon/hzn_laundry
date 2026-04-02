@@ -55,6 +55,12 @@ class ServicePriceTierDtoMapper extends ClassMapperBase<ServicePriceTierDto> {
     'pricePerUnit',
     _$pricePerUnit,
   );
+  static num? _$flatPrice(ServicePriceTierDto v) => v.flatPrice;
+  static const Field<ServicePriceTierDto, num> _f$flatPrice = Field(
+    'flatPrice',
+    _$flatPrice,
+    opt: true,
+  );
   static String? _$created(ServicePriceTierDto v) => v.created;
   static const Field<ServicePriceTierDto, String> _f$created = Field(
     'created',
@@ -77,6 +83,7 @@ class ServicePriceTierDtoMapper extends ClassMapperBase<ServicePriceTierDto> {
     #minQuantity: _f$minQuantity,
     #maxQuantity: _f$maxQuantity,
     #pricePerUnit: _f$pricePerUnit,
+    #flatPrice: _f$flatPrice,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -90,6 +97,7 @@ class ServicePriceTierDtoMapper extends ClassMapperBase<ServicePriceTierDto> {
       minQuantity: data.dec(_f$minQuantity),
       maxQuantity: data.dec(_f$maxQuantity),
       pricePerUnit: data.dec(_f$pricePerUnit),
+      flatPrice: data.dec(_f$flatPrice),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -173,6 +181,7 @@ abstract class ServicePriceTierDtoCopyWith<
     num? minQuantity,
     num? maxQuantity,
     num? pricePerUnit,
+    num? flatPrice,
     String? created,
     String? updated,
   });
@@ -198,6 +207,7 @@ class _ServicePriceTierDtoCopyWithImpl<$R, $Out>
     num? minQuantity,
     Object? maxQuantity = $none,
     num? pricePerUnit,
+    Object? flatPrice = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -209,6 +219,7 @@ class _ServicePriceTierDtoCopyWithImpl<$R, $Out>
       if (minQuantity != null) #minQuantity: minQuantity,
       if (maxQuantity != $none) #maxQuantity: maxQuantity,
       if (pricePerUnit != null) #pricePerUnit: pricePerUnit,
+      if (flatPrice != $none) #flatPrice: flatPrice,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -222,6 +233,7 @@ class _ServicePriceTierDtoCopyWithImpl<$R, $Out>
     minQuantity: data.get(#minQuantity, or: $value.minQuantity),
     maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
     pricePerUnit: data.get(#pricePerUnit, or: $value.pricePerUnit),
+    flatPrice: data.get(#flatPrice, or: $value.flatPrice),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

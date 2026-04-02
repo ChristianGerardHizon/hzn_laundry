@@ -53,7 +53,7 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
       final maxQtyStr = values['maxQuantity']?.toString();
       final maxQty =
           (maxQtyStr != null && maxQtyStr.isNotEmpty) ? num.parse(maxQtyStr) : null;
-      final pricePerUnit = num.parse(values['pricePerUnit'].toString());
+      final price = num.parse(values['pricePerUnit'].toString());
 
       // Validate min < max if max is provided
       if (maxQty != null && maxQty > 0 && maxQty < minQty) {
@@ -67,7 +67,7 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
         'service': serviceId,
         'minQuantity': minQty,
         'maxQuantity': maxQty ?? 0,
-        'pricePerUnit': pricePerUnit,
+        'pricePerUnit': price,
       };
 
       try {
@@ -164,8 +164,9 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
                 FormBuilderTextField(
                   name: 'pricePerUnit',
                   decoration: const InputDecoration(
-                    labelText: 'Price per Unit *',
+                    labelText: 'Price *',
                     prefixText: '₱ ',
+                    hintText: 'Total price for this range',
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),

@@ -30,6 +30,8 @@ class KanbanBoardSection extends HookConsumerWidget {
     final kanbanAsync = ref.watch(kanbanSalesProvider);
     final filterMode = ref.watch(kanbanFilterProvider);
     final isRefreshing = kanbanAsync.isLoading && kanbanAsync.hasValue;
+    final searchController = useTextEditingController();
+    final searchQuery = useState('');
 
     // Spinning animation for the refresh icon
     final animController = useAnimationController(
@@ -88,6 +90,47 @@ class KanbanBoardSection extends HookConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
+          // Search bar
+          TextField(
+            controller: searchController,
+            onChanged: (value) => searchQuery.value = value,
+            decoration: InputDecoration(
+              hintText: 'Search by customer name or order code...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: searchQuery.value.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        searchController.clear();
+                        searchQuery.value = '';
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.5),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
           // Filter chips
           _KanbanFilterChips(currentFilter: filterMode),
           const SizedBox(height: 12),
@@ -97,8 +140,10 @@ class KanbanBoardSection extends HookConsumerWidget {
             duration: const Duration(milliseconds: 200),
             child: kanbanAsync.when(
               skipLoadingOnRefresh: true,
-              data: (data) =>
-                  _KanbanBoard(data: data, filterMode: filterMode),
+              data: (data) => _KanbanBoard(
+                data: data.filterByQuery(searchQuery.value),
+                filterMode: filterMode,
+              ),
               loading: () => const _LoadingState(),
               error: (_, __) => const SizedBox.shrink(),
             ),
