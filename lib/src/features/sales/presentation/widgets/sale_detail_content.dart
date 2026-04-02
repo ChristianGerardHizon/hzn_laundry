@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
@@ -842,8 +843,10 @@ class SaleCustomerInfoRow extends StatelessWidget {
           Expanded(
             child: hasCustomerId
                 ? InkWell(
-                    onTap: () =>
-                        CustomerDetailRoute(id: customerId!).go(context),
+                    onTap: () {
+                      DialogDismissingObserver.dismissAllDialogs();
+                      CustomerDetailRoute(id: customerId!).go(context);
+                    },
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),

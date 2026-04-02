@@ -228,17 +228,28 @@ class ThermalPrintService extends _$ThermalPrintService {
         return const PrintFailure('Failed to connect to Bluetooth printer');
       }
 
+      // Allow the Bluetooth connection to stabilise before sending data.
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Verify the connection is actually ready.
+      final isReady = await PrintBluetoothThermal.connectionStatus;
+      if (!isReady) {
+        return const PrintFailure(
+            'Bluetooth connection lost before printing');
+      }
+
       // Send data in chunks to avoid buffer overflow on macOS.
       // The plugin's writeBytes can fail with "Invalid arguments type"
       // when sending large payloads on macOS.
+      // Use List<int>.from() to avoid Uint8List sublist view issues with
+      // platform channel serialisation.
       const chunkSize = 200;
-      final data = Uint8List.fromList(bytes);
       bool lastResult = true;
 
-      for (var offset = 0; offset < data.length; offset += chunkSize) {
+      for (var offset = 0; offset < bytes.length; offset += chunkSize) {
         final end =
-            (offset + chunkSize > data.length) ? data.length : offset + chunkSize;
-        final chunk = data.sublist(offset, end);
+            (offset + chunkSize > bytes.length) ? bytes.length : offset + chunkSize;
+        final chunk = List<int>.from(bytes.sublist(offset, end));
 
         try {
           lastResult = await PrintBluetoothThermal.writeBytes(chunk);
@@ -250,10 +261,13 @@ class ThermalPrintService extends _$ThermalPrintService {
         }
 
         // Small delay between chunks to let the printer process
-        if (end < data.length) {
+        if (end < bytes.length) {
           await Future.delayed(const Duration(milliseconds: 50));
         }
       }
+
+      // Allow final chunk to flush before disconnecting.
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Disconnect
       try {
@@ -860,7 +874,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     );
 
     bytes += generator.hr(ch: '=');
-    bytes += generator.feed(4);
+    bytes += generator.feed(_autoCut ? 2 : 4);
+    if (_autoCut) bytes += generator.cut();
 
     return bytes;
   }
