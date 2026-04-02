@@ -802,8 +802,8 @@ class _SaleCardContent extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (_isOverdue) ...[
-                    const _OverdueBadge(),
+                  if (_isOverdue && sale.created != null) ...[
+                    _DateBadge(date: sale.created!.toLocal()),
                     const SizedBox(width: 4),
                   ],
                   _PaymentBadge(isPaid: sale.isPaid),
@@ -1009,8 +1009,10 @@ class _ItemSummaryRow extends StatelessWidget {
   }
 }
 
-class _OverdueBadge extends StatelessWidget {
-  const _OverdueBadge();
+class _DateBadge extends StatelessWidget {
+  const _DateBadge({required this.date});
+
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
@@ -1020,9 +1022,9 @@ class _OverdueBadge extends StatelessWidget {
         color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Text(
-        'Overdue',
-        style: TextStyle(
+      child: Text(
+        DateFormat('MMM d').format(date),
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: Colors.red,
