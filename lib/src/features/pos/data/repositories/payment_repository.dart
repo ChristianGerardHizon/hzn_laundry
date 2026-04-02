@@ -5,8 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../reports/domain/payment_report_entry.dart';
 import '../../domain/payment.dart';
 import '../../domain/payment_method.dart';
 import '../../domain/payment_type.dart';
@@ -28,6 +30,13 @@ abstract class PaymentRepository {
 
   /// Gets all payments for a sale.
   FutureEither<List<Payment>> getBySaleId(String saleId);
+
+  /// Gets all payments within a date range with sale context, optionally filtered by branch.
+  FutureEither<List<PaymentReportEntry>> getForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  });
 
   /// Deletes a payment and updates the sale's isPaid status.
   FutureEither<void> delete(String id);
@@ -98,6 +107,42 @@ class PaymentRepositoryImpl implements PaymentRepository {
           sort: '-created',
         );
         return records.map(_toEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<PaymentReportEntry>> getForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter().between('created', startDate, endDate);
+        if (branchId != null) {
+          filter.relation('sale.branch', branchId);
+        }
+
+        final records = await _payments.getFullList(
+          filter: filter.build(),
+          sort: '-created',
+          expand: 'sale',
+        );
+
+        return records.map((record) {
+          final payment = _toEntity(record);
+          final saleExpanded = record.get<RecordModel?>('expand.sale');
+          return PaymentReportEntry(
+            payment: payment,
+            saleId: payment.saleId,
+            receiptNumber:
+                saleExpanded?.getStringValue('receiptNumber') ?? '',
+            customerName: saleExpanded?.getStringValue('customerName'),
+            saleStatus: saleExpanded?.getStringValue('status') ?? '',
+          );
+        }).toList();
       },
       Failure.handle,
     ).run();

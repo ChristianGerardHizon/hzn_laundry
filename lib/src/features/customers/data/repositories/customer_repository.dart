@@ -29,6 +29,12 @@ abstract class CustomerRepository {
   /// Deletes a customer by ID.
   FutureEither<void> delete(String id);
 
+  /// Fetches customers created within a date range.
+  FutureEither<List<Customer>> fetchForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
   /// Searches customers by name or phone.
   FutureEither<List<Customer>> search(String query, {List<String>? fields});
 
@@ -169,6 +175,26 @@ class CustomerRepositoryImpl implements CustomerRepository {
       () async {
         await _collection.delete(id);
         invalidateCache();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<Customer>> fetchForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter =
+            PBFilter().between('created', startDate, endDate).build();
+
+        final records = await _collection.getFullList(
+          filter: filter,
+          sort: '-created',
+        );
+        return records.map(_toEntity).toList();
       },
       Failure.handle,
     ).run();

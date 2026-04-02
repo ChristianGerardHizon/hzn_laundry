@@ -102,7 +102,7 @@ final class NotPickedUpCountProvider
   }
 }
 
-String _$notPickedUpCountHash() => r'9cb739f743c7f07c92414aa79fc1a11cf329b04e';
+String _$notPickedUpCountHash() => r'a17d37fb104cbdfbeb9c5677f9d3363aee6b16f0';
 
 /// Count of orders created today.
 /// Used to display a badge on the "Today's Orders" filter chip.
@@ -197,4 +197,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'b46c5779022f55712e4b3d8aefebfc496c3ec2ac';
+String _$kanbanSalesHash() => r'a2d674f0e1a949cde9151747b90838eaeeb011aa';
