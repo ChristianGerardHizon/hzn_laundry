@@ -398,9 +398,10 @@ class _KanbanColumn extends ConsumerWidget {
     } else if (status == OrderStatus.ready) {
       final serviceItems =
           await ref.read(saleServiceItemsProvider(sale.id).future);
-      if (serviceItems.isNotEmpty && context.mounted) {
+      if (context.mounted) {
         final result = await showAssignStoragesDialog(
           context,
+          saleId: sale.id,
           serviceItems: serviceItems,
         );
         if (result == null) {
@@ -801,8 +802,8 @@ class _SaleCardContent extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (_isOverdue) ...[
-                    const _OverdueBadge(),
+                  if (_isOverdue && sale.created != null) ...[
+                    _DateBadge(date: sale.created!.toLocal()),
                     const SizedBox(width: 4),
                   ],
                   _PaymentBadge(isPaid: sale.isPaid),
@@ -837,31 +838,97 @@ class _SaleCardContent extends StatelessWidget {
               // Machine or Storage assignment info
               if (assignmentInfo != null && assignmentIcon != null) ...[
                 const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: assignmentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            assignmentIcon,
+                            size: 12,
+                            color: assignmentColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            assignmentInfo,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: assignmentColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (sale.packs > 0 &&
+                        (sale.orderStatus == OrderStatus.ready ||
+                            sale.orderStatus == OrderStatus.pickedUp)) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 12,
+                              color: Colors.purple,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${sale.packs}',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.purple,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+              // Packs info when no assignment info is present
+              if ((assignmentInfo == null || assignmentIcon == null) &&
+                  sale.packs > 0 &&
+                  (sale.orderStatus == OrderStatus.ready ||
+                      sale.orderStatus == OrderStatus.pickedUp)) ...[
+                const SizedBox(height: 6),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: assignmentColor.withValues(alpha: 0.1),
+                    color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        assignmentIcon,
+                      const Icon(
+                        Icons.shopping_bag_outlined,
                         size: 12,
-                        color: assignmentColor,
+                        color: Colors.purple,
                       ),
                       const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          assignmentInfo,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: assignmentColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        '${sale.packs} pack${sale.packs > 1 ? 's' : ''}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.purple,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -942,8 +1009,10 @@ class _ItemSummaryRow extends StatelessWidget {
   }
 }
 
-class _OverdueBadge extends StatelessWidget {
-  const _OverdueBadge();
+class _DateBadge extends StatelessWidget {
+  const _DateBadge({required this.date});
+
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
@@ -953,9 +1022,9 @@ class _OverdueBadge extends StatelessWidget {
         color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Text(
-        'Overdue',
-        style: TextStyle(
+      child: Text(
+        DateFormat('MMM d').format(date),
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: Colors.red,
