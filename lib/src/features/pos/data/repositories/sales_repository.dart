@@ -42,18 +42,18 @@ abstract class SalesRepository {
   /// Updates the sale status (completed, refunded, voided).
   FutureEither<Sale> updateSaleStatus(String id, String status);
 
-  /// Assigns a machine to a sale service item.
-  FutureEither<void> assignMachineToServiceItem(
+  /// Assigns machines to a sale service item.
+  FutureEither<void> assignMachinesToServiceItem(
     String itemId,
-    String machineId,
-    String machineName,
+    List<String> machineIds,
+    List<String> machineNames,
   );
 
-  /// Assigns a storage location to a sale service item.
-  FutureEither<void> assignStorageToServiceItem(
+  /// Assigns storage locations to a sale service item.
+  FutureEither<void> assignStoragesToServiceItem(
     String itemId,
-    String storageId,
-    String storageName,
+    List<String> storageIds,
+    List<String> storageNames,
   );
 
   /// Marks a service item as completed, releasing its machine.
@@ -143,7 +143,7 @@ class SalesRepositoryImpl implements SalesRepository {
   SaleServiceItem _toSaleServiceItemEntity(RecordModel record) {
     final serviceExpanded = record.get<RecordModel?>('expand.service');
     final machineExpanded = record.get<RecordModel?>('expand.machine');
-    final storageExpanded = record.get<RecordModel?>('expand.storage');
+    final storageExpanded = record.get<List<RecordModel>?>('expand.storage');
     return SaleServiceItemDto.fromRecord(record).toEntity(
       serviceExpanded: serviceExpanded,
       machineExpanded: machineExpanded,
@@ -436,16 +436,16 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<void> assignMachineToServiceItem(
+  FutureEither<void> assignMachinesToServiceItem(
     String itemId,
-    String machineId,
-    String machineName,
+    List<String> machineIds,
+    List<String> machineNames,
   ) async {
     return TaskEither.tryCatch(
       () async {
         await _saleServiceItems.update(itemId, body: {
-          'machine': machineId,
-          'machineName': machineName,
+          'machine': machineIds,
+          'machineName': machineNames.join(', '),
           'status': 'in_progress',
         });
       },
@@ -454,16 +454,16 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<void> assignStorageToServiceItem(
+  FutureEither<void> assignStoragesToServiceItem(
     String itemId,
-    String storageId,
-    String storageName,
+    List<String> storageIds,
+    List<String> storageNames,
   ) async {
     return TaskEither.tryCatch(
       () async {
         await _saleServiceItems.update(itemId, body: {
-          'storage': storageId,
-          'storageName': storageName,
+          'storage': storageIds,
+          'storageName': storageNames.join(', '),
         });
       },
       Failure.handle,

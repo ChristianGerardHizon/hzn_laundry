@@ -12,6 +12,9 @@ import '../../../storages/presentation/controllers/storage_locations_controller.
 /// Dialog for assigning storage locations to sale service items
 /// and setting the number of packs (laundry bags).
 ///
+/// Shows tappable storage chips. Each service item can have one storage
+/// assigned. Users tap a service item, then tap a storage to assign.
+///
 /// Returns `true` if assignments were made or skipped, `null` if cancelled.
 class AssignStoragesDialog extends HookConsumerWidget {
   const AssignStoragesDialog({
@@ -27,9 +30,12 @@ class AssignStoragesDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final storagesAsync = ref.watch(storageLocationsControllerProvider);
-    final assignments = useState<Map<String, String?>>({});
+    // Map of service item ID to assigned storage IDs (multi-select)
+    final assignments = useState<Map<String, List<String>>>({});
     final selectedPacks = useState<int?>(null);
     final isSaving = useState(false);
+    // Currently selected service item index for assignment
+    final activeItemIndex = useState(0);
 
     Future<void> handleAssign() async {
       final repo = ref.read(salesRepositoryProvider);
@@ -38,13 +44,15 @@ class AssignStoragesDialog extends HookConsumerWidget {
       final storages = storagesAsync.value ?? [];
 
       for (final item in serviceItems) {
-        final storageId = assignments.value[item.id];
-        if (storageId != null && storageId.isNotEmpty) {
-          final storage = storages.firstWhere((s) => s.id == storageId);
-          final result = await repo.assignStorageToServiceItem(
+        final storageIdList = assignments.value[item.id];
+        if (storageIdList != null && storageIdList.isNotEmpty) {
+          final storageNames = storageIdList
+              .map((id) => storages.firstWhere((s) => s.id == id).name)
+              .toList();
+          final result = await repo.assignStoragesToServiceItem(
             item.id,
-            storageId,
-            storage.name,
+            storageIdList,
+            storageNames,
           );
           if (result.isLeft()) {
             if (context.mounted) {
@@ -102,35 +110,78 @@ class AssignStoragesDialog extends HookConsumerWidget {
                           );
                         }
 
+                        final availableStorages =
+                            storages.where((s) => s.isAvailable).toList();
+
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Assign a storage location to each service item:',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                            // Service item selector (only show if multiple)
+                            if (serviceItems.length > 1) ...[
+                              Text(
+                                'Select service to assign a location:',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  for (int i = 0;
+                                      i < serviceItems.length;
+                                      i++)
+                                    _ServiceItemChip(
+                                      item: serviceItems[i],
+                                      isActive: activeItemIndex.value == i,
+                                      hasAssignment: (assignments
+                                                  .value[serviceItems[i].id] ??
+                                              [])
+                                          .isNotEmpty,
+                                      onTap: isSaving.value
+                                          ? null
+                                          : () => activeItemIndex.value = i,
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Divider(height: 1),
+                              const SizedBox(height: 16),
+                            ],
+                            // Current service item label
+                            _ActiveServiceLabel(
+                              item: serviceItems[activeItemIndex.value],
                             ),
-                            const SizedBox(height: 16),
-                            ...serviceItems.map((item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: _ServiceItemStorageRow(
-                                    item: item,
-                                    storages: storages,
-                                    selectedStorageId:
-                                        assignments.value[item.id],
-                                    onChanged: isSaving.value
-                                        ? null
-                                        : (storageId) {
-                                            final newAssignments =
-                                                Map<String, String?>.from(
-                                                    assignments.value);
-                                            newAssignments[item.id] = storageId;
-                                            assignments.value = newAssignments;
-                                          },
-                                  ),
-                                )),
+                            const SizedBox(height: 12),
+                            // Storage grid - tappable chips
+                            _StorageGrid(
+                              storages: availableStorages,
+                              selectedIds: assignments.value[
+                                      serviceItems[activeItemIndex.value].id] ??
+                                  [],
+                              disabled: isSaving.value,
+                              onToggle: (storageId) {
+                                final itemId =
+                                    serviceItems[activeItemIndex.value].id;
+                                final current =
+                                    Map<String, List<String>>.from(
+                                        assignments.value);
+                                final list =
+                                    List<String>.from(current[itemId] ?? []);
+
+                                // Toggle: remove if already selected, add if not
+                                if (list.contains(storageId)) {
+                                  list.remove(storageId);
+                                } else {
+                                  list.add(storageId);
+                                }
+
+                                current[itemId] = list;
+                                assignments.value = current;
+                              },
+                            ),
                           ],
                         );
                       },
@@ -202,53 +253,168 @@ class AssignStoragesDialog extends HookConsumerWidget {
   }
 }
 
-class _ServiceItemStorageRow extends StatelessWidget {
-  const _ServiceItemStorageRow({
+class _ServiceItemChip extends StatelessWidget {
+  const _ServiceItemChip({
     required this.item,
-    required this.storages,
-    required this.selectedStorageId,
-    required this.onChanged,
+    required this.isActive,
+    required this.hasAssignment,
+    required this.onTap,
   });
 
   final SaleServiceItem item;
-  final List<StorageLocation> storages;
-  final String? selectedStorageId;
-  final ValueChanged<String?>? onChanged;
+  final bool isActive;
+  final bool hasAssignment;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      selected: isActive,
+      avatar: hasAssignment ? const Icon(Icons.check_circle, size: 18) : null,
+      label: Text(
+        '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+      ),
+      onSelected: onTap != null ? (_) => onTap!() : null,
+    );
+  }
+}
+
+class _ActiveServiceLabel extends StatelessWidget {
+  const _ActiveServiceLabel({required this.item});
+
+  final SaleServiceItem item;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
+        Icon(
+          Icons.inventory_2_outlined,
+          size: 18,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
         Text(
           '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
-          style: theme.textTheme.titleSmall,
-        ),
-        const SizedBox(height: 4),
-        DropdownButtonFormField<String>(
-          initialValue: selectedStorageId,
-          decoration: const InputDecoration(
-            hintText: 'Select storage location',
-            border: OutlineInputBorder(),
-            isDense: true,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-          items: [
-            const DropdownMenuItem<String>(
-              value: '',
-              child: Text('None'),
-            ),
-            ...storages.where((s) => s.isAvailable).map((storage) {
-              return DropdownMenuItem<String>(
-                value: storage.id,
-                child: Text(storage.name),
-              );
-            }),
-          ],
-          onChanged: onChanged,
+        ),
+        const Spacer(),
+        Text(
+          'Tap to select locations',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _StorageGrid extends StatelessWidget {
+  const _StorageGrid({
+    required this.storages,
+    required this.selectedIds,
+    required this.disabled,
+    required this.onToggle,
+  });
+
+  final List<StorageLocation> storages;
+  final List<String> selectedIds;
+  final bool disabled;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: storages.map((storage) {
+        final isSelected = selectedIds.contains(storage.id);
+        return _StorageChip(
+          storage: storage,
+          isSelected: isSelected,
+          disabled: disabled,
+          onTap: () => onToggle(storage.id),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _StorageChip extends StatelessWidget {
+  const _StorageChip({
+    required this.storage,
+    required this.isSelected,
+    required this.disabled,
+    required this.onTap,
+  });
+
+  final StorageLocation storage;
+  final bool isSelected;
+  final bool disabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: 88,
+      height: 88,
+      child: Material(
+        color: isSelected
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline.withValues(alpha: 0.5),
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.shelves,
+                  size: 28,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    storage.name,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimaryContainer
+                          : theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

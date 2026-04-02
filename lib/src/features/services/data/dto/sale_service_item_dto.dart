@@ -21,9 +21,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final num quantity;
   final num unitPrice;
   final num subtotal;
-  final String? machine;
+  final List<String> machine;
   final String? machineName;
-  final String? storage;
+  final List<String> storage;
   final String? storageName;
   final String? status;
   final String? created;
@@ -39,9 +39,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
-    this.machine,
+    this.machine = const [],
     this.machineName,
-    this.storage,
+    this.storage = const [],
     this.storageName,
     this.status,
     this.created,
@@ -59,9 +59,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       quantity: record.getDoubleValue('quantity'),
       unitPrice: record.getDoubleValue('unitPrice'),
       subtotal: record.getDoubleValue('subtotal'),
-      machine: record.getStringValue('machine'),
+      machine: record.getListValue<String>('machine'),
       machineName: record.getStringValue('machineName'),
-      storage: record.getStringValue('storage'),
+      storage: record.getListValue<String>('storage'),
       storageName: record.getStringValue('storageName'),
       status: record.getStringValue('status'),
       created: record.get<String>('created'),
@@ -72,7 +72,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   SaleServiceItem toEntity({
     RecordModel? serviceExpanded,
     RecordModel? machineExpanded,
-    RecordModel? storageExpanded,
+    List<RecordModel>? storageExpanded,
   }) {
     return SaleServiceItem(
       id: id,
@@ -85,16 +85,18 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       service: serviceExpanded != null
           ? ServiceDto.fromRecord(serviceExpanded).toEntity()
           : null,
-      machineId: machine != null && machine!.isNotEmpty ? machine : null,
+      machineId: machine.isNotEmpty ? machine.first : null,
       machineName: machineName,
       machine: machineExpanded != null
           ? MachineDto.fromRecord(machineExpanded).toEntity()
           : null,
-      storageId: storage != null && storage!.isNotEmpty ? storage : null,
+      storageIds: storage,
       storageName: storageName,
-      storageLocation: storageExpanded != null
-          ? StorageLocationDto.fromRecord(storageExpanded).toEntity()
-          : null,
+      storageLocations: storageExpanded != null
+          ? storageExpanded
+              .map((r) => StorageLocationDto.fromRecord(r).toEntity())
+              .toList()
+          : const [],
       status: ServiceItemStatus.fromDbValue(status),
       created: parseToLocal(created),
       updated: parseToLocal(updated),

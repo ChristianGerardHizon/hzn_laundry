@@ -64,11 +64,12 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     'subtotal',
     _$subtotal,
   );
-  static String? _$machine(SaleServiceItemDto v) => v.machine;
-  static const Field<SaleServiceItemDto, String> _f$machine = Field(
+  static List<String> _$machine(SaleServiceItemDto v) => v.machine;
+  static const Field<SaleServiceItemDto, List<String>> _f$machine = Field(
     'machine',
     _$machine,
     opt: true,
+    def: const [],
   );
   static String? _$machineName(SaleServiceItemDto v) => v.machineName;
   static const Field<SaleServiceItemDto, String> _f$machineName = Field(
@@ -76,11 +77,12 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     _$machineName,
     opt: true,
   );
-  static String? _$storage(SaleServiceItemDto v) => v.storage;
-  static const Field<SaleServiceItemDto, String> _f$storage = Field(
+  static List<String> _$storage(SaleServiceItemDto v) => v.storage;
+  static const Field<SaleServiceItemDto, List<String>> _f$storage = Field(
     'storage',
     _$storage,
     opt: true,
+    def: const [],
   );
   static String? _$storageName(SaleServiceItemDto v) => v.storageName;
   static const Field<SaleServiceItemDto, String> _f$storageName = Field(
@@ -219,6 +221,8 @@ abstract class SaleServiceItemDtoCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machine;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage;
   $R call({
     String? id,
     String? collectionId,
@@ -229,9 +233,9 @@ abstract class SaleServiceItemDtoCopyWith<
     num? quantity,
     num? unitPrice,
     num? subtotal,
-    String? machine,
+    List<String>? machine,
     String? machineName,
-    String? storage,
+    List<String>? storage,
     String? storageName,
     String? status,
     String? created,
@@ -251,6 +255,20 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
   late final ClassMapperBase<SaleServiceItemDto> $mapper =
       SaleServiceItemDtoMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machine =>
+      ListCopyWith(
+        $value.machine,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(machine: v),
+      );
+  @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage =>
+      ListCopyWith(
+        $value.storage,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(storage: v),
+      );
+  @override
   $R call({
     String? id,
     String? collectionId,
@@ -261,9 +279,9 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     num? quantity,
     num? unitPrice,
     num? subtotal,
-    Object? machine = $none,
+    List<String>? machine,
     Object? machineName = $none,
-    Object? storage = $none,
+    List<String>? storage,
     Object? storageName = $none,
     Object? status = $none,
     Object? created = $none,
@@ -279,9 +297,9 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
       if (quantity != null) #quantity: quantity,
       if (unitPrice != null) #unitPrice: unitPrice,
       if (subtotal != null) #subtotal: subtotal,
-      if (machine != $none) #machine: machine,
+      if (machine != null) #machine: machine,
       if (machineName != $none) #machineName: machineName,
-      if (storage != $none) #storage: storage,
+      if (storage != null) #storage: storage,
       if (storageName != $none) #storageName: storageName,
       if (status != $none) #status: status,
       if (created != $none) #created: created,

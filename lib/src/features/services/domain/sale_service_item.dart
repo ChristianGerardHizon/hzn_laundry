@@ -24,9 +24,9 @@ class SaleServiceItem with SaleServiceItemMappable {
     this.machineId,
     this.machineName,
     this.machine,
-    this.storageId,
+    this.storageIds = const [],
     this.storageName,
-    this.storageLocation,
+    this.storageLocations = const [],
     this.status,
     this.created,
     this.updated,
@@ -65,14 +65,14 @@ class SaleServiceItem with SaleServiceItemMappable {
   /// Expanded Machine (optional).
   final Machine? machine;
 
-  /// Assigned storage ID.
-  final String? storageId;
+  /// Assigned storage IDs.
+  final List<String> storageIds;
 
-  /// Snapshot of storage name at time of assignment.
+  /// Snapshot of storage names at time of assignment.
   final String? storageName;
 
-  /// Expanded StorageLocation (optional).
-  final StorageLocation? storageLocation;
+  /// Expanded StorageLocations (optional).
+  final List<StorageLocation> storageLocations;
 
   /// Service item completion status.
   final ServiceItemStatus? status;

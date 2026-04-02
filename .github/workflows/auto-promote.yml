@@ -13,9 +13,38 @@ jobs:
       pull-requests: write
       contents: read
     steps:
+      - name: Get version from latest staging release
+        id: get_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Wait for the deploy workflow to create the staging release
+          # Try up to 30 times with 20s intervals (10 min max)
+          for i in $(seq 1 30); do
+            TAG=$(gh release list \
+              --repo "${{ github.repository }}" \
+              --limit 5 \
+              --json tagName,isPrerelease,createdAt \
+              --jq '[.[] | select(.isPrerelease)] | sort_by(.createdAt) | last | .tagName // empty')
+
+            if [ -n "$TAG" ]; then
+              VERSION=$(echo "$TAG" | sed 's/^staging-//' | sed 's/-build\..*//')
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "Found staging version: $VERSION (attempt $i)"
+              exit 0
+            fi
+
+            echo "Waiting for staging release... (attempt $i/30)"
+            sleep 20
+          done
+
+          echo "version=unknown" >> $GITHUB_OUTPUT
+          echo "::warning::Could not determine staging version from releases"
+
       - name: Create PR from staging to main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
           # Check if an open PR from staging to main already exists
           EXISTING=$(gh pr list \
@@ -35,15 +64,15 @@ jobs:
             --repo "${{ github.repository }}" \
             --head staging \
             --base main \
-            --title "Release: promote staging to main" \
+            --title "Deploy v${VERSION} to Production" \
             --body "$(cat <<EOF
-          ## Auto-promoted from staging
+          ## Production Deployment — v${VERSION}
 
           This PR was automatically created after merging PR #${{ github.event.pull_request.number }} into staging.
 
           **Source PR:** ${{ github.event.pull_request.title }}
 
-          Please review and merge to trigger production deployment.
+          Merging this PR will build and deploy **v${VERSION}** to production.
           EOF
           )")
 
