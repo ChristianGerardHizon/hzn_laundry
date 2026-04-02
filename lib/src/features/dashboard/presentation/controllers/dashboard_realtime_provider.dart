@@ -122,10 +122,13 @@ Raw<void> dashboardRealtime(Ref ref) {
     // Restore previous onDisconnect handler.
     pb.realtime.onDisconnect = previousOnDisconnect;
 
-    // Unsubscribe from PB_CONNECT and all collection subscriptions.
-    pb.realtime.unsubscribe('PB_CONNECT');
-    for (final collection in collectionSubscriptions.keys) {
-      _safeUnsubscribe(pb, collection);
+    // Unsubscribe from all subscriptions at once. This avoids individual
+    // per-collection unsubscribe calls that fail with "Missing or invalid
+    // client id" when the SSE connection is already closed.
+    try {
+      pb.realtime.unsubscribe();
+    } catch (e) {
+      debugPrint('[DASHBOARD_REALTIME] Failed to unsubscribe: $e');
     }
   });
 }
@@ -139,14 +142,5 @@ Future<void> _safeSubscribe(
     await pb.collection(collection).subscribe('*', handler);
   } catch (e) {
     debugPrint('[DASHBOARD_REALTIME] Failed to subscribe to $collection: $e');
-  }
-}
-
-Future<void> _safeUnsubscribe(PocketBase pb, String collection) async {
-  try {
-    await pb.collection(collection).unsubscribe('*');
-  } catch (e) {
-    debugPrint(
-        '[DASHBOARD_REALTIME] Failed to unsubscribe from $collection: $e');
   }
 }

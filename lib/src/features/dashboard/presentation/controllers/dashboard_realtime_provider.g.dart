@@ -78,4 +78,4 @@ final class DashboardRealtimeProvider
   }
 }
 
-String _$dashboardRealtimeHash() => r'187ccb5c2c49f97ba769919bcc9c67544d530623';
+String _$dashboardRealtimeHash() => r'62e57011e635191c70dbdc9b06d8914bc6075504';

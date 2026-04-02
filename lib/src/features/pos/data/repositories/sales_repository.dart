@@ -62,6 +62,13 @@ abstract class SalesRepository {
   /// indicating the order can be auto-advanced to 'ready' status.
   FutureEither<bool> markServiceItemCompleted(String itemId);
 
+  /// Fetches all sales within a date range.
+  FutureEither<List<Sale>> getSalesForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  });
+
   /// Fetches all sales for a specific customer.
   FutureEither<List<Sale>> getSalesByCustomer(String customerId);
 
@@ -497,6 +504,29 @@ class SalesRepositoryImpl implements SalesRepository {
         });
 
         return allCompleted;
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<Sale>> getSalesForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter().between('created', startDate, endDate);
+        if (branchId != null) {
+          filter.relation('branch', branchId);
+        }
+
+        final records = await _sales.getFullList(
+          filter: filter.build(),
+          sort: '-created',
+        );
+        return records.map(_toSaleEntity).toList();
       },
       Failure.handle,
     ).run();
