@@ -78,9 +78,8 @@ class ServicePriceTier with ServicePriceTierMappable {
 /// Resolves the effective price per unit for a given quantity from a list
 /// of tiers. Falls back to [basePrice] if no tier matches.
 ///
-/// For flat-price tiers, returns `flatPrice / quantity` so that
-/// `unitPrice * quantity == flatPrice`. This keeps callers that use
-/// `unitPrice * qty` working correctly.
+/// Tier prices are always flat totals for the range (e.g. 1-3 kg = ₱300).
+/// Returns `tierPrice / quantity` so that `unitPrice * quantity == tierPrice`.
 ///
 /// Handles decimal quantities (e.g. 6.5 kg) by using the next tier's
 /// minQuantity as the exclusive upper bound, so 6.5 falls into the 1-6 tier
@@ -95,15 +94,11 @@ num resolveTieredPrice(
   final tier = _findMatchingTier(tiers, quantity);
   if (tier == null) return basePrice;
 
-  if (tier.isFlatPrice) {
-    return quantity > 0 ? tier.flatPrice! / quantity : tier.flatPrice!;
-  }
-  return tier.pricePerUnit;
+  return quantity > 0 ? tier.pricePerUnit / quantity : tier.pricePerUnit;
 }
 
 /// Resolves the total price for a given quantity from a list of tiers.
-/// For flat-price tiers, returns the flat price directly.
-/// For per-unit tiers, returns `pricePerUnit * quantity`.
+/// Tier prices are flat totals — returns the tier price directly.
 /// Falls back to `basePrice * quantity` if no tier matches.
 num resolveTieredTotal(
   List<ServicePriceTier> tiers,
@@ -115,8 +110,7 @@ num resolveTieredTotal(
   final tier = _findMatchingTier(tiers, quantity);
   if (tier == null) return basePrice * quantity;
 
-  if (tier.isFlatPrice) return tier.flatPrice!;
-  return tier.pricePerUnit * quantity;
+  return tier.pricePerUnit;
 }
 
 /// Returns the matching tier for a quantity, or null if none matches.

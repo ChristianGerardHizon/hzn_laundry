@@ -537,8 +537,8 @@ class ThermalPrintService extends _$ThermalPrintService {
         styles: const PosStyles(
           align: PosAlign.center,
           bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
+          height: PosTextSize.size4,
+          width: PosTextSize.size4,
         ),
       );
 
@@ -671,13 +671,6 @@ class ThermalPrintService extends _$ThermalPrintService {
       }
 
       bytes += generator.hr(ch: '=');
-
-      bytes += generator.text(
-        'CUSTOMER COPY',
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      );
-
-      bytes += generator.emptyLines(1);
 
       // Order info
       bytes += generator.text(

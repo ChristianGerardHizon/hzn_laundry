@@ -199,13 +199,11 @@ class _CreateOrderDialog extends HookConsumerWidget {
       final service = selectedService.value!;
       final customer = selectedCustomer.value!;
       final qty = quantity.value;
-      final saveTier = findMatchingTier(tiers, qty);
-      final saveIsFlat = saveTier != null && saveTier.isFlatPrice;
       final tieredUnitPrice =
           resolveTieredPrice(tiers, qty, service.price).toDouble();
-      final computedServiceTotal = saveIsFlat
-          ? saveTier.flatPrice!.toDouble()
-          : (tieredUnitPrice * qty).toDouble();
+      final computedServiceTotal = tiers.isEmpty
+          ? (tieredUnitPrice * qty).toDouble()
+          : resolveTieredTotal(tiers, qty, service.price).toDouble();
       final serviceTotal =
           customServiceTotal.value ?? computedServiceTotal;
       final effectiveUnitPrice = qty > 0
@@ -327,10 +325,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
       );
     }
 
-    final displayTier = selectedService.value == null
-        ? null
-        : findMatchingTier(tiers, quantity.value);
-    final displayIsFlat = displayTier != null && displayTier.isFlatPrice;
     final displayUnitPrice = selectedService.value == null
         ? 0.0
         : resolveTieredPrice(
@@ -338,9 +332,11 @@ class _CreateOrderDialog extends HookConsumerWidget {
             .toDouble();
     final computedServiceTotal = selectedService.value == null
         ? 0.0
-        : displayIsFlat
-            ? displayTier.flatPrice!.toDouble()
-            : (displayUnitPrice * quantity.value).toDouble();
+        : tiers.isEmpty
+            ? (displayUnitPrice * quantity.value).toDouble()
+            : resolveTieredTotal(
+                tiers, quantity.value, selectedService.value!.price)
+                .toDouble();
     final serviceTotal = customServiceTotal.value ?? computedServiceTotal;
     final productsTotal = productItems.value.fold<double>(
       0.0,
@@ -1236,16 +1232,14 @@ class _ServiceSubtotal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final matchedTier = findMatchingTier(tiers, quantity);
-    final isFlat = matchedTier != null && matchedTier.isFlatPrice;
     final unitPrice =
         resolveTieredPrice(tiers, quantity, service.price).toDouble();
-    final computed = isFlat
-        ? matchedTier.flatPrice!.toDouble()
-        : (unitPrice * quantity).toDouble();
+    final computed = tiers.isEmpty
+        ? (unitPrice * quantity).toDouble()
+        : resolveTieredTotal(tiers, quantity, service.price).toDouble();
     final displayTotal = customTotal ?? computed;
     final isOverridden = customTotal != null;
-    final isTiered = tiers.isNotEmpty && unitPrice != service.price;
+    final isTiered = tiers.isNotEmpty;
     final unitLabel = service.quantityUnit?.shortPlural ?? 'kg';
 
     return Container(
@@ -1302,10 +1296,9 @@ class _ServiceSubtotal extends StatelessWidget {
                     ),
                     if (!isOverridden)
                       Text(
-                        isFlat
+                        isTiered
                             ? 'Flat rate for ${quantity.toStringAsFixed(1)} $unitLabel'
-                            : '${unitPrice.toCurrency()} x ${quantity.toStringAsFixed(1)} $unitLabel'
-                              '${isTiered ? ' (tiered rate)' : ''}',
+                            : '${unitPrice.toCurrency()} x ${quantity.toStringAsFixed(1)} $unitLabel',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
