@@ -19,6 +19,10 @@ part 'dashboard_realtime_provider.g.dart';
 /// Subscribes to PocketBase realtime events for collections that affect the
 /// dashboard, and invalidates the relevant providers when changes occur.
 ///
+/// Uses PocketBase's built-in `PB_CONNECT` event to detect reconnections and
+/// refresh all dashboard data, ensuring the UI stays in sync even after
+/// network interruptions (common on web/mobile).
+///
 /// Usage: Simply `ref.watch(dashboardRealtimeProvider)` from the dashboard
 /// page to activate subscriptions. They are automatically cleaned up when
 /// the provider is disposed (i.e. when navigating away from the dashboard).
@@ -61,8 +65,40 @@ Raw<void> dashboardRealtime(Ref ref) {
     });
   }
 
+  void invalidateAllProviders() {
+    invalidateSalesProviders();
+    invalidateInventoryProviders();
+    invalidateCustomerProviders();
+  }
+
+  // Track whether this is the initial connection (skip refresh on first connect).
+  var isFirstConnect = true;
+
+  // Listen for PB_CONNECT events — fired on initial connection and every
+  // reconnect. On reconnect we refresh all data since we may have missed
+  // events while disconnected.
+  pb.realtime.subscribe('PB_CONNECT', (_) {
+    if (isFirstConnect) {
+      isFirstConnect = false;
+      debugPrint('[DASHBOARD_REALTIME] Connected (clientId: ${pb.realtime.clientId})');
+      return;
+    }
+    debugPrint('[DASHBOARD_REALTIME] Reconnected — refreshing all dashboard data');
+    invalidateAllProviders();
+  });
+
+  // Log disconnections for debugging.
+  final previousOnDisconnect = pb.realtime.onDisconnect;
+  pb.realtime.onDisconnect = (subscriptions) {
+    debugPrint(
+      '[DASHBOARD_REALTIME] Disconnected. '
+      '${subscriptions.length} subscription topic(s) will auto-reconnect.',
+    );
+    previousOnDisconnect?.call(subscriptions);
+  };
+
   // Collections to subscribe to and their handlers.
-  final subscriptions = <String, void Function(RecordSubscriptionEvent)>{
+  final collectionSubscriptions = <String, void Function(RecordSubscriptionEvent)>{
     PocketBaseCollections.sales: (_) => invalidateSalesProviders(),
     PocketBaseCollections.payments: (_) => invalidateSalesProviders(),
     PocketBaseCollections.saleServiceItems: (_) => invalidateSalesProviders(),
@@ -73,7 +109,7 @@ Raw<void> dashboardRealtime(Ref ref) {
   };
 
   // Subscribe to all collections.
-  for (final entry in subscriptions.entries) {
+  for (final entry in collectionSubscriptions.entries) {
     _safeSubscribe(pb, entry.key, entry.value);
   }
 
@@ -82,8 +118,17 @@ Raw<void> dashboardRealtime(Ref ref) {
     salesDebounce?.cancel();
     inventoryDebounce?.cancel();
     customerDebounce?.cancel();
-    for (final collection in subscriptions.keys) {
-      _safeUnsubscribe(pb, collection);
+
+    // Restore previous onDisconnect handler.
+    pb.realtime.onDisconnect = previousOnDisconnect;
+
+    // Unsubscribe from all subscriptions at once. This avoids individual
+    // per-collection unsubscribe calls that fail with "Missing or invalid
+    // client id" when the SSE connection is already closed.
+    try {
+      pb.realtime.unsubscribe();
+    } catch (e) {
+      debugPrint('[DASHBOARD_REALTIME] Failed to unsubscribe: $e');
     }
   });
 }
@@ -97,14 +142,5 @@ Future<void> _safeSubscribe(
     await pb.collection(collection).subscribe('*', handler);
   } catch (e) {
     debugPrint('[DASHBOARD_REALTIME] Failed to subscribe to $collection: $e');
-  }
-}
-
-Future<void> _safeUnsubscribe(PocketBase pb, String collection) async {
-  try {
-    await pb.collection(collection).unsubscribe('*');
-  } catch (e) {
-    debugPrint(
-        '[DASHBOARD_REALTIME] Failed to unsubscribe from $collection: $e');
   }
 }

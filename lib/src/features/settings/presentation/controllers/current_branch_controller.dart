@@ -7,8 +7,10 @@ import '../../../dashboard/presentation/controllers/inventory_alerts_controller.
 import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../dashboard/presentation/controllers/top_selling_controller.dart';
 import '../../../products/presentation/controllers/paginated_products_controller.dart';
-import '../../../reports/presentation/controllers/inventory_report_controller.dart';
-import '../../../reports/presentation/controllers/sales_report_controller.dart';
+import '../../../reports/presentation/controllers/payments_report_controller.dart';
+import '../../../reports/presentation/controllers/payments_summary_controller.dart';
+import '../../../reports/presentation/controllers/sales_by_customer_controller.dart';
+import '../../../reports/presentation/controllers/sales_detail_controller.dart';
 import '../../../sales/presentation/controllers/paginated_sales_controller.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
@@ -108,8 +110,10 @@ class CurrentBranchController extends _$CurrentBranchController {
     ref.invalidate(topSellingServicesProvider);
 
     // Invalidate report providers
-    ref.invalidate(salesReportProvider);
-    ref.invalidate(inventoryReportProvider);
+    ref.invalidate(paymentsReportProvider);
+    ref.invalidate(paymentsSummaryProvider);
+    ref.invalidate(salesDetailProvider);
+    ref.invalidate(salesByCustomerProvider);
   }
 }
 
