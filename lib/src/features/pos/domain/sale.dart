@@ -18,6 +18,7 @@ class Sale with SaleMappable {
     required this.status,
     this.orderStatus = OrderStatus.pending,
     this.isPaid = false,
+    this.packs = 0,
     this.pickedUpAt,
     this.customerId,
     this.customerName,
@@ -49,6 +50,9 @@ class Sale with SaleMappable {
 
   /// Whether the customer has fully paid (auto-calculated from payments).
   final bool isPaid;
+
+  /// Number of laundry bags/packs used for this order.
+  final int packs;
 
   /// Timestamp when the order was picked up.
   final DateTime? pickedUpAt;

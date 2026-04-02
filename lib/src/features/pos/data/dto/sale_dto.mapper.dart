@@ -64,6 +64,13 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     opt: true,
     def: false,
   );
+  static int _$packs(SaleDto v) => v.packs;
+  static const Field<SaleDto, int> _f$packs = Field(
+    'packs',
+    _$packs,
+    opt: true,
+    def: 0,
+  );
   static String? _$pickedUpAt(SaleDto v) => v.pickedUpAt;
   static const Field<SaleDto, String> _f$pickedUpAt = Field(
     'pickedUpAt',
@@ -113,6 +120,7 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     #status: _f$status,
     #orderStatus: _f$orderStatus,
     #isPaid: _f$isPaid,
+    #packs: _f$packs,
     #pickedUpAt: _f$pickedUpAt,
     #customer: _f$customer,
     #customerName: _f$customerName,
@@ -133,6 +141,7 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
       status: data.dec(_f$status),
       orderStatus: data.dec(_f$orderStatus),
       isPaid: data.dec(_f$isPaid),
+      packs: data.dec(_f$packs),
       pickedUpAt: data.dec(_f$pickedUpAt),
       customer: data.dec(_f$customer),
       customerName: data.dec(_f$customerName),
@@ -210,6 +219,7 @@ abstract class SaleDtoCopyWith<$R, $In extends SaleDto, $Out>
     String? status,
     String? orderStatus,
     bool? isPaid,
+    int? packs,
     String? pickedUpAt,
     String? customer,
     String? customerName,
@@ -240,6 +250,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     String? status,
     String? orderStatus,
     bool? isPaid,
+    int? packs,
     Object? pickedUpAt = $none,
     Object? customer = $none,
     Object? customerName = $none,
@@ -258,6 +269,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
       if (status != null) #status: status,
       if (orderStatus != null) #orderStatus: orderStatus,
       if (isPaid != null) #isPaid: isPaid,
+      if (packs != null) #packs: packs,
       if (pickedUpAt != $none) #pickedUpAt: pickedUpAt,
       if (customer != $none) #customer: customer,
       if (customerName != $none) #customerName: customerName,
@@ -278,6 +290,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     status: data.get(#status, or: $value.status),
     orderStatus: data.get(#orderStatus, or: $value.orderStatus),
     isPaid: data.get(#isPaid, or: $value.isPaid),
+    packs: data.get(#packs, or: $value.packs),
     pickedUpAt: data.get(#pickedUpAt, or: $value.pickedUpAt),
     customer: data.get(#customer, or: $value.customer),
     customerName: data.get(#customerName, or: $value.customerName),

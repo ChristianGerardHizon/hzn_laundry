@@ -19,6 +19,7 @@ class SaleDto with SaleDtoMappable {
   final String status;
   final String orderStatus;
   final bool isPaid;
+  final int packs;
   final String? pickedUpAt;
   final String? customer;
   final String? customerName;
@@ -37,6 +38,7 @@ class SaleDto with SaleDtoMappable {
     required this.status,
     this.orderStatus = 'pending',
     this.isPaid = false,
+    this.packs = 0,
     this.pickedUpAt,
     this.customer,
     this.customerName,
@@ -57,6 +59,7 @@ class SaleDto with SaleDtoMappable {
       status: record.getStringValue('status'),
       orderStatus: record.getStringValue('orderStatus'),
       isPaid: record.getBoolValue('isPaid'),
+      packs: record.getIntValue('packs'),
       pickedUpAt: record.get<String>('pickedUpAt'),
       customer: record.getStringValue('customer'),
       customerName: record.getStringValue('customerName'),
@@ -76,6 +79,7 @@ class SaleDto with SaleDtoMappable {
       status: status,
       orderStatus: _parseOrderStatus(orderStatus),
       isPaid: isPaid,
+      packs: packs,
       pickedUpAt: parseToLocal(pickedUpAt),
       customerId: customer != null && customer!.isNotEmpty ? customer : null,
       customerName: customerName != null && customerName!.isNotEmpty ? customerName : null,
