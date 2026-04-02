@@ -348,8 +348,8 @@ class _MachineTypeSection extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 10,
+          runSpacing: 10,
           children: machines.map((machine) {
             final isSelected = selectedIds.contains(machine.id);
             return _MachineChip(
@@ -394,65 +394,66 @@ class _MachineChip extends HookConsumerWidget {
       message: isInUse && usageInfo != null
           ? 'Processing ${usageInfo.displaySummary}'
           : '',
-      child: Material(
-        color: isSelected
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: disabled ? null : onTap,
+      child: SizedBox(
+        width: 88,
+        height: 88,
+        child: Material(
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : isInUse
-                        ? theme.colorScheme.error.withValues(alpha: 0.5)
-                        : Colors.transparent,
-                width: isSelected ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isSelected) ...[
-                  Icon(
-                    Icons.check_circle,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                if (isInUse && !isSelected) ...[
-                  Icon(
-                    Icons.warning_amber,
-                    size: 16,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                if (machine.strictSingleUse && !isSelected && !isInUse) ...[
-                  Icon(
-                    Icons.lock_outline,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  machine.name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected
-                        ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurface,
-                  ),
+          child: InkWell(
+            onTap: disabled ? null : onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : isInUse
+                          ? theme.colorScheme.error.withValues(alpha: 0.5)
+                          : theme.colorScheme.outline.withValues(alpha: 0.5),
+                  width: isSelected ? 2 : 1,
                 ),
-              ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isSelected
+                        ? Icons.check_circle
+                        : isInUse
+                            ? Icons.warning_amber
+                            : machine.strictSingleUse
+                                ? Icons.lock_outline
+                                : Icons.local_laundry_service,
+                    size: 28,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : isInUse
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      machine.name,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

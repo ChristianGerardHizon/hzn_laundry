@@ -30,8 +30,8 @@ class AssignStoragesDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final storagesAsync = ref.watch(storageLocationsControllerProvider);
-    // Map of service item ID to assigned storage ID
-    final assignments = useState<Map<String, String?>>({});
+    // Map of service item ID to assigned storage IDs (multi-select)
+    final assignments = useState<Map<String, List<String>>>({});
     final selectedPacks = useState<int?>(null);
     final isSaving = useState(false);
     // Currently selected service item index for assignment
@@ -44,13 +44,15 @@ class AssignStoragesDialog extends HookConsumerWidget {
       final storages = storagesAsync.value ?? [];
 
       for (final item in serviceItems) {
-        final storageId = assignments.value[item.id];
-        if (storageId != null && storageId.isNotEmpty) {
-          final storage = storages.firstWhere((s) => s.id == storageId);
-          final result = await repo.assignStorageToServiceItem(
+        final storageIdList = assignments.value[item.id];
+        if (storageIdList != null && storageIdList.isNotEmpty) {
+          final storageNames = storageIdList
+              .map((id) => storages.firstWhere((s) => s.id == id).name)
+              .toList();
+          final result = await repo.assignStoragesToServiceItem(
             item.id,
-            storageId,
-            storage.name,
+            storageIdList,
+            storageNames,
           );
           if (result.isLeft()) {
             if (context.mounted) {
@@ -134,9 +136,10 @@ class AssignStoragesDialog extends HookConsumerWidget {
                                     _ServiceItemChip(
                                       item: serviceItems[i],
                                       isActive: activeItemIndex.value == i,
-                                      hasAssignment: assignments
-                                              .value[serviceItems[i].id] !=
-                                          null,
+                                      hasAssignment: (assignments
+                                                  .value[serviceItems[i].id] ??
+                                              [])
+                                          .isNotEmpty,
                                       onTap: isSaving.value
                                           ? null
                                           : () => activeItemIndex.value = i,
@@ -155,22 +158,27 @@ class AssignStoragesDialog extends HookConsumerWidget {
                             // Storage grid - tappable chips
                             _StorageGrid(
                               storages: availableStorages,
-                              selectedId: assignments.value[
-                                  serviceItems[activeItemIndex.value].id],
+                              selectedIds: assignments.value[
+                                      serviceItems[activeItemIndex.value].id] ??
+                                  [],
                               disabled: isSaving.value,
                               onToggle: (storageId) {
                                 final itemId =
                                     serviceItems[activeItemIndex.value].id;
-                                final current = Map<String, String?>.from(
-                                    assignments.value);
+                                final current =
+                                    Map<String, List<String>>.from(
+                                        assignments.value);
+                                final list =
+                                    List<String>.from(current[itemId] ?? []);
 
-                                // Toggle: deselect if already selected
-                                if (current[itemId] == storageId) {
-                                  current[itemId] = null;
+                                // Toggle: remove if already selected, add if not
+                                if (list.contains(storageId)) {
+                                  list.remove(storageId);
                                 } else {
-                                  current[itemId] = storageId;
+                                  list.add(storageId);
                                 }
 
+                                current[itemId] = list;
                                 assignments.value = current;
                               },
                             ),
@@ -296,7 +304,7 @@ class _ActiveServiceLabel extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Tap to select location',
+          'Tap to select locations',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -309,23 +317,23 @@ class _ActiveServiceLabel extends StatelessWidget {
 class _StorageGrid extends StatelessWidget {
   const _StorageGrid({
     required this.storages,
-    required this.selectedId,
+    required this.selectedIds,
     required this.disabled,
     required this.onToggle,
   });
 
   final List<StorageLocation> storages;
-  final String? selectedId;
+  final List<String> selectedIds;
   final bool disabled;
   final ValueChanged<String> onToggle;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 10,
+      runSpacing: 10,
       children: storages.map((storage) {
-        final isSelected = selectedId == storage.id;
+        final isSelected = selectedIds.contains(storage.id);
         return _StorageChip(
           storage: storage,
           isSelected: isSelected,
@@ -354,47 +362,56 @@ class _StorageChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Material(
-      color: isSelected
-          ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: disabled ? null : onTap,
+    return SizedBox(
+      width: 88,
+      height: 88,
+      child: Material(
+        color: isSelected
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : Colors.transparent,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isSelected) ...[
-                Icon(
-                  Icons.check_circle,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                storage.name,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
-                ),
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline.withValues(alpha: 0.5),
+                width: isSelected ? 2 : 1,
               ),
-            ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.shelves,
+                  size: 28,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    storage.name,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimaryContainer
+                          : theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

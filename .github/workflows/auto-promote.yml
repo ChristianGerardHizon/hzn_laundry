@@ -1,93 +1,50 @@
 name: Auto Promote to Main
 
 on:
-  workflow_run:
-    workflows: ["Deploy System"]
-    types: [completed]
+  pull_request:
+    types: [closed]
     branches: ["staging"]
 
 jobs:
   promote:
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'deploy')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: read
     steps:
-      - name: Get source PR details
-        id: source_pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Get the PR that triggered the deploy workflow
-          PR_DATA=$(gh api \
-            "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}" \
-            --jq '.pull_requests[0].number // empty')
-
-          if [ -z "$PR_DATA" ]; then
-            echo "::warning::Could not find source PR from workflow run"
-            echo "pr_number=" >> $GITHUB_OUTPUT
-            echo "has_deploy=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "pr_number=$PR_DATA" >> $GITHUB_OUTPUT
-
-          # Check if source PR has the deploy label
-          HAS_DEPLOY=$(gh pr view "$PR_DATA" \
-            --repo "${{ github.repository }}" \
-            --json labels \
-            --jq '[.labels[].name] | any(. == "deploy")')
-
-          echo "has_deploy=$HAS_DEPLOY" >> $GITHUB_OUTPUT
-
-          # Get PR labels for forwarding
-          LABELS=$(gh pr view "$PR_DATA" \
-            --repo "${{ github.repository }}" \
-            --json labels \
-            --jq '[.labels[].name] | join(",")')
-          echo "labels=$LABELS" >> $GITHUB_OUTPUT
-
-          # Get PR title
-          TITLE=$(gh pr view "$PR_DATA" \
-            --repo "${{ github.repository }}" \
-            --json title \
-            --jq '.title')
-          echo "title=$TITLE" >> $GITHUB_OUTPUT
-
       - name: Get version from latest staging release
-        if: steps.source_pr.outputs.has_deploy == 'true'
         id: get_version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Deploy workflow has completed, so the staging release should exist
-          TAG=$(gh release list \
-            --repo "${{ github.repository }}" \
-            --limit 5 \
-            --json tagName,isPrerelease \
-            --jq '[.[] | select(.isPrerelease)] | .[0].tagName // empty')
+          # Wait for the deploy workflow to create the staging release
+          # Try up to 30 times with 20s intervals (10 min max)
+          for i in $(seq 1 30); do
+            TAG=$(gh release list \
+              --repo "${{ github.repository }}" \
+              --limit 5 \
+              --json tagName,isPrerelease,createdAt \
+              --jq '[.[] | select(.isPrerelease)] | sort_by(.createdAt) | last | .tagName // empty')
 
-          if [ -n "$TAG" ]; then
-            # Extract version from tag like "staging-1.2.3" or "staging-1.2.3-build.42"
-            VERSION=$(echo "$TAG" | sed 's/^staging-//' | sed 's/-build\..*//')
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "Found staging version: $VERSION"
-          else
-            echo "version=unknown" >> $GITHUB_OUTPUT
-            echo "::warning::Could not determine staging version from releases"
-          fi
+            if [ -n "$TAG" ]; then
+              VERSION=$(echo "$TAG" | sed 's/^staging-//' | sed 's/-build\..*//')
+              echo "version=$VERSION" >> $GITHUB_OUTPUT
+              echo "Found staging version: $VERSION (attempt $i)"
+              exit 0
+            fi
+
+            echo "Waiting for staging release... (attempt $i/30)"
+            sleep 20
+          done
+
+          echo "version=unknown" >> $GITHUB_OUTPUT
+          echo "::warning::Could not determine staging version from releases"
 
       - name: Create PR from staging to main
-        if: steps.source_pr.outputs.has_deploy == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.version }}
-          SOURCE_PR: ${{ steps.source_pr.outputs.pr_number }}
-          SOURCE_TITLE: ${{ steps.source_pr.outputs.title }}
-          SOURCE_LABELS: ${{ steps.source_pr.outputs.labels }}
         run: |
           # Check if an open PR from staging to main already exists
           EXISTING=$(gh pr list \
@@ -111,9 +68,9 @@ jobs:
             --body "$(cat <<EOF
           ## Production Deployment — v${VERSION}
 
-          This PR was automatically created after staging deploy completed for PR #${SOURCE_PR}.
+          This PR was automatically created after merging PR #${{ github.event.pull_request.number }} into staging.
 
-          **Source PR:** ${SOURCE_TITLE}
+          **Source PR:** ${{ github.event.pull_request.title }}
 
           Merging this PR will build and deploy **v${VERSION}** to production.
           EOF
@@ -124,17 +81,18 @@ jobs:
           echo "Created PR #$PR_NUMBER"
 
           # Forward version and minimum version labels from source PR
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
           FORWARD_LABELS=""
 
-          if echo "$SOURCE_LABELS" | grep -q 'version:major'; then
+          if echo "$LABELS" | grep -q '"version:major"'; then
             FORWARD_LABELS="version:major"
-          elif echo "$SOURCE_LABELS" | grep -q 'version:minor'; then
+          elif echo "$LABELS" | grep -q '"version:minor"'; then
             FORWARD_LABELS="version:minor"
-          elif echo "$SOURCE_LABELS" | grep -q 'version:patch'; then
+          elif echo "$LABELS" | grep -q '"version:patch"'; then
             FORWARD_LABELS="version:patch"
           fi
 
-          if echo "$SOURCE_LABELS" | grep -q 'minimum version'; then
+          if echo "$LABELS" | grep -q '"minimum version"'; then
             if [ -n "$FORWARD_LABELS" ]; then
               FORWARD_LABELS="$FORWARD_LABELS,minimum version"
             else
