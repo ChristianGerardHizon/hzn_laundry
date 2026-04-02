@@ -53,7 +53,16 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
       final maxQtyStr = values['maxQuantity']?.toString();
       final maxQty =
           (maxQtyStr != null && maxQtyStr.isNotEmpty) ? num.parse(maxQtyStr) : null;
-      final pricePerUnit = num.parse(values['pricePerUnit'].toString());
+      final pricePerUnitStr = values['pricePerUnit']?.toString();
+      final pricePerUnit =
+          (pricePerUnitStr != null && pricePerUnitStr.isNotEmpty)
+              ? num.parse(pricePerUnitStr)
+              : 0;
+      final flatPriceStr = values['flatPrice']?.toString();
+      final flatPrice =
+          (flatPriceStr != null && flatPriceStr.isNotEmpty)
+              ? num.parse(flatPriceStr)
+              : null;
 
       // Validate min < max if max is provided
       if (maxQty != null && maxQty > 0 && maxQty < minQty) {
@@ -63,11 +72,20 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
         return;
       }
 
+      // Must have either flat price or price per unit
+      if ((flatPrice == null || flatPrice <= 0) && pricePerUnit <= 0) {
+        formKey.currentState?.fields['pricePerUnit']
+            ?.invalidate('Set either flat price or price per unit');
+        isSaving.value = false;
+        return;
+      }
+
       final body = <String, dynamic>{
         'service': serviceId,
         'minQuantity': minQty,
         'maxQuantity': maxQty ?? 0,
         'pricePerUnit': pricePerUnit,
+        'flatPrice': flatPrice ?? 0,
       };
 
       try {
@@ -116,7 +134,12 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
                   (tier?.maxQuantity != null && tier!.maxQuantity! > 0)
                       ? tier!.maxQuantity.toString()
                       : '',
-              'pricePerUnit': tier?.pricePerUnit.toString() ?? '',
+              'pricePerUnit': (tier != null && tier!.pricePerUnit > 0)
+                  ? tier!.pricePerUnit.toString()
+                  : '',
+              'flatPrice': (tier?.flatPrice != null && tier!.flatPrice! > 0)
+                  ? tier!.flatPrice.toString()
+                  : '',
             },
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -162,18 +185,39 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 FormBuilderTextField(
-                  name: 'pricePerUnit',
+                  name: 'flatPrice',
                   decoration: const InputDecoration(
-                    labelText: 'Price per Unit *',
+                    labelText: 'Flat Price',
                     prefixText: '₱ ',
+                    hintText: 'Fixed total for this range',
                   ),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  validator: FormBuilderValidators.compose([
-                    FormBuilderValidators.required(),
-                    FormBuilderValidators.numeric(),
-                    FormBuilderValidators.min(0),
-                  ]),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null;
+                    final parsed = num.tryParse(value);
+                    if (parsed == null) return 'Must be a number';
+                    if (parsed < 0) return 'Must be >= 0';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                FormBuilderTextField(
+                  name: 'pricePerUnit',
+                  decoration: const InputDecoration(
+                    labelText: 'Price per Unit',
+                    prefixText: '₱ ',
+                    hintText: 'Used if flat price is empty',
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null;
+                    final parsed = num.tryParse(value);
+                    if (parsed == null) return 'Must be a number';
+                    if (parsed < 0) return 'Must be >= 0';
+                    return null;
+                  },
                 ),
               ],
             ),
