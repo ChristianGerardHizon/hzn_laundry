@@ -182,7 +182,7 @@ class _DialogFooter extends ConsumerWidget {
                 onPressed: () async {
                   final totalPaid = totalPaidAsync?.value ?? 0;
                   final balanceDue = sale!.totalAmount - totalPaid;
-                  final result = await showRecordPaymentSheet(
+                  final result = await showRecordPaymentDialog(
                     context,
                     sale: sale!,
                     balanceDue: balanceDue,

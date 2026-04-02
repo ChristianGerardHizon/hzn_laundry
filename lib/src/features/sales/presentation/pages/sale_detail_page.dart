@@ -1186,7 +1186,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                         width: double.infinity,
                         child: FilledButton.tonalIcon(
                           onPressed: () async {
-                            final result = await showRecordPaymentSheet(
+                            final result = await showRecordPaymentDialog(
                               context,
                               sale: sale,
                               balanceDue: balanceDue,

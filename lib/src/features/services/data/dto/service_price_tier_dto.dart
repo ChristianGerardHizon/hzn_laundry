@@ -16,6 +16,7 @@ class ServicePriceTierDto with ServicePriceTierDtoMappable {
   final num minQuantity;
   final num? maxQuantity;
   final num pricePerUnit;
+  final num? flatPrice;
   final String? created;
   final String? updated;
 
@@ -27,6 +28,7 @@ class ServicePriceTierDto with ServicePriceTierDtoMappable {
     required this.minQuantity,
     this.maxQuantity,
     required this.pricePerUnit,
+    this.flatPrice,
     this.created,
     this.updated,
   });
@@ -43,6 +45,7 @@ class ServicePriceTierDto with ServicePriceTierDtoMappable {
       minQuantity: json['minQuantity'] as num? ?? 0,
       maxQuantity: json['maxQuantity'] as num?,
       pricePerUnit: json['pricePerUnit'] as num? ?? 0,
+      flatPrice: json['flatPrice'] as num?,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
     );
@@ -56,6 +59,7 @@ class ServicePriceTierDto with ServicePriceTierDtoMappable {
       minQuantity: minQuantity,
       maxQuantity: maxQuantity,
       pricePerUnit: pricePerUnit,
+      flatPrice: flatPrice,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );
