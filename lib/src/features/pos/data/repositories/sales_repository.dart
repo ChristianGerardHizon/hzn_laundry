@@ -42,11 +42,11 @@ abstract class SalesRepository {
   /// Updates the sale status (completed, refunded, voided).
   FutureEither<Sale> updateSaleStatus(String id, String status);
 
-  /// Assigns a machine to a sale service item.
-  FutureEither<void> assignMachineToServiceItem(
+  /// Assigns machines to a sale service item.
+  FutureEither<void> assignMachinesToServiceItem(
     String itemId,
-    String machineId,
-    String machineName,
+    List<String> machineIds,
+    List<String> machineNames,
   );
 
   /// Assigns a storage location to a sale service item.
@@ -436,16 +436,16 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<void> assignMachineToServiceItem(
+  FutureEither<void> assignMachinesToServiceItem(
     String itemId,
-    String machineId,
-    String machineName,
+    List<String> machineIds,
+    List<String> machineNames,
   ) async {
     return TaskEither.tryCatch(
       () async {
         await _saleServiceItems.update(itemId, body: {
-          'machine': machineId,
-          'machineName': machineName,
+          'machine': machineIds.isNotEmpty ? machineIds.first : '',
+          'machineName': machineNames.join(', '),
           'status': 'in_progress',
         });
       },

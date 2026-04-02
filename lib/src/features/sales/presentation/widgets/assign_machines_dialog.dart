@@ -28,8 +28,8 @@ class AssignMachinesDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final machinesAsync = ref.watch(machinesControllerProvider);
-    // Map of service item ID to assigned machine ID
-    final assignments = useState<Map<String, String?>>({});
+    // Map of service item ID to list of assigned machine IDs
+    final assignments = useState<Map<String, List<String>>>({});
     final isSaving = useState(false);
     // Currently selected service item index for assignment
     final activeItemIndex = useState(0);
@@ -41,19 +41,21 @@ class AssignMachinesDialog extends HookConsumerWidget {
       final machines = machinesAsync.value ?? [];
 
       for (final item in serviceItems) {
-        final machineId = assignments.value[item.id];
-        if (machineId != null && machineId.isNotEmpty) {
-          final machine = machines.firstWhere((m) => m.id == machineId);
-          final result = await repo.assignMachineToServiceItem(
+        final machineIds = assignments.value[item.id] ?? [];
+        if (machineIds.isNotEmpty) {
+          final machineNames = machineIds
+              .map((id) => machines.firstWhere((m) => m.id == id).name)
+              .toList();
+          final result = await repo.assignMachinesToServiceItem(
             item.id,
-            machineId,
-            machine.name,
+            machineIds,
+            machineNames,
           );
           if (result.isLeft()) {
             if (context.mounted) {
               isSaving.value = false;
               showErrorSnackBar(context,
-                  message: 'Failed to assign machine to ${item.serviceName}',
+                  message: 'Failed to assign machines to ${item.serviceName}',
                   useRootMessenger: false);
               return;
             }
@@ -100,7 +102,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
                       // Service item selector (only show if multiple)
                       if (serviceItems.length > 1) ...[
                         Text(
-                          'Select service to assign a machine:',
+                          'Select service to assign machines:',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -114,9 +116,10 @@ class AssignMachinesDialog extends HookConsumerWidget {
                               _ServiceItemChip(
                                 item: serviceItems[i],
                                 isActive: activeItemIndex.value == i,
-                                hasAssignment:
-                                    assignments.value[serviceItems[i].id] !=
-                                        null,
+                                assignedCount:
+                                    (assignments.value[serviceItems[i].id] ??
+                                            [])
+                                        .length,
                                 onTap: isSaving.value
                                     ? null
                                     : () => activeItemIndex.value = i,
@@ -132,25 +135,28 @@ class AssignMachinesDialog extends HookConsumerWidget {
                         item: serviceItems[activeItemIndex.value],
                       ),
                       const SizedBox(height: 12),
-                      // Machine grid - tappable chips
+                      // Machine grid - tappable chips (multi-select)
                       _MachineGrid(
                         machines: availableMachines,
-                        selectedId: assignments
-                            .value[serviceItems[activeItemIndex.value].id],
+                        selectedIds: assignments.value[
+                                serviceItems[activeItemIndex.value].id] ??
+                            [],
                         disabled: isSaving.value,
                         onToggle: (machineId) {
                           final itemId =
                               serviceItems[activeItemIndex.value].id;
-                          final current = Map<String, String?>.from(
+                          final current = Map<String, List<String>>.from(
                               assignments.value);
+                          final list =
+                              List<String>.from(current[itemId] ?? []);
 
-                          // Toggle: deselect if already selected, else select
-                          if (current[itemId] == machineId) {
-                            current[itemId] = null;
+                          if (list.contains(machineId)) {
+                            list.remove(machineId);
                           } else {
-                            current[itemId] = machineId;
+                            list.add(machineId);
                           }
 
+                          current[itemId] = list;
                           assignments.value = current;
                         },
                       ),
@@ -190,24 +196,45 @@ class _ServiceItemChip extends StatelessWidget {
   const _ServiceItemChip({
     required this.item,
     required this.isActive,
-    required this.hasAssignment,
+    required this.assignedCount,
     required this.onTap,
   });
 
   final SaleServiceItem item;
   final bool isActive;
-  final bool hasAssignment;
+  final int assignedCount;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return FilterChip(
       selected: isActive,
-      avatar: hasAssignment
-          ? const Icon(Icons.check_circle, size: 18)
-          : null,
-      label: Text(
-        '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+          ),
+          if (assignedCount > 0) ...[
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$assignedCount',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       onSelected: onTap != null ? (_) => onTap!() : null,
     );
@@ -239,7 +266,7 @@ class _ActiveServiceLabel extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Tap to select machines',
+          'Tap to select (multi)',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -252,13 +279,13 @@ class _ActiveServiceLabel extends StatelessWidget {
 class _MachineGrid extends StatelessWidget {
   const _MachineGrid({
     required this.machines,
-    required this.selectedId,
+    required this.selectedIds,
     required this.disabled,
     required this.onToggle,
   });
 
   final List<Machine> machines;
-  final String? selectedId;
+  final List<String> selectedIds;
   final bool disabled;
   final ValueChanged<String> onToggle;
 
@@ -279,7 +306,7 @@ class _MachineGrid extends StatelessWidget {
           _MachineTypeSection(
             typeName: entry.key,
             machines: entry.value,
-            selectedId: selectedId,
+            selectedIds: selectedIds,
             disabled: disabled,
             onToggle: onToggle,
           ),
@@ -294,14 +321,14 @@ class _MachineTypeSection extends StatelessWidget {
   const _MachineTypeSection({
     required this.typeName,
     required this.machines,
-    required this.selectedId,
+    required this.selectedIds,
     required this.disabled,
     required this.onToggle,
   });
 
   final String typeName;
   final List<Machine> machines;
-  final String? selectedId;
+  final List<String> selectedIds;
   final bool disabled;
   final ValueChanged<String> onToggle;
 
@@ -324,7 +351,7 @@ class _MachineTypeSection extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: machines.map((machine) {
-            final isSelected = selectedId == machine.id;
+            final isSelected = selectedIds.contains(machine.id);
             return _MachineChip(
               machine: machine,
               isSelected: isSelected,
