@@ -444,7 +444,7 @@ class SalesRepositoryImpl implements SalesRepository {
     return TaskEither.tryCatch(
       () async {
         await _saleServiceItems.update(itemId, body: {
-          'machine': machineIds.isNotEmpty ? machineIds.first : '',
+          'machine': machineIds,
           'machineName': machineNames.join(', '),
           'status': 'in_progress',
         });
