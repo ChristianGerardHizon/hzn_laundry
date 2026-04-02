@@ -15,7 +15,9 @@ import '../../../services/domain/service_item_status.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
+import 'assign_machines_dialog.dart';
 import 'assign_storages_dialog.dart';
+import 'set_packs_dialog.dart';
 import 'sale_highlight_banner.dart';
 import 'sale_status_chip.dart';
 
@@ -70,6 +72,13 @@ class SaleDetailContent extends ConsumerWidget {
             currencyFormat: currencyFormat,
             compact: compact,
           ),
+
+          // Packs Section
+          if (sale.orderStatus != OrderStatus.pending)
+            _PacksSection(
+              sale: sale,
+              compact: compact,
+            ),
 
           // Addons Section
           _ItemsSection(
@@ -370,6 +379,41 @@ class _ServiceItemTile extends HookConsumerWidget {
       );
     }
 
+    Future<void> _editMachine(BuildContext ctx, WidgetRef ref) async {
+      final initialAssignments = <String, List<String>>{};
+      if (item.machineId != null && item.machineId!.isNotEmpty) {
+        initialAssignments[item.id] = [item.machineId!];
+      }
+      final result = await showAssignMachinesDialog(
+        ctx,
+        serviceItems: [item],
+        initialAssignments: initialAssignments,
+      );
+      if (result == true) {
+        ref.invalidate(saleServiceItemsProvider(sale.id));
+        ref.invalidate(kanbanSalesProvider);
+      }
+    }
+
+    Future<void> _editStorage(BuildContext ctx, WidgetRef ref) async {
+      final initialAssignments = <String, List<String>>{};
+      if (item.storageIds.isNotEmpty) {
+        initialAssignments[item.id] = item.storageIds;
+      }
+      final result = await showAssignStoragesDialog(
+        ctx,
+        saleId: sale.id,
+        serviceItems: [item],
+        initialAssignments: initialAssignments,
+        initialPacks: sale.packs > 0 ? sale.packs : null,
+      );
+      if (result == true) {
+        ref.invalidate(saleServiceItemsProvider(sale.id));
+        ref.invalidate(saleProvider(sale.id));
+        ref.invalidate(kanbanSalesProvider);
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.all(compact ? 12 : 16),
       child: Column(
@@ -428,26 +472,68 @@ class _ServiceItemTile extends HookConsumerWidget {
               children: [
                 if (hasMachine)
                   Expanded(
-                    child: SaleAssignmentInfoCard(
-                      icon: Icons.local_laundry_service,
-                      label: 'Machine',
-                      name: item.machineName!,
-                      color: isCompleted ? Colors.grey : Colors.blue,
-                      compact: compact,
+                    child: GestureDetector(
+                      onTap: isCompleted
+                          ? null
+                          : () => _editMachine(context, ref),
+                      child: SaleAssignmentInfoCard(
+                        icon: Icons.local_laundry_service,
+                        label: 'Machine',
+                        name: item.machineName!,
+                        color: isCompleted ? Colors.grey : Colors.blue,
+                        compact: compact,
+                        showEditHint: !isCompleted,
+                      ),
                     ),
                   ),
                 if (hasMachine && hasStorage) const SizedBox(width: 12),
                 if (hasStorage)
                   Expanded(
-                    child: SaleAssignmentInfoCard(
-                      icon: Icons.inventory_2,
-                      label: 'Storage',
-                      name: item.storageName!,
-                      color: Colors.teal,
-                      compact: compact,
+                    child: GestureDetector(
+                      onTap: () => _editStorage(context, ref),
+                      child: SaleAssignmentInfoCard(
+                        icon: Icons.inventory_2,
+                        label: 'Storage',
+                        name: item.storageName!,
+                        color: Colors.teal,
+                        compact: compact,
+                        showEditHint: true,
+                      ),
                     ),
                   ),
               ],
+            ),
+          ],
+
+          // Assign buttons when no assignment exists
+          if (!hasMachine && !isCompleted && sale.orderStatus != OrderStatus.pending) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _editMachine(context, ref),
+                icon: const Icon(Icons.local_laundry_service, size: 18),
+                label: const Text('Assign Machine'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  side: const BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+          ],
+          if (!hasStorage && sale.orderStatus != OrderStatus.pending) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _editStorage(context, ref),
+                icon: const Icon(Icons.inventory_2, size: 18),
+                label: const Text('Assign Storage'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.teal,
+                  side: const BorderSide(color: Colors.teal),
+                ),
+              ),
             ),
           ],
 
@@ -475,6 +561,100 @@ class _ServiceItemTile extends HookConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Packs section showing laundry bag count with edit capability.
+class _PacksSection extends HookConsumerWidget {
+  const _PacksSection({
+    required this.sale,
+    required this.compact,
+  });
+
+  final Sale sale;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final hasPacks = sale.packs > 0;
+
+    Future<void> editPacks() async {
+      final result = await showSetPacksDialog(context);
+      if (result == null || !context.mounted) return;
+
+      final repo = ref.read(salesRepositoryProvider);
+      final updateResult =
+          await repo.updateSale(sale.id, {'packs': result});
+      updateResult.fold(
+        (failure) {
+          if (context.mounted) {
+            showErrorSnackBar(context, message: failure.messageString);
+          }
+        },
+        (_) {
+          ref.invalidate(saleProvider(sale.id));
+          ref.invalidate(kanbanSalesProvider);
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Packs',
+              style: theme.textTheme.titleMedium,
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: editPacks,
+              icon: Icon(
+                hasPacks ? Icons.edit : Icons.add,
+                size: 16,
+              ),
+              label: Text(hasPacks ? 'Edit' : 'Set Packs'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(compact ? 12 : 16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.shopping_bag,
+                  size: 20,
+                  color: hasPacks
+                      ? Colors.purple
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  hasPacks
+                      ? '${sale.packs} pack${sale.packs > 1 ? 's' : ''}'
+                      : 'No packs set',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: hasPacks
+                        ? Colors.purple
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: hasPacks ? FontWeight.w600 : null,
+                    fontStyle: hasPacks ? null : FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: compact ? 12 : 16),
+      ],
     );
   }
 }
@@ -710,6 +890,7 @@ class SaleAssignmentInfoCard extends StatelessWidget {
     required this.name,
     required this.color,
     this.compact = false,
+    this.showEditHint = false,
   });
 
   final IconData icon;
@@ -717,6 +898,7 @@ class SaleAssignmentInfoCard extends StatelessWidget {
   final String name;
   final Color color;
   final bool compact;
+  final bool showEditHint;
 
   @override
   Widget build(BuildContext context) {
@@ -731,31 +913,48 @@ class SaleAssignmentInfoCard extends StatelessWidget {
           color: color.withValues(alpha: 0.2),
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Icon(
-            icon,
-            size: compact ? 24 : 32,
-            color: color,
-          ),
-          SizedBox(height: compact ? 4 : 8),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: compact ? 24 : 32,
+                  color: color,
+                ),
+                SizedBox(height: compact ? 4 : 8),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            name,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
+          if (showEditHint)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Icon(
+                Icons.edit,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       ),
     );

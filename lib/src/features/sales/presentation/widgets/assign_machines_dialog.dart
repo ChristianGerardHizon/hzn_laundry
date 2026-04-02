@@ -20,16 +20,23 @@ class AssignMachinesDialog extends HookConsumerWidget {
   const AssignMachinesDialog({
     super.key,
     required this.serviceItems,
+    this.initialAssignments,
   });
 
   final List<SaleServiceItem> serviceItems;
+
+  /// Pre-populated machine assignments for editing.
+  /// Map of service item ID to list of machine IDs.
+  final Map<String, List<String>>? initialAssignments;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final machinesAsync = ref.watch(machinesControllerProvider);
     // Map of service item ID to list of assigned machine IDs
-    final assignments = useState<Map<String, List<String>>>({});
+    final assignments = useState<Map<String, List<String>>>(
+      initialAssignments ?? {},
+    );
     final isSaving = useState(false);
     // Currently selected service item index for assignment
     final activeItemIndex = useState(0);
@@ -41,10 +48,16 @@ class AssignMachinesDialog extends HookConsumerWidget {
       final machines = machinesAsync.value ?? [];
 
       for (final item in serviceItems) {
-        final machineIds = assignments.value[item.id] ?? [];
+        final machineIds = (assignments.value[item.id] ?? [])
+            .where((id) => id.isNotEmpty)
+            .toList();
         if (machineIds.isNotEmpty) {
           final machineNames = machineIds
-              .map((id) => machines.firstWhere((m) => m.id == id).name)
+              .map((id) {
+                final match = machines.where((m) => m.id == id);
+                return match.isNotEmpty ? match.first.name : '';
+              })
+              .where((name) => name.isNotEmpty)
               .toList();
           final result = await repo.assignMachinesToServiceItem(
             item.id,
@@ -468,10 +481,14 @@ class _MachineChip extends HookConsumerWidget {
 Future<bool?> showAssignMachinesDialog(
   BuildContext context, {
   required List<SaleServiceItem> serviceItems,
+  Map<String, List<String>>? initialAssignments,
 }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AssignMachinesDialog(serviceItems: serviceItems),
+    builder: (context) => AssignMachinesDialog(
+      serviceItems: serviceItems,
+      initialAssignments: initialAssignments,
+    ),
   );
 }
