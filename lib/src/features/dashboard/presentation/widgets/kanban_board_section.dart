@@ -18,6 +18,66 @@ import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
 import '../controllers/kanban_sales_controller.dart';
 
+/// Handles the drop logic for moving a sale to a new status.
+/// Shared by both column DragTargets and quick drop targets.
+Future<void> _handleKanbanDrop(
+  BuildContext context,
+  WidgetRef ref,
+  Sale sale,
+  OrderStatus targetStatus,
+) async {
+  // Handle assignment dialogs for specific transitions
+  if (targetStatus == OrderStatus.processing) {
+    final serviceItems =
+        await ref.read(saleServiceItemsProvider(sale.id).future);
+    if (serviceItems.isNotEmpty && context.mounted) {
+      final result = await showAssignMachinesDialog(
+        context,
+        serviceItems: serviceItems,
+      );
+      if (result == null) {
+        ref.invalidate(kanbanSalesProvider);
+        return;
+      }
+    }
+  } else if (targetStatus == OrderStatus.ready) {
+    final serviceItems =
+        await ref.read(saleServiceItemsProvider(sale.id).future);
+    if (context.mounted) {
+      final result = await showAssignStoragesDialog(
+        context,
+        saleId: sale.id,
+        serviceItems: serviceItems,
+      );
+      if (result == null) {
+        ref.invalidate(kanbanSalesProvider);
+        return;
+      }
+    }
+  }
+
+  if (!context.mounted) return;
+
+  final repo = ref.read(salesRepositoryProvider);
+  final result = await repo.updateOrderStatus(sale.id, targetStatus);
+
+  if (!context.mounted) return;
+
+  result.fold(
+    (failure) {
+      showErrorSnackBar(context, message: failure.messageString);
+      ref.invalidate(kanbanSalesProvider);
+      ref.invalidate(notPickedUpCountProvider);
+      ref.invalidate(todayCountProvider);
+    },
+    (_) {
+      ref.invalidate(kanbanSalesProvider);
+      ref.invalidate(notPickedUpCountProvider);
+      ref.invalidate(todayCountProvider);
+    },
+  );
+}
+
 /// Kanban-style board showing all sales grouped by order status.
 ///
 /// On tablet/desktop: Shows columns side-by-side in a horizontal scrollable row.
@@ -379,61 +439,8 @@ class _KanbanColumn extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Sale sale,
-  ) async {
-    // Handle assignment dialogs for specific transitions
-    if (status == OrderStatus.processing) {
-      final serviceItems =
-          await ref.read(saleServiceItemsProvider(sale.id).future);
-      if (serviceItems.isNotEmpty && context.mounted) {
-        final result = await showAssignMachinesDialog(
-          context,
-          serviceItems: serviceItems,
-        );
-        if (result == null) {
-          // User cancelled - refresh to revert
-          ref.invalidate(kanbanSalesProvider);
-          return;
-        }
-      }
-    } else if (status == OrderStatus.ready) {
-      final serviceItems =
-          await ref.read(saleServiceItemsProvider(sale.id).future);
-      if (context.mounted) {
-        final result = await showAssignStoragesDialog(
-          context,
-          saleId: sale.id,
-          serviceItems: serviceItems,
-        );
-        if (result == null) {
-          // User cancelled - refresh to revert
-          ref.invalidate(kanbanSalesProvider);
-          return;
-        }
-      }
-    }
-
-    if (!context.mounted) return;
-
-    // Update order status
-    final repo = ref.read(salesRepositoryProvider);
-    final result = await repo.updateOrderStatus(sale.id, status);
-
-    if (!context.mounted) return;
-
-    result.fold(
-      (failure) {
-        showErrorSnackBar(context, message: failure.messageString);
-        ref.invalidate(kanbanSalesProvider);
-        ref.invalidate(notPickedUpCountProvider);
-        ref.invalidate(todayCountProvider);
-      },
-      (_) {
-        ref.invalidate(kanbanSalesProvider);
-        ref.invalidate(notPickedUpCountProvider);
-        ref.invalidate(todayCountProvider);
-      },
-    );
-  }
+  ) =>
+      _handleKanbanDrop(context, ref, sale, status);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -559,11 +566,26 @@ class _KanbanColumn extends ConsumerWidget {
                       ],
                       if (remainingCount > 0) ...[
                         const SizedBox(height: 6),
-                        Text(
-                          '+ $remainingCount more',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.w500,
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            onPressed: () => _showAllCardsSheet(
+                              context,
+                              status: status,
+                              sales: sales,
+                              kanbanData: kanbanData,
+                              filterMode: filterMode,
+                            ),
+                            icon: const Icon(Icons.expand_more, size: 16),
+                            label: Text('Show all ${sales.length}'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: color,
+                              textStyle: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              visualDensity: VisualDensity.compact,
+                            ),
                           ),
                         ),
                       ],
@@ -578,8 +600,130 @@ class _KanbanColumn extends ConsumerWidget {
   }
 }
 
+/// Shows a bottom sheet with all cards for a given status.
+void _showAllCardsSheet(
+  BuildContext context, {
+  required OrderStatus status,
+  required List<Sale> sales,
+  required KanbanSalesData kanbanData,
+  required KanbanFilterMode filterMode,
+}) {
+  final color = switch (status) {
+    OrderStatus.pending => Colors.orange,
+    OrderStatus.processing => Colors.blue,
+    OrderStatus.ready => Colors.green,
+    OrderStatus.pickedUp => Colors.grey,
+  };
+
+  final icon = switch (status) {
+    OrderStatus.pending => Icons.schedule,
+    OrderStatus.processing => Icons.autorenew,
+    OrderStatus.ready => Icons.check_circle_outline,
+    OrderStatus.pickedUp => Icons.local_shipping_outlined,
+  };
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) {
+      final theme = Theme.of(context);
+      return DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Column(
+            children: [
+              // Drag handle
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Header
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(icon, color: color, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      status.displayName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${sales.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, size: 20),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Cards list
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: sales.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final sale = sales[index];
+                    return _SaleCard(
+                      sale: sale,
+                      serviceItems:
+                          kanbanData.serviceItemsForSale(sale.id),
+                      saleItems: kanbanData.saleItemsForSale(sale.id),
+                      showOverdue:
+                          filterMode == KanbanFilterMode.notPickedUp,
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
 /// Individual sale card within a kanban column.
-class _SaleCard extends StatelessWidget {
+/// Shows an overlay with quick drop targets anchored to the card on drag start.
+class _SaleCard extends ConsumerStatefulWidget {
   const _SaleCard({
     required this.sale,
     this.serviceItems = const [],
@@ -593,10 +737,64 @@ class _SaleCard extends StatelessWidget {
   final bool showOverdue;
 
   @override
+  ConsumerState<_SaleCard> createState() => _SaleCardState();
+}
+
+class _SaleCardState extends ConsumerState<_SaleCard> {
+  OverlayEntry? _overlayEntry;
+
+  void _showDropTargets() {
+    _removeOverlay();
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final cardSize = renderBox.size;
+    final cardOffset = renderBox.localToGlobal(Offset.zero);
+    final screenSize = MediaQuery.sizeOf(context);
+    final targetStatuses = OrderStatus.values
+        .where((s) => s != widget.sale.orderStatus)
+        .toList();
+
+    // Capture the card's context and ref so the overlay can use them
+    // even after the overlay entry is removed.
+    final cardContext = context;
+    final cardRef = ref;
+
+    _overlayEntry = OverlayEntry(
+      builder: (_) => _QuickDropOverlay(
+        sale: widget.sale,
+        targetStatuses: targetStatuses,
+        cardOffset: cardOffset,
+        cardSize: cardSize,
+        screenSize: screenSize,
+        parentContext: cardContext,
+        parentRef: cardRef,
+        onAccepted: _removeOverlay,
+      ),
+    );
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry?.dispose();
+    _overlayEntry = null;
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LongPressDraggable<Sale>(
-      data: sale,
+      data: widget.sale,
       delay: const Duration(milliseconds: 150),
+      onDragStarted: _showDropTargets,
+      onDragEnd: (_) => _removeOverlay(),
+      onDraggableCanceled: (_, __) => _removeOverlay(),
       feedback: Material(
         elevation: 8,
         borderRadius: BorderRadius.circular(8),
@@ -605,10 +803,10 @@ class _SaleCard extends StatelessWidget {
           child: SizedBox(
             width: 180,
             child: _SaleCardContent(
-              sale: sale,
-              serviceItems: serviceItems,
-              saleItems: saleItems,
-              showOverdue: showOverdue,
+              sale: widget.sale,
+              serviceItems: widget.serviceItems,
+              saleItems: widget.saleItems,
+              showOverdue: widget.showOverdue,
             ),
           ),
         ),
@@ -616,17 +814,164 @@ class _SaleCard extends StatelessWidget {
       childWhenDragging: Opacity(
         opacity: 0.3,
         child: _SaleCardContent(
-          sale: sale,
-          serviceItems: serviceItems,
-          saleItems: saleItems,
-          showOverdue: showOverdue,
+          sale: widget.sale,
+          serviceItems: widget.serviceItems,
+          saleItems: widget.saleItems,
+          showOverdue: widget.showOverdue,
         ),
       ),
       child: _SaleCardContent(
-        sale: sale,
-        serviceItems: serviceItems,
-        saleItems: saleItems,
-        showOverdue: showOverdue,
+        sale: widget.sale,
+        serviceItems: widget.serviceItems,
+        saleItems: widget.saleItems,
+        showOverdue: widget.showOverdue,
+      ),
+    );
+  }
+}
+
+/// Overlay that shows quick drop targets anchored near the dragged card.
+/// Uses a full-screen Stack so Positioned works correctly and DragTargets
+/// receive hit-tests.
+class _QuickDropOverlay extends StatelessWidget {
+  const _QuickDropOverlay({
+    required this.sale,
+    required this.targetStatuses,
+    required this.cardOffset,
+    required this.cardSize,
+    required this.screenSize,
+    required this.parentContext,
+    required this.parentRef,
+    required this.onAccepted,
+  });
+
+  final Sale sale;
+  final List<OrderStatus> targetStatuses;
+  final Offset cardOffset;
+  final Size cardSize;
+  final Size screenSize;
+  final BuildContext parentContext;
+  final WidgetRef parentRef;
+  final VoidCallback onAccepted;
+
+  static const double _targetWidth = 72;
+  static const double _targetSpacing = 6;
+  static const double _padding = 8;
+
+  static Color _statusColor(OrderStatus status) => switch (status) {
+        OrderStatus.pending => Colors.orange,
+        OrderStatus.processing => Colors.blue,
+        OrderStatus.ready => Colors.green,
+        OrderStatus.pickedUp => Colors.grey,
+      };
+
+  static IconData _statusIcon(OrderStatus status) => switch (status) {
+        OrderStatus.pending => Icons.schedule,
+        OrderStatus.processing => Icons.autorenew,
+        OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.pickedUp => Icons.local_shipping_outlined,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final totalWidth = targetStatuses.length * _targetWidth +
+        (targetStatuses.length - 1) * _targetSpacing;
+
+    // Position: center horizontally on the card, above the card
+    double left = cardOffset.dx + (cardSize.width - totalWidth) / 2;
+    left = left.clamp(_padding, screenSize.width - totalWidth - _padding);
+
+    // Place above the card with a small gap
+    double top = cardOffset.dy - 70;
+    if (top < _padding) {
+      top = cardOffset.dy + cardSize.height + 8;
+    }
+
+    return SizedBox.expand(
+      child: Stack(
+        children: [
+          Positioned(
+            left: left,
+            top: top,
+            child: Material(
+              color: Colors.transparent,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (int i = 0; i < targetStatuses.length; i++) ...[
+                    if (i > 0) SizedBox(width: _targetSpacing),
+                    SizedBox(
+                      width: _targetWidth,
+                      child: DragTarget<Sale>(
+                        onWillAcceptWithDetails: (details) =>
+                            details.data.orderStatus != targetStatuses[i],
+                        onAcceptWithDetails: (details) {
+                          onAccepted();
+                          _handleKanbanDrop(parentContext, parentRef,
+                              details.data, targetStatuses[i]);
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          final isHovering = candidateData.isNotEmpty;
+                          final color = _statusColor(targetStatuses[i]);
+
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: isHovering
+                                  ? color.withValues(alpha: 0.25)
+                                  : theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isHovering
+                                    ? color
+                                    : color.withValues(alpha: 0.5),
+                                width: isHovering ? 2.5 : 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _statusIcon(targetStatuses[i]),
+                                  color: color,
+                                  size: 18,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  targetStatuses[i].displayName,
+                                  style:
+                                      theme.textTheme.labelSmall?.copyWith(
+                                    color: color,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 9,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

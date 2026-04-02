@@ -11,6 +11,10 @@ part of 'dashboard_realtime_provider.dart';
 /// Subscribes to PocketBase realtime events for collections that affect the
 /// dashboard, and invalidates the relevant providers when changes occur.
 ///
+/// Uses PocketBase's built-in `PB_CONNECT` event to detect reconnections and
+/// refresh all dashboard data, ensuring the UI stays in sync even after
+/// network interruptions (common on web/mobile).
+///
 /// Usage: Simply `ref.watch(dashboardRealtimeProvider)` from the dashboard
 /// page to activate subscriptions. They are automatically cleaned up when
 /// the provider is disposed (i.e. when navigating away from the dashboard).
@@ -21,6 +25,10 @@ final dashboardRealtimeProvider = DashboardRealtimeProvider._();
 /// Subscribes to PocketBase realtime events for collections that affect the
 /// dashboard, and invalidates the relevant providers when changes occur.
 ///
+/// Uses PocketBase's built-in `PB_CONNECT` event to detect reconnections and
+/// refresh all dashboard data, ensuring the UI stays in sync even after
+/// network interruptions (common on web/mobile).
+///
 /// Usage: Simply `ref.watch(dashboardRealtimeProvider)` from the dashboard
 /// page to activate subscriptions. They are automatically cleaned up when
 /// the provider is disposed (i.e. when navigating away from the dashboard).
@@ -29,6 +37,10 @@ final class DashboardRealtimeProvider
     extends $FunctionalProvider<void, void, void> with $Provider<void> {
   /// Subscribes to PocketBase realtime events for collections that affect the
   /// dashboard, and invalidates the relevant providers when changes occur.
+  ///
+  /// Uses PocketBase's built-in `PB_CONNECT` event to detect reconnections and
+  /// refresh all dashboard data, ensuring the UI stays in sync even after
+  /// network interruptions (common on web/mobile).
   ///
   /// Usage: Simply `ref.watch(dashboardRealtimeProvider)` from the dashboard
   /// page to activate subscriptions. They are automatically cleaned up when
@@ -66,4 +78,4 @@ final class DashboardRealtimeProvider
   }
 }
 
-String _$dashboardRealtimeHash() => r'63c04b14a89f47c99cb3dec5720ed0dab396232d';
+String _$dashboardRealtimeHash() => r'187ccb5c2c49f97ba769919bcc9c67544d530623';

@@ -587,8 +587,12 @@ class ThermalPrintService extends _$ThermalPrintService {
       final storeServiceSubtotal = totalAmount - storeAddOnsTotal;
 
       // Service price
+      String storeServiceName = serviceName;
+      if (storeServiceName.length > 16) {
+        storeServiceName = '${storeServiceName.substring(0, 14)}..';
+      }
       bytes += generator.row([
-        PosColumn(text: serviceName, width: 8),
+        PosColumn(text: storeServiceName, width: 8),
         PosColumn(
           text: currencyFormat.format(storeServiceSubtotal),
           width: 4,
@@ -709,12 +713,12 @@ class ThermalPrintService extends _$ThermalPrintService {
       bytes += generator.row([
         PosColumn(
           text: 'SERVICE',
-          width: 6,
+          width: 5,
           styles: const PosStyles(bold: true),
         ),
         PosColumn(
           text: 'QTY',
-          width: 2,
+          width: 3,
           styles: const PosStyles(bold: true, align: PosAlign.center),
         ),
         PosColumn(
@@ -732,15 +736,15 @@ class ThermalPrintService extends _$ThermalPrintService {
       final serviceSubtotal = totalAmount - addOnsTotal;
 
       String name = serviceName;
-      if (name.length > 16) {
-        name = '${name.substring(0, 14)}..';
+      if (name.length > 13) {
+        name = '${name.substring(0, 11)}..';
       }
 
       bytes += generator.row([
-        PosColumn(text: name, width: 6),
+        PosColumn(text: name, width: 5),
         PosColumn(
           text: '${quantity.toStringAsFixed(1)} $unitLabel',
-          width: 2,
+          width: 3,
           styles: const PosStyles(align: PosAlign.center),
         ),
         PosColumn(
@@ -756,12 +760,12 @@ class ThermalPrintService extends _$ThermalPrintService {
         bytes += generator.row([
           PosColumn(
             text: 'ADD-ONS',
-            width: 6,
+            width: 5,
             styles: const PosStyles(bold: true),
           ),
           PosColumn(
             text: 'QTY',
-            width: 2,
+            width: 3,
             styles: const PosStyles(bold: true, align: PosAlign.center),
           ),
           PosColumn(
@@ -774,14 +778,14 @@ class ThermalPrintService extends _$ThermalPrintService {
 
         for (final item in addOnItems) {
           String addOnName = item.productName;
-          if (addOnName.length > 16) {
-            addOnName = '${addOnName.substring(0, 14)}..';
+          if (addOnName.length > 13) {
+            addOnName = '${addOnName.substring(0, 11)}..';
           }
           bytes += generator.row([
-            PosColumn(text: addOnName, width: 6),
+            PosColumn(text: addOnName, width: 5),
             PosColumn(
               text: 'x${item.quantity.toInt()}',
-              width: 2,
+              width: 3,
               styles: const PosStyles(align: PosAlign.center),
             ),
             PosColumn(
