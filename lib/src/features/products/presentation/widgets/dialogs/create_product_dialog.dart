@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../settings/domain/branch.dart';
 import '../../../domain/product_category.dart';
 
 import '../../../../../core/hooks/use_form_dirty_guard.dart';
+import '../../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../../core/routing/routes/products.routes.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../../core/widgets/form/form.dart';
@@ -103,7 +103,7 @@ class CreateProductDialog extends HookConsumerWidget {
 
       if (context.mounted) {
         isSaving.value = false;
-        context.pop();
+        DialogDismissingObserver.dismissAllDialogs();
 
         showSuccessSnackBar(context, message: 'Product created successfully');
 

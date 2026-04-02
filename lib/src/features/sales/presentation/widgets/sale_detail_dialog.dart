@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
@@ -203,7 +204,7 @@ class _DialogFooter extends ConsumerWidget {
             width: double.infinity,
             child: FilledButton.tonal(
               onPressed: () {
-                Navigator.of(context).pop();
+                DialogDismissingObserver.dismissAllDialogs();
                 SaleDetailRoute(id: saleId).go(context);
               },
               child: const Text('View Full Details'),

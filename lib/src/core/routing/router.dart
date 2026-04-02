@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../pages/app_root.dart';
+import 'dialog_dismissing_observer.dart';
 import 'router_utils.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
@@ -36,6 +37,7 @@ GoRouter router(Ref ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: SplashRoute.path,
     debugLogDiagnostics: true,
+    observers: [DialogDismissingObserver()],
     redirect: (context, state) => RouterUtils.redirect(context, state, ref),
     errorBuilder: RouterUtils.errorBuilder,
     routes: [
