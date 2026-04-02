@@ -23,7 +23,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final num subtotal;
   final List<String> machine;
   final String? machineName;
-  final String? storage;
+  final List<String> storage;
   final String? storageName;
   final String? status;
   final String? created;
@@ -41,7 +41,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     required this.subtotal,
     this.machine = const [],
     this.machineName,
-    this.storage,
+    this.storage = const [],
     this.storageName,
     this.status,
     this.created,
@@ -61,7 +61,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       subtotal: record.getDoubleValue('subtotal'),
       machine: record.getListValue<String>('machine'),
       machineName: record.getStringValue('machineName'),
-      storage: record.getStringValue('storage'),
+      storage: record.getListValue<String>('storage'),
       storageName: record.getStringValue('storageName'),
       status: record.getStringValue('status'),
       created: record.get<String>('created'),
@@ -72,7 +72,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   SaleServiceItem toEntity({
     RecordModel? serviceExpanded,
     RecordModel? machineExpanded,
-    RecordModel? storageExpanded,
+    List<RecordModel>? storageExpanded,
   }) {
     return SaleServiceItem(
       id: id,
@@ -90,11 +90,13 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       machine: machineExpanded != null
           ? MachineDto.fromRecord(machineExpanded).toEntity()
           : null,
-      storageId: storage != null && storage!.isNotEmpty ? storage : null,
+      storageIds: storage,
       storageName: storageName,
-      storageLocation: storageExpanded != null
-          ? StorageLocationDto.fromRecord(storageExpanded).toEntity()
-          : null,
+      storageLocations: storageExpanded != null
+          ? storageExpanded
+              .map((r) => StorageLocationDto.fromRecord(r).toEntity())
+              .toList()
+          : const [],
       status: ServiceItemStatus.fromDbValue(status),
       created: parseToLocal(created),
       updated: parseToLocal(updated),
