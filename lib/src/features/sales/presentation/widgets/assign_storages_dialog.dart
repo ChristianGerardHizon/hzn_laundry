@@ -21,18 +21,29 @@ class AssignStoragesDialog extends HookConsumerWidget {
     super.key,
     required this.saleId,
     required this.serviceItems,
+    this.initialAssignments,
+    this.initialPacks,
   });
 
   final String saleId;
   final List<SaleServiceItem> serviceItems;
+
+  /// Pre-populated storage assignments for editing.
+  /// Map of service item ID to list of storage IDs.
+  final Map<String, List<String>>? initialAssignments;
+
+  /// Pre-populated packs count for editing.
+  final int? initialPacks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final storagesAsync = ref.watch(storageLocationsControllerProvider);
     // Map of service item ID to assigned storage IDs (multi-select)
-    final assignments = useState<Map<String, List<String>>>({});
-    final selectedPacks = useState<int?>(null);
+    final assignments = useState<Map<String, List<String>>>(
+      initialAssignments ?? {},
+    );
+    final selectedPacks = useState<int?>(initialPacks);
     final isSaving = useState(false);
     // Currently selected service item index for assignment
     final activeItemIndex = useState(0);
@@ -46,12 +57,20 @@ class AssignStoragesDialog extends HookConsumerWidget {
       for (final item in serviceItems) {
         final storageIdList = assignments.value[item.id];
         if (storageIdList != null && storageIdList.isNotEmpty) {
-          final storageNames = storageIdList
-              .map((id) => storages.firstWhere((s) => s.id == id).name)
+          // Filter out empty IDs and safely look up names
+          final validIds =
+              storageIdList.where((id) => id.isNotEmpty).toList();
+          if (validIds.isEmpty) continue;
+          final storageNames = validIds
+              .map((id) {
+                final match = storages.where((s) => s.id == id);
+                return match.isNotEmpty ? match.first.name : '';
+              })
+              .where((name) => name.isNotEmpty)
               .toList();
           final result = await repo.assignStoragesToServiceItem(
             item.id,
-            storageIdList,
+            validIds,
             storageNames,
           );
           if (result.isLeft()) {
@@ -426,6 +445,8 @@ Future<bool?> showAssignStoragesDialog(
   BuildContext context, {
   required String saleId,
   required List<SaleServiceItem> serviceItems,
+  Map<String, List<String>>? initialAssignments,
+  int? initialPacks,
 }) {
   return showDialog<bool>(
     context: context,
@@ -433,6 +454,8 @@ Future<bool?> showAssignStoragesDialog(
     builder: (context) => AssignStoragesDialog(
       saleId: saleId,
       serviceItems: serviceItems,
+      initialAssignments: initialAssignments,
+      initialPacks: initialPacks,
     ),
   );
 }

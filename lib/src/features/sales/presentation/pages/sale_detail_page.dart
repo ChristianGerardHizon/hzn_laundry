@@ -15,7 +15,6 @@ import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
-import '../../../services/domain/service_item_status.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -24,9 +23,12 @@ import '../controllers/order_status_history_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
+import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
 import '../widgets/record_payment_sheet.dart';
+import '../widgets/set_packs_dialog.dart';
 import '../widgets/sale_detail_content.dart';
 import '../widgets/sale_highlight_banner.dart';
 import '../widgets/sale_status_chip.dart';
@@ -299,128 +301,19 @@ class _SaleDetailContent extends HookConsumerWidget {
                               const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final item = serviceItems[index];
-                            final hasMachine = item.machineName != null &&
-                                item.machineName!.isNotEmpty;
-                            final hasStorage = item.storageName != null &&
-                                item.storageName!.isNotEmpty;
-                            final isCompleted =
-                                item.status == ServiceItemStatus.completed;
-                            final isProcessing =
-                                sale.orderStatus == OrderStatus.processing;
-                            final canMarkDone =
-                                isProcessing && hasMachine && !isCompleted;
-
-                            return Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Service name + price row
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                if (isCompleted) ...[
-                                                  const Icon(
-                                                    Icons.check_circle,
-                                                    size: 16,
-                                                    color: Colors.green,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                ],
-                                                Expanded(
-                                                  child: Text(
-                                                    item.serviceName,
-                                                    style: theme
-                                                        .textTheme.titleSmall
-                                                        ?.copyWith(
-                                                      color: isCompleted
-                                                          ? theme.colorScheme
-                                                              .onSurfaceVariant
-                                                          : null,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              '${currencyFormat.format(item.unitPrice)} x ${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'}',
-                                              style: theme
-                                                  .textTheme.bodySmall
-                                                  ?.copyWith(
-                                                color: theme.colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Text(
-                                        currencyFormat
-                                            .format(item.subtotal),
-                                        style:
-                                            theme.textTheme.titleSmall,
-                                      ),
-                                    ],
-                                  ),
-
-                                  // Machine & Storage assignment section
-                                  if (hasMachine || hasStorage) ...[
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        if (hasMachine)
-                                          Expanded(
-                                            child:
-                                                SaleAssignmentInfoCard(
-                                              icon: Icons
-                                                  .local_laundry_service,
-                                              label: 'Machine',
-                                              name:
-                                                  item.machineName!,
-                                              color: isCompleted
-                                                  ? Colors.grey
-                                                  : Colors.blue,
-                                            ),
-                                          ),
-                                        if (hasMachine && hasStorage)
-                                          const SizedBox(width: 12),
-                                        if (hasStorage)
-                                          Expanded(
-                                            child:
-                                                SaleAssignmentInfoCard(
-                                              icon: Icons.inventory_2,
-                                              label: 'Storage',
-                                              name:
-                                                  item.storageName!,
-                                              color: Colors.teal,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-
-                                  // Mark Done button
-                                  if (canMarkDone) ...[
-                                    const SizedBox(height: 12),
-                                    _ServiceItemMarkDoneButton(
-                                      itemId: item.id,
-                                      saleId: sale.id,
-                                    ),
-                                  ],
-                                ],
-                              ),
+                            return _ServiceItemEditTile(
+                              sale: sale,
+                              item: item,
+                              currencyFormat: currencyFormat,
                             );
                           },
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Packs Section
+                      if (sale.orderStatus != OrderStatus.pending)
+                        _PacksEditSection(sale: sale),
                     ],
                   );
                 },
@@ -1349,6 +1242,290 @@ class _OrderStatusButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Service item tile with edit capabilities for machine/storage.
+class _ServiceItemEditTile extends HookConsumerWidget {
+  const _ServiceItemEditTile({
+    required this.sale,
+    required this.item,
+    required this.currencyFormat,
+  });
+
+  final Sale sale;
+  final SaleServiceItem item;
+  final NumberFormat currencyFormat;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final hasMachine =
+        item.machineName != null && item.machineName!.isNotEmpty;
+    final hasStorage =
+        item.storageName != null && item.storageName!.isNotEmpty;
+    final isCompleted = item.status == ServiceItemStatus.completed;
+    final isProcessing = sale.orderStatus == OrderStatus.processing;
+    final canMarkDone = isProcessing && hasMachine && !isCompleted;
+
+    Future<void> editMachine() async {
+      final initialAssignments = <String, List<String>>{};
+      if (item.machineId != null && item.machineId!.isNotEmpty) {
+        initialAssignments[item.id] = [item.machineId!];
+      }
+      final result = await showAssignMachinesDialog(
+        context,
+        serviceItems: [item],
+        initialAssignments: initialAssignments,
+      );
+      if (result == true) {
+        ref.invalidate(saleServiceItemsProvider(sale.id));
+        ref.invalidate(kanbanSalesProvider);
+      }
+    }
+
+    Future<void> editStorage() async {
+      final initialAssignments = <String, List<String>>{};
+      if (item.storageIds.isNotEmpty) {
+        initialAssignments[item.id] = item.storageIds;
+      }
+      final result = await showAssignStoragesDialog(
+        context,
+        saleId: sale.id,
+        serviceItems: [item],
+        initialAssignments: initialAssignments,
+        initialPacks: sale.packs > 0 ? sale.packs : null,
+      );
+      if (result == true) {
+        ref.invalidate(saleServiceItemsProvider(sale.id));
+        ref.invalidate(saleProvider(sale.id));
+        ref.invalidate(kanbanSalesProvider);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Service name + price row
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (isCompleted) ...[
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            item.serviceName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: isCompleted
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${currencyFormat.format(item.unitPrice)} x ${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                currencyFormat.format(item.subtotal),
+                style: theme.textTheme.titleSmall,
+              ),
+            ],
+          ),
+
+          // Machine & Storage assignment section
+          if (hasMachine || hasStorage) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (hasMachine)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: isCompleted ? null : editMachine,
+                      child: SaleAssignmentInfoCard(
+                        icon: Icons.local_laundry_service,
+                        label: 'Machine',
+                        name: item.machineName!,
+                        color: isCompleted ? Colors.grey : Colors.blue,
+                        showEditHint: !isCompleted,
+                      ),
+                    ),
+                  ),
+                if (hasMachine && hasStorage) const SizedBox(width: 12),
+                if (hasStorage)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: editStorage,
+                      child: SaleAssignmentInfoCard(
+                        icon: Icons.inventory_2,
+                        label: 'Storage',
+                        name: item.storageName!,
+                        color: Colors.teal,
+                        showEditHint: true,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+
+          // Assign buttons when no assignment exists
+          if (!hasMachine &&
+              !isCompleted &&
+              sale.orderStatus != OrderStatus.pending) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: editMachine,
+                icon: const Icon(Icons.local_laundry_service, size: 18),
+                label: const Text('Assign Machine'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  side: const BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+          ],
+          if (!hasStorage &&
+              sale.orderStatus != OrderStatus.pending) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: editStorage,
+                icon: const Icon(Icons.inventory_2, size: 18),
+                label: const Text('Assign Storage'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.teal,
+                  side: const BorderSide(color: Colors.teal),
+                ),
+              ),
+            ),
+          ],
+
+          // Mark Done button
+          if (canMarkDone) ...[
+            const SizedBox(height: 12),
+            _ServiceItemMarkDoneButton(
+              itemId: item.id,
+              saleId: sale.id,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Packs section with edit capability for the sale detail page.
+class _PacksEditSection extends HookConsumerWidget {
+  const _PacksEditSection({required this.sale});
+
+  final Sale sale;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final hasPacks = sale.packs > 0;
+
+    Future<void> editPacks() async {
+      final result = await showSetPacksDialog(context);
+      if (result == null || !context.mounted) return;
+
+      final repo = ref.read(salesRepositoryProvider);
+      final updateResult =
+          await repo.updateSale(sale.id, {'packs': result});
+      updateResult.fold(
+        (failure) {
+          if (context.mounted) {
+            showErrorSnackBar(context, message: failure.messageString);
+          }
+        },
+        (_) {
+          ref.invalidate(saleProvider(sale.id));
+          ref.invalidate(kanbanSalesProvider);
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Packs',
+              style: theme.textTheme.titleMedium,
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: editPacks,
+              icon: Icon(
+                hasPacks ? Icons.edit : Icons.add,
+                size: 16,
+              ),
+              label: Text(hasPacks ? 'Edit' : 'Set Packs'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.shopping_bag,
+                  size: 20,
+                  color: hasPacks
+                      ? Colors.purple
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  hasPacks
+                      ? '${sale.packs} pack${sale.packs > 1 ? 's' : ''}'
+                      : 'No packs set',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: hasPacks
+                        ? Colors.purple
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: hasPacks ? FontWeight.w600 : null,
+                    fontStyle: hasPacks ? null : FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
