@@ -27,6 +27,10 @@ import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart
 import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
+import '../../../users/domain/user_role.dart';
+import '../../../users/presentation/controllers/user_provider.dart';
+import '../../../users/presentation/controllers/user_role_provider.dart';
+import '../widgets/edit_item_dialog.dart';
 import '../widgets/record_payment_sheet.dart';
 import '../widgets/set_packs_dialog.dart';
 import '../widgets/sale_detail_content.dart';
@@ -122,6 +126,20 @@ class _SaleDetailContent extends HookConsumerWidget {
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final currencyFormat = NumberFormat.currency(symbol: '₱');
 
+    // Check if current user can edit items/payments (admin or payments.edit)
+    final auth = ref.watch(currentAuthProvider);
+    final fullUser = auth != null
+        ? ref.watch(userProvider(auth.user.id)).value
+        : null;
+    final currentRole = (fullUser != null &&
+            fullUser.roleId != null &&
+            fullUser.roleId!.isNotEmpty)
+        ? ref.watch(userRoleProvider(fullUser.roleId!)).value
+        : null;
+    final canEdit = currentRole != null &&
+        (currentRole.isAdmin ||
+            currentRole.hasPermission(Permissions.paymentsEdit));
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !isTablet,
@@ -180,8 +198,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  sale.created != null
-                                      ? dateFormat.format(sale.created!)
+                                  sale.postedDate != null
+                                      ? dateFormat.format(sale.postedDate!)
                                       : 'Unknown date',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
@@ -262,13 +280,43 @@ class _SaleDetailContent extends HookConsumerWidget {
                           itemBuilder: (context, index) {
                             final item = items[index];
                             return ListTile(
+                              onTap: canEdit
+                                  ? () async {
+                                      final result = await showEditItemDialog(
+                                        context,
+                                        saleId: sale.id,
+                                        itemId: item.id,
+                                        itemName: item.productName,
+                                        currentQuantity: item.quantity,
+                                        currentUnitPrice: item.unitPrice,
+                                        isServiceItem: false,
+                                      );
+                                      if (result == true) {
+                                        ref.invalidate(saleItemsProvider(sale.id));
+                                        ref.invalidate(saleProvider(sale.id));
+                                      }
+                                    }
+                                  : null,
                               title: Text(item.productName),
                               subtitle: Text(
                                 '${currencyFormat.format(item.unitPrice)} × ${item.quantity.toInt()}',
                               ),
-                              trailing: Text(
-                                currencyFormat.format(item.subtotal),
-                                style: theme.textTheme.titleSmall,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    currencyFormat.format(item.subtotal),
+                                    style: theme.textTheme.titleSmall,
+                                  ),
+                                  if (canEdit) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 16,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ],
+                                ],
                               ),
                             );
                           },
@@ -305,6 +353,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                               sale: sale,
                               item: item,
                               currencyFormat: currencyFormat,
+                              canEdit: canEdit,
                             );
                           },
                         ),
@@ -345,7 +394,8 @@ class _SaleDetailContent extends HookConsumerWidget {
               const SizedBox(height: 16),
 
               // Payment Status & History Card
-              _buildPaymentCard(context, ref, paymentsAsync, currencyFormat),
+              _buildPaymentCard(
+                  context, ref, paymentsAsync, currencyFormat, canEdit),
             ],
           ),
         ),
@@ -817,6 +867,7 @@ class _SaleDetailContent extends HookConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<dynamic>> paymentsAsync,
     NumberFormat currencyFormat,
+    bool canEditPayments,
   ) {
     final theme = Theme.of(context);
 
@@ -987,6 +1038,24 @@ class _SaleDetailContent extends HookConsumerWidget {
                             children: [
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
+                                onTap: canEditPayments
+                                    ? () async {
+                                        final result =
+                                            await showEditPaymentDialog(
+                                          context,
+                                          sale: sale,
+                                          balanceDue: balanceDue,
+                                          existingPayment: payment,
+                                          canEditDate: true,
+                                        );
+                                        if (result == true) {
+                                          ref.invalidate(
+                                              saleProvider(sale.id));
+                                          ref.invalidate(
+                                              salePaymentsProvider(sale.id));
+                                        }
+                                      }
+                                    : null,
                                 leading: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: isRefund
@@ -1006,9 +1075,9 @@ class _SaleDetailContent extends HookConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      payment.created != null
+                                      payment.postedDate != null
                                           ? DateFormat('MMM dd, yyyy hh:mm a')
-                                              .format(payment.created!)
+                                              .format(payment.postedDate!)
                                           : '',
                                       style:
                                           theme.textTheme.bodySmall?.copyWith(
@@ -1030,12 +1099,28 @@ class _SaleDetailContent extends HookConsumerWidget {
                                       ),
                                   ],
                                 ),
-                                trailing: Text(
-                                  '${isRefund ? '-' : '+'}${currencyFormat.format(payment.amount)}',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: isRefund ? Colors.red : Colors.green,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${isRefund ? '-' : '+'}${currencyFormat.format(payment.amount)}',
+                                      style:
+                                          theme.textTheme.titleSmall?.copyWith(
+                                        color: isRefund
+                                            ? Colors.red
+                                            : Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (canEditPayments) ...[
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.edit_outlined,
+                                        size: 16,
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                               // Show proof of payment button if available
@@ -1084,6 +1169,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                               context,
                               sale: sale,
                               balanceDue: balanceDue,
+                              canEditDate: canEditPayments,
                             );
                             if (result == true) {
                               ref.invalidate(saleProvider(sale.id));
@@ -1252,11 +1338,13 @@ class _ServiceItemEditTile extends HookConsumerWidget {
     required this.sale,
     required this.item,
     required this.currencyFormat,
+    this.canEdit = false,
   });
 
   final Sale sale;
   final SaleServiceItem item;
   final NumberFormat currencyFormat;
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1348,9 +1436,39 @@ class _ServiceItemEditTile extends HookConsumerWidget {
                   ],
                 ),
               ),
-              Text(
-                currencyFormat.format(item.subtotal),
-                style: theme.textTheme.titleSmall,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    currencyFormat.format(item.subtotal),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  if (canEdit) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await showEditItemDialog(
+                          context,
+                          saleId: sale.id,
+                          itemId: item.id,
+                          itemName: item.serviceName,
+                          currentQuantity: item.quantity,
+                          currentUnitPrice: item.unitPrice,
+                          isServiceItem: true,
+                        );
+                        if (result == true) {
+                          ref.invalidate(saleServiceItemsProvider(sale.id));
+                          ref.invalidate(saleProvider(sale.id));
+                        }
+                      },
+                      child: Icon(
+                        Icons.edit_outlined,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

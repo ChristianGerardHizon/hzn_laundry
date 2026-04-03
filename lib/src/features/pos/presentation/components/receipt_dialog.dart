@@ -380,7 +380,7 @@ class ReceiptDialog extends HookConsumerWidget {
         message: 'Generating receipt...',
         preload: () async => _ReceiptPdfPayload(
           receiptNumber: sale.receiptNumber,
-          createdDate: sale.created ?? DateTime.now(),
+          createdDate: sale.postedDate ?? DateTime.now(),
           totalAmount: sale.totalAmount.toDouble(),
           isPaid: sale.isPaid,
           items: saleItems,
@@ -506,8 +506,8 @@ class ReceiptDialog extends HookConsumerWidget {
                       _buildDetailRow(
                         context,
                         'Date',
-                        sale.created != null
-                            ? dateFormat.format(sale.created!)
+                        sale.postedDate != null
+                            ? dateFormat.format(sale.postedDate!)
                             : dateFormat.format(DateTime.now()),
                       ),
                       const SizedBox(height: 12),

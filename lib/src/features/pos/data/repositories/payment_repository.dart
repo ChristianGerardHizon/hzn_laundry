@@ -26,6 +26,20 @@ abstract class PaymentRepository {
     String? paymentRef,
     String? notes,
     http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
+  });
+
+  /// Updates an existing payment and recalculates sale's isPaid status.
+  FutureEither<Payment> update({
+    required String id,
+    required String saleId,
+    required num amount,
+    required PaymentMethod paymentMethod,
+    required PaymentType type,
+    String? paymentRef,
+    String? notes,
+    http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
   });
 
   /// Gets all payments for a sale.
@@ -71,11 +85,12 @@ class PaymentRepositoryImpl implements PaymentRepository {
     String? paymentRef,
     String? notes,
     http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
   }) async {
     return TaskEither.tryCatch(
       () async {
         // Create payment record
-        final body = {
+        final body = <String, dynamic>{
           'sale': saleId,
           'amount': amount,
           'paymentMethod': paymentMethod.name,
@@ -83,6 +98,10 @@ class PaymentRepositoryImpl implements PaymentRepository {
           'paymentRef': paymentRef,
           'notes': notes,
         };
+
+        body['postedDate'] = paymentDate != null
+            ? paymentDate.toUtc().toIso8601String()
+            : DateTime.now().toUtc().toIso8601String();
 
         final record = await _payments.create(
           body: body,
@@ -99,12 +118,53 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }
 
   @override
+  FutureEither<Payment> update({
+    required String id,
+    required String saleId,
+    required num amount,
+    required PaymentMethod paymentMethod,
+    required PaymentType type,
+    String? paymentRef,
+    String? notes,
+    http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final body = <String, dynamic>{
+          'amount': amount,
+          'paymentMethod': paymentMethod.name,
+          'type': type.name,
+          'paymentRef': paymentRef ?? '',
+          'notes': notes ?? '',
+        };
+
+        if (paymentDate != null) {
+          body['postedDate'] = paymentDate.toUtc().toIso8601String();
+        }
+
+        final record = await _payments.update(
+          id,
+          body: body,
+          files: paymentProofFile != null ? [paymentProofFile] : [],
+        );
+
+        // Recalculate sale's isPaid status
+        await _updateSaleIsPaid(saleId);
+
+        return _toEntity(record);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
   FutureEither<List<Payment>> getBySaleId(String saleId) async {
     return TaskEither.tryCatch(
       () async {
         final records = await _payments.getFullList(
           filter: 'sale = "$saleId"',
-          sort: '-created',
+          sort: '-postedDate',
         );
         return records.map(_toEntity).toList();
       },
@@ -120,14 +180,14 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilter().between('created', startDate, endDate);
+        final filter = PBFilter().between('postedDate', startDate, endDate);
         if (branchId != null) {
           filter.relation('sale.branch', branchId);
         }
 
         final records = await _payments.getFullList(
           filter: filter.build(),
-          sort: '-created',
+          sort: '-postedDate',
           expand: 'sale',
         );
 

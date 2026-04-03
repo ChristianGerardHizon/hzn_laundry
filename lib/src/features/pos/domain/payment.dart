@@ -19,6 +19,7 @@ class Payment with PaymentMappable {
     this.paymentRef,
     this.paymentProofUrl,
     this.notes,
+    this.postedDate,
     this.created,
     this.updated,
   });
@@ -46,6 +47,9 @@ class Payment with PaymentMappable {
 
   /// Optional notes.
   final String? notes;
+
+  /// Business/transaction date (editable).
+  final DateTime? postedDate;
 
   /// Creation timestamp.
   final DateTime? created;

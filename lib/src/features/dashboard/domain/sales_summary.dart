@@ -32,7 +32,7 @@ class SalesSummaryItem {
     required this.isPaid,
     required this.isBacklog,
     this.customerName,
-    this.created,
+    this.postedDate,
     this.serviceItems = const [],
     this.saleItems = const [],
   });
@@ -46,7 +46,7 @@ class SalesSummaryItem {
   final bool isBacklog;
 
   final String? customerName;
-  final DateTime? created;
+  final DateTime? postedDate;
 
   /// Service line items for this sale.
   final List<SaleServiceItem> serviceItems;

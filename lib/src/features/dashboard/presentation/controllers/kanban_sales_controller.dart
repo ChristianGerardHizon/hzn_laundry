@@ -111,7 +111,7 @@ Future<int> notPickedUpCount(Ref ref) async {
   final startUtc = todayStart.toPocketBaseUtc();
 
   var filter =
-      "status != 'voided' && created < '$startUtc' && (orderStatus != 'pickedUp' || pickedUpAt >= '$startUtc')";
+      "status != 'voided' && postedDate < '$startUtc' && (orderStatus != 'pickedUp' || pickedUpAt >= '$startUtc')";
   if (branchId != null) {
     filter = '$filter && branch = "$branchId"';
   }
@@ -139,7 +139,7 @@ Future<int> todayCount(Ref ref) async {
   final endUtc = todayEnd.toPocketBaseUtc();
 
   var filter =
-      "status != 'voided' && created >= '$startUtc' && created < '$endUtc'";
+      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'";
   if (branchId != null) {
     filter = '$filter && branch = "$branchId"';
   }
@@ -177,7 +177,7 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
       final todayEnd = todayStart.add(const Duration(days: 1));
       final startUtc = todayStart.toPocketBaseUtc();
       final endUtc = todayEnd.toPocketBaseUtc();
-      filter = '$filter && created >= "$startUtc" && created < "$endUtc"';
+      filter = '$filter && postedDate >= "$startUtc" && postedDate < "$endUtc"';
     case KanbanFilterMode.notPickedUp:
       // Show only orders created before today that haven't been picked up
       // (today's orders are shown in the "Today's Orders" tab)
@@ -185,13 +185,13 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
       final todayStart = DateTime(now.year, now.month, now.day);
       final startUtc = todayStart.toPocketBaseUtc();
       filter =
-          '$filter && created < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
+          '$filter && postedDate < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
   }
 
   final records =
       await pb.collection(PocketBaseCollections.sales).getFullList(
             filter: filter,
-            sort: '-created',
+            sort: '-postedDate',
           );
 
   final sales =

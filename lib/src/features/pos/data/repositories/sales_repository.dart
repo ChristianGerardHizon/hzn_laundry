@@ -89,6 +89,25 @@ abstract class SalesRepository {
     String? sort,
     String? filter,
   });
+
+  /// Updates a sale item's quantity, unitPrice, and subtotal.
+  FutureEither<void> updateSaleItem(
+    String itemId, {
+    required num quantity,
+    required num unitPrice,
+    required num subtotal,
+  });
+
+  /// Updates a sale service item's quantity, unitPrice, and subtotal.
+  FutureEither<void> updateSaleServiceItem(
+    String itemId, {
+    required num quantity,
+    required num unitPrice,
+    required num subtotal,
+  });
+
+  /// Recalculates and updates the sale's totalAmount from all its items.
+  FutureEither<Sale> recalculateSaleTotal(String saleId);
 }
 
 @Riverpod(keepAlive: true)
@@ -178,6 +197,7 @@ class SalesRepositoryImpl implements SalesRepository {
           'customer': sale.customerId,
           'customerName': sale.customerName,
           'notes': sale.notes,
+          'postedDate': DateTime.now().toUtc().toIso8601String(),
         };
         final saleRecord = await _sales.create(body: saleBody);
 
@@ -344,7 +364,7 @@ class SalesRepositoryImpl implements SalesRepository {
           final localStart = DateTime(date.year, date.month, date.day);
           final localEnd = localStart.add(const Duration(days: 1));
           final dateFilter =
-              'created >= "${localStart.toPocketBaseUtc()}" && created < "${localEnd.toPocketBaseUtc()}"';
+              'postedDate >= "${localStart.toPocketBaseUtc()}" && postedDate < "${localEnd.toPocketBaseUtc()}"';
 
           if (filter.isNotEmpty) {
             filter = '$filter && $dateFilter';
@@ -355,7 +375,7 @@ class SalesRepositoryImpl implements SalesRepository {
 
         final records = await _sales.getFullList(
           filter: filter.isEmpty ? null : filter,
-          sort: '-created',
+          sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
       },
@@ -390,7 +410,7 @@ class SalesRepositoryImpl implements SalesRepository {
           page: page,
           perPage: perPage,
           filter: filter,
-          sort: sort ?? '-created',
+          sort: sort ?? '-postedDate',
         );
 
         return PaginatedResult<Sale>(
@@ -428,7 +448,7 @@ class SalesRepositoryImpl implements SalesRepository {
           page: page,
           perPage: perPage,
           filter: combinedFilter,
-          sort: sort ?? '-created',
+          sort: sort ?? '-postedDate',
         );
 
         return PaginatedResult<Sale>(
@@ -517,14 +537,14 @@ class SalesRepositoryImpl implements SalesRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilter().between('created', startDate, endDate);
+        final filter = PBFilter().between('postedDate', startDate, endDate);
         if (branchId != null) {
           filter.relation('branch', branchId);
         }
 
         final records = await _sales.getFullList(
           filter: filter.build(),
-          sort: '-created',
+          sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
       },
@@ -538,7 +558,7 @@ class SalesRepositoryImpl implements SalesRepository {
       () async {
         final records = await _sales.getFullList(
           filter: 'customer = "$customerId"',
-          sort: '-created',
+          sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
       },
@@ -556,6 +576,77 @@ class SalesRepositoryImpl implements SalesRepository {
           expand: 'service.quantityUnit,machine,storage',
         );
         return records.map(_toSaleServiceItemEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<void> updateSaleItem(
+    String itemId, {
+    required num quantity,
+    required num unitPrice,
+    required num subtotal,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        await _saleItems.update(itemId, body: {
+          'quantity': quantity,
+          'unitPrice': unitPrice,
+          'subtotal': subtotal,
+        });
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<void> updateSaleServiceItem(
+    String itemId, {
+    required num quantity,
+    required num unitPrice,
+    required num subtotal,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        await _saleServiceItems.update(itemId, body: {
+          'quantity': quantity,
+          'unitPrice': unitPrice,
+          'subtotal': subtotal,
+        });
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Sale> recalculateSaleTotal(String saleId) async {
+    return TaskEither.tryCatch(
+      () async {
+        // Sum all sale items
+        final items = await _saleItems.getFullList(
+          filter: 'sale = "$saleId"',
+        );
+        num itemsTotal = 0;
+        for (final item in items) {
+          itemsTotal += item.getDoubleValue('subtotal');
+        }
+
+        // Sum all service items
+        final serviceItems = await _saleServiceItems.getFullList(
+          filter: 'sale = "$saleId"',
+        );
+        num serviceTotal = 0;
+        for (final item in serviceItems) {
+          serviceTotal += item.getDoubleValue('subtotal');
+        }
+
+        final newTotal = itemsTotal + serviceTotal;
+        final record = await _sales.update(saleId, body: {
+          'totalAmount': newTotal,
+        });
+
+        return _toSaleEntity(record);
       },
       Failure.handle,
     ).run();

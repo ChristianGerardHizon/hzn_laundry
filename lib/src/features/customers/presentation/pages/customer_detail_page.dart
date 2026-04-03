@@ -231,20 +231,20 @@ enum _SalesFilterMode {
       case _SalesFilterMode.today:
         final start = DateTime(now.year, now.month, now.day);
         final end = start.add(const Duration(days: 1));
-        return 'created >= "${start.toPocketBaseUtc()}" && created < "${end.toPocketBaseUtc()}"';
+        return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${end.toPocketBaseUtc()}"';
       case _SalesFilterMode.weekly:
         final start = DateTime(now.year, now.month, now.day)
             .subtract(Duration(days: now.weekday - 1));
         final end = start.add(const Duration(days: 7));
-        return 'created >= "${start.toPocketBaseUtc()}" && created < "${end.toPocketBaseUtc()}"';
+        return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${end.toPocketBaseUtc()}"';
       case _SalesFilterMode.monthly:
         final start = DateTime(now.year, now.month);
         final end = DateTime(now.year, now.month + 1);
-        return 'created >= "${start.toPocketBaseUtc()}" && created < "${end.toPocketBaseUtc()}"';
+        return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${end.toPocketBaseUtc()}"';
       case _SalesFilterMode.yearly:
         final start = DateTime(now.year);
         final end = DateTime(now.year + 1);
-        return 'created >= "${start.toPocketBaseUtc()}" && created < "${end.toPocketBaseUtc()}"';
+        return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${end.toPocketBaseUtc()}"';
       case _SalesFilterMode.allTime:
       case _SalesFilterMode.custom:
         return null;
@@ -255,7 +255,7 @@ enum _SalesFilterMode {
   static String dateFilterForRange(DateTime start, DateTime end) {
     final endExclusive = DateTime(end.year, end.month, end.day)
         .add(const Duration(days: 1));
-    return 'created >= "${start.toPocketBaseUtc()}" && created < "${endExclusive.toPocketBaseUtc()}"';
+    return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${endExclusive.toPocketBaseUtc()}"';
   }
 }
 
@@ -498,7 +498,7 @@ class _CustomerSalesHistory extends HookConsumerWidget {
 
     final records = await pb.collection(PocketBaseCollections.sales).getFullList(
       filter: filter,
-      sort: '-created',
+      sort: '-postedDate',
     );
 
     final sales = records
@@ -696,9 +696,9 @@ class _SaleCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (sale.created != null)
+                  if (sale.postedDate != null)
                     Text(
-                      _formatTime(sale.created!),
+                      _formatTime(sale.postedDate!),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),

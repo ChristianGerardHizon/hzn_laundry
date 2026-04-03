@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -10,11 +11,12 @@ import '../../../../pos/domain/sale.dart';
 import '../../controllers/sales_detail_controller.dart';
 import '../../controllers/sales_detail_date_range_controller.dart';
 import '../charts/line_chart_widget.dart';
+import '../report_search_bar.dart';
 
 /// View displaying a detailed list of orders within a date range.
 ///
 /// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
-class SalesDetailView extends ConsumerWidget {
+class SalesDetailView extends HookConsumerWidget {
   const SalesDetailView({super.key});
 
   static final _currencyFormat =
@@ -22,13 +24,37 @@ class SalesDetailView extends ConsumerWidget {
   static final _dateFormat = DateFormat('MMM d, yyyy');
   static final _dateTimeFormat = DateFormat('MMM d, h:mm a');
 
+  static const _searchFields = [
+    ReportSearchField(key: 'customer', label: 'Customer'),
+    ReportSearchField(key: 'receipt', label: 'Receipt #'),
+    ReportSearchField(key: 'amount', label: 'Amount'),
+    ReportSearchField(key: 'status', label: 'Status'),
+    ReportSearchField(key: 'orderStatus', label: 'Order Status'),
+  ];
+
+  static const _defaultSearchKeys = {'customer', 'receipt', 'amount'};
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final salesAsync = ref.watch(salesDetailProvider);
     final dateRange = ref.watch(salesDetailDateRangeControllerProvider);
+    final searchController = useTextEditingController();
+    final searchQuery = useListenableSelector(
+      searchController,
+      () => searchController.text,
+    );
+    final searchFields = useState(_defaultSearchKeys);
 
     return salesAsync.when(
-      data: (sales) => _buildContent(context, ref, sales, dateRange),
+      data: (sales) => _buildContent(
+        context,
+        ref,
+        sales,
+        dateRange,
+        searchController: searchController,
+        searchQuery: searchQuery,
+        searchFields: searchFields,
+      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
@@ -43,8 +69,11 @@ class SalesDetailView extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<Sale> sales,
-    DateTimeRange dateRange,
-  ) {
+    DateTimeRange dateRange, {
+    required TextEditingController searchController,
+    required String searchQuery,
+    required ValueNotifier<Set<String>> searchFields,
+  }) {
     final isMobile = Breakpoints.isMobile(context);
     final nonVoidedSales = sales.where((s) => s.status != 'voided').toList();
     final totalRevenue =
@@ -52,31 +81,76 @@ class SalesDetailView extends ConsumerWidget {
     final paidCount = sales.where((s) => s.isPaid).length;
     final unpaidCount = sales.where((s) => !s.isPaid).length;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDateRangeRow(context, ref, dateRange),
-          const SizedBox(height: 12),
-          _buildKpiSection(
-            context,
-            totalRevenue: totalRevenue,
-            totalOrders: sales.length,
-            paidCount: paidCount,
-            unpaidCount: unpaidCount,
-            isMobile: isMobile,
-          ),
-          const SizedBox(height: 16),
-          _buildOrdersByDayChart(context, sales),
-          const SizedBox(height: 16),
-          if (isMobile)
-            _buildMobileOrdersList(context, sales)
-          else
-            _buildDesktopOrdersTable(context, sales),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(salesDetailProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDateRangeRow(context, ref, dateRange),
+            const SizedBox(height: 12),
+            _buildKpiSection(
+              context,
+              totalRevenue: totalRevenue,
+              totalOrders: sales.length,
+              paidCount: paidCount,
+              unpaidCount: unpaidCount,
+              isMobile: isMobile,
+            ),
+            const SizedBox(height: 16),
+            _buildOrdersByDayChart(context, sales),
+            const SizedBox(height: 16),
+            ReportSearchBar(
+              fields: _searchFields,
+              selectedKeys: searchFields.value,
+              controller: searchController,
+              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            ),
+            const SizedBox(height: 12),
+            Builder(builder: (context) {
+              final filtered =
+                  _filterSales(sales, searchQuery, searchFields.value);
+              if (isMobile) {
+                return _buildMobileOrdersList(context, filtered);
+              }
+              return _buildDesktopOrdersTable(context, filtered);
+            }),
+          ],
+        ),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Search filtering
+  // ---------------------------------------------------------------------------
+
+  List<Sale> _filterSales(
+    List<Sale> sales,
+    String query,
+    Set<String> activeKeys,
+  ) {
+    if (query.isEmpty) return sales;
+    final q = query.toLowerCase();
+    return sales.where((s) {
+      for (final key in activeKeys) {
+        final matches = switch (key) {
+          'receipt' => s.receiptNumber.toLowerCase().contains(q),
+          'customer' => (s.customerName ?? '').toLowerCase().contains(q),
+          'amount' => _currencyFormat.format(s.totalAmount).contains(q),
+          'status' => s.status.toLowerCase().contains(q),
+          'orderStatus' =>
+            s.orderStatus.displayName.toLowerCase().contains(q),
+          _ => false,
+        };
+        if (matches) return true;
+      }
+      return false;
+    }).toList();
   }
 
   Widget _buildDateRangeRow(
@@ -152,9 +226,9 @@ class SalesDetailView extends ConsumerWidget {
   Widget _buildOrdersByDayChart(BuildContext context, List<Sale> sales) {
     final dailyCounts = <DateTime, int>{};
     for (final sale in sales) {
-      final created = sale.created;
-      if (created == null) continue;
-      final day = DateTime(created.year, created.month, created.day);
+      final postedDate = sale.postedDate;
+      if (postedDate == null) continue;
+      final day = DateTime(postedDate.year, postedDate.month, postedDate.day);
       dailyCounts[day] = (dailyCounts[day] ?? 0) + 1;
     }
 
@@ -359,7 +433,7 @@ class SalesDetailView extends ConsumerWidget {
               : '—',
         )),
         DataCell(Text(
-          sale.created != null ? _dateTimeFormat.format(sale.created!) : '—',
+          sale.postedDate != null ? _dateTimeFormat.format(sale.postedDate!) : '—',
         )),
         DataCell(
           IconButton(
@@ -476,8 +550,8 @@ class SalesDetailView extends ConsumerWidget {
                     size: 14, color: theme.colorScheme.outline),
                 const SizedBox(width: 4),
                 Text(
-                  sale.created != null
-                      ? _dateTimeFormat.format(sale.created!)
+                  sale.postedDate != null
+                      ? _dateTimeFormat.format(sale.postedDate!)
                       : '—',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
