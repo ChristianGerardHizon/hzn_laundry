@@ -89,6 +89,12 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$notes,
     opt: true,
   );
+  static DateTime? _$postedDate(Sale v) => v.postedDate;
+  static const Field<Sale, DateTime> _f$postedDate = Field(
+    'postedDate',
+    _$postedDate,
+    opt: true,
+  );
   static DateTime? _$created(Sale v) => v.created;
   static const Field<Sale, DateTime> _f$created = Field(
     'created',
@@ -117,6 +123,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #customerId: _f$customerId,
     #customerName: _f$customerName,
     #notes: _f$notes,
+    #postedDate: _f$postedDate,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -136,6 +143,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
       customerId: data.dec(_f$customerId),
       customerName: data.dec(_f$customerName),
       notes: data.dec(_f$notes),
+      postedDate: data.dec(_f$postedDate),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -201,6 +209,7 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     String? customerId,
     String? customerName,
     String? notes,
+    DateTime? postedDate,
     DateTime? created,
     DateTime? updated,
   });
@@ -228,6 +237,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     Object? customerId = $none,
     Object? customerName = $none,
     Object? notes = $none,
+    Object? postedDate = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -245,6 +255,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
       if (customerId != $none) #customerId: customerId,
       if (customerName != $none) #customerName: customerName,
       if (notes != $none) #notes: notes,
+      if (postedDate != $none) #postedDate: postedDate,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -264,6 +275,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     customerId: data.get(#customerId, or: $value.customerId),
     customerName: data.get(#customerName, or: $value.customerName),
     notes: data.get(#notes, or: $value.notes),
+    postedDate: data.get(#postedDate, or: $value.postedDate),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

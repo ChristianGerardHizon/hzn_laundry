@@ -71,4 +71,4 @@ final class SalesSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesSummaryHash() => r'0f914862af114342aba7f496b33749dde45a0446';
+String _$salesSummaryHash() => r'57477c46b7bf9b223e450294194a45622ab958c0';

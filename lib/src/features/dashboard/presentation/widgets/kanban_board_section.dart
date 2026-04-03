@@ -993,13 +993,13 @@ class _SaleCardContent extends StatelessWidget {
 
   /// Whether this order is overdue (created before today and not picked up).
   bool get _isOverdue {
-    if (!showOverdue || sale.created == null) return false;
+    if (!showOverdue || sale.postedDate == null) return false;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final createdLocal = sale.created!.toLocal();
-    final createdDate =
-        DateTime(createdLocal.year, createdLocal.month, createdLocal.day);
-    return createdDate.isBefore(today);
+    final postedLocal = sale.postedDate!.toLocal();
+    final postedDay =
+        DateTime(postedLocal.year, postedLocal.month, postedLocal.day);
+    return postedDay.isBefore(today);
   }
 
   /// Gets the display text for machine or storage based on order status.
@@ -1147,8 +1147,8 @@ class _SaleCardContent extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (_isOverdue && sale.created != null) ...[
-                    _DateBadge(date: sale.created!.toLocal()),
+                  if (_isOverdue && sale.postedDate != null) ...[
+                    _DateBadge(date: sale.postedDate!.toLocal()),
                     const SizedBox(width: 4),
                   ],
                   _PaymentBadge(isPaid: sale.isPaid),
@@ -1291,9 +1291,9 @@ class _SaleCardContent extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (sale.created != null)
+                  if (sale.postedDate != null)
                     Text(
-                      _formatTime(sale.created!),
+                      _formatTime(sale.postedDate!),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),

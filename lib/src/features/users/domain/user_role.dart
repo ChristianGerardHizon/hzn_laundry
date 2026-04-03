@@ -110,6 +110,9 @@ abstract class Permissions {
   static const salesView = 'sales.view';
   static const salesCreate = 'sales.create';
 
+  // Payments permissions
+  static const paymentsEdit = 'payments.edit';
+
   // Machines permissions
   static const machinesView = 'machines.view';
   static const machinesCreate = 'machines.create';
@@ -162,6 +165,7 @@ abstract class Permissions {
     'Services': [servicesView, servicesCreate, servicesEdit, servicesDelete],
     'Inventory': [inventoryView, inventoryAdjust],
     'Sales': [salesView, salesCreate],
+    'Payments': [paymentsEdit],
     'Machines': [machinesView, machinesCreate, machinesEdit, machinesDelete],
     'Storages': [storagesView, storagesCreate, storagesEdit, storagesDelete],
     'Reports': [reportsView],
@@ -325,6 +329,14 @@ abstract class Permissions {
         category: 'Sales',
         description: 'Process sales transactions',
         icon: Icons.add,
+      ),
+      // Payments
+      const Permission(
+        key: paymentsEdit,
+        name: 'Edit Payments',
+        category: 'Payments',
+        description: 'Edit payment details including date',
+        icon: Icons.edit,
       ),
       // Machines
       const Permission(

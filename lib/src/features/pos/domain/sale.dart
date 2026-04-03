@@ -23,6 +23,7 @@ class Sale with SaleMappable {
     this.customerId,
     this.customerName,
     this.notes,
+    this.postedDate,
     this.created,
     this.updated,
   });
@@ -65,6 +66,9 @@ class Sale with SaleMappable {
 
   /// Internal notes.
   final String? notes;
+
+  /// Business/transaction date (editable).
+  final DateTime? postedDate;
 
   /// Creation timestamp.
   final DateTime? created;

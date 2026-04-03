@@ -175,7 +175,7 @@ class SaleListPanel extends HookConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.created != null ? dateFormat.format(sale.created!) : "Unknown"} • ${sale.isPaid ? 'Paid' : 'Unpaid'}',
+                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"} • ${sale.isPaid ? 'Paid' : 'Unpaid'}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

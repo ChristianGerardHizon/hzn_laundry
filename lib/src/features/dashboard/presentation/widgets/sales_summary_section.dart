@@ -397,9 +397,9 @@ class _SalesBreakdownTile extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (item.created != null) ...[
+                        if (item.postedDate != null) ...[
                           Text(
-                            _formatTime(item.created!),
+                            _formatTime(item.postedDate!),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.outline,
                             ),

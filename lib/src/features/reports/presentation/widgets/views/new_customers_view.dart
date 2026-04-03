@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -9,22 +10,44 @@ import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../controllers/new_customers_controller.dart';
 import '../../controllers/new_customers_date_range_controller.dart';
 import '../charts/line_chart_widget.dart';
+import '../report_search_bar.dart';
 
 /// View displaying new customers registered within a date range.
-class NewCustomersView extends ConsumerWidget {
+class NewCustomersView extends HookConsumerWidget {
   const NewCustomersView({super.key});
 
   static final _dateFormat = DateFormat('MMM d, yyyy');
   static final _dateTimeFormat = DateFormat('MMM d, h:mm a');
 
+  static const _searchFields = [
+    ReportSearchField(key: 'name', label: 'Name'),
+    ReportSearchField(key: 'phone', label: 'Phone'),
+    ReportSearchField(key: 'address', label: 'Address'),
+  ];
+
+  static const _defaultSearchKeys = {'name'};
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final customersAsync = ref.watch(newCustomersReportProvider);
     final dateRange = ref.watch(newCustomersDateRangeControllerProvider);
+    final searchController = useTextEditingController();
+    final searchQuery = useListenableSelector(
+      searchController,
+      () => searchController.text,
+    );
+    final searchFields = useState(_defaultSearchKeys);
 
     return customersAsync.when(
-      data: (customers) =>
-          _buildContent(context, ref, customers, dateRange),
+      data: (customers) => _buildContent(
+        context,
+        ref,
+        customers,
+        dateRange,
+        searchController: searchController,
+        searchQuery: searchQuery,
+        searchFields: searchFields,
+      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
@@ -39,8 +62,11 @@ class NewCustomersView extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<Customer> customers,
-    DateTimeRange dateRange,
-  ) {
+    DateTimeRange dateRange, {
+    required TextEditingController searchController,
+    required String searchQuery,
+    required ValueNotifier<Set<String>> searchFields,
+  }) {
     final isMobile = Breakpoints.isMobile(context);
 
     // Group by day for chart & highlight
@@ -66,31 +92,73 @@ class NewCustomersView extends ConsumerWidget {
     final avgPerDay =
         daysWithCustomers > 0 ? customers.length / daysWithCustomers : 0.0;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDateRangeRow(context, ref, dateRange),
-          const SizedBox(height: 12),
-          _buildKpiSection(
-            context,
-            totalNew: customers.length,
-            avgPerDay: avgPerDay,
-            peakDay: peakDay,
-            peakCount: peakCount,
-            isMobile: isMobile,
-          ),
-          const SizedBox(height: 16),
-          _buildNewCustomersChart(context, dailyCounts),
-          const SizedBox(height: 16),
-          if (isMobile)
-            _buildMobileCustomersList(context, customers)
-          else
-            _buildDesktopCustomersTable(context, customers),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(newCustomersReportProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDateRangeRow(context, ref, dateRange),
+            const SizedBox(height: 12),
+            _buildKpiSection(
+              context,
+              totalNew: customers.length,
+              avgPerDay: avgPerDay,
+              peakDay: peakDay,
+              peakCount: peakCount,
+              isMobile: isMobile,
+            ),
+            const SizedBox(height: 16),
+            _buildNewCustomersChart(context, dailyCounts),
+            const SizedBox(height: 16),
+            ReportSearchBar(
+              fields: _searchFields,
+              selectedKeys: searchFields.value,
+              controller: searchController,
+              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            ),
+            const SizedBox(height: 12),
+            Builder(builder: (context) {
+              final filtered = _filterCustomers(
+                  customers, searchQuery, searchFields.value);
+              if (isMobile) {
+                return _buildMobileCustomersList(context, filtered);
+              }
+              return _buildDesktopCustomersTable(context, filtered);
+            }),
+          ],
+        ),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Search filtering
+  // ---------------------------------------------------------------------------
+
+  List<Customer> _filterCustomers(
+    List<Customer> customers,
+    String query,
+    Set<String> activeKeys,
+  ) {
+    if (query.isEmpty) return customers;
+    final q = query.toLowerCase();
+    return customers.where((c) {
+      for (final key in activeKeys) {
+        final matches = switch (key) {
+          'name' => c.name.toLowerCase().contains(q),
+          'phone' => (c.phone ?? '').toLowerCase().contains(q),
+          'address' => (c.address ?? '').toLowerCase().contains(q),
+          _ => false,
+        };
+        if (matches) return true;
+      }
+      return false;
+    }).toList();
   }
 
   // ---------------------------------------------------------------------------

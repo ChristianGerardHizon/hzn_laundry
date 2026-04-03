@@ -395,8 +395,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     bytes += generator.text('Receipt: ${sale.receiptNumber}');
 
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
-    final dateStr = sale.created != null
-        ? dateFormat.format(sale.created!)
+    final dateStr = sale.postedDate != null
+        ? dateFormat.format(sale.postedDate!)
         : dateFormat.format(DateTime.now());
     bytes += generator.text('Date: $dateStr');
 

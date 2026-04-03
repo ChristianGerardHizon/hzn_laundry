@@ -102,7 +102,7 @@ final class NotPickedUpCountProvider
   }
 }
 
-String _$notPickedUpCountHash() => r'a17d37fb104cbdfbeb9c5677f9d3363aee6b16f0';
+String _$notPickedUpCountHash() => r'f1bbfc18f1f2054c42a075c9a7f1c993e5e9ffaa';
 
 /// Count of orders created today.
 /// Used to display a badge on the "Today's Orders" filter chip.
@@ -143,7 +143,7 @@ final class TodayCountProvider
   }
 }
 
-String _$todayCountHash() => r'c203317df4f8d33a98517af5e26e43e2531c80bf';
+String _$todayCountHash() => r'1f5648b8af2c282910dc91420656d1525fdb2a9c';
 
 /// Fetches active sales grouped by order status based on the selected filter.
 /// - [KanbanFilterMode.today]: All orders created today (any status).
@@ -197,4 +197,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'a2d674f0e1a949cde9151747b90838eaeeb011aa';
+String _$kanbanSalesHash() => r'cc605539b6863dd031b9616c96aade83abbde017';
