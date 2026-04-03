@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -14,11 +15,12 @@ import '../../controllers/payments_date_range_controller.dart';
 import '../../controllers/payments_report_controller.dart';
 import '../../controllers/payments_summary_controller.dart';
 import '../charts/line_chart_widget.dart';
+import '../report_search_bar.dart';
 
 /// View displaying payments received within the selected report period.
 ///
 /// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
-class SalesReportView extends ConsumerWidget {
+class SalesReportView extends HookConsumerWidget {
   const SalesReportView({super.key});
 
   static final _currencyFormat =
@@ -26,11 +28,27 @@ class SalesReportView extends ConsumerWidget {
   static final _dateFormat = DateFormat('MMM d, yyyy');
   static final _dateTimeFormat = DateFormat('MMM d, h:mm a');
 
+  static const _searchFields = [
+    ReportSearchField(key: 'customer', label: 'Customer'),
+    ReportSearchField(key: 'receipt', label: 'Receipt #'),
+    ReportSearchField(key: 'amount', label: 'Amount'),
+    ReportSearchField(key: 'reference', label: 'Reference'),
+    ReportSearchField(key: 'method', label: 'Method'),
+  ];
+
+  static const _defaultSearchKeys = {'customer', 'receipt', 'amount'};
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(paymentsSummaryProvider);
     final detailAsync = ref.watch(paymentsReportProvider);
     final dateRange = ref.watch(paymentsDateRangeControllerProvider);
+    final searchController = useTextEditingController();
+    final searchQuery = useListenableSelector(
+      searchController,
+      () => searchController.text,
+    );
+    final searchFields = useState(_defaultSearchKeys);
 
     // Wait for summary first (lightweight); detail may still be loading
     return summaryAsync.when(
@@ -46,6 +64,9 @@ class SalesReportView extends ConsumerWidget {
               ),
         detailAsync.isLoading,
         dateRange,
+        searchController: searchController,
+        searchQuery: searchQuery,
+        searchFields: searchFields,
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
@@ -63,8 +84,11 @@ class SalesReportView extends ConsumerWidget {
     List<PaymentsDailySummaryEntry> summary,
     List<PaymentReportEntry> detailEntries,
     bool detailLoading,
-    DateTimeRange dateRange,
-  ) {
+    DateTimeRange dateRange, {
+    required TextEditingController searchController,
+    required String searchQuery,
+    required ValueNotifier<Set<String>> searchFields,
+  }) {
     final isMobile = Breakpoints.isMobile(context);
 
     // Aggregate KPIs from the view summary
@@ -94,40 +118,88 @@ class SalesReportView extends ConsumerWidget {
 
     final netCollected = totalCollected - totalRefunded;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildDateRangeRow(context, ref, dateRange),
-          const SizedBox(height: 12),
-          _buildKpiSection(
-            context,
-            netCollected: netCollected,
-            totalCollected: totalCollected,
-            totalRefunded: totalRefunded,
-            paymentCount: paymentCount,
-            isMobile: isMobile,
-          ),
-          const SizedBox(height: 16),
-          _buildRevenueByDayChart(context, dailyTotals),
-          const SizedBox(height: 16),
-          if (methodTotals.isNotEmpty) ...[
-            _buildMethodBreakdown(context, methodTotals),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(paymentsSummaryProvider);
+        ref.invalidate(paymentsReportProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDateRangeRow(context, ref, dateRange),
+            const SizedBox(height: 12),
+            _buildKpiSection(
+              context,
+              netCollected: netCollected,
+              totalCollected: totalCollected,
+              totalRefunded: totalRefunded,
+              paymentCount: paymentCount,
+              isMobile: isMobile,
+            ),
             const SizedBox(height: 16),
+            _buildRevenueByDayChart(context, dailyTotals),
+            const SizedBox(height: 16),
+            if (methodTotals.isNotEmpty) ...[
+              _buildMethodBreakdown(context, methodTotals),
+              const SizedBox(height: 16),
+            ],
+            ReportSearchBar(
+              fields: _searchFields,
+              selectedKeys: searchFields.value,
+              controller: searchController,
+              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            ),
+            const SizedBox(height: 12),
+            if (detailLoading)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ))
+            else
+              Builder(builder: (context) {
+                final filtered = _filterEntries(
+                    detailEntries, searchQuery, searchFields.value);
+                if (isMobile) {
+                  return _buildMobilePaymentsList(context, filtered);
+                }
+                return _buildDesktopPaymentsTable(context, filtered);
+              }),
           ],
-          if (detailLoading)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(24),
-              child: CircularProgressIndicator(),
-            ))
-          else if (isMobile)
-            _buildMobilePaymentsList(context, detailEntries)
-          else
-            _buildDesktopPaymentsTable(context, detailEntries),
-        ],
+        ),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Search filtering
+  // ---------------------------------------------------------------------------
+
+  List<PaymentReportEntry> _filterEntries(
+    List<PaymentReportEntry> entries,
+    String query,
+    Set<String> activeKeys,
+  ) {
+    if (query.isEmpty) return entries;
+    final q = query.toLowerCase();
+    return entries.where((e) {
+      for (final key in activeKeys) {
+        final matches = switch (key) {
+          'receipt' => e.receiptNumber.toLowerCase().contains(q),
+          'customer' => (e.customerName ?? '').toLowerCase().contains(q),
+          'amount' => _currencyFormat.format(e.payment.amount).contains(q),
+          'reference' =>
+            (e.payment.paymentRef ?? '').toLowerCase().contains(q),
+          'method' =>
+            e.payment.paymentMethod.displayName.toLowerCase().contains(q),
+          _ => false,
+        };
+        if (matches) return true;
+      }
+      return false;
+    }).toList();
   }
 
   // ---------------------------------------------------------------------------
@@ -447,7 +519,7 @@ class SalesReportView extends ConsumerWidget {
     return DataRow(
       cells: [
         DataCell(Text(
-          p.created != null ? _dateTimeFormat.format(p.created!) : '—',
+          p.postedDate != null ? _dateTimeFormat.format(p.postedDate!) : '—',
         )),
         DataCell(Text(entry.receiptNumber)),
         DataCell(Text(entry.customerName ?? '—')),
@@ -588,8 +660,8 @@ class SalesReportView extends ConsumerWidget {
                       size: 14, color: theme.colorScheme.outline),
                   const SizedBox(width: 4),
                   Text(
-                    p.created != null
-                        ? _dateTimeFormat.format(p.created!)
+                    p.postedDate != null
+                        ? _dateTimeFormat.format(p.postedDate!)
                         : '—',
                     style: theme.textTheme.labelSmall
                         ?.copyWith(color: theme.colorScheme.outline),

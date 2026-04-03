@@ -52,6 +52,7 @@ class PaymentsController extends _$PaymentsController {
     String? paymentRef,
     String? notes,
     http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
   }) async {
     final repo = ref.read(paymentRepositoryProvider);
     final result = await repo.create(
@@ -62,6 +63,47 @@ class PaymentsController extends _$PaymentsController {
       paymentRef: paymentRef,
       notes: notes,
       paymentProofFile: paymentProofFile,
+      paymentDate: paymentDate,
+    );
+
+    if (!ref.mounted) return null;
+
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return null;
+      },
+      (payment) {
+        ref.invalidate(salePaymentsProvider(saleId));
+        ref.invalidate(salesSummaryProvider);
+        return payment;
+      },
+    );
+  }
+
+  /// Updates an existing payment.
+  Future<Payment?> updatePayment({
+    required String id,
+    required String saleId,
+    required num amount,
+    required PaymentMethod paymentMethod,
+    required PaymentType type,
+    String? paymentRef,
+    String? notes,
+    http.MultipartFile? paymentProofFile,
+    DateTime? paymentDate,
+  }) async {
+    final repo = ref.read(paymentRepositoryProvider);
+    final result = await repo.update(
+      id: id,
+      saleId: saleId,
+      amount: amount,
+      paymentMethod: paymentMethod,
+      type: type,
+      paymentRef: paymentRef,
+      notes: notes,
+      paymentProofFile: paymentProofFile,
+      paymentDate: paymentDate,
     );
 
     if (!ref.mounted) return null;

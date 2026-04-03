@@ -8,6 +8,7 @@ import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../domain/customer_sales_entry.dart';
 import '../../controllers/sales_by_customer_controller.dart';
 import '../../controllers/sales_by_customer_date_range_controller.dart';
+import '../report_search_bar.dart';
 
 /// View displaying sales aggregated by customer within a date range.
 class SalesByCustomerView extends HookConsumerWidget {
@@ -17,15 +18,35 @@ class SalesByCustomerView extends HookConsumerWidget {
       NumberFormat.currency(symbol: '₱', decimalDigits: 2);
   static final _dateFormat = DateFormat('MMM d, yyyy');
 
+  static const _searchFields = [
+    ReportSearchField(key: 'customer', label: 'Customer'),
+  ];
+
+  static const _defaultSearchKeys = {'customer'};
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dataAsync = ref.watch(salesByCustomerProvider);
     final dateRange = ref.watch(salesByCustomerDateRangeControllerProvider);
     final excludeUnpaid = useState(false);
+    final searchController = useTextEditingController();
+    final searchQuery = useListenableSelector(
+      searchController,
+      () => searchController.text,
+    );
+    final searchFields = useState(_defaultSearchKeys);
 
     return dataAsync.when(
-      data: (entries) =>
-          _buildContent(context, ref, entries, dateRange, excludeUnpaid),
+      data: (entries) => _buildContent(
+        context,
+        ref,
+        entries,
+        dateRange,
+        excludeUnpaid,
+        searchController: searchController,
+        searchQuery: searchQuery,
+        searchFields: searchFields,
+      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
@@ -41,13 +62,23 @@ class SalesByCustomerView extends HookConsumerWidget {
     WidgetRef ref,
     List<CustomerSalesEntry> allEntries,
     DateTimeRange dateRange,
-    ValueNotifier<bool> excludeUnpaid,
-  ) {
+    ValueNotifier<bool> excludeUnpaid, {
+    required TextEditingController searchController,
+    required String searchQuery,
+    required ValueNotifier<Set<String>> searchFields,
+  }) {
     final isMobile = Breakpoints.isMobile(context);
 
-    final entries = excludeUnpaid.value
+    var entries = excludeUnpaid.value
         ? allEntries.where((e) => e.isFullyPaid).toList()
-        : allEntries;
+        : allEntries.toList();
+
+    if (searchQuery.isNotEmpty) {
+      final q = searchQuery.toLowerCase();
+      entries = entries
+          .where((e) => e.customerName.toLowerCase().contains(q))
+          .toList();
+    }
 
     final totalRevenue =
         entries.fold<num>(0, (sum, e) => sum + e.totalSpent);
@@ -56,29 +87,42 @@ class SalesByCustomerView extends HookConsumerWidget {
         entries.fold<int>(0, (sum, e) => sum + e.orderCount);
     final topCustomer = entries.isNotEmpty ? entries.first : null;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Date range + exclude unpaid toggle
-          _buildToolbar(context, ref, dateRange, excludeUnpaid),
-          const SizedBox(height: 12),
-          _buildKpiSection(
-            context,
-            customerCount: entries.length,
-            totalRevenue: totalRevenue,
-            totalPaid: totalPaid,
-            totalOrders: totalOrders,
-            topCustomer: topCustomer,
-            isMobile: isMobile,
-          ),
-          const SizedBox(height: 16),
-          if (isMobile)
-            _buildMobileList(context, entries)
-          else
-            _buildDesktopTable(context, entries),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(salesByCustomerProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date range + exclude unpaid toggle
+            _buildToolbar(context, ref, dateRange, excludeUnpaid),
+            const SizedBox(height: 12),
+            _buildKpiSection(
+              context,
+              customerCount: entries.length,
+              totalRevenue: totalRevenue,
+              totalPaid: totalPaid,
+              totalOrders: totalOrders,
+              topCustomer: topCustomer,
+              isMobile: isMobile,
+            ),
+            const SizedBox(height: 16),
+            ReportSearchBar(
+              fields: _searchFields,
+              selectedKeys: searchFields.value,
+              controller: searchController,
+              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            ),
+            const SizedBox(height: 12),
+            if (isMobile)
+              _buildMobileList(context, entries)
+            else
+              _buildDesktopTable(context, entries),
+          ],
+        ),
       ),
     );
   }

@@ -111,11 +111,11 @@ Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
           !seenReceipts.contains(receiptNumber)) {
         seenReceipts.add(receiptNumber);
 
-        final createdStr = record.get<String?>('expand.sale.created');
-        final created = createdStr != null
-            ? DateTime.tryParse(createdStr)?.toLocal()
+        final postedDateStr = record.get<String?>('expand.sale.postedDate');
+        final postedDate = postedDateStr != null
+            ? DateTime.tryParse(postedDateStr)?.toLocal()
             : null;
-        final isBacklog = created != null && created.isBefore(todayStart);
+        final isBacklog = postedDate != null && postedDate.isBefore(todayStart);
 
         orders.add(MachineUsageOrder(
           receiptNumber: receiptNumber,

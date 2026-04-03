@@ -144,8 +144,8 @@ class _SaleHeaderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        sale.created != null
-                            ? dateFormat.format(sale.created!)
+                        sale.postedDate != null
+                            ? dateFormat.format(sale.postedDate!)
                             : 'Unknown date',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
@@ -507,7 +507,7 @@ class _ServiceItemTile extends HookConsumerWidget {
           ],
 
           // Assign buttons when no assignment exists
-          if (!hasMachine && !isCompleted && sale.orderStatus != OrderStatus.pending) ...[
+          if (!hasMachine && !isCompleted) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,

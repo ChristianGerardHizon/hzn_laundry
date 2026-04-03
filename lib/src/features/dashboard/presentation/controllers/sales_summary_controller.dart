@@ -43,16 +43,16 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
 
   // Query 1: Today's sales
   final todaySalesFilter =
-      "status != 'voided' && created >= '$startUtc' && created < '$endUtc'$salesBranchFilter";
+      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$salesBranchFilter";
 
   // Query 2: Payments made today on backlog sales (sale created before today)
   final backlogPaymentsFilter =
-      "created >= '$startUtc' && created < '$endUtc' && sale.created < '$startUtc' && sale.status != 'voided'$paymentBranchFilter";
+      "postedDate >= '$startUtc' && postedDate < '$endUtc' && sale.postedDate < '$startUtc' && sale.status != 'voided'$paymentBranchFilter";
 
   final results = await Future.wait([
     pb.collection(PocketBaseCollections.sales).getFullList(
           filter: todaySalesFilter,
-          sort: '-created',
+          sort: '-postedDate',
         ),
     pb.collection(PocketBaseCollections.payments).getFullList(
           filter: backlogPaymentsFilter,
@@ -126,7 +126,7 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
         isPaid: sale.isPaid,
         isBacklog: false,
         customerName: sale.customerName,
-        created: sale.created,
+        postedDate: sale.postedDate,
         serviceItems: serviceItemsBySale[sale.id] ?? [],
         saleItems: saleItemsBySale[sale.id] ?? [],
       ),
@@ -138,7 +138,7 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
         isPaid: sale.isPaid,
         isBacklog: true,
         customerName: sale.customerName,
-        created: sale.created,
+        postedDate: sale.postedDate,
         serviceItems: serviceItemsBySale[sale.id] ?? [],
         saleItems: saleItemsBySale[sale.id] ?? [],
       ),

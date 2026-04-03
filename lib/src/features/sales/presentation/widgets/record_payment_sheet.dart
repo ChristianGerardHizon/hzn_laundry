@@ -10,30 +10,44 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../pos/domain/payment.dart';
 import '../../../pos/domain/payment_method.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
 import '../controllers/sale_provider.dart';
 
-/// Dialog for recording a payment against a sale.
+/// Dialog for recording or editing a payment against a sale.
 class RecordPaymentDialog extends HookConsumerWidget {
   const RecordPaymentDialog({
     super.key,
     required this.sale,
     required this.balanceDue,
+    this.existingPayment,
+    this.canEditDate = false,
   });
 
   final Sale sale;
   final num balanceDue;
 
+  /// If provided, the dialog is in edit mode for this payment.
+  final Payment? existingPayment;
+
+  /// Whether the user can edit the payment date (admin-only).
+  final bool canEditDate;
+
+  bool get isEditing => existingPayment != null;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final isSaving = useState(false);
-    final selectedPaymentType = useState(PaymentType.payment);
+    final selectedPaymentType = useState(
+      existingPayment?.type ?? PaymentType.payment,
+    );
     final proofImage = useState<XFile?>(null);
-    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final imagePicker = useMemoized(() => ImagePicker());
 
     Future<void> pickImage() async {
@@ -69,6 +83,7 @@ class RecordPaymentDialog extends HookConsumerWidget {
       final paymentType = values['paymentType'] as PaymentType;
       final paymentRef = values['paymentRef'] as String?;
       final notes = values['notes'] as String?;
+      final paymentDate = values['paymentDate'] as DateTime?;
 
       isSaving.value = true;
 
@@ -84,15 +99,32 @@ class RecordPaymentDialog extends HookConsumerWidget {
       }
 
       final controller = ref.read(paymentsControllerProvider.notifier);
-      final payment = await controller.recordPayment(
-        saleId: sale.id,
-        amount: amount,
-        paymentMethod: paymentMethod,
-        type: paymentType,
-        paymentRef: paymentRef,
-        notes: notes,
-        paymentProofFile: proofFile,
-      );
+      Payment? payment;
+
+      if (isEditing) {
+        payment = await controller.updatePayment(
+          id: existingPayment!.id,
+          saleId: sale.id,
+          amount: amount,
+          paymentMethod: paymentMethod,
+          type: paymentType,
+          paymentRef: paymentRef,
+          notes: notes,
+          paymentProofFile: proofFile,
+          paymentDate: paymentDate,
+        );
+      } else {
+        payment = await controller.recordPayment(
+          saleId: sale.id,
+          amount: amount,
+          paymentMethod: paymentMethod,
+          type: paymentType,
+          paymentRef: paymentRef,
+          notes: notes,
+          paymentProofFile: proofFile,
+          paymentDate: paymentDate,
+        );
+      }
 
       isSaving.value = false;
 
@@ -103,10 +135,16 @@ class RecordPaymentDialog extends HookConsumerWidget {
         ref.invalidate(saleProvider(sale.id));
         Navigator.of(context).pop(true);
         showSuccessSnackBar(context,
-            message: 'Payment recorded successfully', useRootMessenger: false);
+            message: isEditing
+                ? 'Payment updated successfully'
+                : 'Payment recorded successfully',
+            useRootMessenger: false);
       } else {
         showErrorSnackBar(context,
-            message: 'Failed to record payment', useRootMessenger: false);
+            message: isEditing
+                ? 'Failed to update payment'
+                : 'Failed to record payment',
+            useRootMessenger: false);
       }
     }
 
@@ -114,10 +152,14 @@ class RecordPaymentDialog extends HookConsumerWidget {
     final showReferenceField = selectedPaymentType.value == PaymentType.deposit;
     final theme = Theme.of(context);
 
+    // For editing, the effective balance is the balance + existing payment amount
+    final effectiveBalanceDue =
+        isEditing ? balanceDue + existingPayment!.amount : balanceDue;
+
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          title: const Text('Record Payment'),
+          title: Text(isEditing ? 'Edit Payment' : 'Record Payment'),
           content: SizedBox(
             width: 400,
             child: SingleChildScrollView(
@@ -140,7 +182,7 @@ class RecordPaymentDialog extends HookConsumerWidget {
                               style: theme.textTheme.titleMedium,
                             ),
                             Text(
-                              currencyFormat.format(balanceDue),
+                              currencyFormat.format(effectiveBalanceDue),
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onPrimaryContainer,
@@ -152,10 +194,29 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 16),
 
+                    // Payment date field (admin-only)
+                    if (canEditDate) ...[
+                      FormBuilderDateTimePicker(
+                        name: 'paymentDate',
+                        initialValue:
+                            existingPayment?.postedDate ?? DateTime.now(),
+                        decoration: const InputDecoration(
+                          labelText: 'Payment Date',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        inputType: InputType.both,
+                        format: DateFormat('MMM dd, yyyy hh:mm a'),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     // Amount field
                     FormBuilderTextField(
                       name: 'amount',
-                      initialValue: balanceDue.toString(),
+                      initialValue: isEditing
+                          ? existingPayment!.amount.toString()
+                          : effectiveBalanceDue.toString(),
                       decoration: const InputDecoration(
                         labelText: 'Amount *',
                         prefixText: '₱ ',
@@ -175,7 +236,8 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     // Payment type
                     FormBuilderChoiceChips<PaymentType>(
                       name: 'paymentType',
-                      initialValue: PaymentType.payment,
+                      initialValue:
+                          existingPayment?.type ?? PaymentType.payment,
                       decoration: const InputDecoration(
                         labelText: 'Payment Type',
                         border: InputBorder.none,
@@ -199,7 +261,8 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     // Payment method
                     FormBuilderDropdown<PaymentMethod>(
                       name: 'paymentMethod',
-                      initialValue: PaymentMethod.cash,
+                      initialValue:
+                          existingPayment?.paymentMethod ?? PaymentMethod.cash,
                       decoration: const InputDecoration(
                         labelText: 'Payment Method *',
                         border: OutlineInputBorder(),
@@ -218,6 +281,7 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     if (showReferenceField) ...[
                       FormBuilderTextField(
                         name: 'paymentRef',
+                        initialValue: existingPayment?.paymentRef,
                         decoration: const InputDecoration(
                           labelText: 'Reference Number',
                           hintText: 'GCash/Bank transaction reference',
@@ -260,6 +324,40 @@ class RecordPaymentDialog extends HookConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 8),
+                    ] else if (isEditing &&
+                        existingPayment!.paymentProofUrl != null &&
+                        existingPayment!.paymentProofUrl!.isNotEmpty) ...[
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              existingPayment!.paymentProofUrl!,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Current proof',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                     ],
                     Row(
                       children: [
@@ -285,6 +383,7 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     // Notes
                     FormBuilderTextField(
                       name: 'notes',
+                      initialValue: existingPayment?.notes,
                       decoration: const InputDecoration(
                         labelText: 'Notes',
                         hintText: 'Optional notes about this payment',
@@ -299,7 +398,8 @@ class RecordPaymentDialog extends HookConsumerWidget {
           ),
           actions: [
             TextButton(
-              onPressed: isSaving.value ? null : () => Navigator.of(context).pop(),
+              onPressed:
+                  isSaving.value ? null : () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
             FilledButton.icon(
@@ -311,8 +411,11 @@ class RecordPaymentDialog extends HookConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save),
-              label:
-                  Text(isSaving.value ? 'Saving...' : 'Record Payment'),
+              label: Text(isSaving.value
+                  ? 'Saving...'
+                  : isEditing
+                      ? 'Update Payment'
+                      : 'Record Payment'),
             ),
           ],
         ),
@@ -326,12 +429,33 @@ Future<bool?> showRecordPaymentDialog(
   BuildContext context, {
   required Sale sale,
   required num balanceDue,
+  bool canEditDate = false,
 }) {
   return showDialog<bool>(
     context: context,
     builder: (context) => RecordPaymentDialog(
       sale: sale,
       balanceDue: balanceDue,
+      canEditDate: canEditDate,
+    ),
+  );
+}
+
+/// Shows the edit payment dialog and returns true if the payment was updated.
+Future<bool?> showEditPaymentDialog(
+  BuildContext context, {
+  required Sale sale,
+  required num balanceDue,
+  required Payment existingPayment,
+  bool canEditDate = false,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => RecordPaymentDialog(
+      sale: sale,
+      balanceDue: balanceDue,
+      existingPayment: existingPayment,
+      canEditDate: canEditDate,
     ),
   );
 }

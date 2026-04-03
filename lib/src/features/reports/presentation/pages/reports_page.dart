@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../controllers/new_customers_controller.dart';
+import '../controllers/payments_report_controller.dart';
+import '../controllers/payments_summary_controller.dart';
+import '../controllers/sales_by_customer_controller.dart';
+import '../controllers/sales_detail_controller.dart';
 import '../widgets/views/new_customers_view.dart';
 import '../widgets/views/sales_by_customer_view.dart';
 import '../widgets/views/sales_detail_view.dart';
@@ -15,9 +20,30 @@ class ReportsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tabController = useTabController(initialLength: 4);
 
+    void refreshCurrentTab() {
+      switch (tabController.index) {
+        case 0:
+          ref.invalidate(paymentsSummaryProvider);
+          ref.invalidate(paymentsReportProvider);
+        case 1:
+          ref.invalidate(salesDetailProvider);
+        case 2:
+          ref.invalidate(salesByCustomerProvider);
+        case 3:
+          ref.invalidate(newCustomersReportProvider);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reports'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: refreshCurrentTab,
+          ),
+        ],
         bottom: TabBar(
           controller: tabController,
           isScrollable: true,
