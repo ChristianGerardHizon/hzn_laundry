@@ -13,11 +13,12 @@ PODS:
   - FlutterMacOS (1.0.0)
   - package_info_plus (0.0.1):
     - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - print_bluetooth_thermal (0.0.1):
     - FlutterMacOS
   - printing (1.0.0):
-    - FlutterMacOS
-  - restart_app (1.7.3):
     - FlutterMacOS
   - screen_retriever_macos (0.0.1):
     - FlutterMacOS
@@ -43,9 +44,9 @@ DEPENDENCIES:
   - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
+  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
   - print_bluetooth_thermal (from `Flutter/ephemeral/.symlinks/plugins/print_bluetooth_thermal/macos`)
   - printing (from `Flutter/ephemeral/.symlinks/plugins/printing/macos`)
-  - restart_app (from `Flutter/ephemeral/.symlinks/plugins/restart_app/macos`)
   - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `Flutter/ephemeral/.symlinks/plugins/sqflite_darwin/darwin`)
@@ -68,12 +69,12 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   package_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos
+  path_provider_foundation:
+    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
   print_bluetooth_thermal:
     :path: Flutter/ephemeral/.symlinks/plugins/print_bluetooth_thermal/macos
   printing:
     :path: Flutter/ephemeral/.symlinks/plugins/printing/macos
-  restart_app:
-    :path: Flutter/ephemeral/.symlinks/plugins/restart_app/macos
   screen_retriever_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
   shared_preferences_foundation:
@@ -95,9 +96,9 @@ SPEC CHECKSUMS:
   flutter_secure_storage_darwin: 557817588b80e60213cbecb573c45c76b788018d
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
+  path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   print_bluetooth_thermal: 5b9f4e1307bdead74a0baf0268c13d9bad656ae4
   printing: 1dd6a1fce2209ec240698e2439a4adbb9b427637
-  restart_app: e27dc71584b52355da243ef5e8bcc6714f12ab30
   screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d

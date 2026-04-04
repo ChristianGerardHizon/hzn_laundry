@@ -38,6 +38,10 @@ abstract class PocketBaseCollections {
   // Customers
   static const String customers = 'customers';
 
+  // Employees
+  static const String employees = 'employees';
+  static const String employeeAttendances = 'employeeAttendances';
+
   // Sales
   static const String sales = 'sales';
   static const String saleItems = 'saleItems';

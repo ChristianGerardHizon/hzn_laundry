@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../controllers/employee_report_controller.dart';
 import '../controllers/new_customers_controller.dart';
 import '../controllers/payments_report_controller.dart';
 import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
+import '../widgets/views/employee_report_view.dart';
+import '../widgets/views/incentive_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
+import '../widgets/views/salary_report_view.dart';
 import '../widgets/views/sales_by_customer_view.dart';
 import '../widgets/views/sales_detail_view.dart';
 import '../widgets/views/sales_report_view.dart';
@@ -18,7 +22,7 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 4);
+    final tabController = useTabController(initialLength: 7);
 
     void refreshCurrentTab() {
       switch (tabController.index) {
@@ -31,6 +35,12 @@ class ReportsPage extends HookConsumerWidget {
           ref.invalidate(salesByCustomerProvider);
         case 3:
           ref.invalidate(newCustomersReportProvider);
+        case 4:
+          ref.invalidate(employeeReportProvider);
+        case 5:
+          ref.invalidate(salaryReportProvider);
+        case 6:
+          ref.invalidate(employeeReportProvider);
       }
     }
 
@@ -65,6 +75,18 @@ class ReportsPage extends HookConsumerWidget {
               icon: Icon(Icons.person_add),
               text: 'New Customers',
             ),
+            Tab(
+              icon: Icon(Icons.badge),
+              text: 'Employees',
+            ),
+            Tab(
+              icon: Icon(Icons.account_balance_wallet),
+              text: 'Salary',
+            ),
+            Tab(
+              icon: Icon(Icons.payments),
+              text: 'Incentive',
+            ),
           ],
         ),
       ),
@@ -75,6 +97,9 @@ class ReportsPage extends HookConsumerWidget {
           SalesDetailView(),
           SalesByCustomerView(),
           NewCustomersView(),
+          EmployeeReportView(),
+          SalaryReportView(),
+          IncentiveReportView(),
         ],
       ),
     );

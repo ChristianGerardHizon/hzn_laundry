@@ -87,6 +87,11 @@ class TabletNavRail extends ConsumerWidget {
                 label: Text(t.navigation.customers),
               ),
               NavigationRailDestination(
+                icon: const Icon(Icons.badge_outlined),
+                selectedIcon: const Icon(Icons.badge),
+                label: Text(t.navigation.employees),
+              ),
+              NavigationRailDestination(
                 icon: const Icon(Icons.analytics_outlined),
                 selectedIcon: const Icon(Icons.analytics),
                 label: Text(t.navigation.reports),

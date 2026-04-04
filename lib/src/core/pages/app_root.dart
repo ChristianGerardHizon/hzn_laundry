@@ -13,6 +13,7 @@ import '../routing/routes/dashboard.routes.dart';
 import '../routing/routes/organization.routes.dart';
 import '../routing/routes/products.routes.dart';
 import '../routing/routes/customers.routes.dart';
+import '../routing/routes/employees.routes.dart';
 import '../routing/routes/services.routes.dart';
 import '../routing/routes/reports.routes.dart';
 import '../routing/routes/sales_history.routes.dart';
@@ -62,10 +63,11 @@ class _AppRootState extends ConsumerState<AppRoot> {
     ProductsRoute.path, // 2: /products
     ServicesRoute.path, // 3: /services
     CustomersRoute.path, // 4: /customers
-    ReportsRoute.path, // 5: /reports
-    OrganizationRoute.path, // 6: /organization
-    PromosRoute.path, // 7: /promos
-    SystemRoute.path, // 8: /system
+    EmployeesRoute.path, // 5: /employees
+    ReportsRoute.path, // 6: /reports
+    OrganizationRoute.path, // 7: /organization
+    PromosRoute.path, // 8: /promos
+    SystemRoute.path, // 9: /system
   ];
 
   /// Routes in order of navigation index.
@@ -75,10 +77,11 @@ class _AppRootState extends ConsumerState<AppRoot> {
     ProductsRoute(), // 2
     ServicesRoute(), // 3
     CustomersRoute(), // 4
-    ReportsRoute(), // 5
-    OrganizationRoute(), // 6
-    PromosRoute(), // 7
-    SystemRoute(), // 8
+    EmployeesRoute(), // 5
+    ReportsRoute(), // 6
+    OrganizationRoute(), // 7
+    PromosRoute(), // 8
+    SystemRoute(), // 9
   ];
 
   /// Gets the selected index based on current route location.

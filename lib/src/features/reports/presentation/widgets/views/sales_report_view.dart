@@ -17,6 +17,15 @@ import '../../controllers/payments_summary_controller.dart';
 import '../charts/line_chart_widget.dart';
 import '../report_search_bar.dart';
 
+String _shortOrderNumber(String receiptNumber) {
+  final parts = receiptNumber.split('-');
+  if (parts.length >= 3) return '#${parts.last}';
+  if (receiptNumber.length > 4) {
+    return '#${receiptNumber.substring(receiptNumber.length - 4)}';
+  }
+  return receiptNumber;
+}
+
 /// View displaying payments received within the selected report period.
 ///
 /// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
@@ -521,7 +530,7 @@ class SalesReportView extends HookConsumerWidget {
         DataCell(Text(
           p.postedDate != null ? _dateTimeFormat.format(p.postedDate!) : '—',
         )),
-        DataCell(Text(entry.receiptNumber)),
+        DataCell(Text(_shortOrderNumber(entry.receiptNumber))),
         DataCell(Text(entry.customerName ?? '—')),
         DataCell(Text(
           '${isRefund ? '-' : ''}${_currencyFormat.format(p.amount)}',
@@ -614,7 +623,7 @@ class SalesReportView extends HookConsumerWidget {
               Row(
                 children: [
                   if (entry.receiptNumber.isNotEmpty) ...[
-                    Text(entry.receiptNumber,
+                    Text(_shortOrderNumber(entry.receiptNumber),
                         style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500)),
                     if (entry.customerName != null &&
