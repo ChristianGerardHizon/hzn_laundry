@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/utils/date_utils.dart';
 import '../../../employees/data/repositories/employee_attendance_repository.dart';
 import '../../../employees/data/repositories/employee_repository.dart';
 import '../../../employees/domain/employee.dart';
 import '../../../employees/domain/employee_attendance.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
-import '../../../pos/domain/order_status.dart';
-import '../../../pos/domain/sale.dart';
-import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/data/repositories/branch_repository.dart';
+import '../../../settings/data/repositories/incentive_tier_repository.dart';
 import '../../../settings/domain/branch.dart';
+import '../../../settings/domain/incentive_tier.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import 'employee_report_date_range_controller.dart';
 import 'salary_month_controller.dart';
@@ -103,112 +104,107 @@ Future<EmployeeReportData> _buildEmployeeReport(
   final attendanceRepo = ref.read(employeeAttendanceRepositoryProvider);
   final salesRepo = ref.read(salesRepositoryProvider);
   final branchRepo = ref.read(branchRepositoryProvider);
+  final tierRepo = ref.read(incentiveTierRepositoryProvider);
 
-  // Fetch employees
-  final employeesResult = await employeeRepo.fetchAll();
-  final employees = employeesResult.fold(
+  // Fetch employees, branch, sale service totals (view), attendance, and tiers
+  // all in parallel
+  final results = await Future.wait([
+    employeeRepo.fetchAll(), // 0
+    if (branchId != null) branchRepo.fetchOne(branchId), // 1 (optional)
+    salesRepo.getSaleServiceTotals(
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      branchId: branchId,
+    ), // 1 or 2
+    attendanceRepo.fetchAllInDateRange(
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+    ), // 2 or 3
+    if (branchId != null) tierRepo.fetchForBranch(branchId), // 3 or 4
+  ]);
+
+  // Unpack results
+  int idx = 0;
+  final employees = (results[idx++] as Either).fold(
     (failure) => <Employee>[],
-    (list) => list,
+    (list) => list as List<Employee>,
   );
 
-  // Fetch branch for incentive settings
   Branch? branch;
   if (branchId != null) {
-    final branchResult = await branchRepo.fetchOne(branchId);
-    branch = branchResult.fold((_) => null, (b) => b);
+    branch = (results[idx++] as Either).fold((_) => null, (b) => b as Branch);
   }
 
+  // Sale service totals from the view (1 query, no N+1)
+  final saleRecords = (results[idx++] as Either).fold(
+    (failure) => <dynamic>[],
+    (list) => list as List<dynamic>,
+  );
+
+  // All attendance in date range (1 query, no N+1)
+  final allAttendance = (results[idx++] as Either).fold(
+    (failure) => <EmployeeAttendance>[],
+    (list) => list as List<EmployeeAttendance>,
+  );
+
+  // Incentive tiers for this branch
+  List<IncentiveTier> incentiveTiers = [];
+  if (branchId != null) {
+    incentiveTiers = (results[idx++] as Either).fold(
+      (failure) => <IncentiveTier>[],
+      (list) => list as List<IncentiveTier>,
+    );
+  }
+
+  // Fallback: use legacy flat fields if no tiers configured
   final incentiveRate = branch?.incentiveAmount ?? 5;
   final perServicePrice = branch?.incentivePerServiceItems ?? 200;
 
-  // Fetch sales for date range (by postedDate)
-  final salesResult = await salesRepo.getSalesForDateRange(
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-    branchId: branchId,
-  );
-  final salesByPostedDate = salesResult.fold(
-    (failure) => <Sale>[],
-    (list) => list,
-  );
-
-  // Also fetch sales without postedDate that fall in range by created date.
-  // Older orders may not have postedDate set.
-  final allBranchSalesResult = await salesRepo.getSales(branchId: branchId);
-  final allBranchSales = allBranchSalesResult.fold(
-    (failure) => <Sale>[],
-    (list) => list,
-  );
-  final salesByCreatedOnly = allBranchSales.where((sale) {
-    if (sale.postedDate != null) return false; // already fetched above
-    final created = sale.created;
-    if (created == null) return false;
-    return !created.isBefore(dateRange.start) &&
-        !created.isAfter(dateRange.end);
-  }).toList();
-
-  // Merge and deduplicate
-  final salesIdSet = salesByPostedDate.map((s) => s.id).toSet();
-  final mergedSales = [
-    ...salesByPostedDate,
-    ...salesByCreatedOnly.where((s) => !salesIdSet.contains(s.id)),
-  ];
-
-  // Filter to eligible order statuses (ready/pickedUp)
-  final eligibleSales = mergedSales.where((sale) =>
-      sale.orderStatus == OrderStatus.ready ||
-      sale.orderStatus == OrderStatus.pickedUp).toList();
-
-  // Fetch service items for eligible sales, compute per-order incentive,
-  // and group by day
+  // Process sale service totals from the view
   final dailyServiceRevenue = <DateTime, num>{};
   final dailyOrderBreakdown = <DateTime, List<OrderIncentiveEntry>>{};
-  for (final sale in eligibleSales) {
-    final itemsResult = await salesRepo.getSaleServiceItems(sale.id);
-    final items = itemsResult.fold(
-      (failure) => <SaleServiceItem>[],
-      (list) => list,
-    );
-    // Use postedDate or created for day grouping
-    final saleDate = sale.postedDate ?? sale.created ?? DateTime.now();
+  for (final record in saleRecords) {
+    final postedDateStr = record.getStringValue('postedDate');
+    final createdStr = record.getStringValue('created');
+    final saleDate = parseToLocal(postedDateStr) ??
+        parseToLocal(createdStr) ??
+        DateTime.now();
     final day = DateTime(saleDate.year, saleDate.month, saleDate.day);
-    num saleServiceTotal = 0;
-    for (final item in items) {
-      dailyServiceRevenue[day] =
-          (dailyServiceRevenue[day] ?? 0) + item.subtotal;
-      saleServiceTotal += item.subtotal;
-    }
-    // Calculate incentive per order
-    final orderIncentive = perServicePrice > 0
-        ? (saleServiceTotal / perServicePrice).floor() * incentiveRate
-        : 0;
-    if (saleServiceTotal > 0) {
-      dailyOrderBreakdown.putIfAbsent(day, () => []).add(
-        OrderIncentiveEntry(
-          receiptNumber: sale.receiptNumber,
-          customerName: sale.customerName,
-          servicePrice: saleServiceTotal,
-          incentive: orderIncentive,
-          orderStatus: sale.orderStatus.displayName,
-        ),
-      );
-    }
+
+    final saleServiceTotal =
+        (record.data['serviceTotalAmount'] as num?) ?? 0;
+    if (saleServiceTotal <= 0) continue;
+
+    dailyServiceRevenue[day] =
+        (dailyServiceRevenue[day] ?? 0) + saleServiceTotal;
+
+    // Calculate incentive per order using custom tiers or legacy flat rate
+    final orderIncentive = _calculateIncentive(
+      saleServiceTotal,
+      incentiveTiers,
+      incentiveRate,
+      perServicePrice,
+    );
+
+    final receiptNumber = record.getStringValue('receiptNumber');
+    final customerName = record.getStringValue('customerName');
+    final orderStatus = record.getStringValue('orderStatus');
+
+    dailyOrderBreakdown.putIfAbsent(day, () => []).add(
+      OrderIncentiveEntry(
+        receiptNumber: receiptNumber,
+        customerName: customerName.isEmpty ? null : customerName,
+        servicePrice: saleServiceTotal,
+        incentive: orderIncentive,
+        orderStatus: orderStatus,
+      ),
+    );
   }
 
-  // Fetch all attendance records for all employees in the range
+  // Group attendance by employee (already filtered by date range from query)
   final allAttendanceByEmployee = <String, List<EmployeeAttendance>>{};
-  for (final employee in employees) {
-    final attendanceResult =
-        await attendanceRepo.fetchForEmployee(employee.id);
-    final allAttendance = attendanceResult.fold(
-      (failure) => <EmployeeAttendance>[],
-      (list) => list,
-    );
-    // Filter within date range
-    allAttendanceByEmployee[employee.id] = allAttendance.where((a) {
-      return !a.date.isBefore(dateRange.start) &&
-          !a.date.isAfter(dateRange.end);
-    }).toList();
+  for (final a in allAttendance) {
+    allAttendanceByEmployee.putIfAbsent(a.employee, () => []).add(a);
   }
 
   // Build a map of day -> set of present employee IDs
@@ -305,7 +301,40 @@ Future<EmployeeReportData> _buildEmployeeReport(
     incentiveRate: incentiveRate,
     perServicePrice: perServicePrice,
     branch: branch,
+    incentiveTiers: incentiveTiers,
   );
+}
+
+/// Calculates incentive for a given service total using custom tiers.
+/// Falls back to legacy flat rate if no tiers are configured.
+num _calculateIncentive(
+  num serviceTotal,
+  List<IncentiveTier> tiers,
+  num legacyRate,
+  num legacyPerServicePrice,
+) {
+  if (serviceTotal <= 0) return 0;
+
+  // Use custom tiers if available
+  if (tiers.isNotEmpty) {
+    // Find the matching tier
+    for (final tier in tiers) {
+      final matchesMin = serviceTotal >= tier.minAmount;
+      final matchesMax =
+          tier.maxAmount == null || serviceTotal <= tier.maxAmount!;
+      if (matchesMin && matchesMax) {
+        return tier.incentiveAmount;
+      }
+    }
+    // Service price exceeds all tiers — use the last tier's incentive
+    return tiers.last.incentiveAmount;
+  }
+
+  // Legacy flat rate fallback
+  if (legacyPerServicePrice > 0) {
+    return (serviceTotal / legacyPerServicePrice).ceil() * legacyRate;
+  }
+  return 0;
 }
 
 /// Holds the full employee report data.
@@ -317,6 +346,7 @@ class EmployeeReportData {
     required this.incentiveRate,
     required this.perServicePrice,
     this.branch,
+    this.incentiveTiers = const [],
   });
 
   final List<EmployeeReportEntry> entries;
@@ -325,6 +355,7 @@ class EmployeeReportData {
   final num incentiveRate;
   final num perServicePrice;
   final Branch? branch;
+  final List<IncentiveTier> incentiveTiers;
 
   int get totalPresent => entries.fold(0, (sum, e) => sum + e.daysPresent);
   int get totalOut => entries.fold(0, (sum, e) => sum + e.daysOut);
