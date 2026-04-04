@@ -13,6 +13,15 @@ import '../../controllers/sales_detail_date_range_controller.dart';
 import '../charts/line_chart_widget.dart';
 import '../report_search_bar.dart';
 
+String _shortOrderNumber(String receiptNumber) {
+  final parts = receiptNumber.split('-');
+  if (parts.length >= 3) return '#${parts.last}';
+  if (receiptNumber.length > 4) {
+    return '#${receiptNumber.substring(receiptNumber.length - 4)}';
+  }
+  return receiptNumber;
+}
+
 /// View displaying a detailed list of orders within a date range.
 ///
 /// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
@@ -415,7 +424,7 @@ class SalesDetailView extends HookConsumerWidget {
     return DataRow(
       cells: [
         DataCell(Text(
-          sale.receiptNumber,
+          _shortOrderNumber(sale.receiptNumber),
           style: isVoided ? strikeStyle : null,
         )),
         DataCell(Text(sale.customerName ?? '—')),
@@ -490,7 +499,7 @@ class SalesDetailView extends HookConsumerWidget {
                 children: [
                   Expanded(
                   child: Text(
-                    sale.receiptNumber,
+                    _shortOrderNumber(sale.receiptNumber),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       decoration:
