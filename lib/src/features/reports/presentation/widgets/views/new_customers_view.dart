@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/routing/routes/customers.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../customers/domain/customer.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
@@ -395,10 +396,16 @@ class NewCustomersView extends HookConsumerWidget {
   DataRow _buildDataRow(BuildContext context, Customer customer) {
     return DataRow(
       cells: [
-        DataCell(Text(
-          customer.name,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        )),
+        DataCell(
+          Text(
+            customer.name,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          onTap: () => CustomerDetailRoute(id: customer.id).go(context),
+        ),
         DataCell(Text(customer.phone ?? '—')),
         DataCell(Text(customer.address ?? '—')),
         DataCell(Text(
@@ -447,10 +454,16 @@ class NewCustomersView extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              customer.name,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+            GestureDetector(
+              onTap: () =>
+                  CustomerDetailRoute(id: customer.id).go(context),
+              child: Text(
+                customer.name,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             ),
             if (customer.phone != null &&
                 customer.phone!.isNotEmpty) ...[
