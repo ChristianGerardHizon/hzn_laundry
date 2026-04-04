@@ -91,9 +91,30 @@ class SalaryReportView extends HookConsumerWidget {
           },
           tooltip: 'Previous month',
         ),
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => _pickMonth(context, ref, selectedMonth),
+        PopupMenuButton<DateTime>(
+          onSelected: (month) {
+            ref.read(salaryMonthControllerProvider.notifier).setMonth(month);
+          },
+          itemBuilder: (context) {
+            final now = DateTime.now();
+            // Show last 12 months
+            return List.generate(12, (i) {
+              final month = DateTime(now.year, now.month - i);
+              return PopupMenuItem<DateTime>(
+                value: month,
+                child: Text(
+                  _monthFormat.format(month),
+                  style: month.year == selectedMonth.year &&
+                          month.month == selectedMonth.month
+                      ? theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        )
+                      : theme.textTheme.bodyMedium,
+                ),
+              );
+            });
+          },
           child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -135,25 +156,6 @@ class SalaryReportView extends HookConsumerWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _pickMonth(
-    BuildContext context,
-    WidgetRef ref,
-    DateTime selectedMonth,
-  ) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: selectedMonth,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
-    );
-    if (picked != null) {
-      ref
-          .read(salaryMonthControllerProvider.notifier)
-          .setMonth(DateTime(picked.year, picked.month));
-    }
   }
 
   // ---------------------------------------------------------------------------
