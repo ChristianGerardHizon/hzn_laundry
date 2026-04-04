@@ -178,9 +178,9 @@ Future<EmployeeReportData> _buildEmployeeReport(
           (dailyServiceRevenue[day] ?? 0) + item.subtotal;
       saleServiceTotal += item.subtotal;
     }
-    // Calculate incentive per order
-    final orderIncentive = perServicePrice > 0
-        ? (saleServiceTotal / perServicePrice).floor() * incentiveRate
+    // Calculate incentive per order (tiered: 0-200 = ₱5, 201-400 = ₱10, etc.)
+    final orderIncentive = perServicePrice > 0 && saleServiceTotal > 0
+        ? (saleServiceTotal / perServicePrice).ceil() * incentiveRate
         : 0;
     if (saleServiceTotal > 0) {
       dailyOrderBreakdown.putIfAbsent(day, () => []).add(
