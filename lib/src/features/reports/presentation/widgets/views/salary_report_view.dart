@@ -11,7 +11,7 @@ import '../../controllers/salary_month_controller.dart';
 class SalaryReportView extends HookConsumerWidget {
   const SalaryReportView({super.key});
 
-  static final _monthFormat = DateFormat('MMMM yyyy');
+
   static final _currencyFormat =
       NumberFormat.currency(symbol: '\u20B1', decimalDigits: 2);
 
@@ -91,21 +91,82 @@ class SalaryReportView extends HookConsumerWidget {
           },
           tooltip: 'Previous month',
         ),
-        PopupMenuButton<DateTime>(
+        // Month dropdown
+        PopupMenuButton<int>(
           onSelected: (month) {
-            ref.read(salaryMonthControllerProvider.notifier).setMonth(month);
+            ref
+                .read(salaryMonthControllerProvider.notifier)
+                .setMonth(DateTime(selectedMonth.year, month));
           },
           itemBuilder: (context) {
             final now = DateTime.now();
-            // Show last 12 months
             return List.generate(12, (i) {
-              final month = DateTime(now.year, now.month - i);
-              return PopupMenuItem<DateTime>(
-                value: month,
+              final m = i + 1;
+              // Disable future months for current year
+              final isFuture = selectedMonth.year == now.year && m > now.month;
+              final isSelected = m == selectedMonth.month;
+              return PopupMenuItem<int>(
+                value: m,
+                enabled: !isFuture,
                 child: Text(
-                  _monthFormat.format(month),
-                  style: month.year == selectedMonth.year &&
-                          month.month == selectedMonth.month
+                  DateFormat('MMMM').format(DateTime(2000, m)),
+                  style: isSelected
+                      ? theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        )
+                      : isFuture
+                          ? theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.38),
+                            )
+                          : theme.textTheme.bodyMedium,
+                ),
+              );
+            });
+          },
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DateFormat('MMMM').format(selectedMonth),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.arrow_drop_down,
+                    size: 20, color: theme.colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Year dropdown
+        PopupMenuButton<int>(
+          onSelected: (year) {
+            ref
+                .read(salaryMonthControllerProvider.notifier)
+                .setMonth(DateTime(year, selectedMonth.month));
+          },
+          itemBuilder: (context) {
+            final now = DateTime.now();
+            // Show current year and 4 previous years
+            return List.generate(5, (i) {
+              final year = now.year - i;
+              final isSelected = year == selectedMonth.year;
+              return PopupMenuItem<int>(
+                value: year,
+                child: Text(
+                  '$year',
+                  style: isSelected
                       ? theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -117,7 +178,7 @@ class SalaryReportView extends HookConsumerWidget {
           },
           child: Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               border: Border.all(color: theme.colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(8),
@@ -125,11 +186,8 @@ class SalaryReportView extends HookConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.calendar_month,
-                    size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
                 Text(
-                  _monthFormat.format(selectedMonth),
+                  '${selectedMonth.year}',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
