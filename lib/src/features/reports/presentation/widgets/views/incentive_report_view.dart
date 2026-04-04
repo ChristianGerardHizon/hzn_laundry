@@ -245,22 +245,50 @@ class IncentiveReportView extends HookConsumerWidget {
                 size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text.rich(
-                TextSpan(
-                  text: 'Incentive rate: ',
-                  style: theme.textTheme.bodyMedium,
-                  children: [
-                    TextSpan(
-                      text:
-                          '${_currencyFormat.format(data.incentiveRate)} per ${_currencyFormat.format(data.perServicePrice)} service revenue',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+              child: data.incentiveTiers.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Incentive tiers (split among present employees):',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: data.incentiveTiers.map((tier) {
+                            return Chip(
+                              label: Text(
+                                '${tier.label} \u2192 ${_currencyFormat.format(tier.incentiveAmount)}',
+                                style: theme.textTheme.labelSmall,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    )
+                  : Text.rich(
+                      TextSpan(
+                        text: 'Incentive rate: ',
+                        style: theme.textTheme.bodyMedium,
+                        children: [
+                          TextSpan(
+                            text:
+                                '${_currencyFormat.format(data.incentiveRate)} per ${_currencyFormat.format(data.perServicePrice)} service revenue',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const TextSpan(
+                            text:
+                                ' \u2014 split among employees who are In that day',
+                          ),
+                        ],
+                      ),
                     ),
-                    const TextSpan(
-                      text: ' \u2014 split among employees who are In that day',
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
