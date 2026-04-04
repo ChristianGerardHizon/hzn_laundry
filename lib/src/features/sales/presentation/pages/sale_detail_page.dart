@@ -393,6 +393,14 @@ class _SaleDetailContent extends HookConsumerWidget {
               ),
               const SizedBox(height: 16),
 
+              // Incentive Card (only for ready/picked up orders)
+              if (sale.orderStatus == OrderStatus.ready ||
+                  sale.orderStatus == OrderStatus.pickedUp) ...[
+                _buildIncentiveCard(
+                    context, ref, serviceItemsAsync, currencyFormat),
+                const SizedBox(height: 16),
+              ],
+
               // Payment Status & History Card
               _buildPaymentCard(
                   context, ref, paymentsAsync, currencyFormat, canEdit),
@@ -859,6 +867,100 @@ class _SaleDetailContent extends HookConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildIncentiveCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<SaleServiceItem>> serviceItemsAsync,
+    NumberFormat currencyFormat,
+  ) {
+    final theme = Theme.of(context);
+    final branchId = ref.watch(currentBranchIdProvider);
+    final branchAsync =
+        branchId != null ? ref.watch(branchProvider(branchId)) : null;
+
+    return serviceItemsAsync.when(
+      data: (serviceItems) {
+        if (serviceItems.isEmpty) return const SizedBox.shrink();
+
+        final branchData = branchAsync?.value;
+        if (branchData == null) return const SizedBox.shrink();
+
+        final incentiveAmount = branchData.incentiveAmount;
+        final perServicePrice = branchData.incentivePerServiceItems;
+
+        if (perServicePrice <= 0) return const SizedBox.shrink();
+
+        // Sum of all service item subtotals
+        final totalServicePrice = serviceItems.fold<num>(
+          0,
+          (sum, item) => sum + item.subtotal,
+        );
+
+        // Calculate incentive: floor(totalServicePrice / perServicePrice) * incentiveAmount
+        final multiplier = (totalServicePrice / perServicePrice).floor();
+        final totalIncentive = multiplier * incentiveAmount;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payments,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Incentive',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _IncentiveRow(
+                  label: 'Total Service Price',
+                  value: currencyFormat.format(totalServicePrice),
+                ),
+                _IncentiveRow(
+                  label: 'Rate',
+                  value:
+                      '${currencyFormat.format(incentiveAmount)} per ${currencyFormat.format(perServicePrice)}',
+                ),
+                const Divider(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Total Incentive',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(totalIncentive),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -1852,6 +1954,33 @@ class _PrintMenuButton extends HookConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _IncentiveRow extends StatelessWidget {
+  const _IncentiveRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(value, style: theme.textTheme.bodyMedium),
+        ],
+      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../../../features/dashboard/presentation/controllers/inventory_alerts_co
 import '../../../features/dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/sales_summary_controller.dart';
+import '../../../features/dashboard/presentation/widgets/attendance_alert_section.dart';
 import '../../../features/dashboard/presentation/widgets/inventory_alerts_section.dart';
 import '../../../features/dashboard/presentation/widgets/kanban_board_section.dart';
 import '../../../features/dashboard/presentation/widgets/quick_actions_section.dart';
@@ -85,6 +86,10 @@ class DashboardPage extends ConsumerWidget {
 
               // Quick Actions Section
               const QuickActionsSection(),
+              const SizedBox(height: 16),
+
+              // Attendance Alert (shown when not all employees are marked)
+              const AttendanceAlertSection(),
               const SizedBox(height: 24),
 
               // Order Board (Kanban)

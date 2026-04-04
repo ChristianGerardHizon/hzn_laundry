@@ -193,6 +193,7 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get organization => 'Organisasyon';
 	@override String get services => 'Mga Serbisyo';
 	@override String get customers => 'Mga Customer';
+	@override String get employees => 'Mga Empleyado';
 	@override String get system => 'Sistema';
 	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
@@ -348,6 +349,7 @@ extension on TranslationsTl {
 			'navigation.organization' => 'Organisasyon',
 			'navigation.services' => 'Mga Serbisyo',
 			'navigation.customers' => 'Mga Customer',
+			'navigation.employees' => 'Mga Empleyado',
 			'navigation.system' => 'Sistema',
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',

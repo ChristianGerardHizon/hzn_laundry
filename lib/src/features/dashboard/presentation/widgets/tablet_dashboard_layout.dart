@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'attendance_alert_section.dart';
 import 'dashboard_footer.dart';
 import 'inventory_alerts_section.dart';
 import 'kanban_board_section.dart';
@@ -43,6 +44,10 @@ class TabletDashboardLayout extends HookConsumerWidget {
 
           // Quick Actions Section
           const QuickActionsSection(),
+          const SizedBox(height: 16),
+
+          // Attendance Alert (shown when not all employees are marked)
+          const AttendanceAlertSection(),
           const SizedBox(height: 24),
 
           // Order Board (Kanban)
