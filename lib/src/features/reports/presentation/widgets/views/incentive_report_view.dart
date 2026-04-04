@@ -8,6 +8,15 @@ import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../controllers/employee_report_controller.dart';
 import '../../controllers/employee_report_date_range_controller.dart';
 
+String _shortOrderNumber(String receiptNumber) {
+  final parts = receiptNumber.split('-');
+  if (parts.length >= 3) return '#${parts.last}';
+  if (receiptNumber.length > 4) {
+    return '#${receiptNumber.substring(receiptNumber.length - 4)}';
+  }
+  return receiptNumber;
+}
+
 /// View displaying the daily incentive breakdown.
 class IncentiveReportView extends HookConsumerWidget {
   const IncentiveReportView({super.key});
@@ -569,7 +578,7 @@ class _OrderBreakdownSection extends StatelessWidget {
         dataRowMaxHeight: 44,
         horizontalMargin: 0,
         columns: const [
-          DataColumn(label: Text('Receipt #')),
+          DataColumn(label: Text('Order')),
           DataColumn(label: Text('Customer')),
           DataColumn(label: Text('Status')),
           DataColumn(label: Text('Service Price'), numeric: true),
@@ -579,7 +588,7 @@ class _OrderBreakdownSection extends StatelessWidget {
           ...entry.orderBreakdown.map(
             (order) => DataRow(cells: [
               DataCell(Text(
-                order.receiptNumber,
+                _shortOrderNumber(order.receiptNumber),
                 style: const TextStyle(fontWeight: FontWeight.w500),
               )),
               DataCell(Text(order.customerName ?? '\u2014')),
@@ -634,7 +643,7 @@ class _OrderBreakdownSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        order.receiptNumber,
+                        _shortOrderNumber(order.receiptNumber),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
