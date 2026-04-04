@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
+import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../sales/presentation/widgets/create_order_dialog.dart';
 
 /// Section displaying quick action buttons on the dashboard.
@@ -60,6 +61,13 @@ class QuickActionsSection extends ConsumerWidget {
                   label: 'New Customer',
                   color: Colors.blue,
                   onTap: () => showCustomerFormDialog(context),
+                ),
+                const SizedBox(width: 12),
+                _QuickActionButton(
+                  icon: Icons.how_to_reg,
+                  label: 'Attendance',
+                  color: Colors.orange,
+                  onTap: () => showAttendanceDialog(context),
                 ),
               ],
             ),

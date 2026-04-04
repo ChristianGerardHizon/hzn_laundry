@@ -12,6 +12,7 @@ import 'routes/dashboard.routes.dart';
 import 'routes/organization.routes.dart';
 import 'routes/products.routes.dart';
 import 'routes/customers.routes.dart';
+import 'routes/employees.routes.dart';
 import 'routes/services.routes.dart';
 import 'routes/sales.routes.dart';
 import 'routes/sales_history.routes.dart';
@@ -59,6 +60,7 @@ GoRouter router(Ref ref) {
           $productsShellRoute,
           $servicesShellRoute,
           $customersShellRoute,
+          $employeesShellRoute,
           $salesRoute,
           $salesShellRoute,
           $reportsRoute,

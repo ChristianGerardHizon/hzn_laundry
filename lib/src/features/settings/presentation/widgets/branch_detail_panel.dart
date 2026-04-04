@@ -216,6 +216,12 @@ class _BranchDetailsBody extends StatelessWidget {
                       label: 'Cut-off Time',
                       value: branch.cutOffTime!,
                     ),
+                  _DetailRow(
+                    icon: Icons.payments,
+                    label: 'Incentive',
+                    value:
+                        '\u20B1${branch.incentiveAmount.toStringAsFixed(2)} per \u20B1${branch.incentivePerServiceItems.toStringAsFixed(2)} service price',
+                  ),
                   if (branch.created != null)
                     _DetailRow(
                       icon: Icons.calendar_today,

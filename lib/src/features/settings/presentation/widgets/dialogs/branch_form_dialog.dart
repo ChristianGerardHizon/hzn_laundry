@@ -40,6 +40,9 @@ class BranchFormDialog extends HookConsumerWidget {
               'contactNumber': branch!.contactNumber,
               'operatingHours': branch!.operatingHours ?? '',
               'cutOffTime': branch!.cutOffTime ?? '',
+              'incentiveAmount': branch!.incentiveAmount.toString(),
+              'incentivePerServiceItems':
+                  branch!.incentivePerServiceItems.toString(),
             }
           : null,
     );
@@ -71,6 +74,13 @@ class BranchFormDialog extends HookConsumerWidget {
         contactNumber: (values['contactNumber'] as String).trim(),
         operatingHours: _nullIfEmpty(values['operatingHours'] as String?),
         cutOffTime: _nullIfEmpty(values['cutOffTime'] as String?),
+        incentiveAmount: num.tryParse(
+                (values['incentiveAmount'] as String?)?.trim() ?? '') ??
+            5,
+        incentivePerServiceItems: num.tryParse(
+                (values['incentivePerServiceItems'] as String?)?.trim() ??
+                    '') ??
+            200,
       );
 
       bool success;
@@ -260,6 +270,75 @@ class BranchFormDialog extends HookConsumerWidget {
                             prefixIcon: Icon(Icons.timer_off),
                           ),
                           enabled: !isSaving.value,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Incentive section header
+                        Text(
+                          'Incentive Settings',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Incentive earned per service price amount on orders',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Incentive amount field
+                        FormBuilderTextField(
+                          name: 'incentiveAmount',
+                          initialValue:
+                              branch?.incentiveAmount.toString() ?? '5',
+                          decoration: const InputDecoration(
+                            labelText: 'Incentive Amount',
+                            hintText: 'e.g., 5',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.payments),
+                            prefixText: '\u20B1 ',
+                          ),
+                          enabled: !isSaving.value,
+                          keyboardType: TextInputType.number,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.required(
+                              errorText: 'Incentive amount is required',
+                            ),
+                            FormBuilderValidators.numeric(
+                              errorText: 'Must be a number',
+                            ),
+                          ]),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Incentive per service price field
+                        FormBuilderTextField(
+                          name: 'incentivePerServiceItems',
+                          initialValue:
+                              branch?.incentivePerServiceItems.toString() ??
+                                  '200',
+                          decoration: const InputDecoration(
+                            labelText: 'Per Service Price',
+                            hintText: 'e.g., 200',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.local_laundry_service),
+                            prefixText: '\u20B1 ',
+                          ),
+                          enabled: !isSaving.value,
+                          keyboardType: TextInputType.number,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.required(
+                              errorText: 'Per service items is required',
+                            ),
+                            FormBuilderValidators.numeric(
+                              errorText: 'Must be a number',
+                            ),
+                          ]),
                           textInputAction: TextInputAction.done,
                         ),
                         const SizedBox(height: 24),
@@ -281,6 +360,8 @@ class BranchFormDialog extends HookConsumerWidget {
     'contactNumber': 'Contact Number',
     'operatingHours': 'Operating Hours',
     'cutOffTime': 'Cut-off Time',
+    'incentiveAmount': 'Incentive Amount',
+    'incentivePerServiceItems': 'Per Service Price',
   };
 
   String? _nullIfEmpty(String? value) {
