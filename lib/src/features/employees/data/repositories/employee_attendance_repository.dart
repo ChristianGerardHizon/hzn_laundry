@@ -21,6 +21,12 @@ abstract class EmployeeAttendanceRepository {
   /// Fetches attendance records for an employee.
   FutureEither<List<EmployeeAttendance>> fetchForEmployee(String employeeId);
 
+  /// Fetches all attendance records within a date range (all employees).
+  FutureEither<List<EmployeeAttendance>> fetchAllInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+
   /// Creates an attendance record for an employee on a date.
   FutureEither<EmployeeAttendance> createAttendance({
     required String employeeId,
@@ -115,6 +121,26 @@ class EmployeeAttendanceRepositoryImpl implements EmployeeAttendanceRepository {
     return TaskEither.tryCatch(
       () async {
         final filter = PBFilter().relation('employee', employeeId).build();
+
+        final records = await _collection.getFullList(
+          filter: filter,
+          sort: '-date',
+        );
+
+        return records.map(_toEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<EmployeeAttendance>> fetchAllInDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter().between('date', startDate, endDate).build();
 
         final records = await _collection.getFullList(
           filter: filter,

@@ -64,8 +64,6 @@ class IncentiveReportView extends HookConsumerWidget {
             const SizedBox(height: 12),
             _buildKpiSection(context, data, isMobile),
             const SizedBox(height: 16),
-            _buildRateCard(context, data),
-            const SizedBox(height: 16),
             _buildPerEmployeeSummary(context, data),
             const SizedBox(height: 16),
             _buildDailyBreakdownHeader(context, data),
@@ -226,45 +224,6 @@ class IncentiveReportView extends HookConsumerWidget {
               ])
           .toList()
         ..removeLast(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Rate info card
-  // ---------------------------------------------------------------------------
-
-  Widget _buildRateCard(BuildContext context, EmployeeReportData data) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline,
-                size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  text: 'Incentive rate: ',
-                  style: theme.textTheme.bodyMedium,
-                  children: [
-                    TextSpan(
-                      text:
-                          '${_currencyFormat.format(data.incentiveRate)} per ${_currencyFormat.format(data.perServicePrice)} service revenue',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const TextSpan(
-                      text: ' \u2014 split among employees who are In that day',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

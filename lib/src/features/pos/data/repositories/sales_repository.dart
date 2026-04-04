@@ -69,6 +69,13 @@ abstract class SalesRepository {
     String? branchId,
   });
 
+  /// Fetches pre-aggregated sale service totals from the view collection.
+  FutureEither<List<RecordModel>> getSaleServiceTotals({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  });
+
   /// Fetches all sales for a specific customer.
   FutureEither<List<Sale>> getSalesByCustomer(String customerId);
 
@@ -547,6 +554,38 @@ class SalesRepositoryImpl implements SalesRepository {
           sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<RecordModel>> getSaleServiceTotals({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter();
+        // Filter by postedDate range; fall back to created for older records
+        final postedFilter = PBFilter().between('postedDate', startDate, endDate);
+        final createdFilter = PBFilter()
+            .isNull('postedDate')
+            .and(PBFilter().between('created', startDate, endDate));
+        filter.or(postedFilter).or(createdFilter);
+
+        if (branchId != null) {
+          filter.relation('branch', branchId);
+        }
+
+        final records = await _pb
+            .collection(PocketBaseCollections.vwSaleServiceTotals)
+            .getFullList(
+              filter: filter.build(),
+              sort: '-postedDate',
+            );
+        return records;
       },
       Failure.handle,
     ).run();

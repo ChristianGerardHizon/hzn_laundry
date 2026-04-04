@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/routing/routes/customers.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../domain/customer_sales_entry.dart';
@@ -340,15 +341,23 @@ class SalesByCustomerView extends HookConsumerWidget {
 
     return DataRow(
       cells: [
-        DataCell(Text(
-          entry.customerName,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontStyle: entry.customerId == null
-                ? FontStyle.italic
-                : FontStyle.normal,
+        DataCell(
+          Text(
+            entry.customerName,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontStyle: entry.customerId == null
+                  ? FontStyle.italic
+                  : FontStyle.normal,
+              color: entry.customerId != null
+                  ? theme.colorScheme.primary
+                  : null,
+            ),
           ),
-        )),
+          onTap: entry.customerId != null
+              ? () => CustomerDetailRoute(id: entry.customerId!).go(context)
+              : null,
+        ),
         DataCell(Text(
           '${entry.orderCount}',
           style: TextStyle(
@@ -423,13 +432,22 @@ class SalesByCustomerView extends HookConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    entry.customerName,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontStyle: entry.customerId == null
-                          ? FontStyle.italic
-                          : FontStyle.normal,
+                  child: GestureDetector(
+                    onTap: entry.customerId != null
+                        ? () => CustomerDetailRoute(id: entry.customerId!)
+                            .go(context)
+                        : null,
+                    child: Text(
+                      entry.customerName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontStyle: entry.customerId == null
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                        color: entry.customerId != null
+                            ? theme.colorScheme.primary
+                            : null,
+                      ),
                     ),
                   ),
                 ),
