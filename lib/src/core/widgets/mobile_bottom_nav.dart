@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 
 import '../i18n/strings.g.dart';
+import 'nav_permissions.dart';
 
 /// Bottom navigation bar for mobile layout.
 ///
-/// Displays 4 primary navigation destinations:
-/// - Dashboard (Home)
-/// - Cashier
-/// - Products
-/// - More (opens drawer for additional options)
+/// Shows up to 3 primary visible items + "More" button to open drawer.
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    required this.visibleItems,
     this.onMoreTap,
   });
 
-  /// Currently selected navigation index.
+  /// Currently selected navigation index (within visible items).
   final int selectedIndex;
 
-  /// Callback when a destination is selected.
+  /// Callback when a destination is selected (visible index).
   final ValueChanged<int> onDestinationSelected;
+
+  /// Permission-filtered navigation items.
+  final List<NavItem> visibleItems;
 
   /// Callback when "More" is tapped to open the drawer.
   final VoidCallback? onMoreTap;
@@ -29,12 +30,18 @@ class MobileBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Translations.of(context);
+
+    // Show first 3 visible items + More
+    final bottomItems = visibleItems.take(3).toList();
+
     return NavigationBar(
-      selectedIndex: selectedIndex < 3 ? selectedIndex : 3,
+      selectedIndex: selectedIndex < bottomItems.length
+          ? selectedIndex
+          : bottomItems.length,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       height: 60,
       onDestinationSelected: (index) {
-        if (index == 3) {
+        if (index == bottomItems.length) {
           // "More" tapped - open drawer
           onMoreTap?.call();
         } else {
@@ -42,21 +49,11 @@ class MobileBottomNav extends StatelessWidget {
         }
       },
       destinations: [
-        NavigationDestination(
-          icon: const Icon(Icons.dashboard_outlined),
-          selectedIcon: const Icon(Icons.dashboard),
-          label: t.navigation.dashboard,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.receipt_long_outlined),
-          selectedIcon: const Icon(Icons.receipt_long),
-          label: t.navigation.salesHistory,
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.inventory_2_outlined),
-          selectedIcon: const Icon(Icons.inventory_2),
-          label: t.navigation.products,
-        ),
+        ...bottomItems.map((item) => NavigationDestination(
+              icon: Icon(item.icon),
+              selectedIcon: Icon(item.selectedIcon),
+              label: item.label,
+            )),
         NavigationDestination(
           icon: const Icon(Icons.more_horiz),
           selectedIcon: const Icon(Icons.more_horiz),

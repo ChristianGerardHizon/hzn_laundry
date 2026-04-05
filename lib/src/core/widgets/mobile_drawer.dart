@@ -6,30 +6,36 @@ import '../assets/assets.gen.dart';
 import '../i18n/strings.g.dart';
 import '../packages/pocketbase/pocketbase_provider.dart';
 import 'branch_switcher.dart';
+import 'nav_permissions.dart';
 
-/// Mobile drawer with full navigation menu.
-///
-/// Contains all navigation sections:
-/// - Primary: Dashboard, Cashier, Products
-/// - Secondary: Sales History, Reports, Organization, System
-/// - Actions: Logout
+/// Mobile drawer with permission-filtered navigation menu.
 class MobileDrawer extends ConsumerWidget {
   const MobileDrawer({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    required this.visibleItems,
   });
 
-  /// Currently selected navigation index.
+  /// Currently selected navigation index (within visible items).
   final int selectedIndex;
 
-  /// Callback when a destination is selected.
+  /// Callback when a destination is selected (visible index).
   final ValueChanged<int> onDestinationSelected;
+
+  /// Permission-filtered navigation items.
+  final List<NavItem> visibleItems;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final theme = Theme.of(context);
+
+    // Split visible items into primary (index <= 5) and secondary (index > 5)
+    final primaryItems =
+        visibleItems.where((item) => item.index <= 5).toList();
+    final secondaryItems =
+        visibleItems.where((item) => item.index > 5).toList();
 
     return Drawer(
       child: SafeArea(
@@ -80,77 +86,29 @@ class MobileDrawer extends ConsumerWidget {
             // Branch switcher
             const BranchSwitcher(),
 
-            // Primary navigation
-            _DrawerItem(
-              icon: Icons.dashboard,
-              label: t.navigation.dashboard,
-              selected: selectedIndex == 0,
-              onTap: () => _selectAndClose(context, 0),
-            ),
-            _DrawerItem(
-              icon: Icons.receipt_long,
-              label: t.navigation.salesHistory,
-              selected: selectedIndex == 1,
-              onTap: () => _selectAndClose(context, 1),
-            ),
-            _DrawerItem(
-              icon: Icons.inventory_2,
-              label: t.navigation.products,
-              selected: selectedIndex == 2,
-              onTap: () => _selectAndClose(context, 2),
-            ),
-            _DrawerItem(
-              icon: Icons.miscellaneous_services,
-              label: t.navigation.services,
-              selected: selectedIndex == 3,
-              onTap: () => _selectAndClose(context, 3),
-            ),
-            _DrawerItem(
-              icon: Icons.people,
-              label: t.navigation.customers,
-              selected: selectedIndex == 4,
-              onTap: () => _selectAndClose(context, 4),
-            ),
-            _DrawerItem(
-              icon: Icons.badge,
-              label: t.navigation.employees,
-              selected: selectedIndex == 5,
-              onTap: () => _selectAndClose(context, 5),
-            ),
+            // Primary navigation items
+            ...primaryItems.map((item) {
+              final visibleIndex = visibleItems.indexOf(item);
+              return _DrawerItem(
+                icon: item.icon,
+                label: item.label,
+                selected: selectedIndex == visibleIndex,
+                onTap: () => _selectAndClose(context, visibleIndex),
+              );
+            }),
 
-            const Divider(),
+            if (secondaryItems.isNotEmpty) const Divider(),
 
-            // Secondary navigation
-            _DrawerItem(
-              icon: Icons.analytics,
-              label: t.navigation.reports,
-              selected: selectedIndex == 6,
-              onTap: () => _selectAndClose(context, 6),
-            ),
-            _DrawerItem(
-              icon: Icons.history,
-              label: t.navigation.activities,
-              selected: selectedIndex == 7,
-              onTap: () => _selectAndClose(context, 7),
-            ),
-            _DrawerItem(
-              icon: Icons.business,
-              label: t.navigation.organization,
-              selected: selectedIndex == 8,
-              onTap: () => _selectAndClose(context, 8),
-            ),
-            _DrawerItem(
-              icon: Icons.loyalty,
-              label: 'Promos',
-              selected: selectedIndex == 9,
-              onTap: () => _selectAndClose(context, 9),
-            ),
-            _DrawerItem(
-              icon: Icons.settings,
-              label: t.navigation.system,
-              selected: selectedIndex == 10,
-              onTap: () => _selectAndClose(context, 10),
-            ),
+            // Secondary navigation items
+            ...secondaryItems.map((item) {
+              final visibleIndex = visibleItems.indexOf(item);
+              return _DrawerItem(
+                icon: item.icon,
+                label: item.label,
+                selected: selectedIndex == visibleIndex,
+                onTap: () => _selectAndClose(context, visibleIndex),
+              );
+            }),
 
             const Divider(),
 
