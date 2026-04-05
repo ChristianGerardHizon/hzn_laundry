@@ -10,7 +10,8 @@ import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
-import '../../../pos/domain/order_status_history.dart';
+import '../../../activities/domain/activity_log.dart';
+import '../../../activities/presentation/controllers/activities_controller.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
@@ -19,7 +20,6 @@ import '../../../settings/presentation/controllers/current_branch_controller.dar
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
-import '../controllers/order_status_history_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
@@ -122,7 +122,7 @@ class _SaleDetailContent extends HookConsumerWidget {
     final serviceItemsAsync = ref.watch(saleServiceItemsProvider(sale.id));
     final paymentsAsync = ref.watch(salePaymentsProvider(sale.id));
     final statusHistoryAsync =
-        ref.watch(orderStatusHistoryProvider(sale.id));
+        ref.watch(recordActivityLogsProvider(sale.id));
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final currencyFormat = NumberFormat.currency(symbol: '₱');
 
@@ -164,13 +164,13 @@ class _SaleDetailContent extends HookConsumerWidget {
           ref.invalidate(saleItemsProvider(sale.id));
           ref.invalidate(saleServiceItemsProvider(sale.id));
           ref.invalidate(salePaymentsProvider(sale.id));
-          ref.invalidate(orderStatusHistoryProvider(sale.id));
+          ref.invalidate(recordActivityLogsProvider(sale.id));
           await Future.wait([
             ref.read(saleProvider(sale.id).future),
             ref.read(saleItemsProvider(sale.id).future),
             ref.read(saleServiceItemsProvider(sale.id).future),
             ref.read(salePaymentsProvider(sale.id).future),
-            ref.read(orderStatusHistoryProvider(sale.id).future),
+            ref.read(recordActivityLogsProvider(sale.id).future),
           ]);
         },
         child: SingleChildScrollView(
@@ -194,7 +194,11 @@ class _SaleDetailContent extends HookConsumerWidget {
                               children: [
                                 Text(
                                   sale.receiptNumber,
-                                  style: theme.textTheme.titleLarge,
+                                  style:
+                                      theme.textTheme.titleMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -211,13 +215,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                           SaleStatusChip(status: sale.status),
                         ],
                       ),
-                      const Divider(height: 24),
                       if (sale.customerName != null &&
-                          sale.customerName!.isNotEmpty)
+                          sale.customerName!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
                         SaleCustomerInfoRow(
                           customerName: sale.customerName!,
                           customerId: sale.customerId,
                         ),
+                      ],
+                      const Divider(height: 24),
                       if (sale.notes != null && sale.notes!.isNotEmpty)
                         SaleInfoRow(
                           icon: Icons.note,
@@ -771,7 +777,7 @@ class _SaleDetailContent extends HookConsumerWidget {
 
   Widget _buildStatusHistoryCard(
     BuildContext context,
-    AsyncValue<List<OrderStatusHistory>> historyAsync,
+    AsyncValue<List<ActivityLog>> historyAsync,
     DateFormat dateFormat,
   ) {
     final theme = Theme.of(context);
@@ -797,7 +803,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Status History',
+                      'Activity History',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -811,8 +817,6 @@ class _SaleDetailContent extends HookConsumerWidget {
                   itemCount: history.length,
                   itemBuilder: (context, index) {
                     final entry = history[index];
-                    final isOrderStatus =
-                        entry.statusType == StatusType.orderStatus;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -821,17 +825,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                         children: [
                           CircleAvatar(
                             radius: 16,
-                            backgroundColor: isOrderStatus
-                                ? Colors.blue.withValues(alpha: 0.1)
-                                : Colors.purple.withValues(alpha: 0.1),
+                            backgroundColor:
+                                entry.action.color.withValues(alpha: 0.1),
                             child: Icon(
-                              isOrderStatus
-                                  ? Icons.local_shipping
-                                  : Icons.receipt_long,
+                              entry.action.icon,
                               size: 16,
-                              color: isOrderStatus
-                                  ? Colors.blue
-                                  : Colors.purple,
+                              color: entry.action.color,
                             ),
                           ),
                           const SizedBox(width: 12),

@@ -66,6 +66,9 @@ class CreateProductDialog extends HookConsumerWidget {
         price: priceEnabled.value
             ? (_parseNum(values['price'] as String?) ?? 0)
             : 0,
+        unitCost: priceEnabled.value
+            ? (_parseNum(values['unitCost'] as String?) ?? 0)
+            : 0,
         quantity: stockEnabled.value
             ? _parseNum(values['quantity'] as String?)
             : null,
@@ -218,10 +221,18 @@ class CreateProductDialog extends HookConsumerWidget {
             const SizedBox(height: 16),
             CurrencyInputField(
               name: 'price',
-              label: 'Price',
+              label: 'Selling Price',
               required: false,
               enabled: !isSaving.value,
               helperText: 'Leave empty for variable price (set at POS)',
+            ),
+            const SizedBox(height: 16),
+            CurrencyInputField(
+              name: 'unitCost',
+              label: 'Unit Cost',
+              required: false,
+              enabled: !isSaving.value,
+              helperText: 'Cost price / acquisition cost',
             ),
           ],
           const SizedBox(height: 24),
@@ -324,7 +335,8 @@ class CreateProductDialog extends HookConsumerWidget {
     'description': 'Description',
     'category': 'Category',
     'branch': 'Branch',
-    'price': 'Price',
+    'price': 'Selling Price',
+    'unitCost': 'Unit Cost',
     'quantity': 'Quantity',
     'stockThreshold': 'Stock Threshold',
     'expiration': 'Expiration Date',

@@ -41,13 +41,15 @@ abstract class PocketBaseCollections {
   // Employees
   static const String employees = 'employees';
   static const String employeeAttendances = 'employeeAttendances';
+  static const String employeeDeductions = 'employeeDeductions';
 
   // Sales
   static const String sales = 'sales';
   static const String saleItems = 'saleItems';
   static const String saleServiceItems = 'saleServiceItems';
   static const String payments = 'payments';
-  static const String orderStatusHistory = 'orderStatusHistory';
+  // Activity Logs
+  static const String activityLogs = 'activityLogs';
 
   // Promos / Loyalty
   static const String promos = 'promos';

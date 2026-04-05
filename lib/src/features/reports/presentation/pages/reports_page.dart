@@ -10,8 +10,6 @@ import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
 import '../widgets/views/attendance_report_view.dart';
-import '../widgets/views/employee_report_view.dart';
-import '../widgets/views/incentive_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
 import '../widgets/views/salary_report_view.dart';
 import '../widgets/views/sales_by_customer_view.dart';
@@ -24,7 +22,7 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 8);
+    final tabController = useTabController(initialLength: 6);
 
     void refreshCurrentTab() {
       switch (tabController.index) {
@@ -38,13 +36,9 @@ class ReportsPage extends HookConsumerWidget {
         case 3:
           ref.invalidate(newCustomersReportProvider);
         case 4:
-          ref.invalidate(employeeReportProvider);
-        case 5:
           ref.invalidate(attendanceReportProvider);
-        case 6:
+        case 5:
           ref.invalidate(salaryReportProvider);
-        case 7:
-          ref.invalidate(employeeReportProvider);
       }
     }
 
@@ -80,20 +74,12 @@ class ReportsPage extends HookConsumerWidget {
               text: 'New Customers',
             ),
             Tab(
-              icon: Icon(Icons.badge),
-              text: 'Employees',
-            ),
-            Tab(
               icon: Icon(Icons.calendar_month),
               text: 'Attendance',
             ),
             Tab(
               icon: Icon(Icons.account_balance_wallet),
               text: 'Salary',
-            ),
-            Tab(
-              icon: Icon(Icons.payments),
-              text: 'Incentive',
             ),
           ],
         ),
@@ -105,10 +91,8 @@ class ReportsPage extends HookConsumerWidget {
           SalesDetailView(),
           SalesByCustomerView(),
           NewCustomersView(),
-          EmployeeReportView(),
           AttendanceReportView(),
           SalaryReportView(),
-          IncentiveReportView(),
         ],
       ),
     );

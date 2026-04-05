@@ -138,9 +138,12 @@ class _SaleHeaderCard extends StatelessWidget {
                     children: [
                       Text(
                         sale.receiptNumber,
-                        style: compact
-                            ? theme.textTheme.titleMedium
-                            : theme.textTheme.titleLarge,
+                        style: (compact
+                                ? theme.textTheme.bodyLarge
+                                : theme.textTheme.titleMedium)
+                            ?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -157,12 +160,14 @@ class _SaleHeaderCard extends StatelessWidget {
                 SaleStatusChip(status: sale.status),
               ],
             ),
-            const Divider(height: 24),
-            if (sale.customerName != null && sale.customerName!.isNotEmpty)
+            if (sale.customerName != null && sale.customerName!.isNotEmpty) ...[
+              const SizedBox(height: 8),
               SaleCustomerInfoRow(
                 customerName: sale.customerName!,
                 customerId: sale.customerId,
               ),
+            ],
+            const Divider(height: 24),
           ],
         ),
       ),
@@ -830,16 +835,10 @@ class SaleCustomerInfoRow extends StatelessWidget {
         children: [
           Icon(
             Icons.person,
-            size: 20,
-            color: theme.colorScheme.onSurfaceVariant,
+            size: 24,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 8),
-          Text(
-            'Customer: ',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
           Expanded(
             child: hasCustomerId
                 ? InkWell(
@@ -856,8 +855,9 @@ class SaleCustomerInfoRow extends StatelessWidget {
                           Flexible(
                             child: Text(
                               customerName,
-                              style: theme.textTheme.bodyMedium?.copyWith(
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
                                 decoration: TextDecoration.underline,
                                 decorationColor: theme.colorScheme.primary,
                               ),
@@ -875,7 +875,9 @@ class SaleCustomerInfoRow extends StatelessWidget {
                   )
                 : Text(
                     customerName,
-                    style: theme.textTheme.bodyMedium,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
           ),
         ],

@@ -20,6 +20,7 @@ class Product with ProductMappable {
     this.branch,
     this.stockThreshold,
     this.price = 0,
+    this.unitCost = 0,
     this.forSale = true,
     this.trackStock = false,
     this.requireStock = false,
@@ -59,6 +60,9 @@ class Product with ProductMappable {
 
   /// Product price.
   final num price;
+
+  /// Unit cost (cost price / acquisition cost).
+  final num unitCost;
 
   /// Whether product is for sale.
   final bool forSale;

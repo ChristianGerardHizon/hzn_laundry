@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
+import '../../../../employees/domain/deduction_value_type.dart';
+import '../../../../employees/domain/employee_deduction.dart';
+import '../../../../employees/presentation/controllers/employees_controller.dart';
 import '../../controllers/employee_report_controller.dart';
 import '../../controllers/salary_month_controller.dart';
 
-/// View displaying employee salary breakdown by month.
+/// View displaying employee salary breakdown by month with bi-monthly support.
 class SalaryReportView extends HookConsumerWidget {
   const SalaryReportView({super.key});
-
 
   static final _currencyFormat =
       NumberFormat.currency(symbol: '\u20B1', decimalDigits: 2);
@@ -19,9 +22,20 @@ class SalaryReportView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reportAsync = ref.watch(salaryReportProvider);
     final selectedMonth = ref.watch(salaryMonthControllerProvider);
+    final selectedPeriod = ref.watch(salaryPeriodControllerProvider);
+    final selectedEmployee = ref.watch(salaryEmployeeFilterProvider);
+    final employeesAsync = ref.watch(employeesControllerProvider);
 
     return reportAsync.when(
-      data: (data) => _buildContent(context, ref, data, selectedMonth),
+      data: (data) => _buildContent(
+        context,
+        ref,
+        data,
+        selectedMonth,
+        selectedPeriod,
+        selectedEmployee,
+        employeesAsync,
+      ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
@@ -37,8 +51,20 @@ class SalaryReportView extends HookConsumerWidget {
     WidgetRef ref,
     EmployeeReportData data,
     DateTime selectedMonth,
+    SalaryPeriod selectedPeriod,
+    String? selectedEmployee,
+    AsyncValue employeesAsync,
   ) {
     final isMobile = Breakpoints.isMobile(context);
+
+    // Filter entries by selected employee
+    final filteredData = selectedEmployee != null
+        ? data.copyWithFilteredEntries(
+            data.entries
+                .where((e) => e.employee.id == selectedEmployee)
+                .toList(),
+          )
+        : data;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -51,18 +77,29 @@ class SalaryReportView extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildMonthSelector(context, ref, selectedMonth),
+            const SizedBox(height: 8),
+            _buildFiltersRow(
+              context,
+              ref,
+              selectedMonth,
+              selectedPeriod,
+              selectedEmployee,
+              employeesAsync,
+              isMobile,
+            ),
             const SizedBox(height: 12),
-            _buildKpiSection(context, data, isMobile),
+            _buildKpiSection(context, filteredData, isMobile),
             const SizedBox(height: 16),
-            if (data.entries.isEmpty)
+            if (filteredData.entries.isEmpty)
               _buildEmptyState(context)
             else ...[
-              if (isMobile)
-                _buildMobileSalaryList(context, data)
-              else
-                _buildDesktopSalaryTable(context, data),
+              ...filteredData.entries.map((e) => _EmployeeBreakdownCard(
+                    entry: e,
+                    period: selectedPeriod,
+                    currencyFormat: _currencyFormat,
+                  )),
               const SizedBox(height: 16),
-              _buildTotalsCard(context, data),
+              _buildTotalsCard(context, filteredData),
             ],
           ],
         ),
@@ -102,7 +139,6 @@ class SalaryReportView extends HookConsumerWidget {
             final now = DateTime.now();
             return List.generate(12, (i) {
               final m = i + 1;
-              // Disable future months for current year
               final isFuture = selectedMonth.year == now.year && m > now.month;
               final isSelected = m == selectedMonth.month;
               return PopupMenuItem<int>(
@@ -158,7 +194,6 @@ class SalaryReportView extends HookConsumerWidget {
           },
           itemBuilder: (context) {
             final now = DateTime.now();
-            // Show current year and 4 previous years
             return List.generate(5, (i) {
               final year = now.year - i;
               final isSelected = year == selectedMonth.year;
@@ -203,7 +238,6 @@ class SalaryReportView extends HookConsumerWidget {
           icon: const Icon(Icons.chevron_right),
           onPressed: () {
             final next = DateTime(selectedMonth.year, selectedMonth.month + 1);
-            // Don't go past current month
             final now = DateTime.now();
             if (next.year < now.year ||
                 (next.year == now.year && next.month <= now.month)) {
@@ -213,6 +247,146 @@ class SalaryReportView extends HookConsumerWidget {
           tooltip: 'Next month',
         ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Filters row: period selector + employee filter
+  // ---------------------------------------------------------------------------
+
+  Widget _buildFiltersRow(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime selectedMonth,
+    SalaryPeriod selectedPeriod,
+    String? selectedEmployee,
+    AsyncValue employeesAsync,
+    bool isMobile,
+  ) {
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPeriodSelector(context, ref, selectedMonth, selectedPeriod),
+          const SizedBox(height: 8),
+          _buildEmployeeFilter(context, ref, selectedEmployee, employeesAsync),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child:
+              _buildPeriodSelector(context, ref, selectedMonth, selectedPeriod),
+        ),
+        const SizedBox(width: 12),
+        _buildEmployeeFilter(context, ref, selectedEmployee, employeesAsync),
+      ],
+    );
+  }
+
+  Widget _buildPeriodSelector(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime selectedMonth,
+    SalaryPeriod selectedPeriod,
+  ) {
+    return SegmentedButton<SalaryPeriod>(
+      segments: SalaryPeriod.values
+          .map((p) => ButtonSegment(
+                value: p,
+                label: Text(
+                  p.label(selectedMonth),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ))
+          .toList(),
+      selected: {selectedPeriod},
+      onSelectionChanged: (selected) {
+        ref
+            .read(salaryPeriodControllerProvider.notifier)
+            .setPeriod(selected.first);
+      },
+      showSelectedIcon: false,
+    );
+  }
+
+  Widget _buildEmployeeFilter(
+    BuildContext context,
+    WidgetRef ref,
+    String? selectedEmployee,
+    AsyncValue employeesAsync,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: employeesAsync.when(
+        data: (employees) => DropdownButtonHideUnderline(
+          child: DropdownButton<String?>(
+            value: selectedEmployee,
+            isDense: true,
+            icon: Icon(Icons.arrow_drop_down,
+                size: 20, color: theme.colorScheme.onSurfaceVariant),
+            hint: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.people, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('All Employees', style: theme.textTheme.titleSmall),
+              ],
+            ),
+            items: [
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.people,
+                        size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('All Employees', style: theme.textTheme.titleSmall),
+                  ],
+                ),
+              ),
+              ...employees.map((e) => DropdownMenuItem<String?>(
+                    value: e.id,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.person,
+                            size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(e.name, style: theme.textTheme.titleSmall),
+                      ],
+                    ),
+                  )),
+            ],
+            onChanged: (value) {
+              ref
+                  .read(salaryEmployeeFilterProvider.notifier)
+                  .setEmployee(value);
+            },
+          ),
+        ),
+        loading: () => const SizedBox(
+          height: 36,
+          child: Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        error: (_, __) => Text('Error', style: theme.textTheme.bodySmall),
+      ),
     );
   }
 
@@ -227,19 +401,25 @@ class SalaryReportView extends HookConsumerWidget {
   ) {
     final cards = [
       _KpiData(
-        'Total Base Salary',
+        'Base Salary',
         _currencyFormat.format(data.totalBaseSalary),
         Icons.account_balance_wallet,
         Colors.blue,
       ),
       _KpiData(
-        'Total Incentive',
+        'Incentive',
         _currencyFormat.format(data.totalIncentive),
         Icons.trending_up,
         Colors.green,
       ),
       _KpiData(
-        'Total Payroll',
+        'Deductions',
+        _currencyFormat.format(data.totalDeductions),
+        Icons.money_off,
+        Colors.red,
+      ),
+      _KpiData(
+        'Net Payroll',
         _currencyFormat.format(data.totalPay),
         Icons.payments,
         Colors.orange,
@@ -275,7 +455,14 @@ class SalaryReportView extends HookConsumerWidget {
                     value: cards[2].value,
                     icon: cards[2].icon,
                     color: cards[2].color)),
-            const Expanded(child: SizedBox()),
+            const SizedBox(width: 8),
+            Expanded(
+                child: KpiCard(
+                    compact: true,
+                    title: cards[3].title,
+                    value: cards[3].value,
+                    icon: cards[3].icon,
+                    color: cards[3].color)),
           ]),
         ],
       );
@@ -295,153 +482,6 @@ class SalaryReportView extends HookConsumerWidget {
               ])
           .toList()
         ..removeLast(),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Desktop: DataTable
-  // ---------------------------------------------------------------------------
-
-  Widget _buildDesktopSalaryTable(
-    BuildContext context,
-    EmployeeReportData data,
-  ) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              '${data.entries.length} employees',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    columnSpacing: 24,
-                    headingRowHeight: 44,
-                    dataRowMinHeight: 40,
-                    dataRowMaxHeight: 48,
-                    columns: const [
-                      DataColumn(label: Text('Employee')),
-                      DataColumn(label: Text('Days In'), numeric: true),
-                      DataColumn(
-                          label: Text('Base Salary'), numeric: true),
-                      DataColumn(
-                          label: Text('Incentive'), numeric: true),
-                      DataColumn(
-                          label: Text('Total Pay'), numeric: true),
-                    ],
-                    rows: data.entries
-                        .map((e) => DataRow(
-                              cells: [
-                                DataCell(Text(
-                                  e.employee.name,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w500),
-                                )),
-                                DataCell(Text('${e.daysPresent}')),
-                                DataCell(Text(_currencyFormat
-                                    .format(e.baseSalary))),
-                                DataCell(Text(_currencyFormat
-                                    .format(e.incentiveAmount))),
-                                DataCell(Text(
-                                  _currencyFormat.format(e.totalPay),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600),
-                                )),
-                              ],
-                            ))
-                        .toList(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Mobile: card list
-  // ---------------------------------------------------------------------------
-
-  Widget _buildMobileSalaryList(
-    BuildContext context,
-    EmployeeReportData data,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            '${data.entries.length} employees',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ),
-        ...data.entries.map((e) => _buildMobileSalaryCard(context, e)),
-      ],
-    );
-  }
-
-  Widget _buildMobileSalaryCard(
-    BuildContext context,
-    EmployeeReportEntry entry,
-  ) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  entry.employee.name,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  _currencyFormat.format(entry.totalPay),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _SalaryBreakdownRow(
-              label: 'Base Salary',
-              value: _currencyFormat.format(entry.baseSalary),
-              theme: theme,
-            ),
-            _SalaryBreakdownRow(
-              label: 'Incentive (${entry.daysPresent} days In)',
-              value: _currencyFormat.format(entry.incentiveAmount),
-              theme: theme,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -468,12 +508,18 @@ class SalaryReportView extends HookConsumerWidget {
               value: _currencyFormat.format(data.totalIncentive),
               theme: theme,
             ),
+            _TotalRow(
+              label: 'Total Deductions',
+              value: '-${_currencyFormat.format(data.totalDeductions)}',
+              theme: theme,
+              valueColor: Colors.red,
+            ),
             const Divider(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total Payroll',
+                  'Net Payroll',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -522,6 +568,286 @@ class SalaryReportView extends HookConsumerWidget {
   }
 }
 
+// =============================================================================
+// Employee breakdown card (expandable)
+// =============================================================================
+
+class _EmployeeBreakdownCard extends HookWidget {
+  const _EmployeeBreakdownCard({
+    required this.entry,
+    required this.period,
+    required this.currencyFormat,
+  });
+
+  final EmployeeReportEntry entry;
+  final SalaryPeriod period;
+  final NumberFormat currencyFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpanded = useState(false);
+    final theme = Theme.of(context);
+    final e = entry;
+    final isBiMonthly = period != SalaryPeriod.fullMonth;
+
+    // For sublabel display: the full-month base salary
+    final fullBaseSalary = isBiMonthly ? e.baseSalary * 2 : e.baseSalary;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => isExpanded.value = !isExpanded.value,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: name + net pay
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          e.employee.name,
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${e.daysPresent} days present',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    currencyFormat.format(e.totalPay),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isExpanded.value
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+
+              // Summary row (always visible)
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _MiniChip(
+                    label: 'Base: ${currencyFormat.format(e.baseSalary)}',
+                    color: Colors.blue,
+                  ),
+                  if (e.incentiveAmount > 0)
+                    _MiniChip(
+                      label:
+                          '+${currencyFormat.format(e.incentiveAmount)}',
+                      color: Colors.green,
+                    ),
+                  if (e.deductionAmount > 0)
+                    _MiniChip(
+                      label:
+                          '-${currencyFormat.format(e.deductionAmount)}',
+                      color: Colors.red,
+                    ),
+                ],
+              ),
+
+              // Expanded breakdown
+              if (isExpanded.value) ...[
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 12),
+
+                // Earnings section
+                Text(
+                  'Earnings',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _BreakdownRow(
+                  label: 'Base Salary',
+                  sublabel: isBiMonthly
+                      ? '${currencyFormat.format(fullBaseSalary)} ÷ 2'
+                      : null,
+                  value: currencyFormat.format(e.baseSalary),
+                  theme: theme,
+                ),
+                if (e.incentiveAmount > 0)
+                  _BreakdownRow(
+                    label: 'Incentive (${e.daysPresent} days)',
+                    value: currencyFormat.format(e.incentiveAmount),
+                    theme: theme,
+                    valueColor: Colors.green,
+                  ),
+
+                // Deductions section
+                if (e.deductions.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Deductions',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...e.deductions.map((d) {
+                    final fullAmount = d.computeAmount(e.employee.baseSalary);
+                    final amount = isBiMonthly ? fullAmount / 2 : fullAmount;
+                    return _BreakdownRow(
+                      label: d.displayName,
+                      sublabel: _deductionSublabel(d, e.employee.baseSalary),
+                      value: '-${currencyFormat.format(amount)}',
+                      theme: theme,
+                      valueColor: Colors.red,
+                    );
+                  }),
+                ],
+
+                // Net pay
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Net Pay',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(e.totalPay),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _deductionSublabel(EmployeeDeduction d, num baseSalary) {
+    final isBiMonthly = period != SalaryPeriod.fullMonth;
+    if (d.valueType == DeductionValueType.percentage) {
+      final pctLabel =
+          '${d.value}% of ${SalaryReportView._currencyFormat.format(baseSalary)}';
+      if (isBiMonthly) {
+        return '$pctLabel ÷ 2';
+      }
+      return pctLabel;
+    }
+    if (isBiMonthly) {
+      return '${SalaryReportView._currencyFormat.format(d.computeAmount(baseSalary))} ÷ 2';
+    }
+    return null;
+  }
+}
+
+// =============================================================================
+// Small helper widgets
+// =============================================================================
+
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
+    );
+  }
+}
+
+class _BreakdownRow extends StatelessWidget {
+  const _BreakdownRow({
+    required this.label,
+    this.sublabel,
+    required this.value,
+    required this.theme,
+    this.valueColor,
+  });
+
+  final String label;
+  final String? sublabel;
+  final String value;
+  final ThemeData theme;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.bodySmall),
+                if (sublabel != null)
+                  Text(
+                    sublabel!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _KpiData {
   const _KpiData(this.title, this.value, this.icon, this.color);
   final String title;
@@ -530,47 +856,18 @@ class _KpiData {
   final Color color;
 }
 
-class _SalaryBreakdownRow extends StatelessWidget {
-  const _SalaryBreakdownRow({
-    required this.label,
-    required this.value,
-    required this.theme,
-  });
-
-  final String label;
-  final String value;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Text(value, style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
 class _TotalRow extends StatelessWidget {
   const _TotalRow({
     required this.label,
     required this.value,
     required this.theme,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final ThemeData theme;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -580,7 +877,12 @@ class _TotalRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: theme.textTheme.bodyMedium),
-          Text(value, style: theme.textTheme.bodyMedium),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: valueColor,
+            ),
+          ),
         ],
       ),
     );

@@ -69,6 +69,13 @@ class ProductMapper extends ClassMapperBase<Product> {
     opt: true,
     def: 0,
   );
+  static num _$unitCost(Product v) => v.unitCost;
+  static const Field<Product, num> _f$unitCost = Field(
+    'unitCost',
+    _$unitCost,
+    opt: true,
+    def: 0,
+  );
   static bool _$forSale(Product v) => v.forSale;
   static const Field<Product, bool> _f$forSale = Field(
     'forSale',
@@ -152,6 +159,7 @@ class ProductMapper extends ClassMapperBase<Product> {
     #branch: _f$branch,
     #stockThreshold: _f$stockThreshold,
     #price: _f$price,
+    #unitCost: _f$unitCost,
     #forSale: _f$forSale,
     #trackStock: _f$trackStock,
     #requireStock: _f$requireStock,
@@ -176,6 +184,7 @@ class ProductMapper extends ClassMapperBase<Product> {
       branch: data.dec(_f$branch),
       stockThreshold: data.dec(_f$stockThreshold),
       price: data.dec(_f$price),
+      unitCost: data.dec(_f$unitCost),
       forSale: data.dec(_f$forSale),
       trackStock: data.dec(_f$trackStock),
       requireStock: data.dec(_f$requireStock),
@@ -258,6 +267,7 @@ abstract class ProductCopyWith<$R, $In extends Product, $Out>
     String? branch,
     num? stockThreshold,
     num? price,
+    num? unitCost,
     bool? forSale,
     bool? trackStock,
     bool? requireStock,
@@ -295,6 +305,7 @@ class _ProductCopyWithImpl<$R, $Out>
     Object? branch = $none,
     Object? stockThreshold = $none,
     num? price,
+    num? unitCost,
     bool? forSale,
     bool? trackStock,
     bool? requireStock,
@@ -317,6 +328,7 @@ class _ProductCopyWithImpl<$R, $Out>
       if (branch != $none) #branch: branch,
       if (stockThreshold != $none) #stockThreshold: stockThreshold,
       if (price != null) #price: price,
+      if (unitCost != null) #unitCost: unitCost,
       if (forSale != null) #forSale: forSale,
       if (trackStock != null) #trackStock: trackStock,
       if (requireStock != null) #requireStock: requireStock,
@@ -341,6 +353,7 @@ class _ProductCopyWithImpl<$R, $Out>
     branch: data.get(#branch, or: $value.branch),
     stockThreshold: data.get(#stockThreshold, or: $value.stockThreshold),
     price: data.get(#price, or: $value.price),
+    unitCost: data.get(#unitCost, or: $value.unitCost),
     forSale: data.get(#forSale, or: $value.forSale),
     trackStock: data.get(#trackStock, or: $value.trackStock),
     requireStock: data.get(#requireStock, or: $value.requireStock),
