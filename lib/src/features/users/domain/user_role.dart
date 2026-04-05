@@ -125,6 +125,17 @@ abstract class Permissions {
   static const storagesEdit = 'storages.edit';
   static const storagesDelete = 'storages.delete';
 
+  // Employees permissions
+  static const employeesView = 'employees.view';
+  static const employeesCreate = 'employees.create';
+  static const employeesEdit = 'employees.edit';
+  static const employeesDelete = 'employees.delete';
+
+  // Attendance permissions
+  static const attendanceView = 'attendance.view';
+  static const attendanceCreate = 'attendance.create';
+  static const attendanceEdit = 'attendance.edit';
+
   // Reports permissions
   static const reportsView = 'reports.view';
 
@@ -168,6 +179,13 @@ abstract class Permissions {
     'Payments': [paymentsEdit],
     'Machines': [machinesView, machinesCreate, machinesEdit, machinesDelete],
     'Storages': [storagesView, storagesCreate, storagesEdit, storagesDelete],
+    'Employees': [
+      employeesView,
+      employeesCreate,
+      employeesEdit,
+      employeesDelete,
+    ],
+    'Attendance': [attendanceView, attendanceCreate, attendanceEdit],
     'Reports': [reportsView],
     'Users': [usersView, usersCreate, usersEdit, usersDelete],
     'Roles': [rolesView, rolesCreate, rolesEdit, rolesDelete],
@@ -395,6 +413,57 @@ abstract class Permissions {
         category: 'Storages',
         description: 'Remove storage locations (soft delete)',
         icon: Icons.delete,
+      ),
+      // Employees
+      const Permission(
+        key: employeesView,
+        name: 'View Employees',
+        category: 'Employees',
+        description: 'View employee profiles and information',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: employeesCreate,
+        name: 'Create Employees',
+        category: 'Employees',
+        description: 'Add new employees',
+        icon: Icons.person_add,
+      ),
+      const Permission(
+        key: employeesEdit,
+        name: 'Edit Employees',
+        category: 'Employees',
+        description: 'Modify employee information',
+        icon: Icons.edit,
+      ),
+      const Permission(
+        key: employeesDelete,
+        name: 'Delete Employees',
+        category: 'Employees',
+        description: 'Remove employee records (soft delete)',
+        icon: Icons.delete,
+      ),
+      // Attendance
+      const Permission(
+        key: attendanceView,
+        name: 'View Attendance',
+        category: 'Attendance',
+        description: 'View employee attendance records',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: attendanceCreate,
+        name: 'Create Attendance',
+        category: 'Attendance',
+        description: 'Record employee attendance (clock in/out)',
+        icon: Icons.add,
+      ),
+      const Permission(
+        key: attendanceEdit,
+        name: 'Edit Attendance',
+        category: 'Attendance',
+        description: 'Modify attendance records',
+        icon: Icons.edit,
       ),
       // Reports
       const Permission(

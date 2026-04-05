@@ -145,6 +145,100 @@ final class TodayCountProvider
 
 String _$todayCountHash() => r'1f5648b8af2c282910dc91420656d1525fdb2a9c';
 
+/// Counts orders in the opposite tab that match the given search query.
+/// When on "Today's Orders", counts matching backlog orders, and vice versa.
+/// Returns 0 when query is empty.
+
+@ProviderFor(crossTabSearchCount)
+final crossTabSearchCountProvider = CrossTabSearchCountFamily._();
+
+/// Counts orders in the opposite tab that match the given search query.
+/// When on "Today's Orders", counts matching backlog orders, and vice versa.
+/// Returns 0 when query is empty.
+
+final class CrossTabSearchCountProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Counts orders in the opposite tab that match the given search query.
+  /// When on "Today's Orders", counts matching backlog orders, and vice versa.
+  /// Returns 0 when query is empty.
+  CrossTabSearchCountProvider._(
+      {required CrossTabSearchCountFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'crossTabSearchCountProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$crossTabSearchCountHash();
+
+  @override
+  String toString() {
+    return r'crossTabSearchCountProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    final argument = this.argument as String;
+    return crossTabSearchCount(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CrossTabSearchCountProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$crossTabSearchCountHash() =>
+    r'9e7006efdf961dfa8a2b751a76db2e49926d1707';
+
+/// Counts orders in the opposite tab that match the given search query.
+/// When on "Today's Orders", counts matching backlog orders, and vice versa.
+/// Returns 0 when query is empty.
+
+final class CrossTabSearchCountFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<int>, String> {
+  CrossTabSearchCountFamily._()
+      : super(
+          retry: null,
+          name: r'crossTabSearchCountProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Counts orders in the opposite tab that match the given search query.
+  /// When on "Today's Orders", counts matching backlog orders, and vice versa.
+  /// Returns 0 when query is empty.
+
+  CrossTabSearchCountProvider call(
+    String query,
+  ) =>
+      CrossTabSearchCountProvider._(argument: query, from: this);
+
+  @override
+  String toString() => r'crossTabSearchCountProvider';
+}
+
 /// Fetches active sales grouped by order status based on the selected filter.
 /// - [KanbanFilterMode.today]: All orders created today (any status).
 /// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.

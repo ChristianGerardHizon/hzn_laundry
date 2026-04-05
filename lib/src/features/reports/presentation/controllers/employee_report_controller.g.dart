@@ -51,12 +51,12 @@ final class EmployeeReportProvider extends $FunctionalProvider<
 
 String _$employeeReportHash() => r'933584b7ec3474ddf8fa94a684623f024135a062';
 
-/// Fetches salary report data for the selected month.
+/// Fetches salary report data for the selected month and period.
 
 @ProviderFor(salaryReport)
 final salaryReportProvider = SalaryReportProvider._();
 
-/// Fetches salary report data for the selected month.
+/// Fetches salary report data for the selected month and period.
 
 final class SalaryReportProvider extends $FunctionalProvider<
         AsyncValue<EmployeeReportData>,
@@ -65,7 +65,7 @@ final class SalaryReportProvider extends $FunctionalProvider<
     with
         $FutureModifier<EmployeeReportData>,
         $FutureProvider<EmployeeReportData> {
-  /// Fetches salary report data for the selected month.
+  /// Fetches salary report data for the selected month and period.
   SalaryReportProvider._()
       : super(
           from: null,
@@ -92,4 +92,4 @@ final class SalaryReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$salaryReportHash() => r'c4f4d06ce252ddb652505cb60b13504b816cdcfc';
+String _$salaryReportHash() => r'3055a5c4327efad009a1508380d71f287cc73673';

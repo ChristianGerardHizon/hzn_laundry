@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -92,6 +94,22 @@ class KanbanBoardSection extends HookConsumerWidget {
     final isRefreshing = kanbanAsync.isLoading && kanbanAsync.hasValue;
     final searchController = useTextEditingController();
     final searchQuery = useState('');
+    final debouncedQuery = useState('');
+
+    // Debounce the search query for the cross-tab API call
+    useEffect(() {
+      if (searchQuery.value.isEmpty) {
+        debouncedQuery.value = '';
+        return null;
+      }
+      final timer = Timer(const Duration(milliseconds: 500), () {
+        debouncedQuery.value = searchQuery.value;
+      });
+      return timer.cancel;
+    }, [searchQuery.value]);
+
+    final crossTabCount =
+        ref.watch(crossTabSearchCountProvider(debouncedQuery.value));
 
     // Spinning animation for the refresh icon
     final animController = useAnimationController(
@@ -191,6 +209,75 @@ class KanbanBoardSection extends HookConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
+          // Cross-tab search hint
+          if (debouncedQuery.value.isNotEmpty)
+            crossTabCount.maybeWhen(
+              data: (count) {
+                if (count == 0) return const SizedBox.shrink();
+                final otherTabLabel = filterMode == KanbanFilterMode.today
+                    ? 'Backlogs'
+                    : "Today's Orders";
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      final targetMode =
+                          filterMode == KanbanFilterMode.today
+                              ? KanbanFilterMode.notPickedUp
+                              : KanbanFilterMode.today;
+                      ref
+                          .read(kanbanFilterProvider.notifier)
+                          .setFilter(targetMode);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$count matching ${count == 1 ? 'order' : 'orders'} found in $otherTabLabel',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                  ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+              orElse: () => const SizedBox.shrink(),
+            ),
           // Filter chips
           _KanbanFilterChips(currentFilter: filterMode),
           const SizedBox(height: 12),
@@ -349,7 +436,7 @@ class _TabletKanbanLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 420,
+      height: 620,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1124,7 +1211,7 @@ class _SaleCardContent extends StatelessWidget {
                     Expanded(
                       child: Text(
                         sale.customerDisplay!,
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurface,
                         ),

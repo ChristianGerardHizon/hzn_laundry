@@ -9,6 +9,7 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../controllers/employee_provider.dart';
 import '../controllers/employees_controller.dart';
 import '../widgets/employee_attendance_tab.dart';
+import '../widgets/employee_deductions_tab.dart';
 import '../widgets/employee_form_dialog.dart';
 
 /// Employee detail page showing employee information and attendance.
@@ -26,7 +27,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
     final isTablet = Breakpoints.isTabletOrLarger(context);
     final currencyFormat =
         NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-    final tabController = useTabController(initialLength: 2);
+    final tabController = useTabController(initialLength: 3);
 
     return employeeAsync.when(
       data: (employee) {
@@ -87,6 +88,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
               tabs: const [
                 Tab(text: 'Info'),
                 Tab(text: 'Attendance'),
+                Tab(text: 'Deductions'),
               ],
             ),
           ),
@@ -119,6 +121,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
                 ],
               ),
               EmployeeAttendanceTab(employeeId: employeeId),
+              EmployeeDeductionsTab(employeeId: employeeId),
             ],
           ),
         );

@@ -101,12 +101,23 @@ class AttendanceReportView extends ConsumerWidget {
 
     if (isMobile) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
       );
     }
 
-    return Row(children: children);
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: _buildDateRangeRow(context, ref, dateRange)),
+          const SizedBox(width: 12),
+          Expanded(
+              child: _buildEmployeeFilter(
+                  context, ref, selectedEmployee, employeesAsync)),
+        ],
+      ),
+    );
   }
 
   Widget _buildDateRangeRow(
@@ -128,13 +139,14 @@ class AttendanceReportView extends ConsumerWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.date_range,
                 size: 18, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
-            Text('$startStr \u2013 $endStr',
-                style: theme.textTheme.titleSmall),
+            Expanded(
+              child: Text('$startStr \u2013 $endStr',
+                  style: theme.textTheme.titleSmall),
+            ),
             const SizedBox(width: 4),
             Icon(Icons.arrow_drop_down,
                 size: 20, color: theme.colorScheme.onSurfaceVariant),
@@ -149,11 +161,19 @@ class AttendanceReportView extends ConsumerWidget {
     WidgetRef ref,
     DateTimeRange dateRange,
   ) async {
+    // Strip time component so initialDateRange stays within lastDate bounds
+    final initialRange = DateTimeRange(
+      start: DateUtils.dateOnly(dateRange.start),
+      end: DateUtils.dateOnly(dateRange.end),
+    );
+    final lastDate = DateUtils.dateOnly(
+      DateTime.now().add(const Duration(days: 1)),
+    );
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      initialDateRange: dateRange,
+      lastDate: lastDate,
+      initialDateRange: initialRange,
     );
     if (picked != null) {
       final adjustedEnd = DateTime(
@@ -180,7 +200,7 @@ class AttendanceReportView extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
@@ -190,6 +210,7 @@ class AttendanceReportView extends ConsumerWidget {
           child: DropdownButton<String?>(
             value: selectedEmployee,
             isDense: true,
+            isExpanded: true,
             icon: Icon(Icons.arrow_drop_down,
                 size: 20, color: theme.colorScheme.onSurfaceVariant),
             hint: Row(
