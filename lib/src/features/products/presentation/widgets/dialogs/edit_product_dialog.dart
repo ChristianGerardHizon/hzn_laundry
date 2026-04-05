@@ -174,6 +174,7 @@ class _EditProductForm extends HookConsumerWidget {
         'category': product.categoryId,
         'branch': product.branch,
         'price': product.isVariablePrice ? '' : product.price.toString(),
+        'unitCost': product.unitCost > 0 ? product.unitCost.toString() : '',
         'quantity': product.quantity?.toString() ?? '',
         'stockThreshold': product.stockThreshold?.toString() ?? '',
         'expiration': product.expiration,
@@ -222,6 +223,9 @@ class _EditProductForm extends HookConsumerWidget {
         categoryId: values['category'] as String?,
         price: priceEnabled.value
             ? (_parseNum(values['price'] as String?) ?? 0)
+            : 0,
+        unitCost: priceEnabled.value
+            ? (_parseNum(values['unitCost'] as String?) ?? 0)
             : 0,
         quantity: stockEnabled.value
             ? _parseNum(values['quantity'] as String?)
@@ -339,6 +343,7 @@ class _EditProductForm extends HookConsumerWidget {
                 'category': product.categoryId,
                 'branch': product.branch,
                 'price': product.isVariablePrice ? '' : product.price.toString(),
+                'unitCost': product.unitCost > 0 ? product.unitCost.toString() : '',
                 'quantity': product.quantity?.toString() ?? '',
                 'stockThreshold': product.stockThreshold?.toString() ?? '',
                 'expiration': product.expiration,
@@ -499,11 +504,29 @@ class _EditProductForm extends HookConsumerWidget {
                       FormBuilderTextField(
                         name: 'price',
                         decoration: const InputDecoration(
-                          labelText: 'Price',
+                          labelText: 'Selling Price',
                           border: OutlineInputBorder(),
                           prefixText: '\u20b1 ',
                           helperText:
                               'Leave empty for variable price (set at POS)',
+                        ),
+                        enabled: !isSaving.value,
+                        keyboardType: TextInputType.number,
+                        validator: FormBuilderValidators.numeric(
+                          errorText: 'Must be a number',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      FormBuilderTextField(
+                        name: 'unitCost',
+                        initialValue: product.unitCost > 0
+                            ? product.unitCost.toString()
+                            : '',
+                        decoration: const InputDecoration(
+                          labelText: 'Unit Cost',
+                          border: OutlineInputBorder(),
+                          prefixText: '\u20b1 ',
+                          helperText: 'Cost price / acquisition cost',
                         ),
                         enabled: !isSaving.value,
                         keyboardType: TextInputType.number,
@@ -636,7 +659,8 @@ class _EditProductForm extends HookConsumerWidget {
     'description': 'Description',
     'category': 'Category',
     'branch': 'Branch',
-    'price': 'Price',
+    'price': 'Selling Price',
+    'unitCost': 'Unit Cost',
     'quantity': 'Quantity',
     'stockThreshold': 'Stock Threshold',
     'expiration': 'Expiration Date',

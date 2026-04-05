@@ -4,9 +4,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/utils/date_utils.dart';
 import '../../../employees/data/repositories/employee_attendance_repository.dart';
+import '../../../employees/data/repositories/employee_deduction_repository.dart';
 import '../../../employees/data/repositories/employee_repository.dart';
 import '../../../employees/domain/employee.dart';
 import '../../../employees/domain/employee_attendance.dart';
+import '../../../employees/domain/employee_deduction.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../settings/data/repositories/branch_repository.dart';
 import '../../../settings/data/repositories/incentive_tier_repository.dart';
@@ -27,6 +29,8 @@ class EmployeeReportEntry {
     required this.totalDaysInRange,
     required this.incentiveAmount,
     required this.baseSalary,
+    this.deductionAmount = 0,
+    this.deductions = const [],
   });
 
   final Employee employee;
@@ -36,7 +40,13 @@ class EmployeeReportEntry {
   final num incentiveAmount;
   final num baseSalary;
 
-  num get totalPay => baseSalary + incentiveAmount;
+  /// Total deduction amount for this period.
+  final num deductionAmount;
+
+  /// List of applicable deductions for this period.
+  final List<EmployeeDeduction> deductions;
+
+  num get totalPay => baseSalary + incentiveAmount - deductionAmount;
 }
 
 /// Breakdown of incentive for a single day.
@@ -83,15 +93,21 @@ Future<EmployeeReportData> employeeReport(Ref ref) async {
   return _buildEmployeeReport(ref, dateRange: dateRange, branchId: branchId);
 }
 
-/// Fetches salary report data for the selected month.
+/// Fetches salary report data for the selected month and period.
 @riverpod
 Future<EmployeeReportData> salaryReport(Ref ref) async {
   final monthController = ref.watch(salaryMonthControllerProvider.notifier);
-  final dateRange = monthController.dateRange;
+  final period = ref.watch(salaryPeriodControllerProvider);
+  final dateRange = monthController.dateRangeForPeriod(period);
   final branchId = ref.watch(currentBranchIdProvider);
   // Watch the month state so provider rebuilds on change
   ref.watch(salaryMonthControllerProvider);
-  return _buildEmployeeReport(ref, dateRange: dateRange, branchId: branchId);
+  return _buildEmployeeReport(
+    ref,
+    dateRange: dateRange,
+    branchId: branchId,
+    period: period,
+  );
 }
 
 /// Shared logic for building employee report data.
@@ -99,9 +115,11 @@ Future<EmployeeReportData> _buildEmployeeReport(
   Ref ref, {
   required DateTimeRange dateRange,
   required String? branchId,
+  SalaryPeriod period = SalaryPeriod.fullMonth,
 }) async {
   final employeeRepo = ref.read(employeeRepositoryProvider);
   final attendanceRepo = ref.read(employeeAttendanceRepositoryProvider);
+  final deductionRepo = ref.read(employeeDeductionRepositoryProvider);
   final salesRepo = ref.read(salesRepositoryProvider);
   final branchRepo = ref.read(branchRepositoryProvider);
   final tierRepo = ref.read(incentiveTierRepositoryProvider);
@@ -278,11 +296,40 @@ Future<EmployeeReportData> _buildEmployeeReport(
   // Calculate total days in range
   final totalDays = endDay.difference(startDay).inDays + 1;
 
+  // Fetch deductions for all employees in parallel
+  final deductionResults = await Future.wait(
+    employees.map((e) => deductionRepo.fetchForEmployee(e.id)),
+  );
+
+  // Map employee ID -> applicable deductions for this month
+  final employeeDeductions = <String, List<EmployeeDeduction>>{};
+  final reportMonth = dateRange.start;
+  for (var i = 0; i < employees.length; i++) {
+    final deductions = deductionResults[i].fold(
+      (_) => <EmployeeDeduction>[],
+      (list) => list,
+    );
+    employeeDeductions[employees[i].id] = deductions
+        .where((d) => d.isApplicableFor(reportMonth))
+        .toList();
+  }
+
+  // For bi-monthly periods, base salary and deductions are halved
+  final isBiMonthly = period != SalaryPeriod.fullMonth;
+  final salaryDivisor = isBiMonthly ? 2 : 1;
+
   // Build final entries
   final entries = employees.map((employee) {
     final attendance = allAttendanceByEmployee[employee.id] ?? [];
     final daysPresent = attendance.where((a) => a.isPresent).length;
     final daysOut = attendance.where((a) => !a.isPresent).length;
+
+    // Calculate total deductions (halved for bi-monthly)
+    final deductions = employeeDeductions[employee.id] ?? [];
+    num totalDeduction = 0;
+    for (final d in deductions) {
+      totalDeduction += d.computeAmount(employee.baseSalary);
+    }
 
     return EmployeeReportEntry(
       employee: employee,
@@ -290,7 +337,9 @@ Future<EmployeeReportData> _buildEmployeeReport(
       daysOut: daysOut,
       totalDaysInRange: totalDays,
       incentiveAmount: employeeIncentives[employee.id] ?? 0,
-      baseSalary: employee.baseSalary,
+      baseSalary: employee.baseSalary / salaryDivisor,
+      deductionAmount: totalDeduction / salaryDivisor,
+      deductions: deductions,
     );
   }).toList();
 
@@ -363,5 +412,20 @@ class EmployeeReportData {
       entries.fold<num>(0, (sum, e) => sum + e.incentiveAmount);
   num get totalBaseSalary =>
       entries.fold<num>(0, (sum, e) => sum + e.baseSalary);
+  num get totalDeductions =>
+      entries.fold<num>(0, (sum, e) => sum + e.deductionAmount);
   num get totalPay => entries.fold<num>(0, (sum, e) => sum + e.totalPay);
+
+  /// Returns a copy with a filtered subset of entries.
+  EmployeeReportData copyWithFilteredEntries(List<EmployeeReportEntry> filtered) {
+    return EmployeeReportData(
+      entries: filtered,
+      dailyBreakdown: dailyBreakdown,
+      totalServicePrice: totalServicePrice,
+      incentiveRate: incentiveRate,
+      perServicePrice: perServicePrice,
+      branch: branch,
+      incentiveTiers: incentiveTiers,
+    );
+  }
 }

@@ -23,3 +23,15 @@ class EmployeeReportDateRangeController
     state = range;
   }
 }
+
+/// Manages the selected employee filter for incentive report.
+/// null = all employees.
+@Riverpod(keepAlive: true)
+class IncentiveEmployeeFilter extends _$IncentiveEmployeeFilter {
+  @override
+  String? build() => null;
+
+  void setEmployee(String? employeeId) {
+    state = employeeId;
+  }
+}

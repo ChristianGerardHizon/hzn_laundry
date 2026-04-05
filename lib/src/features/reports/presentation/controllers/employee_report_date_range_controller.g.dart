@@ -68,3 +68,60 @@ abstract class _$EmployeeReportDateRangeController
     element.handleCreate(ref, build);
   }
 }
+
+/// Manages the selected employee filter for incentive report.
+/// null = all employees.
+
+@ProviderFor(IncentiveEmployeeFilter)
+final incentiveEmployeeFilterProvider = IncentiveEmployeeFilterProvider._();
+
+/// Manages the selected employee filter for incentive report.
+/// null = all employees.
+final class IncentiveEmployeeFilterProvider
+    extends $NotifierProvider<IncentiveEmployeeFilter, String?> {
+  /// Manages the selected employee filter for incentive report.
+  /// null = all employees.
+  IncentiveEmployeeFilterProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'incentiveEmployeeFilterProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$incentiveEmployeeFilterHash();
+
+  @$internal
+  @override
+  IncentiveEmployeeFilter create() => IncentiveEmployeeFilter();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$incentiveEmployeeFilterHash() =>
+    r'06bd654ff3d3c51ff11cfd47cbc395294fe2eb34';
+
+/// Manages the selected employee filter for incentive report.
+/// null = all employees.
+
+abstract class _$IncentiveEmployeeFilter extends $Notifier<String?> {
+  String? build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<String?, String?>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<String?, String?>, String?, Object?, Object?>;
+    element.handleCreate(ref, build);
+  }
+}

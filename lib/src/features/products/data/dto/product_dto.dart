@@ -24,6 +24,7 @@ class ProductDto with ProductDtoMappable {
   final String? branch;
   final num? stockThreshold;
   final num price;
+  final num unitCost;
   final bool forSale;
   final bool trackStock;
   final bool requireStock;
@@ -48,6 +49,7 @@ class ProductDto with ProductDtoMappable {
     this.branch,
     this.stockThreshold,
     this.price = 0,
+    this.unitCost = 0,
     this.forSale = true,
     this.trackStock = false,
     this.requireStock = false,
@@ -90,6 +92,7 @@ class ProductDto with ProductDtoMappable {
       branch: json['branch'] as String?,
       stockThreshold: json['stockThreshold'] as num?,
       price: json['price'] as num? ?? 0,
+      unitCost: json['unitCost'] as num? ?? 0,
       forSale: json['forSale'] as bool? ?? true,
       trackStock: json['trackStock'] as bool? ?? false,
       requireStock: json['requireStock'] as bool? ?? false,
@@ -116,6 +119,7 @@ class ProductDto with ProductDtoMappable {
       branch: branch,
       stockThreshold: stockThreshold,
       price: price,
+      unitCost: unitCost,
       forSale: forSale,
       trackStock: trackStock,
       requireStock: requireStock,

@@ -153,6 +153,54 @@ Future<int> todayCount(Ref ref) async {
   return result.totalItems;
 }
 
+/// Counts orders in the opposite tab that match the given search query.
+/// When on "Today's Orders", counts matching backlog orders, and vice versa.
+/// Returns 0 when query is empty.
+@riverpod
+Future<int> crossTabSearchCount(Ref ref, String query) async {
+  if (query.isEmpty) return 0;
+
+  final branchId = ref.watch(currentBranchIdProvider);
+  final filterMode = ref.watch(kanbanFilterProvider);
+  final pb = ref.read(pocketbaseProvider);
+
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final startUtc = todayStart.toPocketBaseUtc();
+
+  // Build the opposite filter
+  var filter = "status != 'voided'";
+  if (branchId != null) {
+    filter = '$filter && branch = "$branchId"';
+  }
+
+  switch (filterMode) {
+    case KanbanFilterMode.today:
+      // We're on today — search in backlogs
+      filter =
+          '$filter && postedDate < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
+    case KanbanFilterMode.notPickedUp:
+      // We're on backlogs — search in today
+      final todayEnd = todayStart.add(const Duration(days: 1));
+      final endUtc = todayEnd.toPocketBaseUtc();
+      filter =
+          '$filter && postedDate >= "$startUtc" && postedDate < "$endUtc"';
+  }
+
+  // Add search filter
+  final q = query.replaceAll("'", "\\'");
+  filter =
+      '$filter && (customerName ~ "$q" || receiptNumber ~ "$q")';
+
+  final result = await pb.collection(PocketBaseCollections.sales).getList(
+        page: 1,
+        perPage: 1,
+        filter: filter,
+      );
+
+  return result.totalItems;
+}
+
 /// Fetches active sales grouped by order status based on the selected filter.
 /// - [KanbanFilterMode.today]: All orders created today (any status).
 /// - [KanbanFilterMode.notPickedUp]: Orders created before today that haven't been picked up.
