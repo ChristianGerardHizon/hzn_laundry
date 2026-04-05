@@ -21,12 +21,14 @@ import '../controllers/customers_controller.dart';
 void showCustomerFormDialog(
   BuildContext context, {
   Customer? customer,
+  String? initialName,
   ValueChanged<Customer>? onSaved,
 }) {
   showConstrainedDialog(
     context: context,
     builder: (context) => CustomerFormDialog(
       customer: customer,
+      initialName: initialName,
       onSaved: onSaved,
     ),
   );
@@ -46,10 +48,12 @@ class CustomerFormDialog extends HookConsumerWidget {
   const CustomerFormDialog({
     super.key,
     this.customer,
+    this.initialName,
     this.onSaved,
   });
 
   final Customer? customer;
+  final String? initialName;
   final ValueChanged<Customer>? onSaved;
 
   bool get isEditing => customer != null;
@@ -69,7 +73,9 @@ class CustomerFormDialog extends HookConsumerWidget {
               'address': customer!.address,
               'notes': customer!.notes,
             }
-          : null,
+          : initialName != null
+              ? {'name': initialName}
+              : null,
     );
 
     final isSaving = useState(false);
@@ -204,7 +210,7 @@ class CustomerFormDialog extends HookConsumerWidget {
                         const SizedBox(height: 16),
                         FormBuilderTextField(
                           name: 'name',
-                          initialValue: customer?.name,
+                          initialValue: customer?.name ?? initialName,
                           decoration: const InputDecoration(
                             labelText: 'Name *',
                             border: OutlineInputBorder(),
