@@ -70,22 +70,24 @@ class PBFilter {
 
   // --- String Search ---
 
-  /// Wildcard search: field ~ 'value'
+  /// Case-insensitive wildcard search: field:lower ~ 'value'
   ///
-  /// Matches records where field contains the value.
+  /// Matches records where field contains the value (case-insensitive).
   PBFilter contains(String field, String value) {
-    _conditions.add("$field ~ '${escape(value)}'");
+    _conditions.add("$field:lower ~ '${escape(value.toLowerCase())}'");
     return this;
   }
 
-  /// Search multiple fields with OR: (field1 ~ 'q' || field2 ~ 'q')
+  /// Case-insensitive search multiple fields with OR:
+  /// (field1:lower ~ 'q' || field2:lower ~ 'q')
   ///
   /// Useful for implementing search across multiple columns.
   PBFilter searchFields(String query, List<String> fields) {
     if (query.isEmpty || fields.isEmpty) return this;
 
-    final escaped = escape(query);
-    final orConditions = fields.map((f) => "$f ~ '$escaped'").join(' || ');
+    final escaped = escape(query.toLowerCase());
+    final orConditions =
+        fields.map((f) => "$f:lower ~ '$escaped'").join(' || ');
     _conditions.add('($orConditions)');
     return this;
   }

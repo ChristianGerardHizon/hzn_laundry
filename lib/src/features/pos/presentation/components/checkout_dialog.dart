@@ -653,12 +653,37 @@ class _CustomerSelectionCard extends HookConsumerWidget {
                   ),
                   child: filteredCustomers.isEmpty
                       ? Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'No customers found',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'No customers found',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              FilledButton.tonalIcon(
+                                onPressed: () async {
+                                  final customer =
+                                      await _showQuickAddCustomerDialog(
+                                    context,
+                                    ref,
+                                    initialName: searchQuery.value,
+                                  );
+                                  if (customer != null) {
+                                    selectedCustomer.value = customer;
+                                    searchController.text = customer.name;
+                                    searchQuery.value = '';
+                                    isSearching.value = false;
+                                  }
+                                },
+                                icon: const Icon(Icons.person_add, size: 18),
+                                label: Text(
+                                    'Add "${searchQuery.value}" as new customer'),
+                              ),
+                            ],
                           ),
                         )
                       : ListView.builder(
@@ -700,17 +725,21 @@ class _CustomerSelectionCard extends HookConsumerWidget {
 
   Future<Customer?> _showQuickAddCustomerDialog(
     BuildContext context,
-    WidgetRef ref,
-  ) async {
+    WidgetRef ref, {
+    String? initialName,
+  }) async {
     return showDialog<Customer?>(
       context: context,
-      builder: (context) => const _QuickAddCustomerDialog(),
+      builder: (context) =>
+          _QuickAddCustomerDialog(initialName: initialName),
     );
   }
 }
 
 class _QuickAddCustomerDialog extends HookConsumerWidget {
-  const _QuickAddCustomerDialog();
+  const _QuickAddCustomerDialog({this.initialName});
+
+  final String? initialName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -756,12 +785,13 @@ class _QuickAddCustomerDialog extends HookConsumerWidget {
               children: [
                 FormBuilderTextField(
                   name: 'name',
+                  initialValue: initialName,
                   decoration: const InputDecoration(
                     labelText: 'Name *',
                     border: OutlineInputBorder(),
                   ),
                   validator: FormBuilderValidators.required(),
-                  autofocus: true,
+                  autofocus: initialName == null || initialName!.isEmpty,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
                 ),

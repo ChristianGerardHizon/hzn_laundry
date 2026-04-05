@@ -29,7 +29,7 @@ class SaleSearchQuery extends _$SaleSearchQuery {
 @riverpod
 class SaleSearchFields extends _$SaleSearchFields {
   @override
-  Set<String> build() => {'receiptNumber'}; // Default: only receipt number
+  Set<String> build() => {'receiptNumber', 'customerName'};
 
   void toggleField(String field) {
     if (state.contains(field)) {
@@ -42,13 +42,13 @@ class SaleSearchFields extends _$SaleSearchFields {
   }
 
   void reset() {
-    state = {'receiptNumber'};
+    state = {'receiptNumber', 'customerName'};
   }
 
   void setFields(Set<String> fields) {
     // Ensure at least one field is selected
     if (fields.isEmpty) {
-      state = {'receiptNumber'}; // fallback to receiptNumber
+      state = {'receiptNumber', 'customerName'};
     } else {
       state = fields;
     }
