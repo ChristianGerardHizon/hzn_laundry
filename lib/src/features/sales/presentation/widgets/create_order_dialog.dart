@@ -798,44 +798,78 @@ class _CustomerSearchField extends HookConsumerWidget {
                 ),
               ],
             ),
-            child: filtered.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'No customers found',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
+            child: () {
+                  final hasExactMatch = filtered.any(
+                    (c) =>
+                        c.name.toLowerCase() ==
+                        searchQuery.value.toLowerCase(),
+                  );
+                  return ListView(
                     shrinkWrap: true,
-                    itemCount: filtered.length,
-                    itemBuilder: (_, i) {
-                      final c = filtered[i];
-                      return ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.person,
-                            size: 16,
-                            color: theme.colorScheme.onPrimaryContainer,
+                    children: [
+                      ...filtered.map((c) => ListTile(
+                            dense: true,
+                            leading: CircleAvatar(
+                              radius: 16,
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.person,
+                                size: 16,
+                                color:
+                                    theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            title: Text(c.name),
+                            subtitle:
+                                c.phone != null ? Text(c.phone!) : null,
+                            onTap: () {
+                              selectedCustomer.value = c;
+                              searchController.text = c.name;
+                              searchQuery.value = '';
+                              isSearching.value = false;
+                              onChanged();
+                            },
+                          )),
+                      if (!hasExactMatch)
+                        ListTile(
+                          dense: true,
+                          leading: CircleAvatar(
+                            radius: 16,
+                            backgroundColor:
+                                theme.colorScheme.tertiaryContainer,
+                            child: Icon(
+                              Icons.person_add,
+                              size: 16,
+                              color:
+                                  theme.colorScheme.onTertiaryContainer,
+                            ),
                           ),
+                          title: Text(
+                            'Create "${searchQuery.value}"',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.tertiary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onTap: () {
+                            showCustomerFormDialog(
+                              context,
+                              initialName: searchQuery.value,
+                              onSaved: (customer) {
+                                selectedCustomer.value = customer;
+                                searchController.text = customer.name;
+                                searchQuery.value = '';
+                                isSearching.value = false;
+                                onChanged();
+                              },
+                            );
+                          },
                         ),
-                        title: Text(c.name),
-                        subtitle: c.phone != null ? Text(c.phone!) : null,
-                        onTap: () {
-                          selectedCustomer.value = c;
-                          searchController.text = c.name;
-                          searchQuery.value = '';
-                          isSearching.value = false;
-                          onChanged();
-                        },
-                      );
-                    },
-                  ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                }(),
           ),
         ],
       ],
