@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/widgets/nav_permissions.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../sales/presentation/widgets/create_order_dialog.dart';
+import '../../../users/domain/user_role.dart';
 import 'orders_by_resource_dialog.dart';
 
 /// Section displaying quick action buttons on the dashboard.
@@ -23,6 +25,17 @@ class QuickActionsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final roleAsync = ref.watch(currentUserRoleProvider);
+    final role = roleAsync.value;
+    final isAdmin = role?.isAdmin ?? false;
+    final canAttendance = isAdmin ||
+        (role?.hasPermission(Permissions.attendanceView) ?? false) ||
+        (role?.hasPermission(Permissions.attendanceCreate) ?? false);
+    final canCreateSale = isAdmin ||
+        (role?.hasPermission(Permissions.salesCreate) ?? false);
+    final canCreateCustomer = isAdmin ||
+        (role?.hasPermission(Permissions.customersCreate) ?? false);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -38,39 +51,38 @@ class QuickActionsSection extends ConsumerWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
+              spacing: 12,
               children: [
                 // Show Dashboard Overview button only on tablet
-                if (onShowOverview != null) ...[
+                if (onShowOverview != null)
                   _QuickActionButton(
                     icon: Icons.dashboard,
                     label: 'Overview',
                     color: Theme.of(context).colorScheme.primary,
                     onTap: onShowOverview!,
                   ),
-                  const SizedBox(width: 12),
-                ],
-                _QuickActionButton(
-                  icon: Icons.add_shopping_cart,
-                  label: 'New Sale',
-                  color: Colors.green,
-                  filled: true,
-                  onTap: () => showCreateOrderDialog(context),
-                ),
-                const SizedBox(width: 12),
-                _QuickActionButton(
-                  icon: Icons.person_add,
-                  label: 'New Customer',
-                  color: Colors.blue,
-                  onTap: () => showCustomerFormDialog(context),
-                ),
-                const SizedBox(width: 12),
-                _QuickActionButton(
-                  icon: Icons.how_to_reg,
-                  label: 'Attendance',
-                  color: Colors.orange,
-                  onTap: () => showAttendanceDialog(context),
-                ),
-                const SizedBox(width: 12),
+                if (canCreateSale)
+                  _QuickActionButton(
+                    icon: Icons.add_shopping_cart,
+                    label: 'New Sale',
+                    color: Colors.green,
+                    filled: true,
+                    onTap: () => showCreateOrderDialog(context),
+                  ),
+                if (canCreateCustomer)
+                  _QuickActionButton(
+                    icon: Icons.person_add,
+                    label: 'New Customer',
+                    color: Colors.blue,
+                    onTap: () => showCustomerFormDialog(context),
+                  ),
+                if (canAttendance)
+                  _QuickActionButton(
+                    icon: Icons.how_to_reg,
+                    label: 'Attendance',
+                    color: Colors.orange,
+                    onTap: () => showAttendanceDialog(context),
+                  ),
                 _QuickActionButton(
                   icon: Icons.local_laundry_service,
                   label: 'Machine & Storage',

@@ -9,6 +9,7 @@ import '../../features/version_lock/domain/version_check_result.dart';
 import '../../features/version_lock/presentation/controllers/update_dismissed_provider.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../../features/version_lock/presentation/widgets/optional_update_dialog.dart';
+import '../i18n/strings.g.dart';
 import '../routing/routes/dashboard.routes.dart';
 import '../routing/routes/organization.routes.dart';
 import '../routing/routes/products.routes.dart';
@@ -23,6 +24,7 @@ import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
 import '../widgets/mobile_bottom_nav.dart';
 import '../widgets/mobile_drawer.dart';
+import '../widgets/nav_permissions.dart';
 import '../widgets/tablet_nav_rail.dart';
 
 /// Main adaptive shell widget that wraps authenticated app content.
@@ -87,29 +89,27 @@ class _AppRootState extends ConsumerState<AppRoot> {
     SystemRoute(), // 10
   ];
 
-  /// Gets the selected index based on current route location.
-  int _getSelectedIndex(BuildContext context) {
+  /// Gets the selected index within the visible items based on current route.
+  int _getSelectedIndex(BuildContext context, List<NavItem> visibleItems) {
     final location = GoRouterState.of(context).uri.path;
 
-    // Try exact match first
-    final index = _routePaths.indexOf(location);
-    if (index >= 0) return index;
+    // Find which visible item matches the current route
+    for (int i = 0; i < visibleItems.length; i++) {
+      final routeIndex = visibleItems[i].index;
+      final routePath = _routePaths[routeIndex];
 
-    // For nested routes, check if location starts with any route path
-    // Skip index 0 ('/') to prevent matching everything
-    for (int i = 1; i < _routePaths.length; i++) {
-      if (location.startsWith(_routePaths[i])) {
-        return i;
-      }
+      if (location == routePath) return i;
+      // For nested routes, check prefix (skip '/' to prevent matching everything)
+      if (routeIndex > 0 && location.startsWith(routePath)) return i;
     }
 
-    // Fallback to dashboard
     return 0;
   }
 
-  void _onDestinationSelected(int index) {
-    if (index >= 0 && index < _routes.length) {
-      _routes[index].go(context);
+  void _onDestinationSelected(int visibleIndex, List<NavItem> visibleItems) {
+    if (visibleIndex >= 0 && visibleIndex < visibleItems.length) {
+      final routeIndex = visibleItems[visibleIndex].index;
+      _routes[routeIndex].go(context);
     }
   }
 
@@ -137,6 +137,25 @@ class _AppRootState extends ConsumerState<AppRoot> {
     });
 
     final isMobile = Breakpoints.isMobile(context);
+
+    // Build permission-filtered nav items
+    final t = Translations.of(context);
+    final allNavItems = buildAllNavItems((key) => switch (key) {
+          'dashboard' => t.navigation.dashboard,
+          'salesHistory' => t.navigation.salesHistory,
+          'products' => t.navigation.products,
+          'services' => t.navigation.services,
+          'customers' => t.navigation.customers,
+          'employees' => t.navigation.employees,
+          'reports' => t.navigation.reports,
+          'activities' => t.navigation.activities,
+          'organization' => t.navigation.organization,
+          'system' => t.navigation.system,
+          _ => key,
+        });
+    final roleAsync = ref.watch(currentUserRoleProvider);
+    final role = roleAsync.value;
+    final visibleItems = filterNavItems(allNavItems, role);
 
     return PopScope(
       canPop: false,
@@ -174,8 +193,8 @@ class _AppRootState extends ConsumerState<AppRoot> {
         }
       },
       child: isMobile
-          ? _buildMobileLayout(context)
-          : _buildTabletLayout(context),
+          ? _buildMobileLayout(context, visibleItems)
+          : _buildTabletLayout(context, visibleItems),
     );
   }
 
@@ -214,14 +233,15 @@ class _AppRootState extends ConsumerState<AppRoot> {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
-    final selectedIndex = _getSelectedIndex(context);
+  Widget _buildMobileLayout(BuildContext context, List<NavItem> visibleItems) {
+    final selectedIndex = _getSelectedIndex(context, visibleItems);
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: MobileDrawer(
         selectedIndex: selectedIndex,
-        onDestinationSelected: _onDestinationSelected,
+        onDestinationSelected: (i) => _onDestinationSelected(i, visibleItems),
+        visibleItems: visibleItems,
       ),
       body: SafeArea(
         child: ColoredBox(
@@ -236,14 +256,15 @@ class _AppRootState extends ConsumerState<AppRoot> {
       ),
       bottomNavigationBar: MobileBottomNav(
         selectedIndex: selectedIndex,
-        onDestinationSelected: _onDestinationSelected,
+        onDestinationSelected: (i) => _onDestinationSelected(i, visibleItems),
         onMoreTap: _openDrawer,
+        visibleItems: visibleItems,
       ),
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) {
-    final selectedIndex = _getSelectedIndex(context);
+  Widget _buildTabletLayout(BuildContext context, List<NavItem> visibleItems) {
+    final selectedIndex = _getSelectedIndex(context, visibleItems);
 
     return Scaffold(
       body: SafeArea(
@@ -252,7 +273,9 @@ class _AppRootState extends ConsumerState<AppRoot> {
             // Navigation Rail
             TabletNavRail(
               selectedIndex: selectedIndex,
-              onDestinationSelected: _onDestinationSelected,
+              onDestinationSelected: (i) =>
+                  _onDestinationSelected(i, visibleItems),
+              visibleItems: visibleItems,
             ),
 
             const VerticalDivider(width: 1),

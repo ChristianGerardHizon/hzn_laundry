@@ -5,23 +5,28 @@ import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../assets/assets.gen.dart';
 import '../i18n/strings.g.dart';
 import '../utils/breakpoints.dart';
+import 'nav_permissions.dart';
 
 /// Navigation rail for tablet and desktop layouts.
 ///
-/// Displays 7 primary navigation destinations with icons.
+/// Displays permission-filtered navigation destinations with icons.
 /// On larger screens, shows labels alongside icons.
 class TabletNavRail extends ConsumerWidget {
   const TabletNavRail({
     super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    required this.visibleItems,
   });
 
-  /// Currently selected navigation index.
+  /// Currently selected navigation index (within visible items).
   final int selectedIndex;
 
-  /// Callback when a destination is selected.
+  /// Callback when a destination is selected (visible index).
   final ValueChanged<int> onDestinationSelected;
+
+  /// Permission-filtered navigation items.
+  final List<NavItem> visibleItems;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,63 +65,13 @@ class TabletNavRail extends ConsumerWidget {
                 ),
               ),
             ),
-            destinations: [
-              NavigationRailDestination(
-                icon: const Icon(Icons.dashboard_outlined),
-                selectedIcon: const Icon(Icons.dashboard),
-                label: Text(t.navigation.dashboard),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.receipt_long_outlined),
-                selectedIcon: const Icon(Icons.receipt_long),
-                label: Text(t.navigation.salesHistory),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.inventory_2_outlined),
-                selectedIcon: const Icon(Icons.inventory_2),
-                label: Text(t.navigation.products),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.miscellaneous_services_outlined),
-                selectedIcon: const Icon(Icons.miscellaneous_services),
-                label: Text(t.navigation.services),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.people_outlined),
-                selectedIcon: const Icon(Icons.people),
-                label: Text(t.navigation.customers),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.badge_outlined),
-                selectedIcon: const Icon(Icons.badge),
-                label: Text(t.navigation.employees),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.analytics_outlined),
-                selectedIcon: const Icon(Icons.analytics),
-                label: Text(t.navigation.reports),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.history_outlined),
-                selectedIcon: const Icon(Icons.history),
-                label: Text(t.navigation.activities),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.business_outlined),
-                selectedIcon: const Icon(Icons.business),
-                label: Text(t.navigation.organization),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.loyalty_outlined),
-                selectedIcon: const Icon(Icons.loyalty),
-                label: const Text('Promos'),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings),
-                label: Text(t.navigation.system),
-              ),
-            ],
+            destinations: visibleItems
+                .map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.selectedIcon),
+                      label: Text(item.label),
+                    ))
+                .toList(),
           ),
         ),
       ),
