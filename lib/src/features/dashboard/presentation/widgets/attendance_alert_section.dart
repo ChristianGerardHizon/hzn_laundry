@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/widgets/nav_permissions.dart';
 import '../../../employees/presentation/controllers/attendance_controller.dart';
 import '../../../employees/presentation/controllers/employees_controller.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
+import '../../../users/domain/user_role.dart';
 
 /// Dashboard section that shows a warning banner when today's attendance
 /// has not been set.
@@ -15,6 +17,15 @@ class AttendanceAlertSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Hide if user has no attendance permission
+    final roleAsync = ref.watch(currentUserRoleProvider);
+    final role = roleAsync.value;
+    final canViewAttendance = role == null ||
+        role.isAdmin ||
+        role.hasPermission(Permissions.attendanceView) ||
+        role.hasPermission(Permissions.attendanceCreate);
+    if (!canViewAttendance) return const SizedBox.shrink();
+
     final today = DateTime(
       DateTime.now().year,
       DateTime.now().month,

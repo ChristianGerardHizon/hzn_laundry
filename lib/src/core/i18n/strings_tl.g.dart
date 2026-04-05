@@ -189,7 +189,7 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get branches => 'Mga Sangay';
 	@override String get more => 'Iba Pa';
 	@override String get sales => 'Cashier';
-	@override String get salesHistory => 'Mga Benta';
+	@override String get salesHistory => 'Mga Order';
 	@override String get organization => 'Organisasyon';
 	@override String get services => 'Mga Serbisyo';
 	@override String get customers => 'Mga Customer';
@@ -346,7 +346,7 @@ extension on TranslationsTl {
 			'navigation.branches' => 'Mga Sangay',
 			'navigation.more' => 'Iba Pa',
 			'navigation.sales' => 'Cashier',
-			'navigation.salesHistory' => 'Mga Benta',
+			'navigation.salesHistory' => 'Mga Order',
 			'navigation.organization' => 'Organisasyon',
 			'navigation.services' => 'Mga Serbisyo',
 			'navigation.customers' => 'Mga Customer',
