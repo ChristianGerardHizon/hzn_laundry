@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../sales/presentation/widgets/create_order_dialog.dart';
+import 'orders_by_resource_dialog.dart';
 
 /// Section displaying quick action buttons on the dashboard.
 ///
@@ -68,6 +69,13 @@ class QuickActionsSection extends ConsumerWidget {
                   label: 'Attendance',
                   color: Colors.orange,
                   onTap: () => showAttendanceDialog(context),
+                ),
+                const SizedBox(width: 12),
+                _QuickActionButton(
+                  icon: Icons.local_laundry_service,
+                  label: 'Machine & Storage',
+                  color: Colors.purple,
+                  onTap: () => showOrdersByResourceDialog(context),
                 ),
               ],
             ),

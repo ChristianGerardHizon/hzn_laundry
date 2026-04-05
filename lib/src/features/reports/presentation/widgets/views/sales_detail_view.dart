@@ -486,105 +486,118 @@ class SalesDetailView extends HookConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: () => SaleDetailRoute(id: sale.id).go(context),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: receipt # + amount
+              // Customer name
+              if (sale.customerName != null &&
+                  sale.customerName!.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        sale.customerName!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isVoided
+                              ? theme.colorScheme.outline
+                              : theme.colorScheme.onSurface,
+                          decoration: isVoided
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+              ],
+              // Short order # + payment badge
               Row(
                 children: [
-                  Expanded(
-                  child: Text(
-                    _shortOrderNumber(sale.receiptNumber),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration:
-                          isVoided ? TextDecoration.lineThrough : null,
-                      color: isVoided ? theme.colorScheme.outline : null,
-                    ),
-                  ),
-                ),
-                Text(
-                  _currencyFormat.format(sale.totalAmount),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isVoided
-                        ? theme.colorScheme.outline
-                        : theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            if (sale.customerName != null && sale.customerName!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                sale.customerName!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            // Status chips + paid icon row
-            Row(
-              children: [
-                _buildStatusChip(context, sale.status),
-                const SizedBox(width: 6),
-                _buildOrderStatusChip(
-                    context, sale.orderStatus.displayName),
-                const Spacer(),
-                Icon(
-                  sale.isPaid ? Icons.check_circle : Icons.cancel,
-                  size: 16,
-                  color: sale.isPaid ? Colors.green : Colors.orange,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  sale.isPaid ? 'Paid' : 'Unpaid',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: sale.isPaid ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            // Date row
-            Row(
-              children: [
-                Icon(Icons.access_time,
-                    size: 14, color: theme.colorScheme.outline),
-                const SizedBox(width: 4),
-                Text(
-                  sale.postedDate != null
-                      ? _dateTimeFormat.format(sale.postedDate!)
-                      : '—',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-                if (sale.pickedUpAt != null) ...[
-                  const SizedBox(width: 12),
-                  Icon(Icons.local_shipping,
-                      size: 14, color: theme.colorScheme.outline),
-                  const SizedBox(width: 4),
                   Text(
-                    _dateTimeFormat.format(sale.pickedUpAt!),
+                    _shortOrderNumber(sale.receiptNumber),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.outline,
+                      fontFamily: 'monospace',
+                      decoration:
+                          isVoided ? TextDecoration.lineThrough : null,
                     ),
                   ),
+                  const Spacer(),
+                  _PaymentBadge(isPaid: sale.isPaid),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(height: 6),
+              // Status chips
+              Row(
+                children: [
+                  _buildStatusChip(context, sale.status),
+                  const SizedBox(width: 6),
+                  _buildOrderStatusChip(
+                      context, sale.orderStatus.displayName),
+                  if (sale.packs > 0) ...[
+                    const SizedBox(width: 6),
+                    _MiniChip(
+                      label: '${sale.packs} pack${sale.packs > 1 ? 's' : ''}',
+                      color: Colors.purple,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Amount + time
+              Row(
+                children: [
+                  Text(
+                    _currencyFormat.format(sale.totalAmount),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isVoided ? theme.colorScheme.outline : null,
+                      decoration:
+                          isVoided ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (sale.postedDate != null)
+                    Text(
+                      _formatTime(sale.postedDate!),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  static String _formatTime(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    return DateFormat('h:mm a').format(local);
   }
 
   // ---------------------------------------------------------------------------
@@ -665,6 +678,45 @@ class _MiniChip extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: color,
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentBadge extends StatelessWidget {
+  const _PaymentBadge({required this.isPaid});
+
+  final bool isPaid;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isPaid ? Colors.green : Colors.orange;
+    final label = isPaid ? 'Paid' : 'Unpaid';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPaid ? Icons.check_circle : Icons.cancel,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
