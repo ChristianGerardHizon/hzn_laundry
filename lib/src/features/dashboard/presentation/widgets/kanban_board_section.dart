@@ -10,6 +10,7 @@ import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
+import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
@@ -1238,7 +1239,7 @@ class _SaleCardContent extends StatelessWidget {
                     _DateBadge(date: sale.postedDate!.toLocal()),
                     const SizedBox(width: 4),
                   ],
-                  _PaymentBadge(isPaid: sale.isPaid),
+                  _PaymentBadge(paymentStatus: sale.paymentStatus),
                 ],
               ),
               // Services & Addons summary
@@ -1467,13 +1468,17 @@ class _DateBadge extends StatelessWidget {
 }
 
 class _PaymentBadge extends StatelessWidget {
-  const _PaymentBadge({required this.isPaid});
+  const _PaymentBadge({required this.paymentStatus});
 
-  final bool isPaid;
+  final PaymentStatus paymentStatus;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
+    final color = switch (paymentStatus) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.blue,
+      PaymentStatus.unpaid => Colors.orange,
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1482,7 +1487,7 @@ class _PaymentBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isPaid ? 'Paid' : 'Unpaid',
+        paymentStatus.displayName,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w500,

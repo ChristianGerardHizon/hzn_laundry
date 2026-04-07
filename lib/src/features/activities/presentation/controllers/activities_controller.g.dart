@@ -208,3 +208,96 @@ final class RecordActivityLogsFamily extends $Family
   @override
   String toString() => r'recordActivityLogsProvider';
 }
+
+/// Provider for fetching all activity logs related to a sale,
+/// including logs for its payment records.
+
+@ProviderFor(saleActivityLogs)
+final saleActivityLogsProvider = SaleActivityLogsFamily._();
+
+/// Provider for fetching all activity logs related to a sale,
+/// including logs for its payment records.
+
+final class SaleActivityLogsProvider extends $FunctionalProvider<
+        AsyncValue<List<ActivityLog>>,
+        List<ActivityLog>,
+        FutureOr<List<ActivityLog>>>
+    with
+        $FutureModifier<List<ActivityLog>>,
+        $FutureProvider<List<ActivityLog>> {
+  /// Provider for fetching all activity logs related to a sale,
+  /// including logs for its payment records.
+  SaleActivityLogsProvider._(
+      {required SaleActivityLogsFamily super.from,
+      required String super.argument})
+      : super(
+          retry: null,
+          name: r'saleActivityLogsProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$saleActivityLogsHash();
+
+  @override
+  String toString() {
+    return r'saleActivityLogsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ActivityLog>> $createElement(
+          $ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ActivityLog>> create(Ref ref) {
+    final argument = this.argument as String;
+    return saleActivityLogs(
+      ref,
+      argument,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SaleActivityLogsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$saleActivityLogsHash() => r'85439eb7fd436d07ec646c0a6496ef53e270f0f7';
+
+/// Provider for fetching all activity logs related to a sale,
+/// including logs for its payment records.
+
+final class SaleActivityLogsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<ActivityLog>>, String> {
+  SaleActivityLogsFamily._()
+      : super(
+          retry: null,
+          name: r'saleActivityLogsProvider',
+          dependencies: null,
+          $allTransitiveDependencies: null,
+          isAutoDispose: true,
+        );
+
+  /// Provider for fetching all activity logs related to a sale,
+  /// including logs for its payment records.
+
+  SaleActivityLogsProvider call(
+    String saleId,
+  ) =>
+      SaleActivityLogsProvider._(argument: saleId, from: this);
+
+  @override
+  String toString() => r'saleActivityLogsProvider';
+}

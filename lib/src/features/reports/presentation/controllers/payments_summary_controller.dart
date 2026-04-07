@@ -57,6 +57,7 @@ Future<List<PaymentsDailySummaryEntry>> paymentsSummary(Ref ref) async {
 
 PaymentMethod _parseMethod(String m) => switch (m.toLowerCase()) {
       'cash' => PaymentMethod.cash,
+      'gcash' => PaymentMethod.gcash,
       'card' => PaymentMethod.card,
       'banktransfer' => PaymentMethod.bankTransfer,
       'check' => PaymentMethod.check,

@@ -15,6 +15,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = SaleMapper._());
       OrderStatusMapper.ensureInitialized();
+      PaymentStatusMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -56,6 +57,13 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$isPaid,
     opt: true,
     def: false,
+  );
+  static PaymentStatus _$paymentStatus(Sale v) => v.paymentStatus;
+  static const Field<Sale, PaymentStatus> _f$paymentStatus = Field(
+    'paymentStatus',
+    _$paymentStatus,
+    opt: true,
+    def: PaymentStatus.unpaid,
   );
   static int _$packs(Sale v) => v.packs;
   static const Field<Sale, int> _f$packs = Field(
@@ -117,6 +125,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #status: _f$status,
     #orderStatus: _f$orderStatus,
     #isPaid: _f$isPaid,
+    #paymentStatus: _f$paymentStatus,
     #packs: _f$packs,
     #pickedUpAt: _f$pickedUpAt,
     #customerId: _f$customerId,
@@ -137,6 +146,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
       status: data.dec(_f$status),
       orderStatus: data.dec(_f$orderStatus),
       isPaid: data.dec(_f$isPaid),
+      paymentStatus: data.dec(_f$paymentStatus),
       packs: data.dec(_f$packs),
       pickedUpAt: data.dec(_f$pickedUpAt),
       customerId: data.dec(_f$customerId),
@@ -203,6 +213,7 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     String? status,
     OrderStatus? orderStatus,
     bool? isPaid,
+    PaymentStatus? paymentStatus,
     int? packs,
     DateTime? pickedUpAt,
     String? customerId,
@@ -231,6 +242,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     String? status,
     OrderStatus? orderStatus,
     bool? isPaid,
+    PaymentStatus? paymentStatus,
     int? packs,
     Object? pickedUpAt = $none,
     Object? customerId = $none,
@@ -249,6 +261,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
       if (status != null) #status: status,
       if (orderStatus != null) #orderStatus: orderStatus,
       if (isPaid != null) #isPaid: isPaid,
+      if (paymentStatus != null) #paymentStatus: paymentStatus,
       if (packs != null) #packs: packs,
       if (pickedUpAt != $none) #pickedUpAt: pickedUpAt,
       if (customerId != $none) #customerId: customerId,
@@ -269,6 +282,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     status: data.get(#status, or: $value.status),
     orderStatus: data.get(#orderStatus, or: $value.orderStatus),
     isPaid: data.get(#isPaid, or: $value.isPaid),
+    paymentStatus: data.get(#paymentStatus, or: $value.paymentStatus),
     packs: data.get(#packs, or: $value.packs),
     pickedUpAt: data.get(#pickedUpAt, or: $value.pickedUpAt),
     customerId: data.get(#customerId, or: $value.customerId),

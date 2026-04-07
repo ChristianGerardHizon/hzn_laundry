@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../pos/presentation/payments_controller.dart';
 import '../../data/repositories/activity_log_repository.dart';
 import '../../domain/activity_log.dart';
 
@@ -112,5 +113,24 @@ Future<List<ActivityLog>> recordActivityLogs(
 ) async {
   final repository = ref.watch(activityLogRepositoryProvider);
   final result = await repository.fetchByRecord(recordId);
+  return result.fold((f) => [], (logs) => logs);
+}
+
+/// Provider for fetching all activity logs related to a sale,
+/// including logs for its payment records.
+@riverpod
+Future<List<ActivityLog>> saleActivityLogs(
+  Ref ref,
+  String saleId,
+) async {
+  final repository = ref.watch(activityLogRepositoryProvider);
+
+  // Get payment IDs for this sale
+  final paymentsAsync = await ref.watch(salePaymentsProvider(saleId).future);
+  final paymentIds = paymentsAsync.map((p) => p.id).toList();
+
+  // Fetch logs for the sale + all its payment records
+  final allRecordIds = [saleId, ...paymentIds];
+  final result = await repository.fetchByRecordIds(allRecordIds);
   return result.fold((f) => [], (logs) => logs);
 }

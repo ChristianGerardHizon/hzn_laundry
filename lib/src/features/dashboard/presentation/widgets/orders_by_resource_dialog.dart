@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../machines/presentation/controllers/machines_controller.dart';
+import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
@@ -464,7 +465,7 @@ class _OrderCard extends StatelessWidget {
                     _DateBadge(date: sale.postedDate!.toLocal()),
                     const SizedBox(width: 4),
                   ],
-                  _PaymentBadge(isPaid: sale.isPaid),
+                  _PaymentBadge(paymentStatus: sale.paymentStatus),
                 ],
               ),
 
@@ -582,15 +583,19 @@ class _DateBadge extends StatelessWidget {
   }
 }
 
-/// Payment badge (Paid/Unpaid).
+/// Payment badge (Paid/Partial/Unpaid).
 class _PaymentBadge extends StatelessWidget {
-  const _PaymentBadge({required this.isPaid});
+  const _PaymentBadge({required this.paymentStatus});
 
-  final bool isPaid;
+  final PaymentStatus paymentStatus;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
+    final color = switch (paymentStatus) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.blue,
+      PaymentStatus.unpaid => Colors.orange,
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -598,7 +603,7 @@ class _PaymentBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isPaid ? 'Paid' : 'Unpaid',
+        paymentStatus.displayName,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
