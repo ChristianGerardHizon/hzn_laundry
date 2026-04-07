@@ -10,8 +10,8 @@ part 'pocketbase_provider.g.dart';
 /// Environment URLs for PocketBase
 abstract class PocketBaseUrls {
   static const String dev = 'http://127.0.0.1:8090';
-  static const String staging = 'https://staging.hizonelaundry.sannjoseanimalclinic.com';
-  static const String prod = 'https://hizonelaundry.sannjoseanimalclinic.com';
+  static const String staging = 'https://staging.hizonelaundry.hznsystems.com';
+  static const String prod = 'https://hizonelaundry.hznsystems.com';
 }
 
 /// Environment passed via --dart-define=ENV=<value>

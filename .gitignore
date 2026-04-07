@@ -73,3 +73,4 @@ app.*.map.json
 !/server/pb_hooks/**
 .grepai/
 pocketbase.env
+.env
