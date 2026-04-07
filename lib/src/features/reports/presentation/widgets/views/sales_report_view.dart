@@ -455,6 +455,7 @@ class SalesReportView extends HookConsumerWidget {
   (IconData, Color) _methodStyle(PaymentMethod method) {
     return switch (method) {
       PaymentMethod.cash => (Icons.payments, Colors.green),
+      PaymentMethod.gcash => (Icons.phone_android, Colors.blue),
       PaymentMethod.card => (Icons.credit_card, Colors.blue),
       PaymentMethod.bankTransfer => (Icons.account_balance, Colors.purple),
       PaymentMethod.check => (Icons.description, Colors.brown),

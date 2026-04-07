@@ -6,12 +6,14 @@ part 'payment_method.mapper.dart';
 @MappableEnum()
 enum PaymentMethod {
   cash,
+  gcash,
   card,
   bankTransfer,
   check;
 
   String get displayName => switch (this) {
         PaymentMethod.cash => 'Cash',
+        PaymentMethod.gcash => 'GCash',
         PaymentMethod.card => 'Card',
         PaymentMethod.bankTransfer => 'Bank Transfer',
         PaymentMethod.check => 'Check',

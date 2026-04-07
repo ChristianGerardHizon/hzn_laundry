@@ -10,8 +10,8 @@ import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
-import '../../../activities/domain/activity_log.dart';
 import '../../../activities/presentation/controllers/activities_controller.dart';
+import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
@@ -121,8 +121,6 @@ class _SaleDetailContent extends HookConsumerWidget {
     final saleItemsAsync = ref.watch(saleItemsProvider(sale.id));
     final serviceItemsAsync = ref.watch(saleServiceItemsProvider(sale.id));
     final paymentsAsync = ref.watch(salePaymentsProvider(sale.id));
-    final statusHistoryAsync =
-        ref.watch(recordActivityLogsProvider(sale.id));
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final currencyFormat = NumberFormat.currency(symbol: '₱');
 
@@ -140,45 +138,54 @@ class _SaleDetailContent extends HookConsumerWidget {
         (currentRole.isAdmin ||
             currentRole.hasPermission(Permissions.paymentsEdit));
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !isTablet,
-        leading: isTablet
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => const SalesHistoryRoute().go(context),
-              ),
-        title: Text(sale.receiptNumber),
-        actions: [
-          _PrintMenuButton(
-            sale: sale,
-            saleItemsAsync: saleItemsAsync,
-            serviceItemsAsync: serviceItemsAsync,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: !isTablet,
+          leading: isTablet
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => const SalesHistoryRoute().go(context),
+                ),
+          title: Text(sale.receiptNumber),
+          actions: [
+            _PrintMenuButton(
+              sale: sale,
+              saleItemsAsync: saleItemsAsync,
+              serviceItemsAsync: serviceItemsAsync,
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Details'),
+              Tab(text: 'Activity'),
+            ],
           ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(saleProvider(sale.id));
-          ref.invalidate(saleItemsProvider(sale.id));
-          ref.invalidate(saleServiceItemsProvider(sale.id));
-          ref.invalidate(salePaymentsProvider(sale.id));
-          ref.invalidate(recordActivityLogsProvider(sale.id));
-          await Future.wait([
-            ref.read(saleProvider(sale.id).future),
-            ref.read(saleItemsProvider(sale.id).future),
-            ref.read(saleServiceItemsProvider(sale.id).future),
-            ref.read(salePaymentsProvider(sale.id).future),
-            ref.read(recordActivityLogsProvider(sale.id).future),
-          ]);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        ),
+        body: TabBarView(
+          children: [
+            // Details tab
+            RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(saleProvider(sale.id));
+                ref.invalidate(saleItemsProvider(sale.id));
+                ref.invalidate(saleServiceItemsProvider(sale.id));
+                ref.invalidate(salePaymentsProvider(sale.id));
+                await Future.wait([
+                  ref.read(saleProvider(sale.id).future),
+                  ref.read(saleItemsProvider(sale.id).future),
+                  ref.read(saleServiceItemsProvider(sale.id).future),
+                  ref.read(salePaymentsProvider(sale.id).future),
+                ]);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // Header Card
               Card(
                 child: Padding(
@@ -237,11 +244,17 @@ class _SaleDetailContent extends HookConsumerWidget {
               const SizedBox(height: 16),
 
               // Highlight Banner - shows most important status
-              SaleHighlightBanner(
-                orderStatus: sale.orderStatus,
-                isPaid: sale.isPaid,
-                saleStatus: sale.status,
-              ),
+              Builder(builder: (_) {
+                final totalPaid =
+                    ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+                return SaleHighlightBanner(
+                  orderStatus: sale.orderStatus,
+                  isPaid: sale.isPaid,
+                  saleStatus: sale.status,
+                  paymentStatus: sale.paymentStatus,
+                  balanceDue: sale.totalAmount - totalPaid,
+                );
+              }),
               const SizedBox(height: 16),
 
               // Sale Status Actions (Refund/Unrefund)
@@ -252,14 +265,52 @@ class _SaleDetailContent extends HookConsumerWidget {
               _buildOrderStatusCard(context, ref),
               const SizedBox(height: 16),
 
-              // Status History Timeline
-              _buildStatusHistoryCard(
-                  context, statusHistoryAsync, dateFormat),
-              const SizedBox(height: 16),
+              // Services Section
+              serviceItemsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (serviceItems) {
+                  if (serviceItems.isEmpty) return const SizedBox.shrink();
 
-              // Items Section
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Services',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Card(
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: serviceItems.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = serviceItems[index];
+                            return _ServiceItemEditTile(
+                              sale: sale,
+                              item: item,
+                              currencyFormat: currencyFormat,
+                              canEdit: canEdit,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Packs Section
+                      if (sale.orderStatus != OrderStatus.pending)
+                        _PacksEditSection(sale: sale),
+                    ],
+                  );
+                },
+              ),
+
+              // Add Ons Section
               Text(
-                'Items',
+                'Add Ons',
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -271,12 +322,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                   ),
                   error: (error, _) => Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('Error loading items: $error'),
+                    child: Text('Error loading add ons: $error'),
                   ),
                   data: (items) => items.isEmpty
                       ? const Padding(
                           padding: EdgeInsets.all(16),
-                          child: Text('No items'),
+                          child: Text('No add ons'),
                         )
                       : ListView.separated(
                           shrinkWrap: true,
@@ -331,49 +382,6 @@ class _SaleDetailContent extends HookConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // Service Items Section
-              serviceItemsAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (serviceItems) {
-                  if (serviceItems.isEmpty) return const SizedBox.shrink();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Service Items',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: serviceItems.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = serviceItems[index];
-                            return _ServiceItemEditTile(
-                              sale: sale,
-                              item: item,
-                              currencyFormat: currencyFormat,
-                              canEdit: canEdit,
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Packs Section
-                      if (sale.orderStatus != OrderStatus.pending)
-                        _PacksEditSection(sale: sale),
-                    ],
-                  );
-                },
-              ),
-
               // Total Card
               Card(
                 color: theme.colorScheme.primaryContainer,
@@ -412,6 +420,12 @@ class _SaleDetailContent extends HookConsumerWidget {
                   context, ref, paymentsAsync, currencyFormat, canEdit),
             ],
           ),
+        ),
+      ),
+
+            // Activity tab
+            _SaleActivityTab(saleId: sale.id),
+          ],
         ),
       ),
     );
@@ -775,100 +789,6 @@ class _SaleDetailContent extends HookConsumerWidget {
     }
   }
 
-  Widget _buildStatusHistoryCard(
-    BuildContext context,
-    AsyncValue<List<ActivityLog>> historyAsync,
-    DateFormat dateFormat,
-  ) {
-    final theme = Theme.of(context);
-
-    return historyAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (history) {
-        if (history.isEmpty) return const SizedBox.shrink();
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.history,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Activity History',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: history.length,
-                  itemBuilder: (context, index) {
-                    final entry = history[index];
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor:
-                                entry.action.color.withValues(alpha: 0.1),
-                            child: Icon(
-                              entry.action.icon,
-                              size: 16,
-                              color: entry.action.color,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.description ?? '',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  entry.created != null
-                                      ? dateFormat.format(entry.created!)
-                                      : '',
-                                  style:
-                                      theme.textTheme.bodySmall?.copyWith(
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildIncentiveCard(
     BuildContext context,
     WidgetRef ref,
@@ -995,34 +915,40 @@ class _SaleDetailContent extends HookConsumerWidget {
                   ),
                 ),
                 // Payment status chip
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: sale.isPaid
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        sale.isPaid ? Icons.check_circle : Icons.pending,
-                        size: 16,
-                        color: sale.isPaid ? Colors.green : Colors.orange,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        sale.isPaid ? 'Paid' : 'Unpaid',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: sale.isPaid ? Colors.green : Colors.orange,
-                          fontWeight: FontWeight.w600,
+                Builder(builder: (context) {
+                  final color = switch (sale.paymentStatus) {
+                    PaymentStatus.paid => Colors.green,
+                    PaymentStatus.partial => Colors.blue,
+                    PaymentStatus.unpaid => Colors.orange,
+                  };
+                  final icon = switch (sale.paymentStatus) {
+                    PaymentStatus.paid => Icons.check_circle,
+                    PaymentStatus.partial => Icons.timelapse,
+                    PaymentStatus.unpaid => Icons.pending,
+                  };
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 16, color: color),
+                        const SizedBox(width: 4),
+                        Text(
+                          sale.paymentStatus.displayName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
             const Divider(height: 24),
@@ -1979,6 +1905,134 @@ class _IncentiveRow extends StatelessWidget {
           ),
           Text(value, style: theme.textTheme.bodyMedium),
         ],
+      ),
+    );
+  }
+}
+
+/// Activity tab showing all activity logs for a sale and its payments.
+class _SaleActivityTab extends ConsumerWidget {
+  const _SaleActivityTab({required this.saleId});
+
+  final String saleId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+    final activityAsync = ref.watch(saleActivityLogsProvider(saleId));
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(saleActivityLogsProvider(saleId));
+        await ref.read(saleActivityLogsProvider(saleId).future);
+      },
+      child: activityAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 16),
+                Text('Error loading activity: $error'),
+                const SizedBox(height: 16),
+                FilledButton.tonal(
+                  onPressed: () =>
+                      ref.invalidate(saleActivityLogsProvider(saleId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        data: (logs) {
+          if (logs.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('No activity history'),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: logs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 4),
+            itemBuilder: (context, index) {
+              final entry = logs[index];
+              final isPayment = entry.collection == 'payments';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor:
+                          entry.action.color.withValues(alpha: 0.1),
+                      child: Icon(
+                        isPayment ? Icons.payment : entry.action.icon,
+                        size: 16,
+                        color: entry.action.color,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.description ?? '',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              if (isPayment) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Payment',
+                                    style:
+                                        theme.textTheme.labelSmall?.copyWith(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                entry.created != null
+                                    ? dateFormat.format(entry.created!)
+                                    : '',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color:
+                                      theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

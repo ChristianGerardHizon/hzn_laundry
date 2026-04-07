@@ -255,7 +255,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
     return total;
   }
 
-  /// Updates sale.isPaid based on total payments vs totalAmount.
+  /// Updates sale.isPaid and paymentStatus based on total payments vs totalAmount.
   Future<void> _updateSaleIsPaid(String saleId) async {
     // Get sale to know total amount
     final sale = await _sales.getOne(saleId);
@@ -264,8 +264,20 @@ class PaymentRepositoryImpl implements PaymentRepository {
     // Calculate total paid
     final totalPaid = await _calculateTotalPaid(saleId);
 
-    // Update isPaid
+    // Determine payment status
     final isPaid = totalPaid >= totalAmount;
-    await _sales.update(saleId, body: {'isPaid': isPaid});
+    final String paymentStatus;
+    if (totalPaid <= 0) {
+      paymentStatus = 'unpaid';
+    } else if (totalPaid < totalAmount) {
+      paymentStatus = 'partial';
+    } else {
+      paymentStatus = 'paid';
+    }
+
+    await _sales.update(saleId, body: {
+      'isPaid': isPaid,
+      'paymentStatus': paymentStatus,
+    });
   }
 }

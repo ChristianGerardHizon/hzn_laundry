@@ -158,7 +158,7 @@ class _DialogFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final showPayment = sale != null && !sale!.isPaid;
+    final showPayment = sale != null && !sale!.isPaid;  // shows for unpaid and partial
     final totalPaidAsync = showPayment
         ? ref.watch(saleTotalPaidProvider(saleId))
         : null;
