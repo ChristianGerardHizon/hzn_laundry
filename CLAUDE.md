@@ -373,20 +373,23 @@ Example update for Recent Updates table:
 
 ### Test Superuser Credentials
 
-Credentials are stored in `pocketbase.env` (gitignored — never commit this file):
+Credentials are stored in `.env` (gitignored — never commit this file):
 
 ```
-email=test@test.com
-password=password101
+PB_PROD_EMAIL=...
+PB_PROD_PASSWORD=...
+PB_STAGING_EMAIL=...
+PB_STAGING_PASSWORD=...
 ```
 
 ### Authenticating
 
 ```bash
-# Authenticate and get a token
+# Load credentials from .env and authenticate
+source .env
 curl -X POST http://127.0.0.1:8090/api/admins/auth-with-password \
   -H "Content-Type: application/json" \
-  -d '{"identity":"test@test.com","password":"password101"}'
+  -d "{\"identity\":\"$PB_PROD_EMAIL\",\"password\":\"$PB_PROD_PASSWORD\"}"
 ```
 
 Use the returned `token` as a Bearer token for subsequent requests:
@@ -397,9 +400,9 @@ curl -H "Authorization: Bearer <token>" http://127.0.0.1:8090/api/collections
 
 ### Guidelines
 
-- **Always use the test superuser** from `pocketbase.env` for API interactions during development
+- **Always use the test superuser** from `.env` for API interactions during development
 - **Prefer the PocketBase API** over direct DB manipulation for schema changes, collection management, and data seeding
-- `pocketbase.env` is gitignored — keep credentials out of source control
+- `.env` is gitignored — keep credentials out of source control
 
 
 ## grepai - Semantic Code Search
