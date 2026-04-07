@@ -42,10 +42,13 @@ class RecordPaymentDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final isSaving = useState(false);
-    final selectedPaymentType = useState(
-      existingPayment?.type ?? PaymentType.payment,
+    final selectedPaymentOption = useState(
+      _paymentOptionFromExisting(existingPayment),
     );
     final proofImage = useState<XFile?>(null);
+    final enteredAmount = useState<num>(
+      isEditing ? existingPayment!.amount : balanceDue,
+    );
     final currencyFormat =
         NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final imagePicker = useMemoized(() => ImagePicker());
@@ -79,8 +82,9 @@ class RecordPaymentDialog extends HookConsumerWidget {
 
       final values = formKey.currentState!.value;
       final amount = num.tryParse(values['amount']?.toString() ?? '') ?? 0;
-      final paymentMethod = values['paymentMethod'] as PaymentMethod;
-      final paymentType = values['paymentType'] as PaymentType;
+      final paymentOption = values['paymentOption'] as _PaymentOption;
+      final paymentMethod = paymentOption.toPaymentMethod();
+      final paymentType = paymentOption.toPaymentType();
       final paymentRef = values['paymentRef'] as String?;
       final notes = values['notes'] as String?;
       final paymentDate = values['paymentDate'] as DateTime?;
@@ -148,8 +152,9 @@ class RecordPaymentDialog extends HookConsumerWidget {
       }
     }
 
-    // Check if reference field should be shown (only for GCash/Bank)
-    final showReferenceField = selectedPaymentType.value == PaymentType.deposit;
+    // Check if reference field should be shown (for GCash/Bank)
+    final showReferenceField =
+        selectedPaymentOption.value == _PaymentOption.gcashBank;
     final theme = Theme.of(context);
 
     // For editing, the effective balance is the balance + existing payment amount
@@ -169,24 +174,74 @@ class RecordPaymentDialog extends HookConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Balance due info
+                    // Payment summary info
                     Card(
                       color: theme.colorScheme.primaryContainer,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
                           children: [
-                            Text(
-                              'Balance Due:',
-                              style: theme.textTheme.titleMedium,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Total Amount:',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                Text(
+                                  currencyFormat.format(sale.totalAmount),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              currencyFormat.format(effectiveBalanceDue),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Paid:',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                Text(
+                                  currencyFormat.format(
+                                      sale.totalAmount - effectiveBalanceDue),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Balance Due:',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                Text(
+                                  currencyFormat.format(effectiveBalanceDue),
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -217,13 +272,30 @@ class RecordPaymentDialog extends HookConsumerWidget {
                       initialValue: isEditing
                           ? existingPayment!.amount.toString()
                           : effectiveBalanceDue.toString(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Amount *',
                         prefixText: '₱ ',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.restart_alt, size: 20),
+                          tooltip: 'Reset to balance due',
+                          onPressed: () {
+                            final initial = isEditing
+                                ? existingPayment!.amount.toString()
+                                : effectiveBalanceDue.toString();
+                            formKey.currentState?.fields['amount']
+                                ?.didChange(initial);
+                            enteredAmount.value =
+                                num.tryParse(initial) ?? 0;
+                          },
+                        ),
                       ),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (value) {
+                        enteredAmount.value =
+                            num.tryParse(value ?? '') ?? 0;
+                      },
                       validator: FormBuilderValidators.compose([
                         FormBuilderValidators.required(),
                         FormBuilderValidators.numeric(),
@@ -231,49 +303,132 @@ class RecordPaymentDialog extends HookConsumerWidget {
                             errorText: 'Amount must be greater than 0'),
                       ]),
                     ),
+                    const SizedBox(height: 8),
+
+                    // Overpayment warning
+                    if (enteredAmount.value > effectiveBalanceDue)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded,
+                                size: 18,
+                                color: theme.colorScheme.error),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Amount exceeds balance due by ${currencyFormat.format(enteredAmount.value - effectiveBalanceDue)}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // Quick amount adjustment buttons
+                    Row(
+                      children: [
+                        _QuickAmountButton(
+                          label: '−100',
+                          onPressed: () {
+                            _adjustAmount(formKey, -100);
+                            enteredAmount.value = num.tryParse(
+                                  formKey.currentState?.fields['amount']?.value
+                                          ?.toString() ??
+                                      '',
+                                ) ??
+                                0;
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        _QuickAmountButton(
+                          label: '−10',
+                          onPressed: () {
+                            _adjustAmount(formKey, -10);
+                            enteredAmount.value = num.tryParse(
+                                  formKey.currentState?.fields['amount']?.value
+                                          ?.toString() ??
+                                      '',
+                                ) ??
+                                0;
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              final current = num.tryParse(
+                                    formKey.currentState?.fields['amount']?.value
+                                            ?.toString() ??
+                                        '',
+                                  ) ??
+                                  0;
+                              final halved = (current / 2).toStringAsFixed(2);
+                              formKey.currentState?.fields['amount']
+                                  ?.didChange(halved);
+                              enteredAmount.value =
+                                  num.tryParse(halved) ?? 0;
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                            ),
+                            child: const Text('½',
+                                style: TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        _QuickAmountButton(
+                          label: '+10',
+                          onPressed: () {
+                            _adjustAmount(formKey, 10);
+                            enteredAmount.value = num.tryParse(
+                                  formKey.currentState?.fields['amount']?.value
+                                          ?.toString() ??
+                                      '',
+                                ) ??
+                                0;
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        _QuickAmountButton(
+                          label: '+100',
+                          onPressed: () {
+                            _adjustAmount(formKey, 100);
+                            enteredAmount.value = num.tryParse(
+                                  formKey.currentState?.fields['amount']?.value
+                                          ?.toString() ??
+                                      '',
+                                ) ??
+                                0;
+                          },
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
 
-                    // Payment type
-                    FormBuilderChoiceChips<PaymentType>(
-                      name: 'paymentType',
-                      initialValue:
-                          existingPayment?.type ?? PaymentType.payment,
+                    // Payment option (combined type + method)
+                    FormBuilderChoiceChips<_PaymentOption>(
+                      name: 'paymentOption',
+                      initialValue: selectedPaymentOption.value,
                       decoration: const InputDecoration(
-                        labelText: 'Payment Type',
+                        labelText: 'Payment Method',
                         border: InputBorder.none,
                       ),
                       spacing: 8,
-                      options: PaymentType.values
-                          .map((type) => FormBuilderChipOption(
-                                value: type,
-                                child: Text(type.displayName),
+                      options: _PaymentOption.values
+                          .map((option) => FormBuilderChipOption(
+                                value: option,
+                                child: Text(option.displayName),
                               ))
                           .toList(),
                       validator: FormBuilderValidators.required(),
                       onChanged: (value) {
                         if (value != null) {
-                          selectedPaymentType.value = value;
+                          selectedPaymentOption.value = value;
                         }
                       },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Payment method
-                    FormBuilderDropdown<PaymentMethod>(
-                      name: 'paymentMethod',
-                      initialValue:
-                          existingPayment?.paymentMethod ?? PaymentMethod.cash,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Method *',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: PaymentMethod.values
-                          .map((method) => DropdownMenuItem(
-                                value: method,
-                                child: Text(method.displayName),
-                              ))
-                          .toList(),
-                      validator: FormBuilderValidators.required(),
                     ),
                     const SizedBox(height: 16),
 
@@ -291,94 +446,96 @@ class RecordPaymentDialog extends HookConsumerWidget {
                       const SizedBox(height: 16),
                     ],
 
-                    // Proof of payment
-                    Text(
-                      'Proof of Payment',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    if (proofImage.value != null) ...[
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              File(proofImage.value!.path),
-                              height: 150,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: IconButton.filled(
-                              onPressed: () => proofImage.value = null,
-                              icon: const Icon(Icons.close),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+                    // Proof of payment - only for GCash/Bank
+                    if (showReferenceField) ...[
+                      Text(
+                        'Proof of Payment',
+                        style: theme.textTheme.titleSmall,
                       ),
                       const SizedBox(height: 8),
-                    ] else if (isEditing &&
-                        existingPayment!.paymentProofUrl != null &&
-                        existingPayment!.paymentProofUrl!.isNotEmpty) ...[
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              existingPayment!.paymentProofUrl!,
-                              height: 150,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Current proof',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 12),
+                      if (proofImage.value != null) ...[
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File(proofImage.value!.path),
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: pickImage,
-                            icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
-                          ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: IconButton.filled(
+                                onPressed: () => proofImage.value = null,
+                                icon: const Icon(Icons.close),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: takePhoto,
-                            icon: const Icon(Icons.camera_alt),
-                            label: const Text('Camera'),
-                          ),
+                        const SizedBox(height: 8),
+                      ] else if (isEditing &&
+                          existingPayment!.paymentProofUrl != null &&
+                          existingPayment!.paymentProofUrl!.isNotEmpty) ...[
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                existingPayment!.paymentProofUrl!,
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Current proof',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 8),
                       ],
-                    ),
-                    const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: pickImage,
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: takePhoto,
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Notes
                     FormBuilderTextField(
@@ -424,6 +581,41 @@ class RecordPaymentDialog extends HookConsumerWidget {
   }
 }
 
+void _adjustAmount(GlobalKey<FormBuilderState> formKey, num delta) {
+  final current = num.tryParse(
+        formKey.currentState?.fields['amount']?.value?.toString() ?? '',
+      ) ??
+      0;
+  final adjusted = (current + delta).clamp(0, double.infinity);
+  final formatted = adjusted == adjusted.toInt()
+      ? adjusted.toInt().toString()
+      : adjusted.toStringAsFixed(2);
+  formKey.currentState?.fields['amount']?.didChange(formatted);
+}
+
+class _QuickAmountButton extends StatelessWidget {
+  const _QuickAmountButton({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+        ),
+        child: Text(label, style: const TextStyle(fontSize: 13)),
+      ),
+    );
+  }
+}
+
 /// Shows the record payment dialog and returns true if a payment was recorded.
 Future<bool?> showRecordPaymentDialog(
   BuildContext context, {
@@ -458,4 +650,41 @@ Future<bool?> showEditPaymentDialog(
       canEditDate: canEditDate,
     ),
   );
+}
+
+/// Combined payment option shown in the record payment dialog.
+/// Maps to both [PaymentType] and [PaymentMethod] on save.
+enum _PaymentOption {
+  cash,
+  gcashBank,
+  refund;
+
+  String get displayName => switch (this) {
+        _PaymentOption.cash => 'Cash',
+        _PaymentOption.gcashBank => 'GCash/Bank',
+        _PaymentOption.refund => 'Refund',
+      };
+
+  PaymentType toPaymentType() => switch (this) {
+        _PaymentOption.cash => PaymentType.payment,
+        _PaymentOption.gcashBank => PaymentType.deposit,
+        _PaymentOption.refund => PaymentType.refund,
+      };
+
+  PaymentMethod toPaymentMethod() => switch (this) {
+        _PaymentOption.cash => PaymentMethod.cash,
+        _PaymentOption.gcashBank => PaymentMethod.gcash,
+        _PaymentOption.refund => PaymentMethod.cash,
+      };
+}
+
+_PaymentOption _paymentOptionFromExisting(Payment? payment) {
+  if (payment == null) return _PaymentOption.cash;
+  if (payment.type == PaymentType.refund) return _PaymentOption.refund;
+  if (payment.type == PaymentType.deposit ||
+      payment.paymentMethod == PaymentMethod.gcash ||
+      payment.paymentMethod == PaymentMethod.bankTransfer) {
+    return _PaymentOption.gcashBank;
+  }
+  return _PaymentOption.cash;
 }

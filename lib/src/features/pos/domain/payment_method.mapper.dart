@@ -28,6 +28,8 @@ class PaymentMethodMapper extends EnumMapper<PaymentMethod> {
     switch (value) {
       case r'cash':
         return PaymentMethod.cash;
+      case r'gcash':
+        return PaymentMethod.gcash;
       case r'card':
         return PaymentMethod.card;
       case r'bankTransfer':
@@ -44,6 +46,8 @@ class PaymentMethodMapper extends EnumMapper<PaymentMethod> {
     switch (self) {
       case PaymentMethod.cash:
         return r'cash';
+      case PaymentMethod.gcash:
+        return r'gcash';
       case PaymentMethod.card:
         return r'card';
       case PaymentMethod.bankTransfer:

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
+import '../../../../pos/domain/payment_status.dart';
 import '../../../../pos/domain/sale.dart';
 import '../../controllers/sales_detail_controller.dart';
 import '../../controllers/sales_detail_date_range_controller.dart';
@@ -431,11 +432,19 @@ class SalesDetailView extends HookConsumerWidget {
         DataCell(Text(_currencyFormat.format(sale.totalAmount))),
         DataCell(_buildStatusChip(context, sale.status)),
         DataCell(_buildOrderStatusChip(context, sale.orderStatus.displayName)),
-        DataCell(Icon(
-          sale.isPaid ? Icons.check_circle : Icons.cancel,
-          size: 18,
-          color: sale.isPaid ? Colors.green : Colors.orange,
-        )),
+        DataCell(Builder(builder: (context) {
+          final color = switch (sale.paymentStatus) {
+            PaymentStatus.paid => Colors.green,
+            PaymentStatus.partial => Colors.blue,
+            PaymentStatus.unpaid => Colors.orange,
+          };
+          final icon = switch (sale.paymentStatus) {
+            PaymentStatus.paid => Icons.check_circle,
+            PaymentStatus.partial => Icons.timelapse,
+            PaymentStatus.unpaid => Icons.cancel,
+          };
+          return Icon(icon, size: 18, color: color);
+        })),
         DataCell(Text(
           sale.pickedUpAt != null
               ? _dateTimeFormat.format(sale.pickedUpAt!)
@@ -545,7 +554,7 @@ class SalesDetailView extends HookConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  _PaymentBadge(isPaid: sale.isPaid),
+                  _PaymentBadge(paymentStatus: sale.paymentStatus),
                 ],
               ),
               const SizedBox(height: 6),
@@ -684,14 +693,18 @@ class _MiniChip extends StatelessWidget {
 }
 
 class _PaymentBadge extends StatelessWidget {
-  const _PaymentBadge({required this.isPaid});
+  const _PaymentBadge({required this.paymentStatus});
 
-  final bool isPaid;
+  final PaymentStatus paymentStatus;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
-    final label = isPaid ? 'Paid' : 'Unpaid';
+    final color = switch (paymentStatus) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.blue,
+      PaymentStatus.unpaid => Colors.orange,
+    };
+    final label = paymentStatus.displayName;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -703,7 +716,11 @@ class _PaymentBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isPaid ? Icons.check_circle : Icons.cancel,
+            switch (paymentStatus) {
+              PaymentStatus.paid => Icons.check_circle,
+              PaymentStatus.partial => Icons.timelapse,
+              PaymentStatus.unpaid => Icons.cancel,
+            },
             size: 12,
             color: color,
           ),

@@ -3,6 +3,7 @@ import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../core/utils/date_utils.dart';
 import '../../domain/order_status.dart';
+import '../../domain/payment_status.dart';
 import '../../domain/sale.dart';
 
 part 'sale_dto.mapper.dart';
@@ -19,6 +20,7 @@ class SaleDto with SaleDtoMappable {
   final String status;
   final String orderStatus;
   final bool isPaid;
+  final String paymentStatus;
   final int packs;
   final String? pickedUpAt;
   final String? customer;
@@ -39,6 +41,7 @@ class SaleDto with SaleDtoMappable {
     required this.status,
     this.orderStatus = 'pending',
     this.isPaid = false,
+    this.paymentStatus = 'unpaid',
     this.packs = 0,
     this.pickedUpAt,
     this.customer,
@@ -61,6 +64,7 @@ class SaleDto with SaleDtoMappable {
       status: record.getStringValue('status'),
       orderStatus: record.getStringValue('orderStatus'),
       isPaid: record.getBoolValue('isPaid'),
+      paymentStatus: record.getStringValue('paymentStatus'),
       packs: record.getIntValue('packs'),
       pickedUpAt: record.get<String>('pickedUpAt'),
       customer: record.getStringValue('customer'),
@@ -82,6 +86,7 @@ class SaleDto with SaleDtoMappable {
       status: status,
       orderStatus: _parseOrderStatus(orderStatus),
       isPaid: isPaid,
+      paymentStatus: _parsePaymentStatus(paymentStatus),
       packs: packs,
       pickedUpAt: parseToLocal(pickedUpAt),
       customerId: customer != null && customer!.isNotEmpty ? customer : null,
@@ -91,6 +96,17 @@ class SaleDto with SaleDtoMappable {
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );
+  }
+
+  PaymentStatus _parsePaymentStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'partial':
+        return PaymentStatus.partial;
+      case 'paid':
+        return PaymentStatus.paid;
+      default:
+        return PaymentStatus.unpaid;
+    }
   }
 
   OrderStatus _parseOrderStatus(String status) {

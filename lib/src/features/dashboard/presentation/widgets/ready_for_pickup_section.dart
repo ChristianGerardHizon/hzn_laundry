@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
+import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../controllers/ready_for_pickup_controller.dart';
 
@@ -183,7 +184,11 @@ class _SaleListTile extends StatelessWidget {
             Icon(
               Icons.circle,
               size: 6,
-              color: sale.isPaid ? Colors.green : Colors.orange,
+              color: switch (sale.paymentStatus) {
+                PaymentStatus.paid => Colors.green,
+                PaymentStatus.partial => Colors.blue,
+                PaymentStatus.unpaid => Colors.orange,
+              },
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -202,7 +207,7 @@ class _SaleListTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            _PaymentStatusBadge(isPaid: sale.isPaid),
+            _PaymentStatusBadge(paymentStatus: sale.paymentStatus),
           ],
         ),
       ),
@@ -211,13 +216,17 @@ class _SaleListTile extends StatelessWidget {
 }
 
 class _PaymentStatusBadge extends StatelessWidget {
-  const _PaymentStatusBadge({required this.isPaid});
+  const _PaymentStatusBadge({required this.paymentStatus});
 
-  final bool isPaid;
+  final PaymentStatus paymentStatus;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
+    final color = switch (paymentStatus) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.blue,
+      PaymentStatus.unpaid => Colors.orange,
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -226,7 +235,7 @@ class _PaymentStatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isPaid ? 'Paid' : 'Unpaid',
+        paymentStatus.displayName,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w500,

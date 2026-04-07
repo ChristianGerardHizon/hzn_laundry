@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../pos/domain/order_status.dart';
+import '../../../pos/domain/payment_status.dart';
 
 /// A prominent banner that highlights the most important status of a sale.
 ///
@@ -17,11 +19,15 @@ class SaleHighlightBanner extends StatelessWidget {
     required this.orderStatus,
     required this.isPaid,
     required this.saleStatus,
+    this.paymentStatus = PaymentStatus.unpaid,
+    this.balanceDue,
   });
 
   final OrderStatus orderStatus;
   final bool isPaid;
   final String saleStatus;
+  final PaymentStatus paymentStatus;
+  final num? balanceDue;
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +115,34 @@ class SaleHighlightBanner extends StatelessWidget {
     );
   }
 
+  String _paymentSecondaryText() {
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    return switch (paymentStatus) {
+      PaymentStatus.paid => 'Fully paid',
+      PaymentStatus.partial => balanceDue != null
+          ? 'Partially paid · ${currencyFormat.format(balanceDue)} remaining'
+          : 'Partially paid',
+      PaymentStatus.unpaid => 'Unpaid',
+    };
+  }
+
+  Color _paymentSecondaryColor() {
+    return switch (paymentStatus) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.blue,
+      PaymentStatus.unpaid => Colors.orange,
+    };
+  }
+
+  IconData _paymentSecondaryIcon() {
+    return switch (paymentStatus) {
+      PaymentStatus.paid => Icons.check_circle,
+      PaymentStatus.partial => Icons.timelapse,
+      PaymentStatus.unpaid => Icons.pending,
+    };
+  }
+
   _HighlightInfo _getHighlight() {
     // Priority 1: Refunded sale
     if (saleStatus.toLowerCase() == 'refunded') {
@@ -137,22 +171,22 @@ class SaleHighlightBanner extends StatelessWidget {
         icon: Icons.schedule,
         title: 'Pending',
         description: 'Order is waiting to be processed.',
-        secondaryInfo: isPaid ? 'Payment received' : 'Payment pending',
-        secondaryIcon: isPaid ? Icons.check_circle : Icons.pending,
-        secondaryColor: isPaid ? Colors.green : Colors.orange,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 
-    // Priority 4: Ready for pickup + Unpaid - needs payment before release
+    // Priority 4: Ready for pickup + Unpaid/Partial - needs payment before release
     if (orderStatus == OrderStatus.ready && !isPaid) {
       return _HighlightInfo(
         color: Colors.red.shade600,
         icon: Icons.payment,
         title: 'Ready - Awaiting Payment',
         description: 'Order is ready but payment is required before pickup.',
-        secondaryInfo: 'Collect payment before releasing',
-        secondaryIcon: Icons.warning_amber,
-        secondaryColor: Colors.red,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 
@@ -163,61 +197,48 @@ class SaleHighlightBanner extends StatelessWidget {
         icon: Icons.check_circle,
         title: 'Ready for Pickup',
         description: 'Order is complete and paid. Ready to release to customer.',
-        secondaryInfo: 'Fully paid',
-        secondaryIcon: Icons.paid,
-        secondaryColor: Colors.green,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 
-    // Priority 6: Processing + Unpaid
-    if (orderStatus == OrderStatus.processing && !isPaid) {
+    // Priority 6: Processing
+    if (orderStatus == OrderStatus.processing) {
       return _HighlightInfo(
         color: Colors.blue,
         icon: Icons.autorenew,
         title: 'Processing',
         description: 'Order is being processed.',
-        secondaryInfo: 'Payment pending',
-        secondaryIcon: Icons.pending,
-        secondaryColor: Colors.orange,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 
-    // Priority 7: Processing + Paid
-    if (orderStatus == OrderStatus.processing && isPaid) {
-      return _HighlightInfo(
-        color: Colors.blue,
-        icon: Icons.autorenew,
-        title: 'Processing',
-        description: 'Order is being processed.',
-        secondaryInfo: 'Payment received',
-        secondaryIcon: Icons.check_circle,
-        secondaryColor: Colors.green,
-      );
-    }
-
-    // Priority 8: Picked up + Unpaid (unusual case)
+    // Priority 7: Picked up + Unpaid/Partial (unusual case)
     if (orderStatus == OrderStatus.pickedUp && !isPaid) {
       return _HighlightInfo(
         color: Colors.red.shade600,
         icon: Icons.warning,
         title: 'Picked Up - Unpaid',
         description: 'Order was released but payment is still pending.',
-        secondaryInfo: 'Payment required',
-        secondaryIcon: Icons.error,
-        secondaryColor: Colors.red,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 
-    // Priority 9: Picked up + Paid - completed
+    // Priority 8: Picked up + Paid - completed
     if (orderStatus == OrderStatus.pickedUp && isPaid) {
       return _HighlightInfo(
         color: Colors.grey,
         icon: Icons.task_alt,
         title: 'Completed',
         description: 'Order has been picked up by the customer.',
-        secondaryInfo: 'Fully paid',
-        secondaryIcon: Icons.paid,
-        secondaryColor: Colors.green,
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
       );
     }
 

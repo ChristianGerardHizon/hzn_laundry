@@ -87,7 +87,11 @@ class CustomerPromoRepositoryImpl implements CustomerPromoRepository {
           sort: 'promo',
         );
 
-        return records.map(_toEntity).toList();
+        // Filter out customer promos whose parent promo is soft-deleted
+        return records
+            .map(_toEntity)
+            .where((cp) => cp.promo == null || !cp.promo!.isDeleted)
+            .toList();
       },
       Failure.handle,
     ).run();

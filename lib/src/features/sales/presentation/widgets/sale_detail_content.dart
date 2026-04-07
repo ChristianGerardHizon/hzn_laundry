@@ -10,6 +10,7 @@ import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
@@ -59,11 +60,7 @@ class SaleDetailContent extends ConsumerWidget {
           SizedBox(height: compact ? 12 : 16),
 
           // Highlight Banner - shows most important status
-          SaleHighlightBanner(
-            orderStatus: sale.orderStatus,
-            isPaid: sale.isPaid,
-            saleStatus: sale.status,
-          ),
+          _SaleHighlightBannerWithBalance(sale: sale),
           SizedBox(height: compact ? 12 : 16),
 
           // Services Section
@@ -962,6 +959,28 @@ class SaleAssignmentInfoCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Wraps [SaleHighlightBanner] with balance-due data from the payments provider.
+class _SaleHighlightBannerWithBalance extends ConsumerWidget {
+  const _SaleHighlightBannerWithBalance({required this.sale});
+
+  final Sale sale;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final totalPaid =
+        ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+    final balanceDue = sale.totalAmount - totalPaid;
+
+    return SaleHighlightBanner(
+      orderStatus: sale.orderStatus,
+      isPaid: sale.isPaid,
+      saleStatus: sale.status,
+      paymentStatus: sale.paymentStatus,
+      balanceDue: balanceDue,
     );
   }
 }

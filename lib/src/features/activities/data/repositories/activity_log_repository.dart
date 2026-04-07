@@ -25,6 +25,9 @@ abstract class ActivityLogRepository {
 
   /// Fetches activity logs for a specific record.
   FutureEither<List<ActivityLog>> fetchByRecord(String recordId);
+
+  /// Fetches activity logs for multiple record IDs.
+  FutureEither<List<ActivityLog>> fetchByRecordIds(List<String> recordIds);
 }
 
 /// Provides the ActivityLogRepository instance.
@@ -95,6 +98,27 @@ class ActivityLogRepositoryImpl implements ActivityLogRepository {
       () async {
         final records = await _collection.getFullList(
           filter: 'recordId = "$recordId"',
+          sort: '-created',
+          expand: 'user',
+        );
+
+        return records.map(_toEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<ActivityLog>> fetchByRecordIds(
+      List<String> recordIds) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (recordIds.isEmpty) return <ActivityLog>[];
+
+        final orClauses =
+            recordIds.map((id) => 'recordId = "$id"').join(' || ');
+        final records = await _collection.getFullList(
+          filter: '($orClauses)',
           sort: '-created',
           expand: 'user',
         );
