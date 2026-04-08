@@ -30,7 +30,7 @@ class OrdersByResourceDialog extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final groupMode = useState(ResourceGroupMode.machine);
+    final groupMode = useState(ResourceGroupMode.storage);
     final selectedMachineId = useState<String?>(null);
     final selectedStorageId = useState<String?>(null);
     final dateMode = useState(ResourceDateMode.todayAndBacklogs);
