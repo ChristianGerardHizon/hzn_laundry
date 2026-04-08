@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/foundation/failure.dart';
+import '../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/data/repositories/product_lot_repository.dart';
@@ -131,6 +132,14 @@ class CheckoutController extends _$CheckoutController {
     final productRepo = ref.read(productRepositoryProvider);
     final effectiveDate = ref.read(dashboardEffectiveDateProvider);
 
+    addBreadcrumb('Checkout started', category: 'checkout', data: {
+      'itemCount': saleItems.length,
+      'serviceCount': saleServiceItems.length,
+      'total': cartState.total,
+      'payNow': payNow,
+      if (customerId != null) 'customerId': customerId,
+    });
+
     // Save sale to backend
     final result = await salesRepo.createSale(
       sale,
@@ -140,7 +149,12 @@ class CheckoutController extends _$CheckoutController {
     );
 
     return result.fold(
-      (failure) => left(failure),
+      (failure) {
+        addBreadcrumb('Checkout failed', category: 'checkout', data: {
+          'error': failure.messageString,
+        });
+        return left(failure);
+      },
       (createdSale) async {
         // If paying now, create payment record
         if (payNow && paymentMethod != null && paymentAmount != null && paymentType != null) {
@@ -193,6 +207,12 @@ class CheckoutController extends _$CheckoutController {
 
         // Refresh dashboard sales summary
         ref.invalidate(salesSummaryProvider);
+
+        addBreadcrumb('Checkout success', category: 'checkout', data: {
+          'saleId': createdSale.id,
+          'receipt': createdSale.receiptNumber,
+          'total': createdSale.totalAmount,
+        });
 
         // Re-fetch the sale to get updated isPaid status
         final updatedSaleResult = await salesRepo.getSale(createdSale.id);

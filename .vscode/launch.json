@@ -12,7 +12,8 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=dev",
-                "--dart-define=API_URL=http://127.0.0.1:8090"
+                "--dart-define=API_URL=http://127.0.0.1:8090",
+                "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
         {
@@ -23,7 +24,8 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com"
+                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
+                "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
         {
@@ -35,7 +37,8 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com"
+                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
+                "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
         {
@@ -46,7 +49,8 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com"
+                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
+                "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
         {
@@ -58,7 +62,8 @@
             "args": [
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com"
+                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
+                "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
         {

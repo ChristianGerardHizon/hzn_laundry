@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
@@ -39,7 +40,7 @@ GoRouter router(Ref ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: SplashRoute.path,
     debugLogDiagnostics: true,
-    observers: [DialogDismissingObserver()],
+    observers: [SentryNavigatorObserver(), DialogDismissingObserver()],
     redirect: (context, state) => RouterUtils.redirect(context, state, ref),
     errorBuilder: RouterUtils.errorBuilder,
     routes: [
