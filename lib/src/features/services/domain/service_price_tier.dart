@@ -52,6 +52,15 @@ class ServicePriceTier with ServicePriceTierMappable {
   bool get hasUpperBound =>
       maxQuantity != null && maxQuantity! > 0;
 
+  /// Display-friendly range text. When [nextTierMin] is provided,
+  /// shows `nextTierMin - 0.01` as the upper bound to indicate decimals
+  /// are covered (e.g. "1 – 6.99 kg" when next tier starts at 7).
+  String displayRange(String unitLabel, {num? nextTierMin}) {
+    if (!hasUpperBound) return '$minQuantity+ $unitLabel';
+    final displayMax = nextTierMin != null ? nextTierMin - 0.01 : maxQuantity;
+    return '$minQuantity – $displayMax $unitLabel';
+  }
+
   /// Whether [quantity] falls within this tier's range.
   ///
   /// Uses inclusive min and inclusive max. For quantities with decimals

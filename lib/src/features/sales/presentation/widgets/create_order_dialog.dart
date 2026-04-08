@@ -1462,7 +1462,7 @@ class _ServiceSubtotal extends StatelessWidget {
 
 // ── Tier breakdown ──────────────────────────────────────────────────────────
 
-class _TierBreakdown extends StatelessWidget {
+class _TierBreakdown extends HookWidget {
   const _TierBreakdown({
     required this.tiers,
     required this.currentQuantity,
@@ -1473,11 +1473,48 @@ class _TierBreakdown extends StatelessWidget {
   final double currentQuantity;
   final String unitLabel;
 
+  static const _visibleCount = 3;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isExpanded = useState(false);
     final sorted = [...tiers]
       ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
+
+    // Find which tier is active
+    int activeIndex = -1;
+    for (var i = 0; i < sorted.length; i++) {
+      final nextMin =
+          i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
+      if (sorted[i].containsQuantityWithNext(
+        currentQuantity,
+        nextTierMin: nextMin,
+      )) {
+        activeIndex = i;
+        break;
+      }
+    }
+
+    // Determine which tiers to show when collapsed
+    final canCollapse = sorted.length > _visibleCount;
+    List<int> visibleIndices;
+    if (!canCollapse || isExpanded.value) {
+      visibleIndices = List.generate(sorted.length, (i) => i);
+    } else {
+      // Show a window of 3 tiers centered on the active tier
+      int start;
+      if (activeIndex <= 0) {
+        start = 0;
+      } else if (activeIndex >= sorted.length - 1) {
+        start = sorted.length - _visibleCount;
+      } else {
+        start = activeIndex - 1;
+      }
+      start = start.clamp(0, sorted.length - _visibleCount);
+      visibleIndices =
+          List.generate(_visibleCount, (i) => start + i);
+    }
 
     return Container(
       padding: const EdgeInsets.all(10),
@@ -1496,18 +1533,14 @@ class _TierBreakdown extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          ...sorted.asMap().entries.map((entry) {
-            final i = entry.key;
-            final tier = entry.value;
-            final nextMin =
-                i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
-            final isActive = tier.containsQuantityWithNext(
-              currentQuantity,
-              nextTierMin: nextMin,
-            );
-            final rangeText = tier.hasUpperBound
-                ? '${tier.minQuantity}-${tier.maxQuantity} $unitLabel'
-                : '${tier.minQuantity}+ $unitLabel';
+          ...visibleIndices.map((i) {
+            final tier = sorted[i];
+            final isActive = i == activeIndex;
+            final nextTierMin = i + 1 < sorted.length
+                ? sorted[i + 1].minQuantity
+                : null;
+            final rangeText = tier.displayRange(unitLabel,
+                nextTierMin: nextTierMin);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 1),
               child: Row(
@@ -1547,6 +1580,33 @@ class _TierBreakdown extends StatelessWidget {
               ),
             );
           }),
+          if (canCollapse)
+            GestureDetector(
+              onTap: () => isExpanded.value = !isExpanded.value,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      isExpanded.value
+                          ? 'Show less'
+                          : 'Show all ${sorted.length} tiers',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    Icon(
+                      isExpanded.value
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

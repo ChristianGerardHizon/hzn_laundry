@@ -17,12 +17,14 @@ Future<bool?> showServicePriceTierFormDialog(
   BuildContext context, {
   required String serviceId,
   ServicePriceTier? tier,
+  List<ServicePriceTier> existingTiers = const [],
 }) {
   return showDialog<bool>(
     context: context,
     builder: (context) => _ServicePriceTierFormDialog(
       serviceId: serviceId,
       tier: tier,
+      existingTiers: existingTiers,
     ),
   );
 }
@@ -31,10 +33,12 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
   const _ServicePriceTierFormDialog({
     required this.serviceId,
     this.tier,
+    this.existingTiers = const [],
   });
 
   final String serviceId;
   final ServicePriceTier? tier;
+  final List<ServicePriceTier> existingTiers;
 
   bool get isEditing => tier != null;
 
@@ -42,6 +46,7 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final isSaving = useState(false);
+    final overlapError = useState<String?>(null);
 
     Future<void> handleSave() async {
       if (!formKey.currentState!.saveAndValidate()) return;
@@ -62,6 +67,30 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
         isSaving.value = false;
         return;
       }
+
+      // Check for overlap with existing tiers
+      final effectiveMax =
+          (maxQty != null && maxQty > 0) ? maxQty : double.infinity;
+      final overlapping = existingTiers.where((other) {
+        // Skip self when editing
+        if (isEditing && other.id == tier!.id) return false;
+        final otherMax = other.hasUpperBound
+            ? other.maxQuantity!.toDouble()
+            : double.infinity;
+        // Two ranges overlap when each starts before the other ends
+        return minQty < otherMax && other.minQuantity < effectiveMax;
+      }).toList();
+
+      if (overlapping.isNotEmpty) {
+        final overlapRange = overlapping.first;
+        final desc = overlapRange.hasUpperBound
+            ? '${overlapRange.minQuantity}–${overlapRange.maxQuantity}'
+            : '${overlapRange.minQuantity}+';
+        overlapError.value = 'Range overlaps with existing tier ($desc)';
+        isSaving.value = false;
+        return;
+      }
+      overlapError.value = null;
 
       final body = <String, dynamic>{
         'service': serviceId,
@@ -160,6 +189,16 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
                     ),
                   ],
                 ),
+                if (overlapError.value != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      overlapError.value!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 FormBuilderTextField(
                   name: 'pricePerUnit',
