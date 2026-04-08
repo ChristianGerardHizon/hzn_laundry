@@ -19,6 +19,7 @@ import '../../../sales/presentation/widgets/assign_storages_dialog.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
+import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../controllers/kanban_sales_controller.dart';
 
 /// Handles the drop logic for moving a sale to a new status.
@@ -61,6 +62,12 @@ Future<void> _handleKanbanDrop(
 
   if (!context.mounted) return;
 
+  addBreadcrumb('Kanban move order', category: 'order', data: {
+    'saleId': sale.id,
+    'from': sale.orderStatus.name,
+    'to': targetStatus.name,
+  });
+
   final repo = ref.read(salesRepositoryProvider);
   final result = await repo.updateOrderStatus(sale.id, targetStatus);
 
@@ -68,6 +75,10 @@ Future<void> _handleKanbanDrop(
 
   result.fold(
     (failure) {
+      addBreadcrumb('Kanban move failed', category: 'order', data: {
+        'saleId': sale.id,
+        'error': failure.messageString,
+      });
       showErrorSnackBar(context, message: failure.messageString);
       ref.invalidate(kanbanSalesProvider);
       ref.invalidate(notPickedUpCountProvider);

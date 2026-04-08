@@ -8,6 +8,10 @@ import '../../domain/version_utils.dart';
 
 part 'version_check_provider.g.dart';
 
+/// Pass --dart-define=SKIP_VERSION_CHECK=true to disable version checking.
+const _skipVersionCheck =
+    bool.fromEnvironment('SKIP_VERSION_CHECK', defaultValue: false);
+
 /// Checks the current app version against the remote version-manager service.
 ///
 /// Returns [VersionCheckResult] indicating whether the user needs to update.
@@ -18,8 +22,12 @@ part 'version_check_provider.g.dart';
 /// the latest version on web.
 @Riverpod(keepAlive: true)
 Future<VersionCheckResult> versionCheck(Ref ref) async {
-  // Skip version check in debug and profile modes
-  if (kDebugMode || kProfileMode) return VersionCheckResult.upToDate;
+  // Skip version check in debug/profile modes or when explicitly disabled
+  debugPrint('[VersionCheck] kDebugMode=$kDebugMode, kProfileMode=$kProfileMode, skipFlag=$_skipVersionCheck');
+  if (kDebugMode || kProfileMode || _skipVersionCheck) {
+    debugPrint('[VersionCheck] Skipping version check');
+    return VersionCheckResult.upToDate;
+  }
 
   try {
     final packageInfo = await ref.watch(appInfoProvider.future);

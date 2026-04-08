@@ -1,6 +1,7 @@
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/domain/product.dart';
@@ -132,6 +133,11 @@ class CartController extends _$CartController {
   /// Adds a product to the cart (for non-lot-tracked products).
   /// For variable-price products, [customPrice] must be provided.
   Future<void> addToCart(Product product, {num? customPrice}) async {
+    addBreadcrumb('Add to cart', category: 'cart', data: {
+      'productId': product.id,
+      'product': product.name,
+      if (customPrice != null) 'customPrice': customPrice,
+    });
     final currentState = state.value;
     if (currentState == null) return;
 
@@ -345,6 +351,10 @@ class CartController extends _$CartController {
 
   /// Removes a product from the cart.
   Future<void> removeFromCart(Product product) async {
+    addBreadcrumb('Remove from cart', category: 'cart', data: {
+      'productId': product.id,
+      'product': product.name,
+    });
     final currentState = state.value;
     if (currentState == null) return;
 
@@ -527,6 +537,11 @@ class CartController extends _$CartController {
     int quantity = 1,
     bool forceNewLine = false,
   }) async {
+    addBreadcrumb('Add service to cart', category: 'cart', data: {
+      'serviceId': service.id,
+      'service': service.name,
+      'quantity': quantity,
+    });
     final currentState = state.value;
     if (currentState == null) return AddServiceResult.success;
 
@@ -718,6 +733,7 @@ class CartController extends _$CartController {
 
   /// Clears all items from the cart.
   Future<void> clearCart() async {
+    addBreadcrumb('Clear cart', category: 'cart');
     final currentState = state.value;
     if (currentState == null) return;
 

@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -500,6 +501,12 @@ class _SaleDetailContent extends HookConsumerWidget {
 
       if (confirmed != true || !context.mounted) return;
 
+      addBreadcrumb('Update sale status', category: 'order', data: {
+        'saleId': sale.id,
+        'from': sale.status,
+        'to': newStatus,
+      });
+
       isUpdating.value = true;
       final repo = ref.read(salesRepositoryProvider);
       final result = await repo.updateSaleStatus(sale.id, newStatus);
@@ -509,6 +516,10 @@ class _SaleDetailContent extends HookConsumerWidget {
 
       result.fold(
         (failure) {
+          addBreadcrumb('Sale status update failed', category: 'order', data: {
+            'saleId': sale.id,
+            'error': failure.messageString,
+          });
           showErrorSnackBar(context, message: failure.messageString);
         },
         (_) {
@@ -655,6 +666,12 @@ class _SaleDetailContent extends HookConsumerWidget {
         }
       }
 
+      addBreadcrumb('Update order status', category: 'order', data: {
+        'saleId': sale.id,
+        'from': sale.orderStatus.name,
+        'to': status.name,
+      });
+
       isUpdating.value = true;
       final repo = ref.read(salesRepositoryProvider);
       final result = await repo.updateOrderStatus(sale.id, status);
@@ -664,6 +681,10 @@ class _SaleDetailContent extends HookConsumerWidget {
 
       result.fold(
         (failure) {
+          addBreadcrumb('Order status update failed', category: 'order', data: {
+            'saleId': sale.id,
+            'error': failure.messageString,
+          });
           showErrorSnackBar(context, message: failure.messageString);
         },
         (_) {
