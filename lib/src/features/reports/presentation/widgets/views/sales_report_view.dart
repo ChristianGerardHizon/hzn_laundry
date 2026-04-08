@@ -66,8 +66,7 @@ class SalesReportView extends HookConsumerWidget {
         ref,
         summary,
         detailAsync.when(
-                data: (entries) =>
-                    entries.where((e) => !e.isVoided).toList(),
+                data: (entries) => entries,
                 loading: () => <PaymentReportEntry>[],
                 error: (_, __) => <PaymentReportEntry>[],
               ),

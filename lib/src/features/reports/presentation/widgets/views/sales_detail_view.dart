@@ -85,9 +85,8 @@ class SalesDetailView extends HookConsumerWidget {
     required ValueNotifier<Set<String>> searchFields,
   }) {
     final isMobile = Breakpoints.isMobile(context);
-    final nonVoidedSales = sales.where((s) => s.status != 'voided').toList();
     final totalRevenue =
-        nonVoidedSales.fold<num>(0, (sum, s) => sum + s.totalAmount);
+        sales.fold<num>(0, (sum, s) => sum + s.totalAmount);
     final paidCount = sales.where((s) => s.isPaid).length;
     final unpaidCount = sales.where((s) => !s.isPaid).length;
 
@@ -416,17 +415,11 @@ class SalesDetailView extends HookConsumerWidget {
 
   DataRow _buildDataRow(BuildContext context, Sale sale) {
     final theme = Theme.of(context);
-    final isVoided = sale.status == 'voided';
-    final strikeStyle = TextStyle(
-      decoration: TextDecoration.lineThrough,
-      color: theme.colorScheme.outline,
-    );
 
     return DataRow(
       cells: [
         DataCell(Text(
           _shortOrderNumber(sale.receiptNumber),
-          style: isVoided ? strikeStyle : null,
         )),
         DataCell(Text(sale.customerName ?? '—')),
         DataCell(Text(_currencyFormat.format(sale.totalAmount))),
@@ -491,7 +484,6 @@ class SalesDetailView extends HookConsumerWidget {
 
   Widget _buildMobileOrderCard(BuildContext context, Sale sale) {
     final theme = Theme.of(context);
-    final isVoided = sale.status == 'voided';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -526,12 +518,7 @@ class SalesDetailView extends HookConsumerWidget {
                         sale.customerName!,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isVoided
-                              ? theme.colorScheme.outline
-                              : theme.colorScheme.onSurface,
-                          decoration: isVoided
-                              ? TextDecoration.lineThrough
-                              : null,
+                          color: theme.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -549,8 +536,6 @@ class SalesDetailView extends HookConsumerWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.outline,
                       fontFamily: 'monospace',
-                      decoration:
-                          isVoided ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   const Spacer(),
@@ -582,9 +567,6 @@ class SalesDetailView extends HookConsumerWidget {
                     _currencyFormat.format(sale.totalAmount),
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isVoided ? theme.colorScheme.outline : null,
-                      decoration:
-                          isVoided ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   const Spacer(),
@@ -645,7 +627,6 @@ class SalesDetailView extends HookConsumerWidget {
     final (Color color, String label) = switch (status) {
       'completed' => (Colors.green, 'Completed'),
       'refunded' => (Colors.blue, 'Refunded'),
-      'voided' => (Colors.red, 'Voided'),
       _ => (Colors.grey, status),
     };
 

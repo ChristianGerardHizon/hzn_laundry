@@ -180,7 +180,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilter().between('postedDate', startDate, endDate);
+        final filter = PBFilter()
+            .notEquals('sale.status', 'voided')
+            .between('postedDate', startDate, endDate);
         if (branchId != null) {
           filter.relation('sale.branch', branchId);
         }

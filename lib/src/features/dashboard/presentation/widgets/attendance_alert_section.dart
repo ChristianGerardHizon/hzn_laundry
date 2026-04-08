@@ -6,6 +6,7 @@ import '../../../employees/presentation/controllers/attendance_controller.dart';
 import '../../../employees/presentation/controllers/employees_controller.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../users/domain/user_role.dart';
+import '../controllers/dashboard_date_override_provider.dart';
 
 /// Dashboard section that shows a warning banner when today's attendance
 /// has not been set.
@@ -26,10 +27,11 @@ class AttendanceAlertSection extends ConsumerWidget {
         role.hasPermission(Permissions.attendanceCreate);
     if (!canViewAttendance) return const SizedBox.shrink();
 
+    final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
     final today = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
+      effectiveDate.year,
+      effectiveDate.month,
+      effectiveDate.day,
     );
 
     final employeesAsync = ref.watch(employeesControllerProvider);

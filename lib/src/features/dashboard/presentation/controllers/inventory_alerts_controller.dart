@@ -4,6 +4,7 @@ import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/inventory_alert.dart';
+import 'dashboard_date_override_provider.dart';
 
 part 'inventory_alerts_controller.g.dart';
 
@@ -18,6 +19,7 @@ part 'inventory_alerts_controller.g.dart';
 Future<InventoryAlertsSummary> inventoryAlertsSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
+  final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
   final branchFilter =
       branchId != null ? 'branch = "$branchId"' : null;
 
@@ -75,7 +77,7 @@ Future<InventoryAlertsSummary> inventoryAlertsSummary(Ref ref) async {
     final expirationStr = record.getStringValue('expiration');
     final expiration = DateTime.tryParse(expirationStr);
     final daysUntil = expiration != null
-        ? expiration.difference(DateTime.now()).inDays
+        ? expiration.difference(effectiveDate).inDays
         : null;
 
     expiredAlerts.add(InventoryAlert(
@@ -96,7 +98,7 @@ Future<InventoryAlertsSummary> inventoryAlertsSummary(Ref ref) async {
     final expirationStr = record.getStringValue('expiration');
     final expiration = DateTime.tryParse(expirationStr);
     final daysUntil = expiration != null
-        ? expiration.difference(DateTime.now()).inDays
+        ? expiration.difference(effectiveDate).inDays
         : null;
 
     nearExpirationAlerts.add(InventoryAlert(
