@@ -8,12 +8,13 @@ part of 'sales_summary_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Today's sales summary including backlog sales paid today.
+/// Sales summary for the effective dashboard date, including backlog sales
+/// paid on that date.
 ///
 /// Runs two parallel queries:
-/// 1. All sales created today (not voided)
-/// 2. Payments made today on backlog sales (created before today), with
-///    expanded sale records
+/// 1. All sales created on the effective date (not voided)
+/// 2. Payments made on the effective date on backlog sales (created before
+///    that date), with expanded sale records
 ///
 /// Also fetches service items and sale items for all sales to display
 /// in the breakdown.
@@ -21,12 +22,13 @@ part of 'sales_summary_controller.dart';
 @ProviderFor(salesSummary)
 final salesSummaryProvider = SalesSummaryProvider._();
 
-/// Today's sales summary including backlog sales paid today.
+/// Sales summary for the effective dashboard date, including backlog sales
+/// paid on that date.
 ///
 /// Runs two parallel queries:
-/// 1. All sales created today (not voided)
-/// 2. Payments made today on backlog sales (created before today), with
-///    expanded sale records
+/// 1. All sales created on the effective date (not voided)
+/// 2. Payments made on the effective date on backlog sales (created before
+///    that date), with expanded sale records
 ///
 /// Also fetches service items and sale items for all sales to display
 /// in the breakdown.
@@ -36,12 +38,13 @@ final class SalesSummaryProvider extends $FunctionalProvider<
         SalesSummaryData,
         FutureOr<SalesSummaryData>>
     with $FutureModifier<SalesSummaryData>, $FutureProvider<SalesSummaryData> {
-  /// Today's sales summary including backlog sales paid today.
+  /// Sales summary for the effective dashboard date, including backlog sales
+  /// paid on that date.
   ///
   /// Runs two parallel queries:
-  /// 1. All sales created today (not voided)
-  /// 2. Payments made today on backlog sales (created before today), with
-  ///    expanded sale records
+  /// 1. All sales created on the effective date (not voided)
+  /// 2. Payments made on the effective date on backlog sales (created before
+  ///    that date), with expanded sale records
   ///
   /// Also fetches service items and sale items for all sales to display
   /// in the breakdown.
@@ -71,4 +74,4 @@ final class SalesSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesSummaryHash() => r'57477c46b7bf9b223e450294194a45622ab958c0';
+String _$salesSummaryHash() => r'35b4ce4bd66f38a12553f8cd0fb18a9a35945f06';

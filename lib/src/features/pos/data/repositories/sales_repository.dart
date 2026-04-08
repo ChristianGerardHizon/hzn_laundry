@@ -24,6 +24,7 @@ abstract class SalesRepository {
     Sale sale,
     List<SaleItem> items, {
     List<SaleServiceItem> serviceItems,
+    DateTime? postedDate,
   });
   FutureEither<Sale> getSale(String id);
   FutureEither<List<Sale>> getSales({String? branchId, DateTime? date});
@@ -155,6 +156,7 @@ class SalesRepositoryImpl implements SalesRepository {
     Sale sale,
     List<SaleItem> items, {
     List<SaleServiceItem> serviceItems = const [],
+    DateTime? postedDate,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -170,7 +172,7 @@ class SalesRepositoryImpl implements SalesRepository {
           'customer': sale.customerId,
           'customerName': sale.customerName,
           'notes': sale.notes,
-          'postedDate': DateTime.now().toUtc().toIso8601String(),
+          'postedDate': (postedDate ?? DateTime.now()).toUtc().toIso8601String(),
         };
         final saleRecord = await _sales.create(body: saleBody);
 

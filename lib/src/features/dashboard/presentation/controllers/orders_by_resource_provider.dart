@@ -10,13 +10,14 @@ import '../../../pos/domain/sale.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import 'dashboard_date_override_provider.dart';
 
 part 'orders_by_resource_provider.g.dart';
 
 /// How to group orders in the "Orders by Resource" view.
 enum ResourceGroupMode {
-  machine,
-  storage;
+  storage,
+  machine;
 
   String get displayName => switch (this) {
         ResourceGroupMode.machine => 'Machine',
@@ -108,7 +109,7 @@ Future<OrdersByResourceData> ordersByResource(
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final now = DateTime.now();
+  final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final todayEnd = todayStart.add(const Duration(days: 1));
   final startUtc = todayStart.toPocketBaseUtc();
