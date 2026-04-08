@@ -102,7 +102,7 @@ final class NotPickedUpCountProvider
   }
 }
 
-String _$notPickedUpCountHash() => r'f1bbfc18f1f2054c42a075c9a7f1c993e5e9ffaa';
+String _$notPickedUpCountHash() => r'a6e52067b77696a6b1d9edf41910856389869f97';
 
 /// Count of orders created today.
 /// Used to display a badge on the "Today's Orders" filter chip.
@@ -143,7 +143,7 @@ final class TodayCountProvider
   }
 }
 
-String _$todayCountHash() => r'1f5648b8af2c282910dc91420656d1525fdb2a9c';
+String _$todayCountHash() => r'447fb6b9a0f6224785d7a2f2f70706908a88c249';
 
 /// Counts orders in the opposite tab that match the given search query.
 /// When on "Today's Orders", counts matching backlog orders, and vice versa.
@@ -209,7 +209,7 @@ final class CrossTabSearchCountProvider
 }
 
 String _$crossTabSearchCountHash() =>
-    r'9e7006efdf961dfa8a2b751a76db2e49926d1707';
+    r'9ba1255388209fe03785f5c4c61c085cd6409cc7';
 
 /// Counts orders in the opposite tab that match the given search query.
 /// When on "Today's Orders", counts matching backlog orders, and vice versa.
@@ -291,4 +291,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'cc605539b6863dd031b9616c96aade83abbde017';
+String _$kanbanSalesHash() => r'0817f12a3fc8fd834090a4b4a44512f23e4cc699';

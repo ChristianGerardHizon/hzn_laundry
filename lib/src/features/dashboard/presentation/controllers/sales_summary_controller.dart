@@ -12,15 +12,17 @@ import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/sales_summary.dart';
+import 'dashboard_date_override_provider.dart';
 
 part 'sales_summary_controller.g.dart';
 
-/// Today's sales summary including backlog sales paid today.
+/// Sales summary for the effective dashboard date, including backlog sales
+/// paid on that date.
 ///
 /// Runs two parallel queries:
-/// 1. All sales created today (not voided)
-/// 2. Payments made today on backlog sales (created before today), with
-///    expanded sale records
+/// 1. All sales created on the effective date (not voided)
+/// 2. Payments made on the effective date on backlog sales (created before
+///    that date), with expanded sale records
 ///
 /// Also fetches service items and sale items for all sales to display
 /// in the breakdown.
@@ -29,7 +31,7 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final now = DateTime.now();
+  final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final todayEnd = todayStart.add(const Duration(days: 1));
   final startUtc = todayStart.toPocketBaseUtc();

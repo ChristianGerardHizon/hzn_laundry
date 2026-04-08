@@ -161,6 +161,9 @@ abstract class Permissions {
   static const settingsView = 'settings.view';
   static const settingsEdit = 'settings.edit';
 
+  // Dashboard permissions
+  static const dashboardDateOverride = 'dashboard.dateOverride';
+
   // System permissions
   static const systemAdmin = 'system.admin';
 
@@ -191,6 +194,7 @@ abstract class Permissions {
     'Roles': [rolesView, rolesCreate, rolesEdit, rolesDelete],
     'Branches': [branchesView, branchesCreate, branchesEdit, branchesDelete],
     'Settings': [settingsView, settingsEdit],
+    'Dashboard': [dashboardDateOverride],
     'System': [systemAdmin],
   };
 
@@ -574,6 +578,14 @@ abstract class Permissions {
         category: 'Settings',
         description: 'Modify system settings',
         icon: Icons.edit,
+      ),
+      // Dashboard
+      const Permission(
+        key: dashboardDateOverride,
+        name: 'Date Override',
+        category: 'Dashboard',
+        description: 'Change the dashboard date to view and post sales on a different date',
+        icon: Icons.date_range,
       ),
       // System
       const Permission(

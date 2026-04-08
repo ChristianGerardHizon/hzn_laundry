@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../../features/dashboard/presentation/controllers/dashboard_date_override_provider.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_kpi_provider.dart';
+import '../../../features/users/domain/user_role.dart';
+import '../../widgets/nav_permissions.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_realtime_provider.dart';
 import '../../../features/dashboard/presentation/controllers/inventory_alerts_controller.dart';
 import '../../../features/dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../../../features/dashboard/presentation/widgets/attendance_alert_section.dart';
+import '../../../features/dashboard/presentation/widgets/date_override_banner.dart';
 import '../../../features/dashboard/presentation/widgets/inventory_alerts_section.dart';
 import '../../../features/dashboard/presentation/widgets/kanban_board_section.dart';
 import '../../../features/dashboard/presentation/widgets/quick_actions_section.dart';
@@ -78,7 +83,14 @@ class DashboardPage extends ConsumerWidget {
             children: [
               // Dashboard Header
               const _MobileDashboardHeader(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // Warning banner when date is overridden
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: DateOverrideBanner(),
+              ),
+              const SizedBox(height: 8),
 
               // Sales Summary Section (collapsible)
               const SalesSummarySection(),
@@ -119,6 +131,35 @@ class _MobileDashboardHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final branch = ref.watch(currentBranchControllerProvider).value;
+    final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
+    final isOverridden = ref.watch(isDashboardDateOverriddenProvider);
+    final overrideColor = theme.brightness == Brightness.dark
+        ? Colors.amber.shade200
+        : Colors.amber.shade800;
+
+    final role = ref.watch(currentUserRoleProvider).value;
+    final canOverrideDate = role?.isAdmin == true ||
+        (role?.hasPermission(Permissions.dashboardDateOverride) ?? false);
+
+    Future<void> pickDate() async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: effectiveDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime.now(),
+      );
+      if (picked != null) {
+        final today = DateTime.now();
+        final isToday = picked.year == today.year &&
+            picked.month == today.month &&
+            picked.day == today.day;
+        if (isToday) {
+          ref.read(dashboardDateOverrideProvider.notifier).clearOverride();
+        } else {
+          ref.read(dashboardDateOverrideProvider.notifier).setDate(picked);
+        }
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -159,6 +200,41 @@ class _MobileDashboardHeader extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          // Date display — tappable to open date picker (if permitted)
+          if (canOverrideDate || isOverridden)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: InkWell(
+                onTap: canOverrideDate ? pickDate : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: isOverridden
+                            ? overrideColor
+                            : theme.colorScheme.outline,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        DateFormat('EEEE, MMMM d, yyyy').format(effectiveDate),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: isOverridden
+                              ? overrideColor
+                              : theme.colorScheme.outline,
+                          fontWeight:
+                              isOverridden ? FontWeight.w600 : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],
