@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'failure.mapper.dart';
 
@@ -79,6 +80,9 @@ sealed class Failure with FailureMappable {
     if (error.toString().contains('User cancelled')) {
       return CancelledFailure(error, stackTrace, 'user_cancelled');
     }
+
+    // Report non-trivial errors to Sentry
+    Sentry.captureException(error, stackTrace: stackTrace);
 
     // Handle presentation-related errors (UI layer)
     if (error is FormatException || error is StateError) {

@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/routing/pending_redirect_provider.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_state.dart';
@@ -29,16 +30,22 @@ class AuthController extends _$AuthController {
   ///
   /// Returns true on success, false on failure.
   Future<bool> login(String username, String password) async {
+    addBreadcrumb('Login attempt', category: 'auth', data: {'username': username});
     state = const AsyncLoading();
 
     final result = await _repository.login(username, password);
 
     return result.fold(
       (failure) {
+        addBreadcrumb('Login failed', category: 'auth', data: {'username': username});
         state = AsyncError(failure, StackTrace.current);
         return false;
       },
       (authState) async {
+        addBreadcrumb('Login success', category: 'auth', data: {
+          'userId': authState.user.id,
+          'username': username,
+        });
         state = AsyncData(authState);
         return true;
       },
@@ -47,6 +54,7 @@ class AuthController extends _$AuthController {
 
   /// Logs out the current user.
   Future<void> logout() async {
+    addBreadcrumb('Logout', category: 'auth');
     // Clear pending redirect to prevent unexpected navigation on next login
     ref.read(pendingRedirectProvider.notifier).consume();
     await _repository.logout();

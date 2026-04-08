@@ -73,6 +73,7 @@ dependencies:
   print_bluetooth_thermal: ^1.1.4
   flutter_esc_pos_network: ^1.0.3
   csv: ^6.0.0
+  sentry_flutter: ^9.0.0
 
 dev_dependencies:
   dart_mappable_builder: ^4.3.0  

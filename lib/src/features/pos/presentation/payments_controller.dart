@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../data/repositories/payment_repository.dart';
 import '../domain/payment.dart';
@@ -54,6 +55,13 @@ class PaymentsController extends _$PaymentsController {
     http.MultipartFile? paymentProofFile,
     DateTime? paymentDate,
   }) async {
+    addBreadcrumb('Record payment', category: 'payment', data: {
+      'saleId': saleId,
+      'amount': amount,
+      'method': paymentMethod.name,
+      'type': type.name,
+    });
+
     final repo = ref.read(paymentRepositoryProvider);
     final result = await repo.create(
       saleId: saleId,
@@ -70,10 +78,18 @@ class PaymentsController extends _$PaymentsController {
 
     return result.fold(
       (failure) {
+        addBreadcrumb('Payment failed', category: 'payment', data: {
+          'saleId': saleId,
+          'error': failure.messageString,
+        });
         state = AsyncError(failure, StackTrace.current);
         return null;
       },
       (payment) {
+        addBreadcrumb('Payment recorded', category: 'payment', data: {
+          'paymentId': payment.id,
+          'saleId': saleId,
+        });
         ref.invalidate(salePaymentsProvider(saleId));
         ref.invalidate(salesSummaryProvider);
         return payment;
