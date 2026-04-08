@@ -18,8 +18,8 @@ part 'version_check_provider.g.dart';
 /// the latest version on web.
 @Riverpod(keepAlive: true)
 Future<VersionCheckResult> versionCheck(Ref ref) async {
-  // Skip version check in debug mode
-  if (kDebugMode) return VersionCheckResult.upToDate;
+  // Skip version check in debug and profile modes
+  if (kDebugMode || kProfileMode) return VersionCheckResult.upToDate;
 
   try {
     final packageInfo = await ref.watch(appInfoProvider.future);
