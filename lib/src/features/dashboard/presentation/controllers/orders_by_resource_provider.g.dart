@@ -73,7 +73,7 @@ final class OrdersByResourceProvider extends $FunctionalProvider<
   }
 }
 
-String _$ordersByResourceHash() => r'1a20a6757684b639da5b01947c00f3e555a941ab';
+String _$ordersByResourceHash() => r'66dd64f5742d476eba79c2c1b57e91fe3b6071ee';
 
 /// Fetches sale service items filtered by date/branch and groups them
 /// by machine or storage location.

@@ -10,6 +10,7 @@ import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/data/repositories/product_lot_repository.dart';
 import '../../products/data/repositories/product_repository.dart';
 import '../../services/domain/sale_service_item.dart';
+import '../../dashboard/presentation/controllers/dashboard_date_override_provider.dart';
 import '../../dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../data/repositories/payment_repository.dart';
 import '../data/repositories/sales_repository.dart';
@@ -128,12 +129,14 @@ class CheckoutController extends _$CheckoutController {
     final cartNotifier = ref.read(cartControllerProvider.notifier);
     final lotRepo = ref.read(productLotRepositoryProvider);
     final productRepo = ref.read(productRepositoryProvider);
+    final effectiveDate = ref.read(dashboardEffectiveDateProvider);
 
     // Save sale to backend
     final result = await salesRepo.createSale(
       sale,
       saleItems,
       serviceItems: saleServiceItems,
+      postedDate: effectiveDate,
     );
 
     return result.fold(
@@ -148,6 +151,7 @@ class CheckoutController extends _$CheckoutController {
             type: paymentType,
             paymentRef: paymentRef,
             paymentProofFile: paymentProofFile,
+            paymentDate: effectiveDate,
           );
 
           // If payment creation fails, we still have the sale, just log the error

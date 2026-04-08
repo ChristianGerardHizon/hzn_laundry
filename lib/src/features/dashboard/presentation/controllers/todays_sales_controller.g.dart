@@ -8,19 +8,19 @@ part of 'todays_sales_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Today's sales data.
+/// Sales data for the effective dashboard date.
 /// Filtered by the current branch.
 
 @ProviderFor(todaySales)
 final todaySalesProvider = TodaySalesProvider._();
 
-/// Today's sales data.
+/// Sales data for the effective dashboard date.
 /// Filtered by the current branch.
 
 final class TodaySalesProvider extends $FunctionalProvider<
         AsyncValue<List<Sale>>, List<Sale>, FutureOr<List<Sale>>>
     with $FutureModifier<List<Sale>>, $FutureProvider<List<Sale>> {
-  /// Today's sales data.
+  /// Sales data for the effective dashboard date.
   /// Filtered by the current branch.
   TodaySalesProvider._()
       : super(
@@ -47,17 +47,19 @@ final class TodaySalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$todaySalesHash() => r'25356457bd9c2f927f6f64e4199b9346e78a3912';
+String _$todaySalesHash() => r'5907e8976c7cfa193dbd4b8c78be6c720983e923';
 
-/// Today's sales summary (count and total amount).
-/// Uses vw_todays_sales view for optimized query.
+/// Sales summary (count and total amount) for the effective dashboard date.
+/// When viewing today, uses vw_todays_sales view for optimized query.
+/// When viewing a different date, queries the sales collection directly.
 /// Filtered by the current branch.
 
 @ProviderFor(todaySalesSummary)
 final todaySalesSummaryProvider = TodaySalesSummaryProvider._();
 
-/// Today's sales summary (count and total amount).
-/// Uses vw_todays_sales view for optimized query.
+/// Sales summary (count and total amount) for the effective dashboard date.
+/// When viewing today, uses vw_todays_sales view for optimized query.
+/// When viewing a different date, queries the sales collection directly.
 /// Filtered by the current branch.
 
 final class TodaySalesSummaryProvider extends $FunctionalProvider<
@@ -67,8 +69,9 @@ final class TodaySalesSummaryProvider extends $FunctionalProvider<
     with
         $FutureModifier<TodaySalesSummary>,
         $FutureProvider<TodaySalesSummary> {
-  /// Today's sales summary (count and total amount).
-  /// Uses vw_todays_sales view for optimized query.
+  /// Sales summary (count and total amount) for the effective dashboard date.
+  /// When viewing today, uses vw_todays_sales view for optimized query.
+  /// When viewing a different date, queries the sales collection directly.
   /// Filtered by the current branch.
   TodaySalesSummaryProvider._()
       : super(
@@ -96,4 +99,4 @@ final class TodaySalesSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$todaySalesSummaryHash() => r'093ac4a116b2f9e8b8af16aa9ab7e071a85a6e97';
+String _$todaySalesSummaryHash() => r'49202f64536fb7e6f0611834ccba988496b7ec0f';

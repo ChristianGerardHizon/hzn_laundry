@@ -12,6 +12,7 @@ import '../../../pos/domain/sale_item.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import 'dashboard_date_override_provider.dart';
 
 part 'kanban_sales_controller.g.dart';
 
@@ -106,7 +107,7 @@ Future<int> notPickedUpCount(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final now = DateTime.now();
+  final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final startUtc = todayStart.toPocketBaseUtc();
 
@@ -132,7 +133,7 @@ Future<int> todayCount(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final now = DateTime.now();
+  final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final todayEnd = todayStart.add(const Duration(days: 1));
   final startUtc = todayStart.toPocketBaseUtc();
@@ -164,7 +165,7 @@ Future<int> crossTabSearchCount(Ref ref, String query) async {
   final filterMode = ref.watch(kanbanFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final now = DateTime.now();
+  final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final startUtc = todayStart.toPocketBaseUtc();
 
@@ -218,18 +219,17 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
     filter = '$filter && branch = "$branchId"';
   }
 
+  final now = ref.watch(dashboardEffectiveDateProvider);
+
   switch (filterMode) {
     case KanbanFilterMode.today:
-      final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       final todayEnd = todayStart.add(const Duration(days: 1));
       final startUtc = todayStart.toPocketBaseUtc();
       final endUtc = todayEnd.toPocketBaseUtc();
       filter = '$filter && postedDate >= "$startUtc" && postedDate < "$endUtc"';
     case KanbanFilterMode.notPickedUp:
-      // Show only orders created before today that haven't been picked up
-      // (today's orders are shown in the "Today's Orders" tab)
-      final now = DateTime.now();
+      // Show only orders created before the effective date that haven't been picked up
       final todayStart = DateTime(now.year, now.month, now.day);
       final startUtc = todayStart.toPocketBaseUtc();
       filter =
