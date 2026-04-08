@@ -326,13 +326,18 @@ class _PriceTiersCard extends ConsumerWidget {
                       (a, b) => a.minQuantity.compareTo(b.minQuantity));
 
                 return Column(
-                  children: sorted
-                      .map((tier) => _PriceTierRow(
-                            tier: tier,
-                            serviceId: serviceId,
-                            unitLabel: unitLabel,
-                          ))
-                      .toList(),
+                  children: [
+                    for (int i = 0; i < sorted.length; i++)
+                      _PriceTierRow(
+                        tier: sorted[i],
+                        serviceId: serviceId,
+                        unitLabel: unitLabel,
+                        nextTierMin: i + 1 < sorted.length
+                            ? sorted[i + 1].minQuantity
+                            : null,
+                        allTiers: sorted,
+                      ),
+                  ],
                 );
               },
               loading: () => const Padding(
@@ -352,9 +357,12 @@ class _PriceTiersCard extends ConsumerWidget {
   }
 
   void _addTier(BuildContext context, WidgetRef ref) async {
+    final existingTiers =
+        ref.read(servicePriceTiersProvider(serviceId)).value ?? [];
     final result = await showServicePriceTierFormDialog(
       context,
       serviceId: serviceId,
+      existingTiers: existingTiers,
     );
     if (result == true) {
       ref.invalidate(servicePriceTiersProvider(serviceId));
@@ -367,24 +375,26 @@ class _PriceTierRow extends ConsumerWidget {
     required this.tier,
     required this.serviceId,
     required this.unitLabel,
+    required this.allTiers,
+    this.nextTierMin,
   });
 
   final ServicePriceTier tier;
   final String serviceId;
   final String unitLabel;
+  final num? nextTierMin;
+  final List<ServicePriceTier> allTiers;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final rangeText = tier.hasUpperBound
-        ? '${tier.minQuantity} – ${tier.maxQuantity}'
-        : '${tier.minQuantity}+';
+    final rangeText = tier.displayRange(unitLabel, nextTierMin: nextTierMin);
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
       title: Text(
-        '$rangeText $unitLabel',
+        rangeText,
         style: theme.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w500,
         ),
@@ -418,6 +428,7 @@ class _PriceTierRow extends ConsumerWidget {
       context,
       serviceId: serviceId,
       tier: tier,
+      existingTiers: allTiers,
     );
     if (result == true) {
       ref.invalidate(servicePriceTiersProvider(serviceId));
