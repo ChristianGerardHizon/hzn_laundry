@@ -35,6 +35,9 @@ class OrdersByResourceDialog extends HookConsumerWidget {
     final selectedStorageId = useState<String?>(null);
     final dateMode = useState(ResourceDateMode.todayAndBacklogs);
 
+    final searchController = useTextEditingController();
+    final searchQuery = useState('');
+
     final filter = OrdersByResourceFilter(
       groupMode: groupMode.value,
       machineId: selectedMachineId.value,
@@ -210,10 +213,44 @@ class OrdersByResourceDialog extends HookConsumerWidget {
               const SizedBox(height: 8),
               const Divider(height: 1),
 
+              // Search bar
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search by customer name or order #',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: searchQuery.value.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              searchController.clear();
+                              searchQuery.value = '';
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (v) => searchQuery.value = v,
+                ),
+              ),
+
               // Content
               Expanded(
                 child: dataAsync.when(
-                  data: (data) => _OrdersByResourceContent(data: data),
+                  data: (data) => _OrdersByResourceContent(
+                    data: data,
+                    searchQuery: searchQuery.value,
+                  ),
                   loading: () => const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -238,19 +275,53 @@ class OrdersByResourceDialog extends HookConsumerWidget {
 
 /// Content showing grouped order cards.
 class _OrdersByResourceContent extends StatelessWidget {
-  const _OrdersByResourceContent({required this.data});
+  const _OrdersByResourceContent({
+    required this.data,
+    this.searchQuery = '',
+  });
 
   final OrdersByResourceData data;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final query = searchQuery.trim().toLowerCase();
+
     final allGroups = [
       ...data.groups,
       if (data.unassigned.serviceItems.isNotEmpty) data.unassigned,
     ];
 
-    if (allGroups.isEmpty) {
+    // Filter groups by search query (match customer name or receipt number)
+    final filteredGroups = query.isEmpty
+        ? allGroups
+        : allGroups
+            .map((group) {
+              final matchingSales = group.sales.where((sale) {
+                final customer =
+                    (sale.customerDisplay ?? '').toLowerCase();
+                final receipt = sale.receiptNumber.toLowerCase();
+                return customer.contains(query) || receipt.contains(query);
+              }).toList();
+
+              if (matchingSales.isEmpty) return null;
+
+              final matchingSaleIds =
+                  matchingSales.map((s) => s.id).toSet();
+              return ResourceOrderGroup(
+                resourceId: group.resourceId,
+                resourceName: group.resourceName,
+                serviceItems: group.serviceItems
+                    .where((i) => matchingSaleIds.contains(i.saleId))
+                    .toList(),
+                sales: matchingSales,
+              );
+            })
+            .whereType<ResourceOrderGroup>()
+            .toList();
+
+    if (filteredGroups.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -262,7 +333,7 @@ class _OrdersByResourceContent extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No orders found',
+              query.isEmpty ? 'No orders found' : 'No matching orders',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -274,9 +345,9 @@ class _OrdersByResourceContent extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: allGroups.length,
+      itemCount: filteredGroups.length,
       itemBuilder: (context, index) {
-        final group = allGroups[index];
+        final group = filteredGroups[index];
         return _ResourceGroupCard(group: group);
       },
     );
