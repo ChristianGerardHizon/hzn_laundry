@@ -169,6 +169,7 @@ class SalesRepositoryImpl implements SalesRepository {
           'status': sale.status,
           'orderStatus': sale.orderStatus.name,
           'isPaid': sale.isPaid,
+          'paymentStatus': sale.isPaid ? 'paid' : 'unpaid',
           'customer': sale.customerId,
           'customerName': sale.customerName,
           'notes': sale.notes,

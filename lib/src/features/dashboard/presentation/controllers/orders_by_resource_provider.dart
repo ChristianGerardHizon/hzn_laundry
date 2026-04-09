@@ -119,7 +119,7 @@ Future<OrdersByResourceData> ordersByResource(
   final todayFilter =
       "sale.postedDate >= '$startUtc' && sale.postedDate < '$endUtc'";
   final backlogFilter =
-      "sale.postedDate < '$startUtc' && sale.orderStatus != 'pickedUp'";
+      "sale.postedDate < '$startUtc'";
 
   String dateFilter;
   switch (filter.dateMode) {
@@ -131,7 +131,8 @@ Future<OrdersByResourceData> ordersByResource(
       dateFilter = '($backlogFilter)';
   }
 
-  var pbFilter = "sale.status != 'voided' && $dateFilter";
+  var pbFilter =
+      "sale.status != 'voided' && sale.orderStatus != 'pickedUp' && $dateFilter";
 
   // Branch filter
   if (branchId != null) {

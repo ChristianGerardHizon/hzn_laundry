@@ -91,17 +91,26 @@ final class PrinterConfigFamily extends $Family
   String toString() => r'printerConfigProvider';
 }
 
-/// Provider to fetch the default printer configuration.
+/// Provider to fetch the effective default printer configuration.
+///
+/// Priority: local default (device-specific) > server default.
+/// If no local default is set, falls back to the server-configured default.
 
 @ProviderFor(defaultPrinter)
 final defaultPrinterProvider = DefaultPrinterProvider._();
 
-/// Provider to fetch the default printer configuration.
+/// Provider to fetch the effective default printer configuration.
+///
+/// Priority: local default (device-specific) > server default.
+/// If no local default is set, falls back to the server-configured default.
 
 final class DefaultPrinterProvider extends $FunctionalProvider<
         AsyncValue<PrinterConfig?>, PrinterConfig?, FutureOr<PrinterConfig?>>
     with $FutureModifier<PrinterConfig?>, $FutureProvider<PrinterConfig?> {
-  /// Provider to fetch the default printer configuration.
+  /// Provider to fetch the effective default printer configuration.
+  ///
+  /// Priority: local default (device-specific) > server default.
+  /// If no local default is set, falls back to the server-configured default.
   DefaultPrinterProvider._()
       : super(
           from: null,
@@ -128,4 +137,4 @@ final class DefaultPrinterProvider extends $FunctionalProvider<
   }
 }
 
-String _$defaultPrinterHash() => r'bc45d6a401a13cdc6d1666129831af40fd71795b';
+String _$defaultPrinterHash() => r'93d4db920e52d04aa094d434cc0b9d147f36922e';
