@@ -9,6 +9,7 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
 import '../../data/repositories/printer_config_repository.dart';
 import '../../domain/printer_config.dart';
+import '../controllers/local_default_printer_provider.dart';
 import '../controllers/printer_configs_controller.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 
@@ -123,6 +124,8 @@ class _PrinterDetailContent extends HookConsumerWidget {
     final isPrinting = useState(false);
     final printService = ref.read(thermalPrintServiceProvider.notifier);
     final autoCut = useState(printService.autoCut);
+    final localDefaultId = ref.watch(localDefaultPrinterIdProvider).value;
+    final isLocalDefault = localDefaultId == config.id;
 
     Future<void> handleTestPrint() async {
       isPrinting.value = true;
@@ -164,6 +167,36 @@ class _PrinterDetailContent extends HookConsumerWidget {
             // Status badges
             Row(
               children: [
+                if (isLocalDefault)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.phone_android,
+                          size: 16,
+                          color: theme.colorScheme.onTertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Local Default',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (isLocalDefault && config.isDefault)
+                  const SizedBox(width: 8),
                 if (config.isDefault)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -184,7 +217,7 @@ class _PrinterDetailContent extends HookConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Default',
+                          'Server Default',
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onPrimary,
                           ),
@@ -300,7 +333,7 @@ class _PrinterDetailContent extends HookConsumerWidget {
               ),
             ],
 
-            // Set as default button
+            // Set as server default button
             if (!config.isDefault && config.isEnabled) ...[
               const SizedBox(height: 16),
               SizedBox(
@@ -308,9 +341,54 @@ class _PrinterDetailContent extends HookConsumerWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => _setAsDefault(context, ref),
                   icon: const Icon(Icons.star_outline),
-                  label: const Text('Set as Default'),
+                  label: const Text('Set as Server Default'),
                 ),
               ),
+            ],
+
+            // Local default buttons
+            if (config.isEnabled) ...[
+              const SizedBox(height: 8),
+              if (isLocalDefault)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(localDefaultPrinterIdProvider.notifier)
+                          .clearLocalDefault();
+                      if (context.mounted) {
+                        showSuccessSnackBar(
+                          context,
+                          message:
+                              'Local default cleared, using server default',
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.phone_android),
+                    label: const Text('Clear Local Default'),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(localDefaultPrinterIdProvider.notifier)
+                          .setLocalDefault(config.id);
+                      if (context.mounted) {
+                        showSuccessSnackBar(
+                          context,
+                          message:
+                              '${config.name} set as local default for this device',
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.phone_android),
+                    label: const Text('Set as Local Default'),
+                  ),
+                ),
             ],
           ],
         ),

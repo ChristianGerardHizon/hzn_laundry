@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../domain/printer_config.dart';
+import '../controllers/local_default_printer_provider.dart';
 import '../controllers/printer_configs_controller.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 
@@ -21,6 +22,8 @@ class PrinterConfigListPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final printersAsync = ref.watch(printerConfigsControllerProvider);
+    final localDefaultId =
+        ref.watch(localDefaultPrinterIdProvider).value;
 
     return Column(
       children: [
@@ -111,6 +114,8 @@ class PrinterConfigListPanel extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final printer = printers[index];
                     final isSelected = printer.id == selectedId;
+                    final isLocalDefault =
+                        localDefaultId == printer.id;
 
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -140,6 +145,25 @@ class PrinterConfigListPanel extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            if (isLocalDefault)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.tertiary,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Local',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onTertiary,
+                                  ),
+                                ),
+                              ),
+                            if (isLocalDefault && printer.isDefault)
+                              const SizedBox(width: 4),
                             if (printer.isDefault)
                               Container(
                                 padding: const EdgeInsets.symmetric(

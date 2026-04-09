@@ -28,6 +28,9 @@ class ApkDownloadButton extends HookConsumerWidget {
     final downloadState = useState(_DownloadState.idle);
     final progress = useState(0.0);
     final cachedFilePath = useState<String?>(null);
+    // Tracks whether the installer has been opened to prevent the Android
+    // package-installer loop (app resume → rebuild → re-open installer).
+    final installerOpened = useRef(false);
 
     // Check for cached APK on mount
     useEffect(() {
@@ -39,6 +42,8 @@ class ApkDownloadButton extends HookConsumerWidget {
       switch (downloadState.value) {
         case _DownloadState.idle:
         case _DownloadState.error:
+          // Reset the flag so a fresh download can open the installer
+          installerOpened.value = false;
           await _downloadApk(
             context: context,
             downloadState: downloadState,
@@ -47,6 +52,7 @@ class ApkDownloadButton extends HookConsumerWidget {
             latestVersion: latestVersion,
           );
         case _DownloadState.downloaded:
+          installerOpened.value = true;
           await _openApk(context, cachedFilePath.value!);
         case _DownloadState.downloading:
           break;
@@ -233,10 +239,6 @@ class ApkDownloadButton extends HookConsumerWidget {
 
       cachedFilePath.value = actualPath;
       downloadState.value = _DownloadState.downloaded;
-
-      if (context.mounted) {
-        await _openApk(context, actualPath);
-      }
     } else {
       downloadState.value = _DownloadState.error;
       if (context.mounted) {

@@ -33,48 +33,44 @@ class TabletNavRail extends ConsumerWidget {
     final t = Translations.of(context);
     final isLargeTablet = Breakpoints.isTabletLargeOrLarger(context);
 
-    return SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height,
-        ),
-        child: IntrinsicHeight(
-          child: NavigationRail(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            labelType: isLargeTablet
-                ? NavigationRailLabelType.all
-                : NavigationRailLabelType.selected,
-            leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Assets.icons.appIconTransparent.image(
-                width: 40,
-                height: 40,
-              ),
-            ),
-            trailing: Expanded(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: IconButton(
-                    icon: const Icon(Icons.logout),
-                    tooltip: t.auth.logoutButton,
-                    onPressed: () => _confirmLogout(context, ref, t),
-                  ),
-                ),
-              ),
-            ),
-            destinations: visibleItems
-                .map((item) => NavigationRailDestination(
-                      icon: Icon(item.icon),
-                      selectedIcon: Icon(item.selectedIcon),
-                      label: Text(item.label),
-                    ))
-                .toList(),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Assets.icons.appIconTransparent.image(
+            width: 40,
+            height: 40,
           ),
         ),
-      ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: IntrinsicHeight(
+              child: NavigationRail(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: onDestinationSelected,
+                labelType: isLargeTablet
+                    ? NavigationRailLabelType.all
+                    : NavigationRailLabelType.selected,
+                destinations: visibleItems
+                    .map((item) => NavigationRailDestination(
+                          icon: Icon(item.icon),
+                          selectedIcon: Icon(item.selectedIcon),
+                          label: Text(item.label),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            tooltip: t.auth.logoutButton,
+            onPressed: () => _confirmLogout(context, ref, t),
+          ),
+        ),
+      ],
     );
   }
 
