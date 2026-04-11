@@ -1618,7 +1618,10 @@ class _PacksEditSection extends HookConsumerWidget {
     final hasPacks = sale.packs > 0;
 
     Future<void> editPacks() async {
-      final result = await showSetPacksDialog(context);
+      final result = await showSetPacksDialog(
+        context,
+        initialPacks: sale.packs > 0 ? sale.packs : null,
+      );
       if (result == null || !context.mounted) return;
 
       final repo = ref.read(salesRepositoryProvider);
