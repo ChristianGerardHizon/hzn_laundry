@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -44,6 +45,13 @@ class AssignStoragesDialog extends HookConsumerWidget {
       initialAssignments ?? {},
     );
     final selectedPacks = useState<int?>(initialPacks);
+    final isCustomPacksMode = useState(
+      initialPacks != null &&
+          ![1, 2, 3, 4, 5, 6, 7, 8].contains(initialPacks),
+    );
+    final customPacksController = useTextEditingController(
+      text: isCustomPacksMode.value ? '$initialPacks' : '',
+    );
     final isSaving = useState(false);
     // Currently selected service item index for assignment
     final activeItemIndex = useState(0);
@@ -221,27 +229,68 @@ class AssignStoragesDialog extends HookConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [1, 2, 3, 4, 5].map((value) {
-                      final isSelected = selectedPacks.value == value;
-                      return ChoiceChip(
-                        label: Text('$value'),
-                        selected: isSelected,
-                        onSelected: isSaving.value
-                            ? null
-                            : (_) => selectedPacks.value = value,
-                        labelStyle: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurface,
+                  if (!isCustomPacksMode.value)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...[1, 2, 3, 4, 5, 6, 7, 8].map((value) {
+                          final isSelected = selectedPacks.value == value;
+                          return ChoiceChip(
+                            label: Text('$value'),
+                            selected: isSelected,
+                            onSelected: isSaving.value
+                                ? null
+                                : (_) => selectedPacks.value = value,
+                            labelStyle: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                            ),
+                            selectedColor: theme.colorScheme.primary,
+                          );
+                        }),
+                        ActionChip(
+                          label: const Text('Custom'),
+                          avatar: const Icon(Icons.edit, size: 16),
+                          onPressed: isSaving.value
+                              ? null
+                              : () {
+                                  isCustomPacksMode.value = true;
+                                  selectedPacks.value = null;
+                                },
                         ),
-                        selectedColor: theme.colorScheme.primary,
-                      );
-                    }).toList(),
-                  ),
+                      ],
+                    )
+                  else
+                    TextField(
+                      controller: customPacksController,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Number of packs',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.grid_view, size: 20),
+                          tooltip: 'Show presets',
+                          onPressed: isSaving.value
+                              ? null
+                              : () {
+                                  isCustomPacksMode.value = false;
+                                  selectedPacks.value = null;
+                                },
+                        ),
+                      ),
+                      onChanged: (value) {
+                        final parsed = int.tryParse(value);
+                        selectedPacks.value =
+                            (parsed != null && parsed > 0) ? parsed : null;
+                      },
+                    ),
                 ],
               ),
             ),
