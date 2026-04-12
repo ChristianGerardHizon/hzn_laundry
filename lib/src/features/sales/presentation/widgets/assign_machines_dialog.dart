@@ -13,7 +13,8 @@ import '../../../services/domain/sale_service_item.dart';
 /// Dialog for assigning machines to sale service items.
 ///
 /// Shows tappable machine chips grouped by type. Each service item can have
-/// one machine assigned. Users tap a service item, then tap a machine to assign.
+/// one or more machines assigned. Tapping a selected machine increments its
+/// load count (for double/triple wash). Long press deselects.
 ///
 /// Returns `true` if assignments were made or skipped, `null` if cancelled.
 class AssignMachinesDialog extends HookConsumerWidget {
@@ -21,6 +22,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
     super.key,
     required this.serviceItems,
     this.initialAssignments,
+    this.initialLoadCounts,
   });
 
   final List<SaleServiceItem> serviceItems;
@@ -29,6 +31,10 @@ class AssignMachinesDialog extends HookConsumerWidget {
   /// Map of service item ID to list of machine IDs.
   final Map<String, List<String>>? initialAssignments;
 
+  /// Pre-populated load counts for editing.
+  /// Map of service item ID to (machine ID to load count).
+  final Map<String, Map<String, int>>? initialLoadCounts;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -36,6 +42,10 @@ class AssignMachinesDialog extends HookConsumerWidget {
     // Map of service item ID to list of assigned machine IDs
     final assignments = useState<Map<String, List<String>>>(
       initialAssignments ?? {},
+    );
+    // Map of service item ID to (machine ID to load count)
+    final loadCounts = useState<Map<String, Map<String, int>>>(
+      initialLoadCounts ?? {},
     );
     final isSaving = useState(false);
     // Currently selected service item index for assignment
@@ -52,10 +62,14 @@ class AssignMachinesDialog extends HookConsumerWidget {
             .where((id) => id.isNotEmpty)
             .toList();
         if (machineIds.isNotEmpty) {
+          final counts = loadCounts.value[item.id] ?? {};
           final machineNames = machineIds
               .map((id) {
                 final match = machines.where((m) => m.id == id);
-                return match.isNotEmpty ? match.first.name : '';
+                if (match.isEmpty) return '';
+                final name = match.first.name;
+                final count = counts[id] ?? 1;
+                return count > 1 ? '$name (x$count)' : name;
               })
               .where((name) => name.isNotEmpty)
               .toList();
@@ -63,6 +77,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
             item.id,
             machineIds,
             machineNames,
+            loadCounts: counts,
           );
           if (result.isLeft()) {
             if (context.mounted) {
@@ -107,6 +122,11 @@ class AssignMachinesDialog extends HookConsumerWidget {
                 final availableMachines =
                     machines.where((m) => m.isAvailable).toList();
 
+                final activeItemId =
+                    serviceItems[activeItemIndex.value].id;
+                final activeLoadCounts =
+                    loadCounts.value[activeItemId] ?? {};
+
                 return SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -148,29 +168,64 @@ class AssignMachinesDialog extends HookConsumerWidget {
                         item: serviceItems[activeItemIndex.value],
                       ),
                       const SizedBox(height: 12),
-                      // Machine grid - tappable chips (multi-select)
+                      // Machine grid - tappable chips
                       _MachineGrid(
                         machines: availableMachines,
-                        selectedIds: assignments.value[
-                                serviceItems[activeItemIndex.value].id] ??
-                            [],
+                        selectedIds: assignments.value[activeItemId] ?? [],
+                        loadCounts: activeLoadCounts,
                         disabled: isSaving.value,
                         onToggle: (machineId) {
                           final itemId =
                               serviceItems[activeItemIndex.value].id;
-                          final current = Map<String, List<String>>.from(
-                              assignments.value);
-                          final list =
-                              List<String>.from(current[itemId] ?? []);
+                          final currentAssignments =
+                              Map<String, List<String>>.from(
+                                  assignments.value);
+                          final currentCounts =
+                              Map<String, Map<String, int>>.from(
+                                  loadCounts.value);
+                          final list = List<String>.from(
+                              currentAssignments[itemId] ?? []);
+                          final counts = Map<String, int>.from(
+                              currentCounts[itemId] ?? {});
 
                           if (list.contains(machineId)) {
-                            list.remove(machineId);
+                            // Already selected: increment count (cap at 5)
+                            final current = counts[machineId] ?? 1;
+                            if (current < 5) {
+                              counts[machineId] = current + 1;
+                            }
                           } else {
+                            // Not selected: add with count 1
                             list.add(machineId);
+                            counts[machineId] = 1;
                           }
 
-                          current[itemId] = list;
-                          assignments.value = current;
+                          currentAssignments[itemId] = list;
+                          currentCounts[itemId] = counts;
+                          assignments.value = currentAssignments;
+                          loadCounts.value = currentCounts;
+                        },
+                        onDeselect: (machineId) {
+                          final itemId =
+                              serviceItems[activeItemIndex.value].id;
+                          final currentAssignments =
+                              Map<String, List<String>>.from(
+                                  assignments.value);
+                          final currentCounts =
+                              Map<String, Map<String, int>>.from(
+                                  loadCounts.value);
+                          final list = List<String>.from(
+                              currentAssignments[itemId] ?? []);
+                          final counts = Map<String, int>.from(
+                              currentCounts[itemId] ?? {});
+
+                          list.remove(machineId);
+                          counts.remove(machineId);
+
+                          currentAssignments[itemId] = list;
+                          currentCounts[itemId] = counts;
+                          assignments.value = currentAssignments;
+                          loadCounts.value = currentCounts;
                         },
                       ),
                     ],
@@ -279,7 +334,7 @@ class _ActiveServiceLabel extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Tap to select (multi)',
+          'Tap to add load, hold to remove',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -293,14 +348,18 @@ class _MachineGrid extends StatelessWidget {
   const _MachineGrid({
     required this.machines,
     required this.selectedIds,
+    required this.loadCounts,
     required this.disabled,
     required this.onToggle,
+    required this.onDeselect,
   });
 
   final List<Machine> machines;
   final List<String> selectedIds;
+  final Map<String, int> loadCounts;
   final bool disabled;
   final ValueChanged<String> onToggle;
+  final ValueChanged<String> onDeselect;
 
   @override
   Widget build(BuildContext context) {
@@ -320,8 +379,10 @@ class _MachineGrid extends StatelessWidget {
             typeName: entry.key,
             machines: entry.value,
             selectedIds: selectedIds,
+            loadCounts: loadCounts,
             disabled: disabled,
             onToggle: onToggle,
+            onDeselect: onDeselect,
           ),
           const SizedBox(height: 8),
         ],
@@ -335,15 +396,19 @@ class _MachineTypeSection extends StatelessWidget {
     required this.typeName,
     required this.machines,
     required this.selectedIds,
+    required this.loadCounts,
     required this.disabled,
     required this.onToggle,
+    required this.onDeselect,
   });
 
   final String typeName;
   final List<Machine> machines;
   final List<String> selectedIds;
+  final Map<String, int> loadCounts;
   final bool disabled;
   final ValueChanged<String> onToggle;
+  final ValueChanged<String> onDeselect;
 
   @override
   Widget build(BuildContext context) {
@@ -365,11 +430,14 @@ class _MachineTypeSection extends StatelessWidget {
           runSpacing: 10,
           children: machines.map((machine) {
             final isSelected = selectedIds.contains(machine.id);
+            final loadCount = loadCounts[machine.id] ?? 1;
             return _MachineChip(
               machine: machine,
               isSelected: isSelected,
+              loadCount: loadCount,
               disabled: disabled,
               onTap: () => onToggle(machine.id),
+              onLongPress: () => onDeselect(machine.id),
             );
           }).toList(),
         ),
@@ -382,14 +450,18 @@ class _MachineChip extends HookConsumerWidget {
   const _MachineChip({
     required this.machine,
     required this.isSelected,
+    required this.loadCount,
     required this.disabled,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final Machine machine;
   final bool isSelected;
+  final int loadCount;
   final bool disabled;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -417,6 +489,7 @@ class _MachineChip extends HookConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             onTap: disabled ? null : onTap,
+            onLongPress: disabled || !isSelected ? null : onLongPress,
             borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
@@ -430,41 +503,76 @@ class _MachineChip extends HookConsumerWidget {
                   width: isSelected ? 2 : 1,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Icon(
-                    isSelected
-                        ? Icons.check_circle
-                        : isInUse
-                            ? Icons.warning_amber
-                            : machine.strictSingleUse
-                                ? Icons.lock_outline
-                                : Icons.local_laundry_service,
-                    size: 28,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : isInUse
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      machine.name,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : theme.colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle
+                              : isInUse
+                                  ? Icons.warning_amber
+                                  : machine.strictSingleUse
+                                      ? Icons.lock_outline
+                                      : Icons.local_laundry_service,
+                          size: 28,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : isInUse
+                                  ? theme.colorScheme.error
+                                  : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            machine.name,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimaryContainer
+                                  : theme.colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  // Load count badge
+                  if (isSelected && loadCount > 1)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.primaryContainer,
+                            width: 2,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$loadCount',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -482,6 +590,7 @@ Future<bool?> showAssignMachinesDialog(
   BuildContext context, {
   required List<SaleServiceItem> serviceItems,
   Map<String, List<String>>? initialAssignments,
+  Map<String, Map<String, int>>? initialLoadCounts,
 }) {
   return showDialog<bool>(
     context: context,
@@ -489,6 +598,7 @@ Future<bool?> showAssignMachinesDialog(
     builder: (context) => AssignMachinesDialog(
       serviceItems: serviceItems,
       initialAssignments: initialAssignments,
+      initialLoadCounts: initialLoadCounts,
     ),
   );
 }
