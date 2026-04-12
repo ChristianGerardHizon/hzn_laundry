@@ -23,6 +23,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final num subtotal;
   final List<String> machine;
   final String? machineName;
+  final Map<String, dynamic> machineLoadCounts;
   final List<String> storage;
   final String? storageName;
   final String? status;
@@ -41,6 +42,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     required this.subtotal,
     this.machine = const [],
     this.machineName,
+    this.machineLoadCounts = const {},
     this.storage = const [],
     this.storageName,
     this.status,
@@ -61,6 +63,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       subtotal: record.getDoubleValue('subtotal'),
       machine: record.getListValue<String>('machine'),
       machineName: record.getStringValue('machineName'),
+      machineLoadCounts: Map<String, dynamic>.from(
+        (record.data['machineLoadCounts'] as Map?) ?? {},
+      ),
       storage: record.getListValue<String>('storage'),
       storageName: record.getStringValue('storageName'),
       status: record.getStringValue('status'),
@@ -85,8 +90,12 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       service: serviceExpanded != null
           ? ServiceDto.fromRecord(serviceExpanded).toEntity()
           : null,
+      machineIds: machine,
       machineId: machine.isNotEmpty ? machine.first : null,
       machineName: machineName,
+      machineLoadCounts: machineLoadCounts.map(
+        (k, v) => MapEntry(k, (v as num).toInt()),
+      ),
       machine: machineExpanded != null
           ? MachineDto.fromRecord(machineExpanded).toEntity()
           : null,

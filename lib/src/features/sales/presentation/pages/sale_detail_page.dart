@@ -1407,13 +1407,18 @@ class _ServiceItemEditTile extends HookConsumerWidget {
 
     Future<void> editMachine() async {
       final initialAssignments = <String, List<String>>{};
-      if (item.machineId != null && item.machineId!.isNotEmpty) {
-        initialAssignments[item.id] = [item.machineId!];
+      final initialLoadCounts = <String, Map<String, int>>{};
+      if (item.machineIds.isNotEmpty) {
+        initialAssignments[item.id] = item.machineIds;
+        if (item.machineLoadCounts.isNotEmpty) {
+          initialLoadCounts[item.id] = item.machineLoadCounts;
+        }
       }
       final result = await showAssignMachinesDialog(
         context,
         serviceItems: [item],
         initialAssignments: initialAssignments,
+        initialLoadCounts: initialLoadCounts,
       );
       if (result == true) {
         ref.invalidate(saleServiceItemsProvider(sale.id));
