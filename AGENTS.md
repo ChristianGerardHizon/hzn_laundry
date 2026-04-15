@@ -57,7 +57,7 @@ Use `flutter run` for local development; run `build_runner` and `slang` after mo
 - Include screenshots or screen recordings for UI changes.
 
 ## Agent-Specific Notes
-- See `CLAUDE.md` for code patterns (Riverpod, routing, models) when making architectural changes.
+- Follow the rules and code patterns defined in `CLAUDE.md`, especially for architectural changes and established project conventions.
 
 
 ## grepai - Semantic Code Search
@@ -127,4 +127,3 @@ grepai trace graph "ValidateToken" --depth 3 --json
 2. Use `grepai trace` to understand function relationships
 3. Use `Read` tool to examine files from results
 4. Only use Grep for exact string searches if needed
-

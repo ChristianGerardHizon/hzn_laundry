@@ -49,8 +49,7 @@ class RecordPaymentDialog extends HookConsumerWidget {
     final enteredAmount = useState<num>(
       isEditing ? existingPayment!.amount : balanceDue,
     );
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final imagePicker = useMemoized(() => ImagePicker());
 
     Future<void> pickImage() async {
@@ -187,15 +186,13 @@ class RecordPaymentDialog extends HookConsumerWidget {
                                 Text(
                                   'Total Amount:',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                                 Text(
                                   currencyFormat.format(sale.totalAmount),
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                               ],
@@ -207,16 +204,14 @@ class RecordPaymentDialog extends HookConsumerWidget {
                                 Text(
                                   'Paid:',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                                 Text(
                                   currencyFormat.format(
                                       sale.totalAmount - effectiveBalanceDue),
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                               ],
@@ -229,16 +224,14 @@ class RecordPaymentDialog extends HookConsumerWidget {
                                   'Balance Due:',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                                 Text(
                                   currencyFormat.format(effectiveBalanceDue),
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        theme.colorScheme.onPrimaryContainer,
+                                    color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
                               ],
@@ -285,16 +278,14 @@ class RecordPaymentDialog extends HookConsumerWidget {
                                 : effectiveBalanceDue.toString();
                             formKey.currentState?.fields['amount']
                                 ?.didChange(initial);
-                            enteredAmount.value =
-                                num.tryParse(initial) ?? 0;
+                            enteredAmount.value = num.tryParse(initial) ?? 0;
                           },
                         ),
                       ),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       onChanged: (value) {
-                        enteredAmount.value =
-                            num.tryParse(value ?? '') ?? 0;
+                        enteredAmount.value = num.tryParse(value ?? '') ?? 0;
                       },
                       validator: FormBuilderValidators.compose([
                         FormBuilderValidators.required(),
@@ -305,15 +296,33 @@ class RecordPaymentDialog extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Overpayment warning
-                    if (enteredAmount.value > effectiveBalanceDue)
+                    // Payment warnings
+                    if (effectiveBalanceDue <= 0)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           children: [
                             Icon(Icons.warning_amber_rounded,
-                                size: 18,
-                                color: theme.colorScheme.error),
+                                size: 18, color: theme.colorScheme.error),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'This order is already fully paid. Recording another payment will create an excess payment.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (enteredAmount.value > effectiveBalanceDue)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded,
+                                size: 18, color: theme.colorScheme.error),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -360,7 +369,8 @@ class RecordPaymentDialog extends HookConsumerWidget {
                           child: OutlinedButton(
                             onPressed: () {
                               final current = num.tryParse(
-                                    formKey.currentState?.fields['amount']?.value
+                                    formKey.currentState?.fields['amount']
+                                            ?.value
                                             ?.toString() ??
                                         '',
                                   ) ??
@@ -368,14 +378,14 @@ class RecordPaymentDialog extends HookConsumerWidget {
                               final halved = (current / 2).toStringAsFixed(2);
                               formKey.currentState?.fields['amount']
                                   ?.didChange(halved);
-                              enteredAmount.value =
-                                  num.tryParse(halved) ?? 0;
+                              enteredAmount.value = num.tryParse(halved) ?? 0;
                             },
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
                             ),
-                            child: const Text('½',
-                                style: TextStyle(fontSize: 16)),
+                            child:
+                                const Text('½', style: TextStyle(fontSize: 16)),
                           ),
                         ),
                         const SizedBox(width: 4),

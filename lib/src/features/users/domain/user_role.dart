@@ -112,6 +112,7 @@ abstract class Permissions {
 
   // Payments permissions
   static const paymentsEdit = 'payments.edit';
+  static const paymentsVoid = 'payments.void';
 
   // Machines permissions
   static const machinesView = 'machines.view';
@@ -179,7 +180,7 @@ abstract class Permissions {
     'Services': [servicesView, servicesCreate, servicesEdit, servicesDelete],
     'Inventory': [inventoryView, inventoryAdjust],
     'Sales': [salesView, salesCreate],
-    'Payments': [paymentsEdit],
+    'Payments': [paymentsEdit, paymentsVoid],
     'Machines': [machinesView, machinesCreate, machinesEdit, machinesDelete],
     'Storages': [storagesView, storagesCreate, storagesEdit, storagesDelete],
     'Employees': [
@@ -359,6 +360,13 @@ abstract class Permissions {
         category: 'Payments',
         description: 'Edit payment details including date',
         icon: Icons.edit,
+      ),
+      const Permission(
+        key: paymentsVoid,
+        name: 'Void Payments',
+        category: 'Payments',
+        description: 'Void recorded payments without deleting their history',
+        icon: Icons.block,
       ),
       // Machines
       const Permission(
@@ -584,7 +592,8 @@ abstract class Permissions {
         key: dashboardDateOverride,
         name: 'Date Override',
         category: 'Dashboard',
-        description: 'Change the dashboard date to view and post sales on a different date',
+        description:
+            'Change the dashboard date to view and post sales on a different date',
         icon: Icons.date_range,
       ),
       // System

@@ -102,7 +102,7 @@ class _SalesSummaryContent extends StatelessWidget {
         title: 'Total Sales',
         value: _formatCurrency(data.totalSales),
         icon: Icons.point_of_sale,
-        subtitle: '${data.items.length} orders',
+        subtitle: '${data.salesItems.length} orders today',
         compact: true,
         color: Colors.blue,
         onTap: () => _showBreakdownModal(
@@ -110,40 +110,40 @@ class _SalesSummaryContent extends StatelessWidget {
           title: 'Total Sales',
           icon: Icons.point_of_sale,
           color: Colors.blue,
-          items: data.items,
+          items: data.salesItems,
           total: data.totalSales,
         ),
       ),
       KpiCard(
-        title: 'Total Paid',
-        value: _formatCurrency(data.totalPaid),
-        icon: Icons.check_circle_outline,
-        subtitle: '${data.items.where((i) => i.isPaid).length} paid',
+        title: 'Payments Received',
+        value: _formatCurrency(data.totalPaymentsReceived),
+        icon: Icons.payments_outlined,
+        subtitle: '${data.paymentItems.length} payment entries',
         compact: true,
         color: Colors.green,
         onTap: () => _showBreakdownModal(
           context,
-          title: 'Total Paid',
-          icon: Icons.check_circle_outline,
+          title: 'Payments Received',
+          icon: Icons.payments_outlined,
           color: Colors.green,
-          items: data.items.where((i) => i.isPaid).toList(),
-          total: data.totalPaid,
+          items: data.paymentItems,
+          total: data.totalPaymentsReceived,
         ),
       ),
       KpiCard(
-        title: 'Total Unpaid',
-        value: _formatCurrency(data.totalUnpaid),
+        title: 'Outstanding',
+        value: _formatCurrency(data.totalOutstanding),
         icon: Icons.pending_outlined,
-        subtitle: '${data.items.where((i) => !i.isPaid).length} unpaid',
+        subtitle: '${data.outstandingItems.length} orders pending',
         compact: true,
         color: Colors.orange,
         onTap: () => _showBreakdownModal(
           context,
-          title: 'Total Unpaid',
+          title: 'Outstanding',
           icon: Icons.pending_outlined,
           color: Colors.orange,
-          items: data.items.where((i) => !i.isPaid).toList(),
-          total: data.totalUnpaid,
+          items: data.outstandingItems,
+          total: data.totalOutstanding,
         ),
       ),
     ];
@@ -321,8 +321,7 @@ class _SalesBreakdownTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
     return InkWell(
       onTap: () => showSaleDetailDialog(context, saleId: item.saleId),
@@ -331,19 +330,32 @@ class _SalesBreakdownTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: order number, badges, amount
+            // Top row: customer name, badges, amount
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        item.customerName != null &&
+                                item.customerName!.isNotEmpty
+                            ? item.customerName!
+                            : _shortOrderNumber(item.receiptNumber),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
                       Row(
                         children: [
                           Text(
                             _shortOrderNumber(item.receiptNumber),
-                            style: theme.textTheme.bodySmall?.copyWith(
+                            style: theme.textTheme.labelSmall?.copyWith(
                               fontFamily: 'monospace',
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -351,10 +363,11 @@ class _SalesBreakdownTile extends StatelessWidget {
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    Colors.deepPurple.withValues(alpha: 0.1),
+                                color: Colors.deepPurple.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
@@ -369,11 +382,11 @@ class _SalesBreakdownTile extends StatelessWidget {
                           ],
                         ],
                       ),
-                      if (item.customerName != null &&
-                          item.customerName!.isNotEmpty) ...[
+                      if (item.customerName == null ||
+                          item.customerName!.isEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
-                          item.customerName!,
+                          'Walk-in customer',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -406,7 +419,7 @@ class _SalesBreakdownTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                         ],
-                        _PaymentChip(isPaid: item.isPaid),
+                        _PaymentChip(label: item.statusLabel),
                       ],
                     ),
                   ],
@@ -427,9 +440,8 @@ class _SalesBreakdownTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item.serviceItems.map((e) {
-                        final qty =
-                            e.service?.formatQuantity(e.quantity) ??
-                                '${e.quantity}';
+                        final qty = e.service?.formatQuantity(e.quantity) ??
+                            '${e.quantity}';
                         return '${e.serviceName} x$qty';
                       }).join(', '),
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -476,13 +488,19 @@ class _SalesBreakdownTile extends StatelessWidget {
 }
 
 class _PaymentChip extends StatelessWidget {
-  const _PaymentChip({required this.isPaid});
+  const _PaymentChip({required this.label});
 
-  final bool isPaid;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final color = isPaid ? Colors.green : Colors.orange;
+    final color = switch (label) {
+      'Paid' => Colors.green,
+      'Full Payment' => Colors.green,
+      'Partial' => Colors.amber.shade800,
+      'Partial Payment' => Colors.amber.shade800,
+      _ => Colors.orange,
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -491,7 +509,7 @@ class _PaymentChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isPaid ? 'Paid' : 'Unpaid',
+        label,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w500,

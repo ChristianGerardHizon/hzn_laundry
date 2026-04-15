@@ -36,6 +36,13 @@ class PaymentMapper extends ClassMapperBase<Payment> {
   );
   static PaymentType _$type(Payment v) => v.type;
   static const Field<Payment, PaymentType> _f$type = Field('type', _$type);
+  static bool _$isVoided(Payment v) => v.isVoided;
+  static const Field<Payment, bool> _f$isVoided = Field(
+    'isVoided',
+    _$isVoided,
+    opt: true,
+    def: false,
+  );
   static String? _$paymentRef(Payment v) => v.paymentRef;
   static const Field<Payment, String> _f$paymentRef = Field(
     'paymentRef',
@@ -60,6 +67,18 @@ class PaymentMapper extends ClassMapperBase<Payment> {
     _$postedDate,
     opt: true,
   );
+  static DateTime? _$voidedAt(Payment v) => v.voidedAt;
+  static const Field<Payment, DateTime> _f$voidedAt = Field(
+    'voidedAt',
+    _$voidedAt,
+    opt: true,
+  );
+  static String? _$voidReason(Payment v) => v.voidReason;
+  static const Field<Payment, String> _f$voidReason = Field(
+    'voidReason',
+    _$voidReason,
+    opt: true,
+  );
   static DateTime? _$created(Payment v) => v.created;
   static const Field<Payment, DateTime> _f$created = Field(
     'created',
@@ -80,10 +99,13 @@ class PaymentMapper extends ClassMapperBase<Payment> {
     #amount: _f$amount,
     #paymentMethod: _f$paymentMethod,
     #type: _f$type,
+    #isVoided: _f$isVoided,
     #paymentRef: _f$paymentRef,
     #paymentProofUrl: _f$paymentProofUrl,
     #notes: _f$notes,
     #postedDate: _f$postedDate,
+    #voidedAt: _f$voidedAt,
+    #voidReason: _f$voidReason,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -95,10 +117,13 @@ class PaymentMapper extends ClassMapperBase<Payment> {
       amount: data.dec(_f$amount),
       paymentMethod: data.dec(_f$paymentMethod),
       type: data.dec(_f$type),
+      isVoided: data.dec(_f$isVoided),
       paymentRef: data.dec(_f$paymentRef),
       paymentProofUrl: data.dec(_f$paymentProofUrl),
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
+      voidedAt: data.dec(_f$voidedAt),
+      voidReason: data.dec(_f$voidReason),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -167,10 +192,13 @@ abstract class PaymentCopyWith<$R, $In extends Payment, $Out>
     num? amount,
     PaymentMethod? paymentMethod,
     PaymentType? type,
+    bool? isVoided,
     String? paymentRef,
     String? paymentProofUrl,
     String? notes,
     DateTime? postedDate,
+    DateTime? voidedAt,
+    String? voidReason,
     DateTime? created,
     DateTime? updated,
   });
@@ -192,10 +220,13 @@ class _PaymentCopyWithImpl<$R, $Out>
     num? amount,
     PaymentMethod? paymentMethod,
     PaymentType? type,
+    bool? isVoided,
     Object? paymentRef = $none,
     Object? paymentProofUrl = $none,
     Object? notes = $none,
     Object? postedDate = $none,
+    Object? voidedAt = $none,
+    Object? voidReason = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -205,10 +236,13 @@ class _PaymentCopyWithImpl<$R, $Out>
       if (amount != null) #amount: amount,
       if (paymentMethod != null) #paymentMethod: paymentMethod,
       if (type != null) #type: type,
+      if (isVoided != null) #isVoided: isVoided,
       if (paymentRef != $none) #paymentRef: paymentRef,
       if (paymentProofUrl != $none) #paymentProofUrl: paymentProofUrl,
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
+      if (voidedAt != $none) #voidedAt: voidedAt,
+      if (voidReason != $none) #voidReason: voidReason,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -220,10 +254,13 @@ class _PaymentCopyWithImpl<$R, $Out>
     amount: data.get(#amount, or: $value.amount),
     paymentMethod: data.get(#paymentMethod, or: $value.paymentMethod),
     type: data.get(#type, or: $value.type),
+    isVoided: data.get(#isVoided, or: $value.isVoided),
     paymentRef: data.get(#paymentRef, or: $value.paymentRef),
     paymentProofUrl: data.get(#paymentProofUrl, or: $value.paymentProofUrl),
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
+    voidedAt: data.get(#voidedAt, or: $value.voidedAt),
+    voidReason: data.get(#voidReason, or: $value.voidReason),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

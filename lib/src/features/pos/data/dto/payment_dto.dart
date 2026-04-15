@@ -17,10 +17,13 @@ class PaymentDto with PaymentDtoMappable {
   final num amount;
   final String paymentMethod;
   final String type;
+  final bool isVoided;
   final String? paymentRef;
   final String? paymentProof;
   final String? notes;
   final String? postedDate;
+  final String? voidedAt;
+  final String? voidReason;
   final String? created;
   final String? updated;
 
@@ -32,10 +35,13 @@ class PaymentDto with PaymentDtoMappable {
     required this.amount,
     required this.paymentMethod,
     required this.type,
+    this.isVoided = false,
     this.paymentRef,
     this.paymentProof,
     this.notes,
     this.postedDate,
+    this.voidedAt,
+    this.voidReason,
     this.created,
     this.updated,
   });
@@ -49,10 +55,13 @@ class PaymentDto with PaymentDtoMappable {
       amount: record.getDoubleValue('amount'),
       paymentMethod: record.getStringValue('paymentMethod'),
       type: record.getStringValue('type'),
+      isVoided: record.getBoolValue('isVoided'),
       paymentRef: record.getStringValue('paymentRef'),
       paymentProof: record.getStringValue('paymentProof'),
       notes: record.getStringValue('notes'),
       postedDate: record.get<String>('postedDate'),
+      voidedAt: record.get<String>('voidedAt'),
+      voidReason: record.getStringValue('voidReason'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -65,10 +74,15 @@ class PaymentDto with PaymentDtoMappable {
       amount: amount,
       paymentMethod: _parsePaymentMethod(paymentMethod),
       type: _parsePaymentType(type),
-      paymentRef: paymentRef != null && paymentRef!.isNotEmpty ? paymentRef : null,
+      isVoided: isVoided,
+      paymentRef:
+          paymentRef != null && paymentRef!.isNotEmpty ? paymentRef : null,
       paymentProofUrl: _buildPaymentProofUrl(baseUrl),
       notes: notes != null && notes!.isNotEmpty ? notes : null,
       postedDate: parseToLocal(postedDate),
+      voidedAt: parseToLocal(voidedAt),
+      voidReason:
+          voidReason != null && voidReason!.isNotEmpty ? voidReason : null,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );
@@ -78,6 +92,8 @@ class PaymentDto with PaymentDtoMappable {
     switch (method.toLowerCase()) {
       case 'cash':
         return PaymentMethod.cash;
+      case 'gcash':
+        return PaymentMethod.gcash;
       case 'card':
         return PaymentMethod.card;
       case 'banktransfer':

@@ -4,8 +4,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/date_utils.dart';
+import '../../../pos/data/dto/payment_dto.dart';
 import '../../../pos/data/dto/sale_dto.dart';
 import '../../../pos/data/dto/sale_item_dto.dart';
+import '../../../pos/domain/payment.dart';
+import '../../../pos/domain/payment_status.dart';
+import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
@@ -16,40 +20,31 @@ import 'dashboard_date_override_provider.dart';
 
 part 'sales_summary_controller.g.dart';
 
-/// Sales summary for the effective dashboard date, including backlog sales
-/// paid on that date.
+/// Sales summary for the effective dashboard date.
 ///
-/// Runs two parallel queries:
-/// 1. All sales created on the effective date (not voided)
-/// 2. Payments made on the effective date on backlog sales (created before
-///    that date), with expanded sale records
-///
-/// Also fetches service items and sale items for all sales to display
-/// in the breakdown.
+/// Totals are intentionally separated:
+/// - Total Sales: all orders created on the effective date
+/// - Payments Received: all money posted on the effective date
+/// - Outstanding: remaining balance for orders created on the effective date
 @riverpod
 Future<SalesSummaryData> salesSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
-  final todayStart = DateTime(now.year, now.month, now.day);
-  final todayEnd = todayStart.add(const Duration(days: 1));
-  final startUtc = todayStart.toPocketBaseUtc();
-  final endUtc = todayEnd.toPocketBaseUtc();
+  final dayStart = DateTime(now.year, now.month, now.day);
+  final dayEnd = dayStart.add(const Duration(days: 1));
+  final startUtc = dayStart.toPocketBaseUtc();
+  final endUtc = dayEnd.toPocketBaseUtc();
 
-  // Branch filter fragments
-  final salesBranchFilter =
-      branchId != null ? ' && branch = "$branchId"' : '';
+  final salesBranchFilter = branchId != null ? ' && branch = "$branchId"' : '';
   final paymentBranchFilter =
       branchId != null ? ' && sale.branch = "$branchId"' : '';
 
-  // Query 1: Today's sales
   final todaySalesFilter =
       "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$salesBranchFilter";
-
-  // Query 2: Payments made today on backlog sales (sale created before today)
-  final backlogPaymentsFilter =
-      "postedDate >= '$startUtc' && postedDate < '$endUtc' && sale.postedDate < '$startUtc' && sale.status != 'voided'$paymentBranchFilter";
+  final todayPaymentsFilter =
+      "postedDate >= '$startUtc' && postedDate < '$endUtc' && sale.status != 'voided' && isVoided = false$paymentBranchFilter";
 
   final results = await Future.wait([
     pb.collection(PocketBaseCollections.sales).getFullList(
@@ -57,58 +52,61 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
           sort: '-postedDate',
         ),
     pb.collection(PocketBaseCollections.payments).getFullList(
-          filter: backlogPaymentsFilter,
+          filter: todayPaymentsFilter,
+          sort: '-postedDate',
           expand: 'sale',
         ),
   ]);
 
-  // Parse today's sales
   final todaySales = results[0]
       .map((record) => SaleDto.fromRecord(record).toEntity())
       .toList();
-  final todaySaleIds = todaySales.map((s) => s.id).toSet();
+  final todaySaleIds = todaySales.map((sale) => sale.id).toSet();
 
-  // Parse backlog sales from expanded payment records (deduplicate by sale ID)
-  final backlogSalesMap = <String, Sale>{};
+  final paymentsBySaleId = <String, num>{};
+  final paymentSales = <String, Sale>{};
+  final paymentPostedDateBySaleId = <String, DateTime?>{};
+
   for (final paymentRecord in results[1]) {
+    if (paymentRecord.getBoolValue('isVoided')) continue;
     final saleRecord = paymentRecord.get<RecordModel?>('expand.sale');
     if (saleRecord == null) continue;
 
     final sale = SaleDto.fromRecord(saleRecord).toEntity();
-    // Skip if already in today's sales (shouldn't happen, but safety check)
-    if (todaySaleIds.contains(sale.id)) continue;
-    backlogSalesMap[sale.id] = sale;
-  }
-  final backlogSales = backlogSalesMap.values.toList();
+    final payment = PaymentDto.fromRecord(paymentRecord).toEntity();
+    final signedAmount = _signedPaymentAmount(payment);
 
-  // Fetch service items and sale items for all sales
+    paymentsBySaleId[sale.id] = (paymentsBySaleId[sale.id] ?? 0) + signedAmount;
+    paymentSales[sale.id] = sale;
+    paymentPostedDateBySaleId[sale.id] = payment.postedDate;
+  }
+
   final allSaleIds = [
     ...todaySaleIds,
-    ...backlogSalesMap.keys,
+    ...paymentSales.keys,
   ];
 
-  final Map<String, List<SaleServiceItem>> serviceItemsBySale = {};
-  final Map<String, List<SaleItem>> saleItemsBySale = {};
+  final serviceItemsBySale = <String, List<SaleServiceItem>>{};
+  final saleItemsBySale = <String, List<SaleItem>>{};
 
   if (allSaleIds.isNotEmpty) {
-    final saleIdFilters =
-        allSaleIds.map((id) => 'sale = "$id"').join(' || ');
+    final saleIdFilters = allSaleIds.map((id) => 'sale = "$id"').join(' || ');
 
     final itemResults = await Future.wait([
       pb.collection(PocketBaseCollections.saleServiceItems).getFullList(
             filter: '($saleIdFilters)',
             expand: 'service',
           ),
-      pb
-          .collection(PocketBaseCollections.saleItems)
-          .getFullList(filter: '($saleIdFilters)'),
+      pb.collection(PocketBaseCollections.saleItems).getFullList(
+            filter: '($saleIdFilters)',
+          ),
     ]);
 
     for (final record in itemResults[0]) {
       final serviceExpanded = record.get<RecordModel?>('expand.service');
       final item = SaleServiceItemDto.fromRecord(record).toEntity(
-            serviceExpanded: serviceExpanded,
-          );
+        serviceExpanded: serviceExpanded,
+      );
       serviceItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
 
@@ -118,8 +116,7 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
     }
   }
 
-  // Build summary items
-  final items = <SalesSummaryItem>[
+  final salesItems = [
     for (final sale in todaySales)
       SalesSummaryItem(
         saleId: sale.id,
@@ -127,40 +124,122 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
         totalAmount: sale.totalAmount,
         isPaid: sale.isPaid,
         isBacklog: false,
+        statusLabel: _paymentStatusLabel(sale.paymentStatus),
         customerName: sale.customerName,
         postedDate: sale.postedDate,
-        serviceItems: serviceItemsBySale[sale.id] ?? [],
-        saleItems: saleItemsBySale[sale.id] ?? [],
-      ),
-    for (final sale in backlogSales)
-      SalesSummaryItem(
-        saleId: sale.id,
-        receiptNumber: sale.receiptNumber,
-        totalAmount: sale.totalAmount,
-        isPaid: sale.isPaid,
-        isBacklog: true,
-        customerName: sale.customerName,
-        postedDate: sale.postedDate,
-        serviceItems: serviceItemsBySale[sale.id] ?? [],
-        saleItems: saleItemsBySale[sale.id] ?? [],
+        serviceItems: serviceItemsBySale[sale.id] ?? const [],
+        saleItems: saleItemsBySale[sale.id] ?? const [],
       ),
   ];
 
-  // Compute totals
-  final allSales = [...todaySales, ...backlogSales];
+  final outstandingBySaleId = await _calculateOutstandingBySaleId(
+    pb: pb,
+    sales: todaySales,
+  );
+
+  final paymentItems = paymentSales.values
+      .map(
+        (sale) => SalesSummaryItem(
+          saleId: sale.id,
+          receiptNumber: sale.receiptNumber,
+          totalAmount: paymentsBySaleId[sale.id] ?? 0,
+          isPaid: sale.isPaid,
+          isBacklog: !todaySaleIds.contains(sale.id),
+          statusLabel: _paymentReceivedStatusLabel(sale.paymentStatus),
+          customerName: sale.customerName,
+          postedDate: paymentPostedDateBySaleId[sale.id],
+          serviceItems: serviceItemsBySale[sale.id] ?? const [],
+          saleItems: saleItemsBySale[sale.id] ?? const [],
+        ),
+      )
+      .where((item) => item.totalAmount != 0)
+      .toList();
+
+  final outstandingItems = [
+    for (final sale in todaySales)
+      if ((outstandingBySaleId[sale.id] ?? 0) > 0)
+        SalesSummaryItem(
+          saleId: sale.id,
+          receiptNumber: sale.receiptNumber,
+          totalAmount: outstandingBySaleId[sale.id] ?? 0,
+          isPaid: false,
+          isBacklog: false,
+          statusLabel: _paymentStatusLabel(sale.paymentStatus),
+          customerName: sale.customerName,
+          postedDate: sale.postedDate,
+          serviceItems: serviceItemsBySale[sale.id] ?? const [],
+          saleItems: saleItemsBySale[sale.id] ?? const [],
+        ),
+  ];
+
   final totalSales =
-      allSales.fold<num>(0, (sum, s) => sum + s.totalAmount);
-  final totalPaid = allSales
-      .where((s) => s.isPaid)
-      .fold<num>(0, (sum, s) => sum + s.totalAmount);
-  final totalUnpaid = allSales
-      .where((s) => !s.isPaid)
-      .fold<num>(0, (sum, s) => sum + s.totalAmount);
+      todaySales.fold<num>(0, (sum, sale) => sum + sale.totalAmount);
+  final totalPaymentsReceived =
+      paymentsBySaleId.values.fold<num>(0, (sum, amount) => sum + amount);
+  final totalOutstanding =
+      outstandingBySaleId.values.fold<num>(0, (sum, amount) => sum + amount);
 
   return SalesSummaryData(
     totalSales: totalSales,
-    totalPaid: totalPaid,
-    totalUnpaid: totalUnpaid,
-    items: items,
+    totalPaymentsReceived: totalPaymentsReceived,
+    totalOutstanding: totalOutstanding,
+    salesItems: salesItems,
+    paymentItems: paymentItems,
+    outstandingItems: outstandingItems,
   );
+}
+
+Future<Map<String, num>> _calculateOutstandingBySaleId({
+  required PocketBase pb,
+  required List<Sale> sales,
+}) async {
+  final outstandingBySaleId = <String, num>{};
+
+  for (final sale in sales) {
+    final paidAmount = await _calculateSalePaidAmount(
+      pb: pb,
+      saleId: sale.id,
+    );
+    final outstanding = sale.totalAmount - paidAmount;
+    outstandingBySaleId[sale.id] = outstanding > 0 ? outstanding : 0;
+  }
+
+  return outstandingBySaleId;
+}
+
+Future<num> _calculateSalePaidAmount({
+  required PocketBase pb,
+  required String saleId,
+}) async {
+  final records =
+      await pb.collection(PocketBaseCollections.payments).getFullList(
+            filter: 'sale = "$saleId" && isVoided = false',
+          );
+
+  num total = 0;
+  for (final record in records) {
+    if (record.getBoolValue('isVoided')) continue;
+    total += _signedPaymentAmount(PaymentDto.fromRecord(record).toEntity());
+  }
+  return total;
+}
+
+num _signedPaymentAmount(Payment payment) {
+  return payment.type == PaymentType.refund ? -payment.amount : payment.amount;
+}
+
+String _paymentStatusLabel(PaymentStatus status) {
+  return switch (status) {
+    PaymentStatus.paid => 'Paid',
+    PaymentStatus.partial => 'Partial',
+    PaymentStatus.unpaid => 'Unpaid',
+  };
+}
+
+String _paymentReceivedStatusLabel(PaymentStatus status) {
+  return switch (status) {
+    PaymentStatus.paid => 'Full Payment',
+    PaymentStatus.partial => 'Partial Payment',
+    PaymentStatus.unpaid => 'Unpaid',
+  };
 }

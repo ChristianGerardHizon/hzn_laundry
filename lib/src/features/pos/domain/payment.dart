@@ -16,10 +16,13 @@ class Payment with PaymentMappable {
     required this.amount,
     required this.paymentMethod,
     required this.type,
+    this.isVoided = false,
     this.paymentRef,
     this.paymentProofUrl,
     this.notes,
     this.postedDate,
+    this.voidedAt,
+    this.voidReason,
     this.created,
     this.updated,
   });
@@ -39,6 +42,9 @@ class Payment with PaymentMappable {
   /// Type of payment (payment, deposit, refund).
   final PaymentType type;
 
+  /// Whether this payment has been voided by an admin.
+  final bool isVoided;
+
   /// External payment reference.
   final String? paymentRef;
 
@@ -50,6 +56,12 @@ class Payment with PaymentMappable {
 
   /// Business/transaction date (editable).
   final DateTime? postedDate;
+
+  /// Timestamp when the payment was voided.
+  final DateTime? voidedAt;
+
+  /// Optional admin note for the void action.
+  final String? voidReason;
 
   /// Creation timestamp.
   final DateTime? created;
