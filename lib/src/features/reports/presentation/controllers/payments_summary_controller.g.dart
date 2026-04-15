@@ -8,18 +8,12 @@ part of 'payments_summary_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Fetches aggregated payment summary from [vw_payments_daily_summary].
-///
-/// Uses branch filter on the query, then filters by date range in Dart
-/// (view date fields are JSON type, not filterable via PB date operators).
+/// Fetches aggregated payment summary from non-voided payment records.
 
 @ProviderFor(paymentsSummary)
 final paymentsSummaryProvider = PaymentsSummaryProvider._();
 
-/// Fetches aggregated payment summary from [vw_payments_daily_summary].
-///
-/// Uses branch filter on the query, then filters by date range in Dart
-/// (view date fields are JSON type, not filterable via PB date operators).
+/// Fetches aggregated payment summary from non-voided payment records.
 
 final class PaymentsSummaryProvider extends $FunctionalProvider<
         AsyncValue<List<PaymentsDailySummaryEntry>>,
@@ -28,10 +22,7 @@ final class PaymentsSummaryProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<PaymentsDailySummaryEntry>>,
         $FutureProvider<List<PaymentsDailySummaryEntry>> {
-  /// Fetches aggregated payment summary from [vw_payments_daily_summary].
-  ///
-  /// Uses branch filter on the query, then filters by date range in Dart
-  /// (view date fields are JSON type, not filterable via PB date operators).
+  /// Fetches aggregated payment summary from non-voided payment records.
   PaymentsSummaryProvider._()
       : super(
           from: null,
@@ -58,4 +49,4 @@ final class PaymentsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$paymentsSummaryHash() => r'01ef77b4ed054d83f5a437145e53f69416708dae';
+String _$paymentsSummaryHash() => r'dc7a975b9cab58a6797dae1c75248064708b1644';

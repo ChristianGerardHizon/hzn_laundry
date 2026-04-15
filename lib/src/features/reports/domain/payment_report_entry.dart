@@ -16,5 +16,5 @@ class PaymentReportEntry {
   final String? customerName;
   final String saleStatus;
 
-  bool get isVoided => saleStatus == 'voided';
+  bool get isVoided => saleStatus == 'voided' || payment.isVoided;
 }

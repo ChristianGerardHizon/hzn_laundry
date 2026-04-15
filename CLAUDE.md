@@ -16,6 +16,7 @@ This is **hizonelaundry** - a Flutter multi-platform laundry management system. 
 - **Serialization:** dart_mappable
 - **Forms:** flutter_form_builder
 - **Localization:** slang/slang_flutter
+- **Semantic Search:** grepai with Ollama (nomic-embed-text)
 
 ## Architecture
 
