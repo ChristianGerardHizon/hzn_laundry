@@ -63,6 +63,13 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
     _$service,
     opt: true,
   );
+  static List<String> _$machineIds(SaleServiceItem v) => v.machineIds;
+  static const Field<SaleServiceItem, List<String>> _f$machineIds = Field(
+    'machineIds',
+    _$machineIds,
+    opt: true,
+    def: const [],
+  );
   static String? _$machineId(SaleServiceItem v) => v.machineId;
   static const Field<SaleServiceItem, String> _f$machineId = Field(
     'machineId',
@@ -81,6 +88,10 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
     _$machine,
     opt: true,
   );
+  static Map<String, int> _$machineLoadCounts(SaleServiceItem v) =>
+      v.machineLoadCounts;
+  static const Field<SaleServiceItem, Map<String, int>> _f$machineLoadCounts =
+      Field('machineLoadCounts', _$machineLoadCounts, opt: true, def: const {});
   static List<String> _$storageIds(SaleServiceItem v) => v.storageIds;
   static const Field<SaleServiceItem, List<String>> _f$storageIds = Field(
     'storageIds',
@@ -132,9 +143,11 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
     #unitPrice: _f$unitPrice,
     #subtotal: _f$subtotal,
     #service: _f$service,
+    #machineIds: _f$machineIds,
     #machineId: _f$machineId,
     #machineName: _f$machineName,
     #machine: _f$machine,
+    #machineLoadCounts: _f$machineLoadCounts,
     #storageIds: _f$storageIds,
     #storageName: _f$storageName,
     #storageLocations: _f$storageLocations,
@@ -153,9 +166,11 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
       unitPrice: data.dec(_f$unitPrice),
       subtotal: data.dec(_f$subtotal),
       service: data.dec(_f$service),
+      machineIds: data.dec(_f$machineIds),
       machineId: data.dec(_f$machineId),
       machineName: data.dec(_f$machineName),
       machine: data.dec(_f$machine),
+      machineLoadCounts: data.dec(_f$machineLoadCounts),
       storageIds: data.dec(_f$storageIds),
       storageName: data.dec(_f$storageName),
       storageLocations: data.dec(_f$storageLocations),
@@ -228,7 +243,10 @@ extension SaleServiceItemValueCopy<$R, $Out>
 abstract class SaleServiceItemCopyWith<$R, $In extends SaleServiceItem, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ServiceCopyWith<$R, Service, Service>? get service;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machineIds;
   MachineCopyWith<$R, Machine, Machine>? get machine;
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>
+  get machineLoadCounts;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storageIds;
   ListCopyWith<
     $R,
@@ -245,9 +263,11 @@ abstract class SaleServiceItemCopyWith<$R, $In extends SaleServiceItem, $Out>
     num? unitPrice,
     num? subtotal,
     Service? service,
+    List<String>? machineIds,
     String? machineId,
     String? machineName,
     Machine? machine,
+    Map<String, int>? machineLoadCounts,
     List<String>? storageIds,
     String? storageName,
     List<StorageLocation>? storageLocations,
@@ -272,8 +292,22 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
   ServiceCopyWith<$R, Service, Service>? get service =>
       $value.service?.copyWith.$chain((v) => call(service: v));
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machineIds =>
+      ListCopyWith(
+        $value.machineIds,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(machineIds: v),
+      );
+  @override
   MachineCopyWith<$R, Machine, Machine>? get machine =>
       $value.machine?.copyWith.$chain((v) => call(machine: v));
+  @override
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>
+  get machineLoadCounts => MapCopyWith(
+    $value.machineLoadCounts,
+    (v, t) => ObjectCopyWith(v, $identity, t),
+    (v) => call(machineLoadCounts: v),
+  );
   @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storageIds =>
       ListCopyWith(
@@ -302,9 +336,11 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
     num? unitPrice,
     num? subtotal,
     Object? service = $none,
+    List<String>? machineIds,
     Object? machineId = $none,
     Object? machineName = $none,
     Object? machine = $none,
+    Map<String, int>? machineLoadCounts,
     List<String>? storageIds,
     Object? storageName = $none,
     List<StorageLocation>? storageLocations,
@@ -321,9 +357,11 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
       if (unitPrice != null) #unitPrice: unitPrice,
       if (subtotal != null) #subtotal: subtotal,
       if (service != $none) #service: service,
+      if (machineIds != null) #machineIds: machineIds,
       if (machineId != $none) #machineId: machineId,
       if (machineName != $none) #machineName: machineName,
       if (machine != $none) #machine: machine,
+      if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
       if (storageIds != null) #storageIds: storageIds,
       if (storageName != $none) #storageName: storageName,
       if (storageLocations != null) #storageLocations: storageLocations,
@@ -342,9 +380,14 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
     unitPrice: data.get(#unitPrice, or: $value.unitPrice),
     subtotal: data.get(#subtotal, or: $value.subtotal),
     service: data.get(#service, or: $value.service),
+    machineIds: data.get(#machineIds, or: $value.machineIds),
     machineId: data.get(#machineId, or: $value.machineId),
     machineName: data.get(#machineName, or: $value.machineName),
     machine: data.get(#machine, or: $value.machine),
+    machineLoadCounts: data.get(
+      #machineLoadCounts,
+      or: $value.machineLoadCounts,
+    ),
     storageIds: data.get(#storageIds, or: $value.storageIds),
     storageName: data.get(#storageName, or: $value.storageName),
     storageLocations: data.get(#storageLocations, or: $value.storageLocations),

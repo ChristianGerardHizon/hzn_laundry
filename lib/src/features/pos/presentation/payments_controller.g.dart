@@ -147,7 +147,7 @@ final class SaleTotalPaidProvider
   }
 }
 
-String _$saleTotalPaidHash() => r'02d024b499aa7b1171efd075b62fafcef74a921f';
+String _$saleTotalPaidHash() => r'aba679a63249cb3ab8e2b13ce1f617d1f1a6408a';
 
 /// Provider that calculates the total paid amount for a sale.
 
@@ -202,7 +202,7 @@ final class PaymentsControllerProvider
 }
 
 String _$paymentsControllerHash() =>
-    r'84679c43a099a2756aadb52f8b36b4aefd403d5c';
+    r'8e5aca7ecf8551312f1246975a04883a2ae44881';
 
 /// Controller for managing payments for a sale.
 

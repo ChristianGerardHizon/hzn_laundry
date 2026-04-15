@@ -21,9 +21,11 @@ class SaleServiceItem with SaleServiceItemMappable {
     required this.unitPrice,
     required this.subtotal,
     this.service,
+    this.machineIds = const [],
     this.machineId,
     this.machineName,
     this.machine,
+    this.machineLoadCounts = const {},
     this.storageIds = const [],
     this.storageName,
     this.storageLocations = const [],
@@ -56,7 +58,10 @@ class SaleServiceItem with SaleServiceItemMappable {
   /// Expanded Service (optional).
   final Service? service;
 
-  /// Assigned machine ID.
+  /// All assigned machine IDs (full list from PB relation).
+  final List<String> machineIds;
+
+  /// Assigned machine ID (first from list, for backward compat).
   final String? machineId;
 
   /// Snapshot of machine name at time of assignment.
@@ -64,6 +69,10 @@ class SaleServiceItem with SaleServiceItemMappable {
 
   /// Expanded Machine (optional).
   final Machine? machine;
+
+  /// Load count per machine (machine ID → number of cycles).
+  /// Machines not present default to 1.
+  final Map<String, int> machineLoadCounts;
 
   /// Assigned storage IDs.
   final List<String> storageIds;

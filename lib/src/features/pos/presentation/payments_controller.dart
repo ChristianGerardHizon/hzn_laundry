@@ -27,6 +27,7 @@ Future<num> saleTotalPaid(Ref ref, String saleId) async {
   final payments = await ref.watch(salePaymentsProvider(saleId).future);
   num total = 0;
   for (final payment in payments) {
+    if (payment.isVoided) continue;
     if (payment.type == PaymentType.refund) {
       total -= payment.amount;
     } else {
@@ -141,6 +142,34 @@ class PaymentsController extends _$PaymentsController {
   Future<bool> deletePayment(String paymentId, String saleId) async {
     final repo = ref.read(paymentRepositoryProvider);
     final result = await repo.delete(paymentId);
+
+    if (!ref.mounted) return false;
+
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return false;
+      },
+      (_) {
+        ref.invalidate(salePaymentsProvider(saleId));
+        ref.invalidate(salesSummaryProvider);
+        return true;
+      },
+    );
+  }
+
+  /// Voids a payment without deleting its history.
+  Future<bool> voidPayment({
+    required String paymentId,
+    required String saleId,
+    String? reason,
+  }) async {
+    final repo = ref.read(paymentRepositoryProvider);
+    final result = await repo.voidPayment(
+      id: paymentId,
+      saleId: saleId,
+      reason: reason,
+    );
 
     if (!ref.mounted) return false;
 

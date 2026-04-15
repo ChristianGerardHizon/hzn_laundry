@@ -45,6 +45,13 @@ abstract class PaymentRepository {
   /// Gets all payments for a sale.
   FutureEither<List<Payment>> getBySaleId(String saleId);
 
+  /// Voids an existing payment and recalculates sale payment status.
+  FutureEither<void> voidPayment({
+    required String id,
+    required String saleId,
+    String? reason,
+  });
+
   /// Gets all payments within a date range with sale context, optionally filtered by branch.
   FutureEither<List<PaymentReportEntry>> getForDateRange({
     required DateTime startDate,
@@ -95,6 +102,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
           'amount': amount,
           'paymentMethod': paymentMethod.name,
           'type': type.name,
+          'isVoided': false,
+          'voidedAt': '',
+          'voidReason': '',
           'paymentRef': paymentRef,
           'notes': notes,
         };
@@ -135,6 +145,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
           'amount': amount,
           'paymentMethod': paymentMethod.name,
           'type': type.name,
+          'isVoided': false,
+          'voidedAt': '',
+          'voidReason': '',
           'paymentRef': paymentRef ?? '',
           'notes': notes ?? '',
         };
@@ -182,6 +195,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
       () async {
         final filter = PBFilter()
             .notEquals('sale.status', 'voided')
+            .isFalse('isVoided')
             .between('postedDate', startDate, endDate);
         if (branchId != null) {
           filter.relation('sale.branch', branchId);
@@ -199,8 +213,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
           return PaymentReportEntry(
             payment: payment,
             saleId: payment.saleId,
-            receiptNumber:
-                saleExpanded?.getStringValue('receiptNumber') ?? '',
+            receiptNumber: saleExpanded?.getStringValue('receiptNumber') ?? '',
             customerName: saleExpanded?.getStringValue('customerName'),
             saleStatus: saleExpanded?.getStringValue('status') ?? '',
           );
@@ -229,6 +242,26 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }
 
   @override
+  FutureEither<void> voidPayment({
+    required String id,
+    required String saleId,
+    String? reason,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        await _payments.update(id, body: {
+          'isVoided': true,
+          'voidedAt': DateTime.now().toUtc().toIso8601String(),
+          'voidReason': reason ?? '',
+        });
+
+        await _updateSaleIsPaid(saleId);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
   FutureEither<num> getTotalPaidAmount(String saleId) async {
     return TaskEither.tryCatch(
       () async {
@@ -241,11 +274,12 @@ class PaymentRepositoryImpl implements PaymentRepository {
   /// Calculates total paid amount for a sale, accounting for refunds.
   Future<num> _calculateTotalPaid(String saleId) async {
     final records = await _payments.getFullList(
-      filter: 'sale = "$saleId"',
+      filter: 'sale = "$saleId" && isVoided = false',
     );
 
     num total = 0;
     for (final record in records) {
+      if (record.getBoolValue('isVoided')) continue;
       final amount = record.getDoubleValue('amount');
       final type = record.getStringValue('type').toLowerCase();
       if (type == 'refund') {

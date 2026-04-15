@@ -8,46 +8,34 @@ part of 'sales_summary_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Sales summary for the effective dashboard date, including backlog sales
-/// paid on that date.
+/// Sales summary for the effective dashboard date.
 ///
-/// Runs two parallel queries:
-/// 1. All sales created on the effective date (not voided)
-/// 2. Payments made on the effective date on backlog sales (created before
-///    that date), with expanded sale records
-///
-/// Also fetches service items and sale items for all sales to display
-/// in the breakdown.
+/// Totals are intentionally separated:
+/// - Total Sales: all orders created on the effective date
+/// - Payments Received: all money posted on the effective date
+/// - Outstanding: remaining balance for orders created on the effective date
 
 @ProviderFor(salesSummary)
 final salesSummaryProvider = SalesSummaryProvider._();
 
-/// Sales summary for the effective dashboard date, including backlog sales
-/// paid on that date.
+/// Sales summary for the effective dashboard date.
 ///
-/// Runs two parallel queries:
-/// 1. All sales created on the effective date (not voided)
-/// 2. Payments made on the effective date on backlog sales (created before
-///    that date), with expanded sale records
-///
-/// Also fetches service items and sale items for all sales to display
-/// in the breakdown.
+/// Totals are intentionally separated:
+/// - Total Sales: all orders created on the effective date
+/// - Payments Received: all money posted on the effective date
+/// - Outstanding: remaining balance for orders created on the effective date
 
 final class SalesSummaryProvider extends $FunctionalProvider<
         AsyncValue<SalesSummaryData>,
         SalesSummaryData,
         FutureOr<SalesSummaryData>>
     with $FutureModifier<SalesSummaryData>, $FutureProvider<SalesSummaryData> {
-  /// Sales summary for the effective dashboard date, including backlog sales
-  /// paid on that date.
+  /// Sales summary for the effective dashboard date.
   ///
-  /// Runs two parallel queries:
-  /// 1. All sales created on the effective date (not voided)
-  /// 2. Payments made on the effective date on backlog sales (created before
-  ///    that date), with expanded sale records
-  ///
-  /// Also fetches service items and sale items for all sales to display
-  /// in the breakdown.
+  /// Totals are intentionally separated:
+  /// - Total Sales: all orders created on the effective date
+  /// - Payments Received: all money posted on the effective date
+  /// - Outstanding: remaining balance for orders created on the effective date
   SalesSummaryProvider._()
       : super(
           from: null,
@@ -74,4 +62,4 @@ final class SalesSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesSummaryHash() => r'35b4ce4bd66f38a12553f8cd0fb18a9a35945f06';
+String _$salesSummaryHash() => r'769a4b8c256597d449cf66a24657e166375658fc';

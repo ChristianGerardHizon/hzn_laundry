@@ -13,6 +13,7 @@ import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../activities/presentation/controllers/activities_controller.dart';
 import '../../../pos/domain/payment_status.dart';
+import '../../../pos/domain/payment_method.dart';
 import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
@@ -127,9 +128,8 @@ class _SaleDetailContent extends HookConsumerWidget {
 
     // Check if current user can edit items/payments (admin or payments.edit)
     final auth = ref.watch(currentAuthProvider);
-    final fullUser = auth != null
-        ? ref.watch(userProvider(auth.user.id)).value
-        : null;
+    final fullUser =
+        auth != null ? ref.watch(userProvider(auth.user.id)).value : null;
     final currentRole = (fullUser != null &&
             fullUser.roleId != null &&
             fullUser.roleId!.isNotEmpty)
@@ -138,6 +138,9 @@ class _SaleDetailContent extends HookConsumerWidget {
     final canEdit = currentRole != null &&
         (currentRole.isAdmin ||
             currentRole.hasPermission(Permissions.paymentsEdit));
+    final canVoidPayments = currentRole != null &&
+        (currentRole.isAdmin ||
+            currentRole.hasPermission(Permissions.paymentsVoid));
 
     return DefaultTabController(
       length: 2,
@@ -187,242 +190,252 @@ class _SaleDetailContent extends HookConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              // Header Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    // Header Card
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Text(
-                                  sale.receiptNumber,
-                                  style:
-                                      theme.textTheme.titleMedium?.copyWith(
-                                    color:
-                                        theme.colorScheme.onSurfaceVariant,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        sale.receiptNumber,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        sale.postedDate != null
+                                            ? dateFormat
+                                                .format(sale.postedDate!)
+                                            : 'Unknown date',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  sale.postedDate != null
-                                      ? dateFormat.format(sale.postedDate!)
-                                      : 'Unknown date',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
+                                SaleStatusChip(status: sale.status),
                               ],
                             ),
-                          ),
-                          SaleStatusChip(status: sale.status),
-                        ],
-                      ),
-                      if (sale.customerName != null &&
-                          sale.customerName!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        SaleCustomerInfoRow(
-                          customerName: sale.customerName!,
-                          customerId: sale.customerId,
-                        ),
-                      ],
-                      const Divider(height: 24),
-                      if (sale.notes != null && sale.notes!.isNotEmpty)
-                        SaleInfoRow(
-                          icon: Icons.note,
-                          label: 'Notes',
-                          value: sale.notes!,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Highlight Banner - shows most important status
-              Builder(builder: (_) {
-                final totalPaid =
-                    ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
-                return SaleHighlightBanner(
-                  orderStatus: sale.orderStatus,
-                  isPaid: sale.isPaid,
-                  saleStatus: sale.status,
-                  paymentStatus: sale.paymentStatus,
-                  balanceDue: sale.totalAmount - totalPaid,
-                );
-              }),
-              const SizedBox(height: 16),
-
-              // Sale Status Actions (Refund/Unrefund)
-              _buildSaleStatusActions(context, ref),
-              const SizedBox(height: 16),
-
-              // Order Status Card
-              _buildOrderStatusCard(context, ref),
-              const SizedBox(height: 16),
-
-              // Services Section
-              serviceItemsAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (serviceItems) {
-                  if (serviceItems.isEmpty) return const SizedBox.shrink();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Services',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: serviceItems.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = serviceItems[index];
-                            return _ServiceItemEditTile(
-                              sale: sale,
-                              item: item,
-                              currencyFormat: currencyFormat,
-                              canEdit: canEdit,
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Packs Section
-                      if (sale.orderStatus != OrderStatus.pending)
-                        _PacksEditSection(sale: sale),
-                    ],
-                  );
-                },
-              ),
-
-              // Add Ons Section
-              Text(
-                'Add Ons',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Card(
-                child: saleItemsAsync.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (error, _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Error loading add ons: $error'),
-                  ),
-                  data: (items) => items.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text('No add ons'),
-                        )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            return ListTile(
-                              onTap: canEdit
-                                  ? () async {
-                                      final result = await showEditItemDialog(
-                                        context,
-                                        saleId: sale.id,
-                                        itemId: item.id,
-                                        itemName: item.productName,
-                                        currentQuantity: item.quantity,
-                                        currentUnitPrice: item.unitPrice,
-                                        isServiceItem: false,
-                                      );
-                                      if (result == true) {
-                                        ref.invalidate(saleItemsProvider(sale.id));
-                                        ref.invalidate(saleProvider(sale.id));
-                                      }
-                                    }
-                                  : null,
-                              title: Text(item.productName),
-                              subtitle: Text(
-                                '${currencyFormat.format(item.unitPrice)} × ${item.quantity.toInt()}',
+                            if (sale.customerName != null &&
+                                sale.customerName!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              SaleCustomerInfoRow(
+                                customerName: sale.customerName!,
+                                customerId: sale.customerId,
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    currencyFormat.format(item.subtotal),
-                                    style: theme.textTheme.titleSmall,
-                                  ),
-                                  if (canEdit) ...[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.edit_outlined,
-                                      size: 16,
-                                      color: theme.colorScheme.onSurfaceVariant,
+                            ],
+                            const Divider(height: 24),
+                            if (sale.notes != null && sale.notes!.isNotEmpty)
+                              SaleInfoRow(
+                                icon: Icons.note,
+                                label: 'Notes',
+                                value: sale.notes!,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Highlight Banner - shows most important status
+                    Builder(builder: (_) {
+                      final totalPaid =
+                          ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+                      return SaleHighlightBanner(
+                        orderStatus: sale.orderStatus,
+                        isPaid: sale.isPaid,
+                        saleStatus: sale.status,
+                        paymentStatus: sale.paymentStatus,
+                        balanceDue: sale.totalAmount - totalPaid,
+                      );
+                    }),
+                    const SizedBox(height: 16),
+
+                    // Sale Status Actions (Refund/Unrefund)
+                    _buildSaleStatusActions(context, ref),
+                    const SizedBox(height: 16),
+
+                    // Order Status Card
+                    _buildOrderStatusCard(context, ref),
+                    const SizedBox(height: 16),
+
+                    // Services Section
+                    serviceItemsAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (serviceItems) {
+                        if (serviceItems.isEmpty)
+                          return const SizedBox.shrink();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Services',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Card(
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: serviceItems.length,
+                                separatorBuilder: (_, __) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final item = serviceItems[index];
+                                  return _ServiceItemEditTile(
+                                    sale: sale,
+                                    item: item,
+                                    currencyFormat: currencyFormat,
+                                    canEdit: canEdit,
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Packs Section
+                            if (sale.orderStatus != OrderStatus.pending)
+                              _PacksEditSection(sale: sale),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // Add Ons Section
+                    Text(
+                      'Add Ons',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      child: saleItemsAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (error, _) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text('Error loading add ons: $error'),
+                        ),
+                        data: (items) => items.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text('No add ons'),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: items.length,
+                                separatorBuilder: (_, __) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final item = items[index];
+                                  return ListTile(
+                                    onTap: canEdit
+                                        ? () async {
+                                            final result =
+                                                await showEditItemDialog(
+                                              context,
+                                              saleId: sale.id,
+                                              itemId: item.id,
+                                              itemName: item.productName,
+                                              currentQuantity: item.quantity,
+                                              currentUnitPrice: item.unitPrice,
+                                              isServiceItem: false,
+                                            );
+                                            if (result == true) {
+                                              ref.invalidate(
+                                                  saleItemsProvider(sale.id));
+                                              ref.invalidate(
+                                                  saleProvider(sale.id));
+                                            }
+                                          }
+                                        : null,
+                                    title: Text(item.productName),
+                                    subtitle: Text(
+                                      '${currencyFormat.format(item.unitPrice)} × ${item.quantity.toInt()}',
                                     ),
-                                  ],
-                                ],
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          currencyFormat.format(item.subtotal),
+                                          style: theme.textTheme.titleSmall,
+                                        ),
+                                        if (canEdit) ...[
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.edit_outlined,
+                                            size: 16,
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-                ),
-              ),
-              const SizedBox(height: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
-              // Total Card
-              Card(
-                color: theme.colorScheme.primaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      Text(
-                        currencyFormat.format(sale.totalAmount),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onPrimaryContainer,
+                    // Total Card
+                    Card(
+                      color: theme.colorScheme.primaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                            Text(
+                              currencyFormat.format(sale.totalAmount),
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Incentive Card (only for ready/picked up orders)
+                    if (sale.orderStatus == OrderStatus.ready ||
+                        sale.orderStatus == OrderStatus.pickedUp) ...[
+                      _buildIncentiveCard(
+                          context, ref, serviceItemsAsync, currencyFormat),
+                      const SizedBox(height: 16),
                     ],
-                  ),
+
+                    // Payment Status & History Card
+                    _buildPaymentCard(context, ref, paymentsAsync,
+                        currencyFormat, canEdit, canVoidPayments),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Incentive Card (only for ready/picked up orders)
-              if (sale.orderStatus == OrderStatus.ready ||
-                  sale.orderStatus == OrderStatus.pickedUp) ...[
-                _buildIncentiveCard(
-                    context, ref, serviceItemsAsync, currencyFormat),
-                const SizedBox(height: 16),
-              ],
-
-              // Payment Status & History Card
-              _buildPaymentCard(
-                  context, ref, paymentsAsync, currencyFormat, canEdit),
-            ],
-          ),
-        ),
-      ),
+            ),
 
             // Activity tab
             _SaleActivityTab(saleId: sale.id),
@@ -590,10 +603,9 @@ class _SaleDetailContent extends HookConsumerWidget {
                 if (value == 'refund') {
                   updateSaleStatus('refunded');
                 } else if (value == 'unrefund') {
-                  final revertStatus =
-                      sale.orderStatus == OrderStatus.pickedUp
-                          ? 'completed'
-                          : 'pending';
+                  final revertStatus = sale.orderStatus == OrderStatus.pickedUp
+                      ? 'completed'
+                      : 'pending';
                   updateSaleStatus(revertStatus);
                 } else if (value == 'void') {
                   updateSaleStatus('voided');
@@ -910,6 +922,7 @@ class _SaleDetailContent extends HookConsumerWidget {
     AsyncValue<List<dynamic>> paymentsAsync,
     NumberFormat currencyFormat,
     bool canEditPayments,
+    bool canVoidPayments,
   ) {
     final theme = Theme.of(context);
 
@@ -948,8 +961,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                     PaymentStatus.unpaid => Icons.pending,
                   };
                   return Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
@@ -987,9 +1000,10 @@ class _SaleDetailContent extends HookConsumerWidget {
                 child: Text('Error loading payments: $error'),
               ),
               data: (payments) {
-                // Calculate totals
+                // Calculate totals from active payments only.
                 num totalPaid = 0;
                 for (final payment in payments) {
+                  if (payment.isVoided) continue;
                   if (payment.type == PaymentType.refund) {
                     totalPaid -= payment.amount;
                   } else {
@@ -1077,16 +1091,20 @@ class _SaleDetailContent extends HookConsumerWidget {
                         itemBuilder: (context, index) {
                           final payment = payments[index];
                           final isRefund = payment.type == PaymentType.refund;
-                          final isGcashBank =
-                              payment.type == PaymentType.deposit;
+                          final isDigitalPayment =
+                              payment.paymentMethod == PaymentMethod.gcash ||
+                                  payment.paymentMethod ==
+                                      PaymentMethod.bankTransfer;
                           final hasProof = payment.paymentProofUrl != null &&
                               payment.paymentProofUrl!.isNotEmpty;
+                          final canVoidPayment =
+                              canVoidPayments && !payment.isVoided;
 
                           return Column(
                             children: [
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                onTap: canEditPayments
+                                onTap: canEditPayments && !payment.isVoided
                                     ? () async {
                                         final result =
                                             await showEditPaymentDialog(
@@ -1097,8 +1115,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                                           canEditDate: true,
                                         );
                                         if (result == true) {
-                                          ref.invalidate(
-                                              saleProvider(sale.id));
+                                          ref.invalidate(saleProvider(sale.id));
                                           ref.invalidate(
                                               salePaymentsProvider(sale.id));
                                         }
@@ -1106,22 +1123,67 @@ class _SaleDetailContent extends HookConsumerWidget {
                                     : null,
                                 leading: CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: isRefund
-                                      ? Colors.red.withValues(alpha: 0.1)
-                                      : Colors.green.withValues(alpha: 0.1),
+                                  backgroundColor: payment.isVoided
+                                      ? theme.colorScheme.outlineVariant
+                                          .withValues(alpha: 0.2)
+                                      : isRefund
+                                          ? Colors.red.withValues(alpha: 0.1)
+                                          : Colors.green.withValues(alpha: 0.1),
                                   child: Icon(
-                                    isRefund ? Icons.remove : Icons.add,
+                                    payment.isVoided
+                                        ? Icons.block
+                                        : isRefund
+                                            ? Icons.remove
+                                            : Icons.add,
                                     size: 18,
-                                    color: isRefund ? Colors.red : Colors.green,
+                                    color: payment.isVoided
+                                        ? theme.colorScheme.outline
+                                        : isRefund
+                                            ? Colors.red
+                                            : Colors.green,
                                   ),
                                 ),
                                 title: Text(
-                                  '${payment.type.displayName} - ${payment.paymentMethod.displayName}',
-                                  style: theme.textTheme.bodyMedium,
+                                  payment.isVoided
+                                      ? '${payment.type.displayName} - ${payment.paymentMethod.displayName}'
+                                      : '${payment.type.displayName} - ${payment.paymentMethod.displayName}',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: payment.isVoided
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : null,
+                                    decoration: payment.isVoided
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    if (payment.isVoided)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 4),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red
+                                                .withValues(alpha: 0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            'Voided',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     Text(
                                       payment.postedDate != null
                                           ? DateFormat('MMM dd, yyyy hh:mm a')
@@ -1133,8 +1195,29 @@ class _SaleDetailContent extends HookConsumerWidget {
                                             theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
+                                    if (payment.isVoided &&
+                                        payment.voidedAt != null)
+                                      Text(
+                                        'Voided on ${DateFormat('MMM dd, yyyy hh:mm a').format(payment.voidedAt!)}',
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    if (payment.isVoided &&
+                                        payment.voidReason != null &&
+                                        payment.voidReason!.isNotEmpty)
+                                      Text(
+                                        payment.voidReason!,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
                                     // Show reference for GCash/Bank payments
-                                    if (isGcashBank &&
+                                    if (isDigitalPayment &&
                                         payment.paymentRef != null &&
                                         payment.paymentRef!.isNotEmpty)
                                       Text(
@@ -1154,18 +1237,153 @@ class _SaleDetailContent extends HookConsumerWidget {
                                       '${isRefund ? '-' : '+'}${currencyFormat.format(payment.amount)}',
                                       style:
                                           theme.textTheme.titleSmall?.copyWith(
-                                        color: isRefund
-                                            ? Colors.red
-                                            : Colors.green,
+                                        color: payment.isVoided
+                                            ? theme.colorScheme.outline
+                                            : isRefund
+                                                ? Colors.red
+                                                : Colors.green,
                                         fontWeight: FontWeight.w600,
+                                        decoration: payment.isVoided
+                                            ? TextDecoration.lineThrough
+                                            : null,
                                       ),
                                     ),
                                     if (canEditPayments) ...[
                                       const SizedBox(width: 4),
                                       Icon(
-                                        Icons.edit_outlined,
+                                        payment.isVoided
+                                            ? Icons.block
+                                            : Icons.edit_outlined,
                                         size: 16,
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ],
+                                    if (canVoidPayment) ...[
+                                      const SizedBox(width: 4),
+                                      PopupMenuButton<String>(
+                                        tooltip: 'Payment actions',
+                                        onSelected: (value) async {
+                                          if (value != 'void' ||
+                                              !context.mounted) {
+                                            return;
+                                          }
+
+                                          final reasonController =
+                                              TextEditingController();
+                                          final reason =
+                                              await showDialog<String?>(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                title: const Text(
+                                                  'Void Payment?',
+                                                ),
+                                                content: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Void this ${payment.paymentMethod.displayName.toLowerCase()} payment for ${currencyFormat.format(payment.amount)}? It will stay in the order history, but it will no longer count toward paid totals, dashboard KPIs, or reports.',
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    TextField(
+                                                      controller:
+                                                          reasonController,
+                                                      maxLines: 2,
+                                                      decoration:
+                                                          const InputDecoration(
+                                                        labelText:
+                                                            'Reason (optional)',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                        hintText:
+                                                            'Why is this payment being voided?',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(context)
+                                                            .pop(null),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  FilledButton(
+                                                    onPressed: () =>
+                                                        Navigator.of(context)
+                                                            .pop(
+                                                      reasonController.text
+                                                          .trim(),
+                                                    ),
+                                                    style:
+                                                        FilledButton.styleFrom(
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                    ),
+                                                    child: const Text(
+                                                      'Void Payment',
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                          reasonController.dispose();
+
+                                          if (reason == null ||
+                                              !context.mounted) {
+                                            return;
+                                          }
+
+                                          final success = await ref
+                                              .read(paymentsControllerProvider
+                                                  .notifier)
+                                              .voidPayment(
+                                                paymentId: payment.id,
+                                                saleId: sale.id,
+                                                reason: reason.isEmpty
+                                                    ? null
+                                                    : reason,
+                                              );
+
+                                          if (!context.mounted) return;
+
+                                          if (success) {
+                                            ref.invalidate(
+                                                saleProvider(sale.id));
+                                            showSuccessSnackBar(
+                                              context,
+                                              message:
+                                                  'Payment voided successfully',
+                                              useRootMessenger: false,
+                                            );
+                                          } else {
+                                            showErrorSnackBar(
+                                              context,
+                                              message: 'Failed to void payment',
+                                              useRootMessenger: false,
+                                            );
+                                          }
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem<String>(
+                                            value: 'void',
+                                            child: ListTile(
+                                              leading: Icon(
+                                                Icons.block,
+                                                color: Colors.red,
+                                              ),
+                                              title: Text('Void Payment'),
+                                              contentPadding: EdgeInsets.zero,
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ],
@@ -1207,7 +1425,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                     ],
 
                     // Record payment button
-                    if (balanceDue > 0) ...[
+                    if (sale.status.toLowerCase() != 'voided') ...[
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -1397,23 +1615,26 @@ class _ServiceItemEditTile extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final hasMachine =
-        item.machineName != null && item.machineName!.isNotEmpty;
-    final hasStorage =
-        item.storageName != null && item.storageName!.isNotEmpty;
+    final hasMachine = item.machineName != null && item.machineName!.isNotEmpty;
+    final hasStorage = item.storageName != null && item.storageName!.isNotEmpty;
     final isCompleted = item.status == ServiceItemStatus.completed;
     final isProcessing = sale.orderStatus == OrderStatus.processing;
     final canMarkDone = isProcessing && hasMachine && !isCompleted;
 
     Future<void> editMachine() async {
       final initialAssignments = <String, List<String>>{};
-      if (item.machineId != null && item.machineId!.isNotEmpty) {
-        initialAssignments[item.id] = [item.machineId!];
+      final initialLoadCounts = <String, Map<String, int>>{};
+      if (item.machineIds.isNotEmpty) {
+        initialAssignments[item.id] = item.machineIds;
+        if (item.machineLoadCounts.isNotEmpty) {
+          initialLoadCounts[item.id] = item.machineLoadCounts;
+        }
       }
       final result = await showAssignMachinesDialog(
         context,
         serviceItems: [item],
         initialAssignments: initialAssignments,
+        initialLoadCounts: initialLoadCounts,
       );
       if (result == true) {
         ref.invalidate(saleServiceItemsProvider(sale.id));
@@ -1575,8 +1796,7 @@ class _ServiceItemEditTile extends HookConsumerWidget {
               ),
             ),
           ],
-          if (!hasStorage &&
-              sale.orderStatus != OrderStatus.pending) ...[
+          if (!hasStorage && sale.orderStatus != OrderStatus.pending) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
@@ -1625,8 +1845,7 @@ class _PacksEditSection extends HookConsumerWidget {
       if (result == null || !context.mounted) return;
 
       final repo = ref.read(salesRepositoryProvider);
-      final updateResult =
-          await repo.updateSale(sale.id, {'packs': result});
+      final updateResult = await repo.updateSale(sale.id, {'packs': result});
       updateResult.fold(
         (failure) {
           if (context.mounted) {
@@ -1752,7 +1971,8 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
                 statusResult.fold(
                   (failure) {
                     if (context.mounted) {
-                      showErrorSnackBar(context, message: failure.messageString);
+                      showErrorSnackBar(context,
+                          message: failure.messageString);
                     }
                   },
                   (_) {
@@ -2022,14 +2242,12 @@ class _SaleActivityTab extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color:
-                                        Colors.green.withValues(alpha: 0.1),
+                                    color: Colors.green.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     'Payment',
-                                    style:
-                                        theme.textTheme.labelSmall?.copyWith(
+                                    style: theme.textTheme.labelSmall?.copyWith(
                                       color: Colors.green,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -2042,8 +2260,7 @@ class _SaleActivityTab extends ConsumerWidget {
                                     ? dateFormat.format(entry.created!)
                                     : '',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color:
-                                      theme.colorScheme.onSurfaceVariant,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
