@@ -44,8 +44,9 @@ abstract class SalesRepository {
   FutureEither<void> assignMachinesToServiceItem(
     String itemId,
     List<String> machineIds,
-    List<String> machineNames,
-  );
+    List<String> machineNames, {
+    Map<String, int> loadCounts = const {},
+  });
 
   /// Assigns storage locations to a sale service item.
   FutureEither<void> assignStoragesToServiceItem(
@@ -169,6 +170,7 @@ class SalesRepositoryImpl implements SalesRepository {
           'status': sale.status,
           'orderStatus': sale.orderStatus.name,
           'isPaid': sale.isPaid,
+          'paymentStatus': sale.isPaid ? 'paid' : 'unpaid',
           'customer': sale.customerId,
           'customerName': sale.customerName,
           'notes': sale.notes,
@@ -382,13 +384,15 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<void> assignMachinesToServiceItem(
     String itemId,
     List<String> machineIds,
-    List<String> machineNames,
-  ) async {
+    List<String> machineNames, {
+    Map<String, int> loadCounts = const {},
+  }) async {
     return TaskEither.tryCatch(
       () async {
         await _saleServiceItems.update(itemId, body: {
           'machine': machineIds,
           'machineName': machineNames.join(', '),
+          'machineLoadCounts': loadCounts,
           'status': 'in_progress',
         });
       },

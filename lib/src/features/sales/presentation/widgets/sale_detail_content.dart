@@ -384,13 +384,18 @@ class _ServiceItemTile extends HookConsumerWidget {
 
     Future<void> _editMachine(BuildContext ctx, WidgetRef ref) async {
       final initialAssignments = <String, List<String>>{};
-      if (item.machineId != null && item.machineId!.isNotEmpty) {
-        initialAssignments[item.id] = [item.machineId!];
+      final initialLoadCounts = <String, Map<String, int>>{};
+      if (item.machineIds.isNotEmpty) {
+        initialAssignments[item.id] = item.machineIds;
+        if (item.machineLoadCounts.isNotEmpty) {
+          initialLoadCounts[item.id] = item.machineLoadCounts;
+        }
       }
       final result = await showAssignMachinesDialog(
         ctx,
         serviceItems: [item],
         initialAssignments: initialAssignments,
+        initialLoadCounts: initialLoadCounts,
       );
       if (result == true) {
         ref.invalidate(saleServiceItemsProvider(sale.id));
@@ -584,7 +589,10 @@ class _PacksSection extends HookConsumerWidget {
     final hasPacks = sale.packs > 0;
 
     Future<void> editPacks() async {
-      final result = await showSetPacksDialog(context);
+      final result = await showSetPacksDialog(
+        context,
+        initialPacks: sale.packs > 0 ? sale.packs : null,
+      );
       if (result == null || !context.mounted) return;
 
       final repo = ref.read(salesRepositoryProvider);
