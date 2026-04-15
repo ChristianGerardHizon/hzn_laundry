@@ -5,22 +5,30 @@ import '../../services/domain/sale_service_item.dart';
 class SalesSummaryData {
   const SalesSummaryData({
     required this.totalSales,
-    required this.totalPaid,
-    required this.totalUnpaid,
-    required this.items,
+    required this.totalPaymentsReceived,
+    required this.totalOutstanding,
+    required this.salesItems,
+    required this.paymentItems,
+    required this.outstandingItems,
   });
 
-  /// Sum of all sale amounts (today's sales + backlog sales paid today).
+  /// Sum of all order amounts created on the selected day.
   final num totalSales;
 
-  /// Sum of amounts for paid sales.
-  final num totalPaid;
+  /// Sum of all payment amounts posted on the selected day.
+  final num totalPaymentsReceived;
 
-  /// Sum of amounts for unpaid sales.
-  final num totalUnpaid;
+  /// Remaining unpaid balance for orders created on the selected day.
+  final num totalOutstanding;
 
-  /// Individual sale breakdown entries.
-  final List<SalesSummaryItem> items;
+  /// Breakdown of orders created on the selected day.
+  final List<SalesSummaryItem> salesItems;
+
+  /// Breakdown of payment receipts posted on the selected day, grouped by sale.
+  final List<SalesSummaryItem> paymentItems;
+
+  /// Breakdown of outstanding balances for orders created on the selected day.
+  final List<SalesSummaryItem> outstandingItems;
 }
 
 /// A single sale entry in the summary breakdown.
@@ -31,6 +39,7 @@ class SalesSummaryItem {
     required this.totalAmount,
     required this.isPaid,
     required this.isBacklog,
+    required this.statusLabel,
     this.customerName,
     this.postedDate,
     this.serviceItems = const [],
@@ -44,6 +53,9 @@ class SalesSummaryItem {
 
   /// True if the sale was created before today but paid today.
   final bool isBacklog;
+
+  /// Badge label shown in breakdown lists.
+  final String statusLabel;
 
   final String? customerName;
   final DateTime? postedDate;
