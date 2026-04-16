@@ -134,7 +134,7 @@ Future<EmployeeReportData> _buildEmployeeReport(
       startDate: dateRange.start,
       endDate: dateRange.end,
       branchId: branchId,
-      filterByUpdated: true,
+      filterByProcessedDate: true,
     ), // 1 or 2
     attendanceRepo.fetchAllInDateRange(
       startDate: dateRange.start,
@@ -184,12 +184,12 @@ Future<EmployeeReportData> _buildEmployeeReport(
   final dailyServiceRevenue = <DateTime, num>{};
   final dailyOrderBreakdown = <DateTime, List<OrderIncentiveEntry>>{};
   for (final record in saleRecords) {
-    // Use `updated` as the incentive date — this reflects when the order
-    // status was last changed (e.g. processing → ready), not when it was created.
-    final updatedStr = record.getStringValue('updated');
-    final createdStr = record.getStringValue('created');
-    final saleDate = parseToLocal(updatedStr) ??
-        parseToLocal(createdStr) ??
+    // Use `processedDate` as the incentive date — stamped by the hook when
+    // orderStatus first transitions to ready/pickedUp. Falls back to updated.
+    final processedStr = record.getStringValue('processedDate');
+    final fallbackStr = record.getStringValue('updated');
+    final saleDate = parseToLocal(processedStr) ??
+        parseToLocal(fallbackStr) ??
         DateTime.now();
     final day = DateTime(saleDate.year, saleDate.month, saleDate.day);
 

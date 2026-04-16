@@ -73,7 +73,7 @@ abstract class SalesRepository {
     required DateTime startDate,
     required DateTime endDate,
     String? branchId,
-    bool filterByUpdated = false,
+    bool filterByProcessedDate = false,
   });
 
   /// Fetches all sales for a specific customer.
@@ -480,15 +480,16 @@ class SalesRepositoryImpl implements SalesRepository {
     required DateTime startDate,
     required DateTime endDate,
     String? branchId,
-    bool filterByUpdated = false,
+    bool filterByProcessedDate = false,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final filter = PBFilter();
 
-        if (filterByUpdated) {
-          // Attribute incentives to the day the order was processed (updated).
-          filter.between('updated', startDate, endDate);
+        if (filterByProcessedDate) {
+          // Attribute incentives to the day the order was first processed
+          // (status changed to ready/pickedUp), stamped by the hook.
+          filter.between('processedDate', startDate, endDate);
         } else {
           // Default: filter by postedDate; fall back to created for older records.
           final postedFilter =
@@ -507,7 +508,7 @@ class SalesRepositoryImpl implements SalesRepository {
             .collection(PocketBaseCollections.vwSaleServiceTotals)
             .getFullList(
               filter: filter.build(),
-              sort: filterByUpdated ? '-updated' : '-postedDate',
+              sort: filterByProcessedDate ? '-processedDate' : '-postedDate',
             );
         return records;
       },
