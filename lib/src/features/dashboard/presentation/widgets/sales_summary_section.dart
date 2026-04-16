@@ -4,7 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/nav_permissions.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
+import '../../../users/domain/user_role.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/today_incentive_controller.dart';
@@ -70,7 +72,12 @@ class SalesSummarySection extends HookConsumerWidget {
               padding: const EdgeInsets.only(top: 12),
               child: summaryAsync.when(
                 data: (data) => _SalesSummaryContent(data: data),
-                loading: () => const _LoadingCards(),
+                loading: () {
+                  final role = ref.read(currentUserRoleProvider).value;
+                  final canViewIncentive = role?.isAdmin == true ||
+                      (role?.hasPermission(Permissions.incentiveView) ?? false);
+                  return _LoadingCards(canViewIncentive: canViewIncentive);
+                },
                 error: (_, __) => const SizedBox.shrink(),
               ),
             ),
@@ -99,11 +106,14 @@ class _SalesSummaryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
+    final role = ref.watch(currentUserRoleProvider).value;
+    final canViewIncentive = role?.isAdmin == true ||
+        (role?.hasPermission(Permissions.incentiveView) ?? false);
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = 4;
+      cols = canViewIncentive ? 4 : 3;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
@@ -159,20 +169,21 @@ class _SalesSummaryContent extends ConsumerWidget {
           total: data.totalOutstanding,
         ),
       ),
-      incentiveAsync.when(
-        data: (summary) => KpiCard(
-          title: "Today's Incentive",
-          value: _fmt(summary.totalIncentive),
-          icon: Icons.payments,
-          subtitle:
-              '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
-          compact: true,
-          color: Colors.purple,
-          onTap: () => showTodayIncentiveModal(context, summary),
+      if (canViewIncentive)
+        incentiveAsync.when(
+          data: (summary) => KpiCard(
+            title: "Today's Incentive",
+            value: _fmt(summary.totalIncentive),
+            icon: Icons.payments,
+            subtitle:
+                '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
+            compact: true,
+            color: Colors.purple,
+            onTap: () => showTodayIncentiveModal(context, summary),
+          ),
+          loading: () => const _LoadingCard(),
+          error: (_, __) => const _LoadingCard(),
         ),
-        loading: () => const _LoadingCard(),
-        error: (_, __) => const _LoadingCard(),
-      ),
     ];
 
     return LayoutBuilder(
@@ -544,15 +555,18 @@ class _PaymentChip extends StatelessWidget {
 }
 
 class _LoadingCards extends StatelessWidget {
-  const _LoadingCards();
+  const _LoadingCards({this.canViewIncentive = true});
+
+  final bool canViewIncentive;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardCount = canViewIncentive ? 4 : 3;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = 4;
+      cols = canViewIncentive ? 4 : 3;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
@@ -569,7 +583,7 @@ class _LoadingCards extends StatelessWidget {
           spacing: spacing,
           runSpacing: spacing,
           children: List.generate(
-            4,
+            cardCount,
             (_) => SizedBox(width: cardWidth, child: const _LoadingCard()),
           ),
         );
