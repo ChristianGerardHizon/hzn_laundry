@@ -11,6 +11,14 @@ import 'dashboard_date_override_provider.dart';
 
 part 'today_incentive_controller.g.dart';
 
+DateTime? _parseRecordDate(dynamic rawValue) {
+  if (rawValue is DateTime) return rawValue.toLocal();
+  if (rawValue is String && rawValue.isNotEmpty) {
+    return DateTime.tryParse(rawValue)?.toLocal();
+  }
+  return null;
+}
+
 /// Single order's incentive contribution shown on the dashboard modal.
 class TodayOrderIncentiveEntry {
   const TodayOrderIncentiveEntry({
@@ -19,6 +27,7 @@ class TodayOrderIncentiveEntry {
     required this.servicePrice,
     required this.incentive,
     required this.orderStatus,
+    required this.isBacklog,
   });
 
   final String receiptNumber;
@@ -26,6 +35,7 @@ class TodayOrderIncentiveEntry {
   final num servicePrice;
   final num incentive;
   final String orderStatus;
+  final bool isBacklog;
 }
 
 /// Summary of today's incentive pool shown on the dashboard KPI.
@@ -49,19 +59,18 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
 
-  final dayStart = DateTime(
-      effectiveDate.year, effectiveDate.month, effectiveDate.day);
+  final dayStart =
+      DateTime(effectiveDate.year, effectiveDate.month, effectiveDate.day);
   final dayEnd = dayStart.add(const Duration(days: 1));
 
   final salesRepo = ref.read(salesRepositoryProvider);
   final tierRepo = ref.read(incentiveTierRepositoryProvider);
   final branchRepo = ref.read(branchRepositoryProvider);
 
-  final salesResult = await salesRepo.getSaleServiceTotals(
+  final salesResult = await salesRepo.getTodayIncentiveRows(
     startDate: dayStart,
     endDate: dayEnd,
     branchId: branchId,
-    filterByProcessedDate: true,
   );
   final saleRecords = salesResult.fold(
     (_) => <dynamic>[],
@@ -90,16 +99,22 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
     final orderStatus = record.getStringValue('orderStatus');
     if (orderStatus == 'processing') continue;
 
-    final servicePrice =
-        (record.data['serviceTotalAmount'] as num?) ?? 0;
+    final servicePrice = (record.data['serviceTotalAmount'] as num?) ?? 0;
     if (servicePrice <= 0) continue;
 
-    final incentive =
-        calculateIncentive(servicePrice, tiers, legacyRate, legacyPerServicePrice);
+    final incentive = calculateIncentive(
+        servicePrice, tiers, legacyRate, legacyPerServicePrice);
     totalIncentive += incentive;
 
     final receiptNumber = record.getStringValue('receiptNumber');
     final customerName = record.getStringValue('customerName');
+    final effectivePostedDate =
+        _parseRecordDate(record.data['effectivePostedDate']) ??
+            _parseRecordDate(record.data['postedDate']) ??
+            _parseRecordDate(record.data['created']);
+    final isBacklog = effectivePostedDate == null ||
+        effectivePostedDate.isBefore(dayStart) ||
+        !effectivePostedDate.isBefore(dayEnd);
 
     orders.add(TodayOrderIncentiveEntry(
       receiptNumber: receiptNumber,
@@ -107,6 +122,7 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
       servicePrice: servicePrice,
       incentive: incentive,
       orderStatus: orderStatus,
+      isBacklog: isBacklog,
     ));
   }
 

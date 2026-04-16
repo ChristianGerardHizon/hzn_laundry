@@ -76,6 +76,13 @@ abstract class SalesRepository {
     bool filterByProcessedDate = false,
   });
 
+  /// Fetches optimized rows used by dashboard today incentive calculations.
+  FutureEither<List<RecordModel>> getTodayIncentiveRows({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  });
+
   /// Fetches all sales for a specific customer.
   FutureEither<List<Sale>> getSalesByCustomer(String customerId);
 
@@ -175,7 +182,8 @@ class SalesRepositoryImpl implements SalesRepository {
           'customer': sale.customerId,
           'customerName': sale.customerName,
           'notes': sale.notes,
-          'postedDate': (postedDate ?? DateTime.now()).toUtc().toIso8601String(),
+          'postedDate':
+              (postedDate ?? DateTime.now()).toUtc().toIso8601String(),
         };
         final saleRecord = await _sales.create(body: saleBody);
 
@@ -517,6 +525,31 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
+  FutureEither<List<RecordModel>> getTodayIncentiveRows({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchId,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter().between('processedDate', startDate, endDate);
+        if (branchId != null) {
+          filter.relation('branch', branchId);
+        }
+
+        final records = await _pb
+            .collection(PocketBaseCollections.vwSaleServiceTotals)
+            .getFullList(
+              filter: filter.build(),
+              sort: '-processedDate',
+            );
+        return records;
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
   FutureEither<List<Sale>> getSalesByCustomer(String customerId) async {
     return TaskEither.tryCatch(
       () async {
@@ -531,8 +564,7 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<List<SaleServiceItem>> getSaleServiceItems(
-      String saleId) async {
+  FutureEither<List<SaleServiceItem>> getSaleServiceItems(String saleId) async {
     return TaskEither.tryCatch(
       () async {
         final records = await _saleServiceItems.getFullList(

@@ -3,24 +3,21 @@ import 'package:intl/intl.dart';
 
 import '../controllers/today_incentive_controller.dart';
 
-/// Shows a bottom sheet with today's incentive breakdown.
+/// Shows a dialog modal with today's incentive breakdown.
 void showTodayIncentiveModal(
   BuildContext context,
   TodayIncentiveSummary summary,
 ) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (_) => _TodayIncentiveSheet(summary: summary),
+  final rootContext = Navigator.of(context, rootNavigator: true).context;
+  showDialog<void>(
+    context: rootContext,
+    useRootNavigator: true,
+    builder: (_) => _TodayIncentiveDialog(summary: summary),
   );
 }
 
-class _TodayIncentiveSheet extends StatelessWidget {
-  const _TodayIncentiveSheet({required this.summary});
+class _TodayIncentiveDialog extends StatelessWidget {
+  const _TodayIncentiveDialog({required this.summary});
 
   final TodayIncentiveSummary summary;
 
@@ -39,29 +36,18 @@ class _TodayIncentiveSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final orders = summary.orders;
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.92,
-      builder: (context, scrollController) => Column(
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
             child: Row(
               children: [
                 Container(
@@ -108,6 +94,11 @@ class _TodayIncentiveSheet extends StatelessWidget {
                     ),
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () =>
+                      Navigator.of(context, rootNavigator: true).pop(),
+                ),
               ],
             ),
           ),
@@ -115,12 +106,12 @@ class _TodayIncentiveSheet extends StatelessWidget {
           const Divider(height: 1),
 
           // Body
-          Expanded(
-            child: orders.isEmpty
-                ? _buildEmpty(context, theme)
-                : _buildList(context, theme, scrollController),
-          ),
-        ],
+          if (orders.isEmpty)
+            Expanded(child: _buildEmpty(context, theme))
+          else
+            Flexible(child: _buildList(context, theme)),
+          ],
+        ),
       ),
     );
   }
@@ -154,11 +145,10 @@ class _TodayIncentiveSheet extends StatelessWidget {
   Widget _buildList(
     BuildContext context,
     ThemeData theme,
-    ScrollController scrollController,
   ) {
     final orders = summary.orders;
     return ListView.separated(
-      controller: scrollController,
+      shrinkWrap: true,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: orders.length + 1, // +1 for totals footer
       separatorBuilder: (_, __) =>
@@ -167,16 +157,22 @@ class _TodayIncentiveSheet extends StatelessWidget {
         if (index == orders.length) {
           return _buildTotalsRow(theme);
         }
-        return _buildOrderTile(theme, orders[index]);
+        return _buildOrderTile(theme, orders[index], index + 1);
       },
     );
   }
 
-  Widget _buildOrderTile(ThemeData theme, TodayOrderIncentiveEntry order) {
+  Widget _buildOrderTile(
+    ThemeData theme,
+    TodayOrderIncentiveEntry order,
+    int itemNumber,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
+          _ItemNumberBadge(number: itemNumber),
+          const SizedBox(width: 12),
           // Receipt + customer
           Expanded(
             child: Column(
@@ -197,7 +193,32 @@ class _TodayIncentiveSheet extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 2),
-                _StatusBadge(status: order.orderStatus),
+                Row(
+                  children: [
+                    _StatusBadge(status: order.orderStatus),
+                    if (order.isBacklog) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Backlog',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -245,6 +266,34 @@ class _TodayIncentiveSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ItemNumberBadge extends StatelessWidget {
+  const _ItemNumberBadge({required this.number});
+
+  final int number;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$number',
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: Colors.purple,
+        ),
       ),
     );
   }
