@@ -71,6 +71,9 @@ app.*.map.json
 
 # un-ignore pb_hooks
 !/server/pb_hooks/**
+
+# un-ignore scripts
+!/server/scripts/**
 .grepai/
 pocketbase.env
 .env
