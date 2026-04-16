@@ -285,6 +285,7 @@ return ScaffoldMessenger(
 
 - **All PRs must target the `staging` branch**, not `main`.
 - When creating PRs with `gh pr create`, always use `--base staging`.
+- **If the current PR branch has already been merged, always create a new branch** before preparing another PR. Do not reuse merged branches for new PRs.
 - **Before creating a PR, always ask the user ALL of the following questions:**
 
   1. **Version label** (required question):
