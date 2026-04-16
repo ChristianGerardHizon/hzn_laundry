@@ -211,8 +211,9 @@ class _SalesSummaryContent extends ConsumerWidget {
     required List<SalesSummaryItem> items,
     required num total,
   }) {
+    final rootContext = Navigator.of(context, rootNavigator: true).context;
     showDialog<void>(
-      context: context,
+      context: rootContext,
       useRootNavigator: true,
       builder: (_) => _BreakdownDialog(
         title: title,
@@ -314,7 +315,11 @@ class _BreakdownDialog extends StatelessWidget {
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) =>
-                      _SalesBreakdownTile(item: items[index]),
+                      _SalesBreakdownTile(
+                        item: items[index],
+                        itemNumber: index + 1,
+                        accentColor: color,
+                      ),
                 ),
               ),
           ],
@@ -325,9 +330,15 @@ class _BreakdownDialog extends StatelessWidget {
 }
 
 class _SalesBreakdownTile extends StatelessWidget {
-  const _SalesBreakdownTile({required this.item});
+  const _SalesBreakdownTile({
+    required this.item,
+    required this.itemNumber,
+    required this.accentColor,
+  });
 
   final SalesSummaryItem item;
+  final int itemNumber;
+  final Color accentColor;
 
   String _shortOrderNumber(String receiptNumber) {
     final parts = receiptNumber.split('-');
@@ -361,160 +372,198 @@ class _SalesBreakdownTile extends StatelessWidget {
       onTap: () => showSaleDetailDialog(context, saleId: item.saleId),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            // Top row: customer name, badges, amount
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            _ItemNumberBadge(number: itemNumber, accentColor: accentColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top row: customer name, badges, amount
+                  Row(
                     children: [
-                      Text(
-                        item.customerName != null &&
-                                item.customerName!.isNotEmpty
-                            ? item.customerName!
-                            : _shortOrderNumber(item.receiptNumber),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.customerName != null &&
+                                      item.customerName!.isNotEmpty
+                                  ? item.customerName!
+                                  : _shortOrderNumber(item.receiptNumber),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Text(
+                                  _shortOrderNumber(item.receiptNumber),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (item.isBacklog) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.deepPurple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Backlog',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.deepPurple,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (item.customerName == null ||
+                                item.customerName!.isEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Walk-in customer',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            _shortOrderNumber(item.receiptNumber),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontFamily: 'monospace',
-                              color: theme.colorScheme.onSurfaceVariant,
+                            currencyFormat.format(item.totalAmount),
+                            style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          if (item.isBacklog) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.deepPurple.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Backlog',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.deepPurple,
+                          const SizedBox(height: 2),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (item.postedDate != null) ...[
+                                Text(
+                                  _formatTime(item.postedDate!),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.outline,
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
+                                const SizedBox(width: 6),
+                              ],
+                              _PaymentChip(label: item.statusLabel),
+                            ],
+                          ),
                         ],
                       ),
-                      if (item.customerName == null ||
-                          item.customerName!.isEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Walk-in customer',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      currencyFormat.format(item.totalAmount),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
+                  // Services
+                  if (item.serviceItems.isNotEmpty) ...[
+                    const SizedBox(height: 4),
                     Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (item.postedDate != null) ...[
-                          Text(
-                            _formatTime(item.postedDate!),
+                        Icon(
+                          Icons.local_laundry_service,
+                          size: 12,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.serviceItems.map((e) {
+                              final qty = e.service?.formatQuantity(e.quantity) ??
+                                  '${e.quantity}';
+                              return '${e.serviceName} x$qty';
+                            }).join(', '),
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.outline,
+                              color: theme.colorScheme.primary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 6),
-                        ],
-                        _PaymentChip(label: item.statusLabel),
+                        ),
                       ],
                     ),
                   ],
-                ),
-              ],
+                  // Add-ons
+                  if (item.saleItems.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            item.saleItems
+                                .map((e) => '${e.productName} x${e.quantity}')
+                                .join(', '),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
-            // Services
-            if (item.serviceItems.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.local_laundry_service,
-                    size: 12,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      item.serviceItems.map((e) {
-                        final qty = e.service?.formatQuantity(e.quantity) ??
-                            '${e.quantity}';
-                        return '${e.serviceName} x$qty';
-                      }).join(', '),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            // Add-ons
-            if (item.saleItems.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Icon(
-                    Icons.add_circle_outline,
-                    size: 12,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      item.saleItems
-                          .map((e) => '${e.productName} x${e.quantity}')
-                          .join(', '),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ItemNumberBadge extends StatelessWidget {
+  const _ItemNumberBadge({required this.number, required this.accentColor});
+
+  final int number;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$number',
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: accentColor,
         ),
       ),
     );
