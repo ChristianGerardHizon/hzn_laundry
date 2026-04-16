@@ -3,18 +3,23 @@
 // ============================================================================
 // Stamp Processed Date Hook
 // ============================================================================
-// When an order's status first changes to "ready" or "pickedUp", stamp
-// processedDate with today's UTC date (YYYY-MM-DD). Only sets it once —
-// does not overwrite if already set, so the date reflects the first
-// transition, not subsequent edits.
+// Stamps processedDate when an order transitions FROM "processing" to
+// "ready" or "pickedUp". Only sets it once — does not overwrite if already
+// set. Orders that skip the processing step (e.g. pending → ready) are
+// excluded and will not count toward incentives.
 // ============================================================================
 
 onRecordAfterUpdateSuccess(function(e) {
   try {
+    var oldStatus = e.record.original().get("orderStatus");
     var newStatus = e.record.get("orderStatus");
     var processedDate = e.record.get("processedDate");
 
-    if ((newStatus === "ready" || newStatus === "pickedUp") && !processedDate) {
+    if (
+      oldStatus === "processing" &&
+      (newStatus === "ready" || newStatus === "pickedUp") &&
+      !processedDate
+    ) {
       var now = new Date();
       var year = now.getUTCFullYear();
       var month = String(now.getUTCMonth() + 1).padStart(2, "0");
