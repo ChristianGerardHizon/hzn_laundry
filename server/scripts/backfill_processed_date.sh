@@ -4,9 +4,9 @@
 # =============================================================================
 # Run once after deploying the stamp_processed_date hook + processedDate field.
 # For each ready/pickedUp sale with no processedDate, finds the earliest
-# activityLogs entry where orderStatus changed to ready/pickedUp, and uses
-# that log's created date as processedDate.
-# Fallback order: activityLog.created → pickedUpAt → updated
+# activityLogs entry where orderStatus transitioned FROM processing to
+# ready/pickedUp, and uses that log's created date as processedDate.
+# Orders with no such log entry are skipped (never went through processing).
 #
 # Usage:
 #   PB_URL=https://hizonelaundry.hznsystems.com \
@@ -67,8 +67,6 @@ while true; do
     SALE_ID=$(echo "$SALE" | jq -r '.id')
     RECEIPT=$(echo "$SALE" | jq -r '.receiptNumber')
     ORDER_STATUS=$(echo "$SALE" | jq -r '.orderStatus')
-    PICKED_UP_AT=$(echo "$SALE" | jq -r '.pickedUpAt // empty')
-    UPDATED=$(echo "$SALE" | jq -r '.updated // empty')
     EXISTING_PROCESSED=$(echo "$SALE" | jq -r '.processedDate // empty')
 
     if [[ -n "$EXISTING_PROCESSED" ]]; then
@@ -85,13 +83,15 @@ while true; do
       "$PB_URL/api/collections/activityLogs/records?filter=$ENCODED_FILTER&perPage=50&sort=%2Bcreated" \
       -H "Authorization: Bearer $TOKEN" 2>/dev/null || echo '{"items":[]}')
 
-    # Find earliest log entry where orderStatus changed to ready or pickedUp
+    # Find earliest log entry where orderStatus transitioned FROM processing
+    # to ready or pickedUp (matches the hook rule exactly)
     PROCESSED_DATE=$(echo "$LOG_RESPONSE" | jq -r '
       .items[]
       | select(.changes != null)
       | select(
-          (.changes.orderStatus.new == "ready") or
-          (.changes.orderStatus.new == "pickedUp")
+          .changes.orderStatus.old == "processing" and
+          ((.changes.orderStatus.new == "ready") or
+           (.changes.orderStatus.new == "pickedUp"))
         )
       | .created
     ' | head -1)
@@ -100,14 +100,8 @@ while true; do
       # Extract date portion only (YYYY-MM-DD)
       DATE_ONLY=$(echo "$PROCESSED_DATE" | cut -c1-10)
       SOURCE="activityLog"
-    elif [[ -n "$PICKED_UP_AT" ]]; then
-      DATE_ONLY=$(echo "$PICKED_UP_AT" | cut -c1-10)
-      SOURCE="pickedUpAt"
-    elif [[ -n "$UPDATED" ]]; then
-      DATE_ONLY=$(echo "$UPDATED" | cut -c1-10)
-      SOURCE="updated(fallback)"
     else
-      echo "    SKIP $RECEIPT — no date source found"
+      echo "    SKIP $RECEIPT — no processing→ready/pickedUp log found"
       ((TOTAL_SKIPPED++)) || true
       continue
     fi
