@@ -73,6 +73,7 @@ abstract class SalesRepository {
     required DateTime startDate,
     required DateTime endDate,
     String? branchId,
+    bool filterByUpdated = false,
   });
 
   /// Fetches all sales for a specific customer.
@@ -479,16 +480,24 @@ class SalesRepositoryImpl implements SalesRepository {
     required DateTime startDate,
     required DateTime endDate,
     String? branchId,
+    bool filterByUpdated = false,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final filter = PBFilter();
-        // Filter by postedDate range; fall back to created for older records
-        final postedFilter = PBFilter().between('postedDate', startDate, endDate);
-        final createdFilter = PBFilter()
-            .isNull('postedDate')
-            .and(PBFilter().between('created', startDate, endDate));
-        filter.or(postedFilter).or(createdFilter);
+
+        if (filterByUpdated) {
+          // Attribute incentives to the day the order was processed (updated).
+          filter.between('updated', startDate, endDate);
+        } else {
+          // Default: filter by postedDate; fall back to created for older records.
+          final postedFilter =
+              PBFilter().between('postedDate', startDate, endDate);
+          final createdFilter = PBFilter()
+              .isNull('postedDate')
+              .and(PBFilter().between('created', startDate, endDate));
+          filter.or(postedFilter).or(createdFilter);
+        }
 
         if (branchId != null) {
           filter.relation('branch', branchId);
@@ -498,7 +507,7 @@ class SalesRepositoryImpl implements SalesRepository {
             .collection(PocketBaseCollections.vwSaleServiceTotals)
             .getFullList(
               filter: filter.build(),
-              sort: '-postedDate',
+              sort: filterByUpdated ? '-updated' : '-postedDate',
             );
         return records;
       },
