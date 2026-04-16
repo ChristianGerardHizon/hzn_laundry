@@ -102,7 +102,7 @@ class TabletDashboardLayout extends HookConsumerWidget {
           // Warning banner when date is overridden
           const DateOverrideBanner(),
 
-          // Sales Summary Section (collapsible)
+          // Sales Summary Section (collapsible) — includes incentive KPI
           const SalesSummarySection(),
           const SizedBox(height: 24),
 

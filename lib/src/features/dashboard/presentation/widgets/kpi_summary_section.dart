@@ -2,71 +2,67 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/routing/routes/sales_history.routes.dart';
-import '../controllers/todays_sales_controller.dart';
+import '../../../../core/utils/breakpoints.dart';
+import '../controllers/today_incentive_controller.dart';
 import 'kpi_card.dart';
+import 'today_incentive_modal.dart';
 
 /// Section displaying KPI summary cards on the dashboard.
 ///
-/// Shows:
-/// - Today's sales revenue total
-/// - Today's transaction count
+/// Responsive layout:
+/// - Desktop (≥1200px): 4-column grid
+/// - Tablet (600–1199px): 2-column grid
+/// - Mobile (<600px): 1-column (full width)
 class KpiSummarySection extends ConsumerWidget {
   const KpiSummarySection({super.key});
 
+  static final _currency =
+      NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final salesSummaryAsync = ref.watch(todaySalesSummaryProvider);
-
-    const spacing = 12.0;
-
-    final cards = <Widget>[
-      // Today's revenue
-      Expanded(
-        child: salesSummaryAsync.when(
-          data: (summary) => KpiCard(
-            title: "Today's Revenue",
-            value: _formatCurrency(summary.total),
-            icon: Icons.point_of_sale,
-            subtitle: '${summary.count} transactions',
-            compact: true,
-            color: Colors.green,
-            onTap: () => const SalesHistoryRoute().go(context),
-          ),
-          loading: () => _buildLoadingCard(),
-          error: (_, __) => _buildErrorCard(
-            context,
-            "Today's Revenue",
-            Icons.point_of_sale,
-          ),
-        ),
-      ),
-      const SizedBox(width: spacing),
-      // Today's transactions
-      Expanded(
-        child: salesSummaryAsync.when(
-          data: (summary) => KpiCard(
-            title: "Today's Transactions",
-            value: summary.count.toString(),
-            icon: Icons.receipt_long,
-            subtitle: _formatCurrency(summary.total),
-            compact: true,
-            color: Colors.blue,
-            onTap: () => const SalesHistoryRoute().go(context),
-          ),
-          loading: () => _buildLoadingCard(),
-          error: (_, __) => _buildErrorCard(
-            context,
-            "Today's Transactions",
-            Icons.receipt_long,
-          ),
-        ),
-      ),
-    ];
+    final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(children: cards),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final screenWidth = MediaQuery.sizeOf(context).width;
+          const spacing = 12.0;
+
+          final int columns;
+          if (screenWidth >= Breakpoints.desktop) {
+            columns = 4;
+          } else if (screenWidth >= Breakpoints.mobile) {
+            columns = 2;
+          } else {
+            columns = 1;
+          }
+
+          final cardWidth =
+              (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+          Widget incentiveCard = incentiveAsync.when(
+            data: (summary) => KpiCard(
+              title: "Today's Incentive",
+              value: _currency.format(summary.totalIncentive),
+              icon: Icons.payments,
+              subtitle:
+                  '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
+              compact: true,
+              color: Colors.purple,
+              onTap: () => showTodayIncentiveModal(context, summary),
+            ),
+            loading: () => _buildLoadingCard(),
+            error: (_, __) => _buildErrorCard(context),
+          );
+
+          return SizedBox(
+            width: cardWidth,
+            child: incentiveCard,
+          );
+        },
+      ),
     );
   }
 
@@ -85,11 +81,7 @@ class KpiSummarySection extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-  ) {
+  Widget _buildErrorCard(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -106,7 +98,8 @@ class KpiSummarySection extends ConsumerWidget {
                     color: theme.colorScheme.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(icon, color: theme.colorScheme.error, size: 16),
+                  child: Icon(Icons.payments,
+                      color: theme.colorScheme.error, size: 16),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -122,7 +115,7 @@ class KpiSummarySection extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              title,
+              "Today's Incentive",
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -133,13 +126,5 @@ class KpiSummarySection extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _formatCurrency(num amount) {
-    final formatter = NumberFormat.currency(
-      symbol: '₱',
-      decimalDigits: 2,
-    );
-    return formatter.format(amount);
   }
 }

@@ -10,6 +10,7 @@ import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
 import '../widgets/views/attendance_report_view.dart';
+import '../widgets/views/incentive_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
 import '../widgets/views/salary_report_view.dart';
 import '../widgets/views/sales_by_customer_view.dart';
@@ -22,7 +23,7 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 6);
+    final tabController = useTabController(initialLength: 7);
 
     void refreshCurrentTab() {
       switch (tabController.index) {
@@ -39,6 +40,8 @@ class ReportsPage extends HookConsumerWidget {
           ref.invalidate(attendanceReportProvider);
         case 5:
           ref.invalidate(salaryReportProvider);
+        case 6:
+          ref.invalidate(employeeReportProvider);
       }
     }
 
@@ -81,6 +84,10 @@ class ReportsPage extends HookConsumerWidget {
               icon: Icon(Icons.account_balance_wallet),
               text: 'Salary',
             ),
+            Tab(
+              icon: Icon(Icons.payments),
+              text: 'Incentives',
+            ),
           ],
         ),
       ),
@@ -93,6 +100,7 @@ class ReportsPage extends HookConsumerWidget {
           NewCustomersView(),
           AttendanceReportView(),
           SalaryReportView(),
+          IncentiveReportView(),
         ],
       ),
     );
