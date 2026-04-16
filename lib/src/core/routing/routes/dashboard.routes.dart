@@ -10,6 +10,7 @@ import '../../widgets/nav_permissions.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_realtime_provider.dart';
 import '../../../features/dashboard/presentation/controllers/inventory_alerts_controller.dart';
 import '../../../features/dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../features/dashboard/presentation/controllers/today_incentive_controller.dart';
 import '../../../features/dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../features/dashboard/presentation/controllers/sales_summary_controller.dart';
 import '../../../features/dashboard/presentation/widgets/attendance_alert_section.dart';
@@ -69,6 +70,7 @@ class DashboardPage extends ConsumerWidget {
           // Refresh all dashboard data
           ref.invalidate(inventoryAlertsSummaryProvider);
           ref.invalidate(todaySalesSummaryProvider);
+          ref.invalidate(todayIncentiveSummaryProvider);
           ref.invalidate(salesSummaryProvider);
           ref.invalidate(kanbanSalesProvider);
           ref.invalidate(productsNearExpirationCountProvider);
@@ -92,7 +94,7 @@ class DashboardPage extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
 
-              // Sales Summary Section (collapsible)
+              // Sales Summary Section (collapsible) — includes incentive KPI
               const SalesSummarySection(),
               const SizedBox(height: 24),
 
