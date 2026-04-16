@@ -7,7 +7,9 @@ import '../../../../core/utils/breakpoints.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/sales_summary_controller.dart';
+import '../controllers/today_incentive_controller.dart';
 import 'kpi_card.dart';
+import 'today_incentive_modal.dart';
 
 /// Dashboard section showing today's sales totals.
 ///
@@ -84,23 +86,34 @@ class SalesSummarySection extends HookConsumerWidget {
   }
 }
 
-class _SalesSummaryContent extends StatelessWidget {
+class _SalesSummaryContent extends ConsumerWidget {
   const _SalesSummaryContent({required this.data});
 
   final SalesSummaryData data;
 
-  String _formatCurrency(num amount) {
-    return NumberFormat.currency(symbol: '₱', decimalDigits: 2).format(amount);
-  }
+  static final _currency =
+      NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+
+  String _fmt(num amount) => _currency.format(amount);
 
   @override
-  Widget build(BuildContext context) {
-    final isMobile = Breakpoints.isMobile(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
-    final cards = [
+    final int cols;
+    if (screenWidth >= Breakpoints.desktop) {
+      cols = 4;
+    } else if (screenWidth >= Breakpoints.mobile) {
+      cols = 2;
+    } else {
+      cols = 1;
+    }
+
+    final salesCards = [
       KpiCard(
         title: 'Total Sales',
-        value: _formatCurrency(data.totalSales),
+        value: _fmt(data.totalSales),
         icon: Icons.point_of_sale,
         subtitle: '${data.salesItems.length} orders today',
         compact: true,
@@ -116,7 +129,7 @@ class _SalesSummaryContent extends StatelessWidget {
       ),
       KpiCard(
         title: 'Payments Received',
-        value: _formatCurrency(data.totalPaymentsReceived),
+        value: _fmt(data.totalPaymentsReceived),
         icon: Icons.payments_outlined,
         subtitle: '${data.paymentItems.length} payment entries',
         compact: true,
@@ -132,7 +145,7 @@ class _SalesSummaryContent extends StatelessWidget {
       ),
       KpiCard(
         title: 'Outstanding',
-        value: _formatCurrency(data.totalOutstanding),
+        value: _fmt(data.totalOutstanding),
         icon: Icons.pending_outlined,
         subtitle: '${data.outstandingItems.length} orders pending',
         compact: true,
@@ -146,26 +159,36 @@ class _SalesSummaryContent extends StatelessWidget {
           total: data.totalOutstanding,
         ),
       ),
+      incentiveAsync.when(
+        data: (summary) => KpiCard(
+          title: "Today's Incentive",
+          value: _fmt(summary.totalIncentive),
+          icon: Icons.payments,
+          subtitle:
+              '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
+          compact: true,
+          color: Colors.purple,
+          onTap: () => showTodayIncentiveModal(context, summary),
+        ),
+        loading: () => const _LoadingCard(),
+        error: (_, __) => const _LoadingCard(),
+      ),
     ];
 
-    if (isMobile) {
-      return Column(
-        children: [
-          for (int i = 0; i < cards.length; i++) ...[
-            cards[i],
-            if (i < cards.length - 1) const SizedBox(height: 8),
-          ],
-        ],
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (cols - 1)) / cols;
 
-    return Row(
-      children: [
-        for (int i = 0; i < cards.length; i++) ...[
-          Expanded(child: cards[i]),
-          if (i < cards.length - 1) const SizedBox(width: 8),
-        ],
-      ],
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: salesCards
+              .map((c) => SizedBox(width: cardWidth, child: c))
+              .toList(),
+        );
+      },
     );
   }
 
@@ -525,26 +548,32 @@ class _LoadingCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Breakpoints.isMobile(context)) {
-      return const Column(
-        children: [
-          _LoadingCard(),
-          SizedBox(height: 8),
-          _LoadingCard(),
-          SizedBox(height: 8),
-          _LoadingCard(),
-        ],
-      );
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
+    final int cols;
+    if (screenWidth >= Breakpoints.desktop) {
+      cols = 4;
+    } else if (screenWidth >= Breakpoints.mobile) {
+      cols = 2;
+    } else {
+      cols = 1;
     }
 
-    return const Row(
-      children: [
-        Expanded(child: _LoadingCard()),
-        SizedBox(width: 8),
-        Expanded(child: _LoadingCard()),
-        SizedBox(width: 8),
-        Expanded(child: _LoadingCard()),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (cols - 1)) / cols;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(
+            4,
+            (_) => SizedBox(width: cardWidth, child: const _LoadingCard()),
+          ),
+        );
+      },
     );
   }
 }

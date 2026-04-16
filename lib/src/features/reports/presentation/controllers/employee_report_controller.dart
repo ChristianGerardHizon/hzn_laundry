@@ -15,6 +15,7 @@ import '../../../settings/data/repositories/incentive_tier_repository.dart';
 import '../../../settings/domain/branch.dart';
 import '../../../settings/domain/incentive_tier.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../domain/incentive_calculator.dart';
 import 'employee_report_date_range_controller.dart';
 import 'salary_month_controller.dart';
 
@@ -189,6 +190,10 @@ Future<EmployeeReportData> _buildEmployeeReport(
         DateTime.now();
     final day = DateTime(saleDate.year, saleDate.month, saleDate.day);
 
+    final orderStatus = record.getStringValue('orderStatus');
+    // Processing orders don't count toward incentives
+    if (orderStatus == 'processing') continue;
+
     final saleServiceTotal =
         (record.data['serviceTotalAmount'] as num?) ?? 0;
     if (saleServiceTotal <= 0) continue;
@@ -197,7 +202,7 @@ Future<EmployeeReportData> _buildEmployeeReport(
         (dailyServiceRevenue[day] ?? 0) + saleServiceTotal;
 
     // Calculate incentive per order using custom tiers or legacy flat rate
-    final orderIncentive = _calculateIncentive(
+    final orderIncentive = calculateIncentive(
       saleServiceTotal,
       incentiveTiers,
       incentiveRate,
@@ -206,7 +211,6 @@ Future<EmployeeReportData> _buildEmployeeReport(
 
     final receiptNumber = record.getStringValue('receiptNumber');
     final customerName = record.getStringValue('customerName');
-    final orderStatus = record.getStringValue('orderStatus');
 
     dailyOrderBreakdown.putIfAbsent(day, () => []).add(
       OrderIncentiveEntry(
@@ -354,37 +358,6 @@ Future<EmployeeReportData> _buildEmployeeReport(
   );
 }
 
-/// Calculates incentive for a given service total using custom tiers.
-/// Falls back to legacy flat rate if no tiers are configured.
-num _calculateIncentive(
-  num serviceTotal,
-  List<IncentiveTier> tiers,
-  num legacyRate,
-  num legacyPerServicePrice,
-) {
-  if (serviceTotal <= 0) return 0;
-
-  // Use custom tiers if available
-  if (tiers.isNotEmpty) {
-    // Find the matching tier
-    for (final tier in tiers) {
-      final matchesMin = serviceTotal >= tier.minAmount;
-      final matchesMax =
-          tier.maxAmount == null || serviceTotal <= tier.maxAmount!;
-      if (matchesMin && matchesMax) {
-        return tier.incentiveAmount;
-      }
-    }
-    // Service price exceeds all tiers — use the last tier's incentive
-    return tiers.last.incentiveAmount;
-  }
-
-  // Legacy flat rate fallback
-  if (legacyPerServicePrice > 0) {
-    return (serviceTotal / legacyPerServicePrice).ceil() * legacyRate;
-  }
-  return 0;
-}
 
 /// Holds the full employee report data.
 class EmployeeReportData {
