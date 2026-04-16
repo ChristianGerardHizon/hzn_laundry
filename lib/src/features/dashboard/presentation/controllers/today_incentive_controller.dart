@@ -61,6 +61,7 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
     startDate: dayStart,
     endDate: dayEnd,
     branchId: branchId,
+    filterByUpdated: true,
   );
   final saleRecords = salesResult.fold(
     (_) => <dynamic>[],
