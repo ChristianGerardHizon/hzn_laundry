@@ -1,12 +1,14 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'package:fpdart/fpdart.dart';
+
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../reports/domain/incentive_calculator.dart';
-import '../../../settings/data/repositories/branch_repository.dart';
-import '../../../settings/data/repositories/incentive_tier_repository.dart';
 import '../../../settings/domain/branch.dart';
 import '../../../settings/domain/incentive_tier.dart';
+import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../settings/presentation/controllers/incentive_tiers_provider.dart';
 import 'dashboard_date_override_provider.dart';
 
 part 'today_incentive_controller.g.dart';
@@ -64,30 +66,29 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
   final dayEnd = dayStart.add(const Duration(days: 1));
 
   final salesRepo = ref.read(salesRepositoryProvider);
-  final tierRepo = ref.read(incentiveTierRepositoryProvider);
-  final branchRepo = ref.read(branchRepositoryProvider);
 
-  final salesResult = await salesRepo.getTodayIncentiveRows(
-    startDate: dayStart,
-    endDate: dayEnd,
-    branchId: branchId,
-  );
-  final saleRecords = salesResult.fold(
+  // Fetch sales rows, branch, and tiers in parallel. Branch + tiers are
+  // served from keepAlive caches so subsequent dashboard rebuilds (e.g. on
+  // date changes) only re-hit the sales view.
+  final results = await Future.wait([
+    salesRepo.getTodayIncentiveRows(
+      startDate: dayStart,
+      endDate: dayEnd,
+      branchId: branchId,
+    ),
+    if (branchId != null) ref.watch(branchProvider(branchId).future),
+    if (branchId != null)
+      ref.watch(incentiveTiersForBranchProvider(branchId).future),
+  ]);
+
+  final saleRecords = (results[0] as Either).fold(
     (_) => <dynamic>[],
     (list) => list as List<dynamic>,
   );
-
-  List<IncentiveTier> tiers = [];
-  Branch? branch;
-  if (branchId != null) {
-    final tierResult = await tierRepo.fetchForBranch(branchId);
-    tiers = tierResult.fold(
-      (_) => <IncentiveTier>[],
-      (list) => list,
-    );
-    final branchResult = await branchRepo.fetchOne(branchId);
-    branch = branchResult.fold((_) => null, (b) => b);
-  }
+  final Branch? branch = branchId != null ? results[1] as Branch? : null;
+  final List<IncentiveTier> tiers = branchId != null
+      ? results[2] as List<IncentiveTier>
+      : const <IncentiveTier>[];
 
   final legacyRate = branch?.incentiveAmount ?? 5;
   final legacyPerServicePrice = branch?.incentivePerServiceItems ?? 200;
