@@ -3,10 +3,8 @@
 // ============================================================================
 // Stamp Processed Date Hook
 // ============================================================================
-// Stamps processedDate when an order transitions FROM "processing" to
-// "ready" or "pickedUp". Only sets it once — does not overwrite if already
-// set. Orders that skip the processing step (e.g. pending → ready) are
-// excluded and will not count toward incentives.
+// Stamps processedDate whenever an order reaches "ready" or "pickedUp".
+// Only sets it once — does not overwrite if already set.
 //
 // Uses onRecordUpdate (pre-save) so the stamp is persisted as part of the
 // same transaction — avoids the re-save recursion / original()-refresh
@@ -20,8 +18,8 @@ onRecordUpdate(function(e) {
     var processedDate = e.record.get("processedDate");
 
     if (
-      oldStatus === "processing" &&
       (newStatus === "ready" || newStatus === "pickedUp") &&
+      oldStatus !== "ready" && oldStatus !== "pickedUp" &&
       !processedDate
     ) {
       var now = new Date();

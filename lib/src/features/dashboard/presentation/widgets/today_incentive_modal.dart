@@ -173,25 +173,24 @@ class _TodayIncentiveDialog extends StatelessWidget {
         children: [
           _ItemNumberBadge(number: itemNumber),
           const SizedBox(width: 12),
-          // Receipt + customer
+          // Customer (primary) + receipt (secondary)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _shortReceipt(order.receiptNumber),
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                if (order.customerName != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    order.customerName!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  order.customerName ?? 'Walk-in',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _shortReceipt(order.receiptNumber),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
