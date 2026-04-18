@@ -104,6 +104,51 @@ final class NotPickedUpCountProvider
 
 String _$notPickedUpCountHash() => r'a6e52067b77696a6b1d9edf41910856389869f97';
 
+/// Count of backlog orders still in 'pending' status (not yet started).
+/// Used to surface an at-a-glance warning on the Backlogs filter chip
+/// regardless of which filter is currently active.
+
+@ProviderFor(backlogPendingCount)
+final backlogPendingCountProvider = BacklogPendingCountProvider._();
+
+/// Count of backlog orders still in 'pending' status (not yet started).
+/// Used to surface an at-a-glance warning on the Backlogs filter chip
+/// regardless of which filter is currently active.
+
+final class BacklogPendingCountProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Count of backlog orders still in 'pending' status (not yet started).
+  /// Used to surface an at-a-glance warning on the Backlogs filter chip
+  /// regardless of which filter is currently active.
+  BacklogPendingCountProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'backlogPendingCountProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$backlogPendingCountHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    return backlogPendingCount(ref);
+  }
+}
+
+String _$backlogPendingCountHash() =>
+    r'e7a03d0cb72bcfa9678e2fe46e85257501149a15';
+
 /// Count of orders created today.
 /// Used to display a badge on the "Today's Orders" filter chip.
 

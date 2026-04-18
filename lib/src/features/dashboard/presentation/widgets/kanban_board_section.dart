@@ -83,11 +83,13 @@ Future<void> _handleKanbanDrop(
       ref.invalidate(kanbanSalesProvider);
       ref.invalidate(notPickedUpCountProvider);
       ref.invalidate(todayCountProvider);
+      ref.invalidate(backlogPendingCountProvider);
     },
     (_) {
       ref.invalidate(kanbanSalesProvider);
       ref.invalidate(notPickedUpCountProvider);
       ref.invalidate(todayCountProvider);
+      ref.invalidate(backlogPendingCountProvider);
     },
   );
 }
@@ -170,6 +172,7 @@ class KanbanBoardSection extends HookConsumerWidget {
                           ref.invalidate(kanbanSalesProvider);
                           ref.invalidate(notPickedUpCountProvider);
                           ref.invalidate(todayCountProvider);
+                          ref.invalidate(backlogPendingCountProvider);
                         },
                 ),
               ),
@@ -340,6 +343,7 @@ class _KanbanFilterChips extends ConsumerWidget {
               .read(kanbanFilterProvider.notifier)
               .setFilter(KanbanFilterMode.notPickedUp),
           count: ref.watch(notPickedUpCountProvider).asData?.value,
+          pendingCount: ref.watch(backlogPendingCountProvider).asData?.value,
         ),
       ],
     );
@@ -353,6 +357,7 @@ class _FilterChip extends StatelessWidget {
     required this.isSelected,
     required this.onSelected,
     this.count,
+    this.pendingCount,
   });
 
   final String label;
@@ -360,6 +365,7 @@ class _FilterChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onSelected;
   final int? count;
+  final int? pendingCount;
 
   @override
   Widget build(BuildContext context) {
@@ -376,6 +382,36 @@ class _FilterChip extends StatelessWidget {
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 4),
           Text(label),
+          if (pendingCount != null && pendingCount! > 0) ...[
+            const SizedBox(width: 6),
+            Tooltip(
+              message:
+                  '$pendingCount pending ${pendingCount == 1 ? 'order needs' : 'orders need'} to be done',
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.schedule,
+                        size: 10, color: Colors.white),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$pendingCount pending',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (count != null && count! > 0) ...[
             const SizedBox(width: 6),
             Container(

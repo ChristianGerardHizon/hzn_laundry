@@ -126,6 +126,33 @@ Future<int> notPickedUpCount(Ref ref) async {
   return result.totalItems;
 }
 
+/// Count of backlog orders still in 'pending' status (not yet started).
+/// Used to surface an at-a-glance warning on the Backlogs filter chip
+/// regardless of which filter is currently active.
+@riverpod
+Future<int> backlogPendingCount(Ref ref) async {
+  final branchId = ref.watch(currentBranchIdProvider);
+  final pb = ref.read(pocketbaseProvider);
+
+  final now = ref.watch(dashboardEffectiveDateProvider);
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final startUtc = todayStart.toPocketBaseUtc();
+
+  var filter =
+      "status != 'voided' && postedDate < '$startUtc' && orderStatus = 'pending'";
+  if (branchId != null) {
+    filter = '$filter && branch = "$branchId"';
+  }
+
+  final result = await pb.collection(PocketBaseCollections.sales).getList(
+        page: 1,
+        perPage: 1,
+        filter: filter,
+      );
+
+  return result.totalItems;
+}
+
 /// Count of orders created today.
 /// Used to display a badge on the "Today's Orders" filter chip.
 @riverpod
