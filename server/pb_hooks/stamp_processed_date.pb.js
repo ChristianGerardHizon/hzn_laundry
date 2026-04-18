@@ -7,9 +7,13 @@
 // "ready" or "pickedUp". Only sets it once — does not overwrite if already
 // set. Orders that skip the processing step (e.g. pending → ready) are
 // excluded and will not count toward incentives.
+//
+// Uses onRecordUpdate (pre-save) so the stamp is persisted as part of the
+// same transaction — avoids the re-save recursion / original()-refresh
+// pitfalls of onRecordAfterUpdateSuccess.
 // ============================================================================
 
-onRecordAfterUpdateSuccess(function(e) {
+onRecordUpdate(function(e) {
   try {
     var oldStatus = e.record.original().get("orderStatus");
     var newStatus = e.record.get("orderStatus");
@@ -27,9 +31,11 @@ onRecordAfterUpdateSuccess(function(e) {
       var dateStr = year + "-" + month + "-" + day + " 00:00:00.000Z";
 
       e.record.set("processedDate", dateStr);
-      e.app.save(e.record);
+      console.log("[STAMP_PROCESSED_DATE] " + e.record.id + " → " + dateStr);
     }
-  } catch(err) {
+  } catch (err) {
     console.error("[STAMP_PROCESSED_DATE] error:", err);
   }
+
+  e.next();
 }, "sales");
