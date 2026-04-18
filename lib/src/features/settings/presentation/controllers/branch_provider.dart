@@ -6,7 +6,7 @@ import '../../domain/branch.dart';
 part 'branch_provider.g.dart';
 
 /// Provider to fetch a single branch by ID.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Branch?> branch(Ref ref, String id) async {
   if (id.isEmpty) return null;
 

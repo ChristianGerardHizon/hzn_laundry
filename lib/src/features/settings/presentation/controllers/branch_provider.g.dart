@@ -24,7 +24,7 @@ final class BranchProvider
       : super(
           retry: null,
           name: r'branchProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -64,7 +64,7 @@ final class BranchProvider
   }
 }
 
-String _$branchHash() => r'3adc9eab54590cf04cd78670c6ba0ef6b3057159';
+String _$branchHash() => r'1743678516102b2a64809a0d224b42706e98b5dc';
 
 /// Provider to fetch a single branch by ID.
 
@@ -76,7 +76,7 @@ final class BranchFamily extends $Family
           name: r'branchProvider',
           dependencies: null,
           $allTransitiveDependencies: null,
-          isAutoDispose: true,
+          isAutoDispose: false,
         );
 
   /// Provider to fetch a single branch by ID.
