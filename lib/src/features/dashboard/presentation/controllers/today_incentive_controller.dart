@@ -55,7 +55,7 @@ class TodayIncentiveSummary {
 
 /// Provider that calculates the total incentive for the effective dashboard date.
 ///
-/// Excludes orders with status 'processing'.
+/// Includes processing, ready, and pickedUp orders. Excludes pending.
 @riverpod
 Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
@@ -98,7 +98,6 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
 
   for (final record in saleRecords) {
     final orderStatus = record.getStringValue('orderStatus');
-    if (orderStatus == 'processing') continue;
 
     final servicePrice = (record.data['serviceTotalAmount'] as num?) ?? 0;
     if (servicePrice <= 0) continue;
