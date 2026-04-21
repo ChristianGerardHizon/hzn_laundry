@@ -532,7 +532,8 @@ class SalesRepositoryImpl implements SalesRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilter().between('processedDate', startDate, endDate);
+        final filter =
+            PBFilter().between('effectiveProcessedDate', startDate, endDate);
         if (branchId != null) {
           filter.relation('branch', branchId);
         }
@@ -541,7 +542,7 @@ class SalesRepositoryImpl implements SalesRepository {
             .collection(PocketBaseCollections.vwSaleServiceTotals)
             .getFullList(
               filter: filter.build(),
-              sort: '-processedDate',
+              sort: '-effectiveProcessedDate',
             );
         return records;
       },
