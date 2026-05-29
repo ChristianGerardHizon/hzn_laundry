@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../controllers/today_incentive_controller.dart';
+import 'dashboard_section_print_button.dart';
 
 /// Shows a dialog modal with today's incentive breakdown.
 void showTodayIncentiveModal(
@@ -93,6 +94,10 @@ class _TodayIncentiveDialog extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
+                DashboardSectionPrintButton.incentive(
+                  incentive: summary,
+                  color: Colors.purple,
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
