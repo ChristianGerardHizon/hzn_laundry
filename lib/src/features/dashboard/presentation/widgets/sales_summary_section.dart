@@ -10,6 +10,7 @@ import '../../../users/domain/user_role.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/today_incentive_controller.dart';
+import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
 import 'today_incentive_modal.dart';
 
@@ -189,8 +190,11 @@ class _SalesSummaryContent extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 8.0;
-        final cardWidth =
+        final rawWidth =
             (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        // Guard against negative/zero widths on extremely narrow constraints,
+        // which would throw a BoxConstraints assertion.
+        final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
 
         return Wrap(
           spacing: spacing,
@@ -291,6 +295,12 @@ class _BreakdownDialog extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  DashboardSectionPrintButton.sales(
+                    sectionTitle: title,
+                    salesItems: items,
+                    total: total,
+                    color: color,
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -625,8 +635,9 @@ class _LoadingCards extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 8.0;
-        final cardWidth =
+        final rawWidth =
             (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
 
         return Wrap(
           spacing: spacing,

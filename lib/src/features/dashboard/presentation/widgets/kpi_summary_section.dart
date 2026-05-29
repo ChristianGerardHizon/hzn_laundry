@@ -39,8 +39,11 @@ class KpiSummarySection extends ConsumerWidget {
             columns = 1;
           }
 
-          final cardWidth =
+          final rawWidth =
               (constraints.maxWidth - spacing * (columns - 1)) / columns;
+          // Guard against negative/zero widths on extremely narrow
+          // constraints, which would throw a BoxConstraints assertion.
+          final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
 
           Widget incentiveCard = incentiveAsync.when(
             data: (summary) => KpiCard(
