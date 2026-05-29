@@ -10,14 +10,14 @@ part of 'today_incentive_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Provider that calculates the total incentive for the effective dashboard date.
 ///
-/// Excludes orders with status 'processing'.
+/// Includes processing, ready, and pickedUp orders. Excludes pending.
 
 @ProviderFor(todayIncentiveSummary)
 final todayIncentiveSummaryProvider = TodayIncentiveSummaryProvider._();
 
 /// Provider that calculates the total incentive for the effective dashboard date.
 ///
-/// Excludes orders with status 'processing'.
+/// Includes processing, ready, and pickedUp orders. Excludes pending.
 
 final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
         AsyncValue<TodayIncentiveSummary>,
@@ -28,7 +28,7 @@ final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
         $FutureProvider<TodayIncentiveSummary> {
   /// Provider that calculates the total incentive for the effective dashboard date.
   ///
-  /// Excludes orders with status 'processing'.
+  /// Includes processing, ready, and pickedUp orders. Excludes pending.
   TodayIncentiveSummaryProvider._()
       : super(
           from: null,
@@ -56,4 +56,4 @@ final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
 }
 
 String _$todayIncentiveSummaryHash() =>
-    r'cedd2114845f39000dee4077d995c12d27bc8ab4';
+    r'3c06d4329dee90dbdd4e4456bf09f889e69027df';
