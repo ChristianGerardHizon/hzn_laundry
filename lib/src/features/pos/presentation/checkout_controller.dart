@@ -130,7 +130,15 @@ class CheckoutController extends _$CheckoutController {
     final cartNotifier = ref.read(cartControllerProvider.notifier);
     final lotRepo = ref.read(productLotRepositoryProvider);
     final productRepo = ref.read(productRepositoryProvider);
-    final effectiveDate = ref.read(dashboardEffectiveDateProvider);
+    // Use the dashboard date override only when one is explicitly set (for
+    // backdating orders while viewing a past day). Otherwise stamp with a
+    // FRESH DateTime.now() — never the cached dashboardEffectiveDateProvider,
+    // whose DateTime.now() is captured once and stays frozen while the
+    // dashboard is mounted. Leaving the app open across midnight would
+    // otherwise stamp the first new-day orders with the previous day's date,
+    // causing them to show under the wrong day until the app is restarted.
+    final dateOverride = ref.read(dashboardDateOverrideProvider);
+    final effectiveDate = dateOverride ?? DateTime.now();
 
     addBreadcrumb('Checkout started', category: 'checkout', data: {
       'itemCount': saleItems.length,
