@@ -168,19 +168,19 @@ Navigation configuration using GoRouter.
 - `router.dart` - Main GoRouter configuration
 - `routes/` - Route definitions organized by domain
   - `_root.routes.dart` - Shell and root routes
-  - `patients.routes.dart` - Patient feature routes
+  - `sales.routes.dart` - Sales feature routes
   - `products.routes.dart` - Product feature routes
   - etc.
 
 **Pattern:**
 ```dart
-@TypedGoRoute<PatientsRoute>(
-  path: '/patients',
+@TypedGoRoute<SalesRoute>(
+  path: '/sales',
   routes: [
-    TypedGoRoute<PatientRoute>(path: ':id'),
+    TypedGoRoute<SaleRoute>(path: ':id'),
   ],
 )
-class PatientsRoute extends GoRouteData { ... }
+class SalesRoute extends GoRouteData { ... }
 ```
 
 ---

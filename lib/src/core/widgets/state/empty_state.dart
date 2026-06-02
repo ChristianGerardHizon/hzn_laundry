@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 /// A standardized empty state display widget.
 ///
 /// Used when there's no data to display, such as:
-/// - No patient selected in tablet layout
+/// - No item selected in tablet master-detail layout
 /// - Empty list results
 /// - No search results
 ///
 /// Example:
 /// ```dart
 /// EmptyState(
-///   icon: Icons.person_outline,
-///   title: 'No Patient Selected',
-///   subtitle: 'Select a patient from the list to view details',
+///   icon: Icons.receipt_long_outlined,
+///   title: 'No Sale Selected',
+///   subtitle: 'Select a sale from the list to view details',
 /// )
 /// ```
 ///
