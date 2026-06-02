@@ -70,6 +70,7 @@ class CustomerFormDialog extends HookConsumerWidget {
           ? {
               'name': customer!.name,
               'phone': customer!.phone,
+              'email': customer!.email,
               'address': customer!.address,
               'notes': customer!.notes,
             }
@@ -99,6 +100,7 @@ class CustomerFormDialog extends HookConsumerWidget {
         id: customer?.id ?? '',
         name: (values['name'] as String).trim(),
         phone: values['phone'] as String?,
+        email: values['email'] as String?,
         address: values['address'] as String?,
         notes: values['notes'] as String?,
       );
@@ -238,6 +240,26 @@ class CustomerFormDialog extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         FormBuilderTextField(
+                          name: 'email',
+                          initialValue: customer?.email,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            helperText:
+                                'Used to send order history link',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                          enabled: !isSaving.value,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.email(
+                              errorText: 'Invalid email',
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 16),
+                        FormBuilderTextField(
                           name: 'address',
                           initialValue: customer?.address,
                           decoration: const InputDecoration(
@@ -279,6 +301,7 @@ class CustomerFormDialog extends HookConsumerWidget {
   static const _fieldLabels = {
     'name': 'Name',
     'phone': 'Phone',
+    'email': 'Email',
     'address': 'Address',
     'notes': 'Notes',
   };

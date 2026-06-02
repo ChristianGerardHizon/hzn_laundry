@@ -31,6 +31,12 @@ class CustomerMapper extends ClassMapperBase<Customer> {
     _$phone,
     opt: true,
   );
+  static String? _$email(Customer v) => v.email;
+  static const Field<Customer, String> _f$email = Field(
+    'email',
+    _$email,
+    opt: true,
+  );
   static String? _$address(Customer v) => v.address;
   static const Field<Customer, String> _f$address = Field(
     'address',
@@ -61,6 +67,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
     #id: _f$id,
     #name: _f$name,
     #phone: _f$phone,
+    #email: _f$email,
     #address: _f$address,
     #notes: _f$notes,
     #created: _f$created,
@@ -72,6 +79,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
       id: data.dec(_f$id),
       name: data.dec(_f$name),
       phone: data.dec(_f$phone),
+      email: data.dec(_f$email),
       address: data.dec(_f$address),
       notes: data.dec(_f$notes),
       created: data.dec(_f$created),
@@ -140,6 +148,7 @@ abstract class CustomerCopyWith<$R, $In extends Customer, $Out>
     String? id,
     String? name,
     String? phone,
+    String? email,
     String? address,
     String? notes,
     DateTime? created,
@@ -161,6 +170,7 @@ class _CustomerCopyWithImpl<$R, $Out>
     String? id,
     String? name,
     Object? phone = $none,
+    Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
     Object? created = $none,
@@ -170,6 +180,7 @@ class _CustomerCopyWithImpl<$R, $Out>
       if (id != null) #id: id,
       if (name != null) #name: name,
       if (phone != $none) #phone: phone,
+      if (email != $none) #email: email,
       if (address != $none) #address: address,
       if (notes != $none) #notes: notes,
       if (created != $none) #created: created,
@@ -181,6 +192,7 @@ class _CustomerCopyWithImpl<$R, $Out>
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
     phone: data.get(#phone, or: $value.phone),
+    email: data.get(#email, or: $value.email),
     address: data.get(#address, or: $value.address),
     notes: data.get(#notes, or: $value.notes),
     created: data.get(#created, or: $value.created),

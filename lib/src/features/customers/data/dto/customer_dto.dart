@@ -14,6 +14,7 @@ class CustomerDto with CustomerDtoMappable {
   final String collectionName;
   final String name;
   final String? phone;
+  final String? email;
   final String? address;
   final String? notes;
   final String? created;
@@ -25,6 +26,7 @@ class CustomerDto with CustomerDtoMappable {
     required this.collectionName,
     required this.name,
     this.phone,
+    this.email,
     this.address,
     this.notes,
     this.created,
@@ -39,6 +41,7 @@ class CustomerDto with CustomerDtoMappable {
       collectionName: record.collectionName,
       name: record.getStringValue('name'),
       phone: record.getStringValue('phone'),
+      email: record.getStringValue('email'),
       address: record.getStringValue('address'),
       notes: record.getStringValue('notes'),
       created: record.get<String>('created'),
@@ -52,6 +55,7 @@ class CustomerDto with CustomerDtoMappable {
       id: id,
       name: name,
       phone: phone != null && phone!.isNotEmpty ? phone : null,
+      email: email != null && email!.isNotEmpty ? email : null,
       address: address != null && address!.isNotEmpty ? address : null,
       notes: notes != null && notes!.isNotEmpty ? notes : null,
       created: parseToLocal(created),

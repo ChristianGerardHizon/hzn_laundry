@@ -12,6 +12,7 @@ import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
 import 'routes/organization.routes.dart';
 import 'routes/products.routes.dart';
+import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
 import 'routes/employees.routes.dart';
 import 'routes/services.routes.dart';
@@ -47,6 +48,9 @@ GoRouter router(Ref ref) {
       // Version lock routes (outside shell)
       $forceUpdateRoute,
       $webUpdateRoute,
+
+      // Public customer history route (outside shell, no auth)
+      $customerHistoryRoute,
 
       // Auth routes (outside shell)
       $splashRoute,
