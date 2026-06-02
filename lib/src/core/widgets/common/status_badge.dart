@@ -15,7 +15,7 @@ enum StatusBadgeVariant {
 /// A standardized status badge/chip widget.
 ///
 /// Used to display status indicators throughout the app,
-/// such as appointment status, sale status, stock levels, etc.
+/// such as sale status, stock levels, machine availability, etc.
 ///
 /// Example:
 /// ```dart

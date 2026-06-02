@@ -15,6 +15,8 @@ class ChipAutocompleteField<T extends Object> extends StatefulWidget {
     this.chipAvatar,
     this.enabled = true,
     this.suggestedItems,
+    this.itemTypeSingular = 'item',
+    this.itemTypePlural = 'items',
   });
 
   final List<T> selectedItems;
@@ -27,6 +29,12 @@ class ChipAutocompleteField<T extends Object> extends StatefulWidget {
 
   /// Items to prioritize at the top of the list when there is no search query.
   final List<T>? suggestedItems;
+
+  /// Singular label used in placeholder copy (e.g. "service", "treatment").
+  final String itemTypeSingular;
+
+  /// Plural label used in placeholder copy (e.g. "services", "treatments").
+  final String itemTypePlural;
 
   @override
   State<ChipAutocompleteField<T>> createState() =>
@@ -130,14 +138,14 @@ class _ChipAutocompleteFieldState<T extends Object>
             controller: _searchController,
             decoration: InputDecoration(
               labelText: widget.selectedItems.isEmpty
-                  ? 'Treatment Types *'
-                  : 'Add more treatments',
+                  ? '${widget.itemTypePlural[0].toUpperCase()}${widget.itemTypePlural.substring(1)} *'
+                  : 'Add more ${widget.itemTypePlural}',
               hintText: 'Type to search...',
               isDense: true,
               border: const OutlineInputBorder(),
               prefixIcon: const Icon(Icons.search, size: 20),
               helperText: !hasQuery && !showAllAvailable
-                  ? '${available.length} treatments available \u2014 type to search'
+                  ? '${available.length} ${widget.itemTypePlural} available \u2014 type to search'
                   : null,
               suffixIcon: hasQuery
                   ? IconButton(
@@ -223,7 +231,7 @@ class _ChipAutocompleteFieldState<T extends Object>
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'All treatment types selected',
+              'All ${widget.itemTypePlural} selected',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),

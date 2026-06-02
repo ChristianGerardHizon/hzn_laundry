@@ -154,9 +154,6 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	@override String get password => 'Password';
 	@override String get passwordConfirmation => 'Password confirmation';
 	@override String get name => 'Pangalan';
-	@override String get owner => 'May-ari';
-	@override String get species => 'Uri ng Hayop';
-	@override String get breed => 'Lahi';
 	@override String get contactNumber => 'Contact Number';
 	@override String get address => 'Address';
 	@override String get searchFields => 'Mga Field na Hahanapin';
@@ -320,9 +317,6 @@ extension on TranslationsTl {
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
 			'fields.name' => 'Pangalan',
-			'fields.owner' => 'May-ari',
-			'fields.species' => 'Uri ng Hayop',
-			'fields.breed' => 'Lahi',
 			'fields.contactNumber' => 'Contact Number',
 			'fields.address' => 'Address',
 			'fields.searchFields' => 'Mga Field na Hahanapin',

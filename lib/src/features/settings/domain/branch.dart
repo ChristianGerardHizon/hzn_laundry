@@ -36,7 +36,7 @@ class Branch with BranchMappable {
   /// Operating hours (e.g., "Mon-Sat 8:00 AM - 5:00 PM").
   final String? operatingHours;
 
-  /// Cut-off time for appointments/services (e.g., "4:30 PM").
+  /// Cut-off time for accepting new orders (e.g., "4:30 PM").
   final String? cutOffTime;
 
   /// Incentive amount earned per service price threshold (in pesos).
