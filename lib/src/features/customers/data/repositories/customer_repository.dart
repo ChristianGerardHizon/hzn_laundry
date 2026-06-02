@@ -138,6 +138,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         final body = <String, dynamic>{
           'name': customer.name,
           'phone': customer.phone,
+          'email': customer.email,
           'address': customer.address,
           'notes': customer.notes,
         };
@@ -157,6 +158,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         final body = <String, dynamic>{
           'name': customer.name,
           'phone': customer.phone,
+          'email': customer.email,
           'address': customer.address,
           'notes': customer.notes,
         };

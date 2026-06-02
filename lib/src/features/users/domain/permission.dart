@@ -38,13 +38,13 @@ class Permission with PermissionMappable {
   /// Unique identifier (same as key for consistency).
   String get id => key;
 
-  /// Gets the action part of the permission key (e.g., "view" from "patients.view").
+  /// Gets the action part of the permission key (e.g., "view" from "sales.view").
   String get action {
     final parts = key.split('.');
     return parts.length > 1 ? parts[1] : key;
   }
 
-  /// Gets the resource part of the permission key (e.g., "patients" from "patients.view").
+  /// Gets the resource part of the permission key (e.g., "sales" from "sales.view").
   String get resource {
     final parts = key.split('.');
     return parts.isNotEmpty ? parts[0] : key;

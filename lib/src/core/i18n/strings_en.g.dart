@@ -291,15 +291,6 @@ class TranslationsFieldsEn {
 	/// en: 'Name'
 	String get name => 'Name';
 
-	/// en: 'Owner'
-	String get owner => 'Owner';
-
-	/// en: 'Species'
-	String get species => 'Species';
-
-	/// en: 'Breed'
-	String get breed => 'Breed';
-
 	/// en: 'Contact Number'
 	String get contactNumber => 'Contact Number';
 
@@ -574,9 +565,6 @@ extension on Translations {
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
 			'fields.name' => 'Name',
-			'fields.owner' => 'Owner',
-			'fields.species' => 'Species',
-			'fields.breed' => 'Breed',
 			'fields.contactNumber' => 'Contact Number',
 			'fields.address' => 'Address',
 			'fields.searchFields' => 'Search Fields',

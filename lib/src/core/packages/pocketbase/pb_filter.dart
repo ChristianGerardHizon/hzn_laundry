@@ -7,10 +7,10 @@ import '../../utils/date_utils.dart';
 /// Example:
 /// ```dart
 /// final filter = PBFilter()
-///   .equals('species', 'dog')
+///   .equals('status', 'completed')
 ///   .notDeleted()
 ///   .build();
-/// // Result: "species = 'dog' && isDeleted = false"
+/// // Result: "status = 'completed' && isDeleted = false"
 /// ```
 class PBFilter {
   final List<String> _conditions;
@@ -237,31 +237,10 @@ abstract class PBFilters {
   /// Base filter excluding soft-deleted records.
   static PBFilter get active => PBFilter().notDeleted();
 
-  /// Filter for patient-related queries with soft delete.
-  ///
-  /// Example: `PBFilters.forPatient(patientId).build()`
-  /// Result: `patient = "id" && isDeleted = false`
-  static PBFilter forPatient(String patientId) =>
-      PBFilter().relation('patient', patientId).notDeleted();
-
-  /// Filter for record-related queries with soft delete.
-  ///
-  /// Example: `PBFilters.forRecord(recordId).build()`
-  /// Result: `patientRecord = "id" && isDeleted = false`
-  static PBFilter forRecord(String recordId) =>
-      PBFilter().relation('patientRecord', recordId).notDeleted();
-
   /// Filter for branch-scoped queries with soft delete.
   ///
   /// Example: `PBFilters.forBranch(branchId).build()`
   /// Result: `branch = "id" && isDeleted = false`
   static PBFilter forBranch(String branchId) =>
       PBFilter().relation('branch', branchId).notDeleted();
-
-  /// Filter for treatment-related queries with soft delete.
-  ///
-  /// Example: `PBFilters.forTreatment(treatmentId).build()`
-  /// Result: `treatment = "id" && isDeleted = false`
-  static PBFilter forTreatment(String treatmentId) =>
-      PBFilter().relation('treatment', treatmentId).notDeleted();
 }

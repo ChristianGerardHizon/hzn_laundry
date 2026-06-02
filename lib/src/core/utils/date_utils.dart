@@ -8,7 +8,7 @@ extension PocketBaseDateExtensions on DateTime {
   /// Converts to UTC and returns ISO8601 string for PocketBase storage.
   ///
   /// Use this when sending dates to the server in create/update operations.
-  /// Example: `patient.dateOfBirth.toUtcIso8601()`
+  /// Example: `sale.createdAt.toUtcIso8601()`
   String toUtcIso8601() => toUtc().toIso8601String();
 
   /// Converts to UTC and returns string in PocketBase filter format: 'Y-m-d H:i:s.uZ'
@@ -38,7 +38,7 @@ extension PocketBaseDateExtensionsNullable on DateTime? {
   /// Converts to PocketBase UTC format, or returns null if DateTime is null.
   ///
   /// Safe to use with optional date fields in filter queries.
-  /// Example: `appointment.date.toPocketBaseUtcOrNull()`
+  /// Example: `sale.processedDate.toPocketBaseUtcOrNull()`
   String? toPocketBaseUtcOrNull() => this?.toPocketBaseUtc();
 }
 
@@ -51,7 +51,7 @@ extension PocketBaseDateExtensionsNullable on DateTime? {
 ///
 /// Example:
 /// ```dart
-/// final localDate = parseToLocal(json['dateOfBirth'] as String?);
+/// final localDate = parseToLocal(json['createdAt'] as String?);
 /// ```
 DateTime? parseToLocal(String? dateStr) {
   if (dateStr == null || dateStr.isEmpty) return null;

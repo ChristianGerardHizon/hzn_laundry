@@ -84,7 +84,7 @@ void showFormErrorDialog(
 ///
 /// Example:
 /// ```dart
-/// showSuccessSnackBar(context, message: 'Patient created successfully');
+/// showSuccessSnackBar(context, message: 'Customer created successfully');
 /// ```
 void showSuccessSnackBar(
   BuildContext context, {
