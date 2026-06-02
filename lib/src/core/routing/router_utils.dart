@@ -22,6 +22,7 @@ abstract class RouterUtils {
     '/forgot-password',
     '/force-update',
     '/web-update',
+    '/history',
   ];
 
   /// Global redirect function for auth guards.
@@ -36,6 +37,11 @@ abstract class RouterUtils {
   ) {
     final currentPath = state.matchedLocation;
     final fullUri = state.uri.toString();
+
+    // Public customer history route — fully independent, no auth/version checks.
+    if (currentPath.startsWith('/history')) {
+      return null;
+    }
 
     // --- Version check redirects (take priority over auth) ---
     final versionAsync = ref.read(versionCheckProvider);

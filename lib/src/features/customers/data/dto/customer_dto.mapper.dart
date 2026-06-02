@@ -41,6 +41,12 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
     _$phone,
     opt: true,
   );
+  static String? _$email(CustomerDto v) => v.email;
+  static const Field<CustomerDto, String> _f$email = Field(
+    'email',
+    _$email,
+    opt: true,
+  );
   static String? _$address(CustomerDto v) => v.address;
   static const Field<CustomerDto, String> _f$address = Field(
     'address',
@@ -73,6 +79,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
     #collectionName: _f$collectionName,
     #name: _f$name,
     #phone: _f$phone,
+    #email: _f$email,
     #address: _f$address,
     #notes: _f$notes,
     #created: _f$created,
@@ -86,6 +93,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
       phone: data.dec(_f$phone),
+      email: data.dec(_f$email),
       address: data.dec(_f$address),
       notes: data.dec(_f$notes),
       created: data.dec(_f$created),
@@ -159,6 +167,7 @@ abstract class CustomerDtoCopyWith<$R, $In extends CustomerDto, $Out>
     String? collectionName,
     String? name,
     String? phone,
+    String? email,
     String? address,
     String? notes,
     String? created,
@@ -182,6 +191,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     String? collectionName,
     String? name,
     Object? phone = $none,
+    Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
     Object? created = $none,
@@ -193,6 +203,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
       if (phone != $none) #phone: phone,
+      if (email != $none) #email: email,
       if (address != $none) #address: address,
       if (notes != $none) #notes: notes,
       if (created != $none) #created: created,
@@ -206,6 +217,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
     phone: data.get(#phone, or: $value.phone),
+    email: data.get(#email, or: $value.email),
     address: data.get(#address, or: $value.address),
     notes: data.get(#notes, or: $value.notes),
     created: data.get(#created, or: $value.created),

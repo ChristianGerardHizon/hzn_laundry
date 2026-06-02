@@ -11,6 +11,7 @@ class Customer with CustomerMappable {
     required this.id,
     required this.name,
     this.phone,
+    this.email,
     this.address,
     this.notes,
     this.created,
@@ -25,6 +26,9 @@ class Customer with CustomerMappable {
 
   /// Customer phone number (optional).
   final String? phone;
+
+  /// Customer email (optional). Used for sending order history link.
+  final String? email;
 
   /// Customer address (optional).
   final String? address;

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:hizonelaundry/src/core/packages/pocketbase/pocketbase_provider.dart';
 import 'package:hizonelaundry/src/core/utils/window_utils.dart';
 import 'package:hizonelaundry/src/application.dart';
@@ -11,6 +12,7 @@ import 'src/core/packages/sentry/sentry_provider_observer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   await WindowUtils.register();
   LocaleSettings.useDeviceLocale();
 
