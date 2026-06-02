@@ -28,10 +28,10 @@ onRecordUpdate(function(e) {
       !alreadyStamped
     ) {
       var now = new Date();
-      var year = now.getUTCFullYear();
-      var month = String(now.getUTCMonth() + 1).padStart(2, "0");
-      var day = String(now.getUTCDate()).padStart(2, "0");
-      var dateStr = year + "-" + month + "-" + day + " 00:00:00.000Z";
+      var local = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+      var dateStr = local.getUTCFullYear() + "-" +
+        String(local.getUTCMonth() + 1).padStart(2, "0") + "-" +
+        String(local.getUTCDate()).padStart(2, "0") + " 00:00:00.000Z";
 
       e.record.set("processedDate", dateStr);
       console.log("[STAMP_PROCESSED_DATE] " + e.record.id + " -> " + dateStr);
