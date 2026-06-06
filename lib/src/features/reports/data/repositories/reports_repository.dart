@@ -79,9 +79,17 @@ class ReportsRepositoryImpl implements ReportsRepository {
           return SalesReport.empty;
         }
 
-        // Calculate totals from daily summary
+        // Calculate totals from daily summary.
+        //
+        // The view emits one row per (day, paymentMethod, branch). Orders with
+        // no payment land in a row with an empty paymentMethod and a null
+        // total_revenue (read as 0). Those orders count toward the order total
+        // but contribute no revenue, so the average must divide revenue only by
+        // the count of paid transactions — otherwise unpaid orders drag the
+        // average artificially low.
         num totalRevenue = 0;
         int transactionCount = 0;
+        int paidTransactionCount = 0;
         final revenueByDay = <DateTime, num>{};
         final revenueByPaymentMethod = <String, num>{};
 
@@ -101,13 +109,14 @@ class ReportsRepositoryImpl implements ReportsRepository {
           }
 
           if (paymentMethod.isNotEmpty) {
+            paidTransactionCount += count;
             revenueByPaymentMethod[paymentMethod] =
                 (revenueByPaymentMethod[paymentMethod] ?? 0) + revenue;
           }
         }
 
         final avgValue =
-            transactionCount > 0 ? totalRevenue / transactionCount : 0;
+            paidTransactionCount > 0 ? totalRevenue / paidTransactionCount : 0;
 
         // Filter and aggregate top products by date range
         final filteredProducts = topProductsRecords.where((r) {
