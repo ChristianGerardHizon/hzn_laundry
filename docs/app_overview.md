@@ -565,6 +565,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Jun 06 | Fix Report Date Grouping | Fixed vw_sales_daily_summary and vw_sales_by_customer to group by PHT date (UTC+8) — orders created 12:00–7:59 AM PHT were appearing in the previous day's report |
 | Apr 01 | Users & Roles | Replaced old vet-clinic roles (Veterinarian, Staff, Cashier) with laundry-appropriate roles: Admin, Manager, Cashier, Attendant. Added test user accounts for each role |
 | Feb 05 | Order Status History | Added orderStatusHistory collection and timeline UI on sale detail page to track every status change (sale status and order status) with auto-logging on create and update |
 | Feb 05 | Machines & Storages | Added machines and storage locations management under Organization with CRUD, plus machine/storage assignment dialogs when transitioning sale order status to processing/ready |
