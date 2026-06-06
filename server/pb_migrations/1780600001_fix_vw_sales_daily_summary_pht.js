@@ -4,48 +4,20 @@
 // Orders created 12:00–7:59 AM PHT have a UTC timestamp on the previous
 // calendar day, causing them to appear in the wrong day's report.
 
-migrate(function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_daily_summary");
+migrate((app) => {
+  const collection = app.findCollectionByNameOrId("pbc_3432702729");
 
-  collection.viewQuery = `
-    SELECT
-      (ROW_NUMBER() OVER()) AS id,
-      DATE(datetime(s.created, '+8 hours')) AS sale_date,
-      p.paymentMethod,
-      s.branch,
-      COUNT(DISTINCT s.id) AS transaction_count,
-      SUM(p.amount) AS total_revenue,
-      AVG(p.amount) AS avg_transaction_value
-    FROM sales s
-    LEFT JOIN payments p ON s.id = p.sale
-    WHERE (s.isDeleted = false OR s.isDeleted IS NULL)
-      AND s.status != 'voided'
-    GROUP BY DATE(datetime(s.created, '+8 hours')), p.paymentMethod, s.branch
-    ORDER BY sale_date DESC
-  `;
+  unmarshal({
+    "viewQuery": "\n    SELECT\n      (ROW_NUMBER() OVER()) AS id,\n      DATE(datetime(s.created, '+8 hours')) AS sale_date,\n      p.paymentMethod,\n      s.branch,\n      COUNT(DISTINCT s.id) AS transaction_count,\n      SUM(p.amount) AS total_revenue,\n      AVG(p.amount) AS avg_transaction_value\n    FROM sales s\n    LEFT JOIN payments p ON s.id = p.sale\n    WHERE (s.isDeleted = false OR s.isDeleted IS NULL)\n      AND s.status != 'voided'\n    GROUP BY DATE(datetime(s.created, '+8 hours')), p.paymentMethod, s.branch\n    ORDER BY sale_date DESC\n  "
+  }, collection);
 
-  dao.saveCollection(collection);
-}, function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_daily_summary");
+  return app.save(collection);
+}, (app) => {
+  const collection = app.findCollectionByNameOrId("pbc_3432702729");
 
-  collection.viewQuery = `
-    SELECT
-      (ROW_NUMBER() OVER()) AS id,
-      DATE(s.created) AS sale_date,
-      p.paymentMethod,
-      s.branch,
-      COUNT(DISTINCT s.id) AS transaction_count,
-      SUM(p.amount) AS total_revenue,
-      AVG(p.amount) AS avg_transaction_value
-    FROM sales s
-    LEFT JOIN payments p ON s.id = p.sale
-    WHERE (s.isDeleted = false OR s.isDeleted IS NULL)
-      AND s.status != 'voided'
-    GROUP BY DATE(s.created), p.paymentMethod, s.branch
-    ORDER BY sale_date DESC
-  `;
+  unmarshal({
+    "viewQuery": "\n    SELECT\n      (ROW_NUMBER() OVER()) AS id,\n      DATE(s.created) AS sale_date,\n      p.paymentMethod,\n      s.branch,\n      COUNT(DISTINCT s.id) AS transaction_count,\n      SUM(p.amount) AS total_revenue,\n      AVG(p.amount) AS avg_transaction_value\n    FROM sales s\n    LEFT JOIN payments p ON s.id = p.sale\n    WHERE (s.isDeleted = false OR s.isDeleted IS NULL)\n      AND s.status != 'voided'\n    GROUP BY DATE(s.created), p.paymentMethod, s.branch\n    ORDER BY sale_date DESC\n  "
+  }, collection);
 
-  dao.saveCollection(collection);
+  return app.save(collection);
 });
