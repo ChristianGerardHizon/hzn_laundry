@@ -70,7 +70,9 @@ class AssignMachinesDialog extends HookConsumerWidget {
                 if (match.isEmpty) return '';
                 final name = match.first.name;
                 final count = counts[id] ?? 1;
-                return count > 1 ? '$name (x$count)' : name;
+                return count > 1
+                    ? '$name (x$count load${count == 1 ? '' : 's'})'
+                    : name;
               })
               .where((name) => name.isNotEmpty)
               .toList();
