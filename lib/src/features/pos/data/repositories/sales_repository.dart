@@ -46,6 +46,7 @@ abstract class SalesRepository {
     List<String> machineIds,
     List<String> machineNames, {
     Map<String, int> loadCounts = const {},
+    Map<String, double> weights = const {},
   });
 
   /// Assigns storage locations to a sale service item.
@@ -395,6 +396,7 @@ class SalesRepositoryImpl implements SalesRepository {
     List<String> machineIds,
     List<String> machineNames, {
     Map<String, int> loadCounts = const {},
+    Map<String, double> weights = const {},
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -402,6 +404,7 @@ class SalesRepositoryImpl implements SalesRepository {
           'machine': machineIds,
           'machineName': machineNames.join(', '),
           'machineLoadCounts': loadCounts,
+          'machineWeights': weights,
           'status': 'in_progress',
         });
       },

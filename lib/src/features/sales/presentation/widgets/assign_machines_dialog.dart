@@ -13,8 +13,9 @@ import '../../../services/domain/sale_service_item.dart';
 /// Dialog for assigning machines to sale service items.
 ///
 /// Shows tappable machine chips grouped by type. Each service item can have
-/// one or more machines assigned. Tapping a selected machine increments its
-/// load count (for double/triple wash). Long press deselects.
+/// one or more machines assigned. Tapping a machine selects it; long press
+/// deselects. The load count per machine is computed automatically from the
+/// entered weight (kg) and the machine's load rules — it is not set by tapping.
 ///
 /// Returns `true` if assignments were made or skipped, `null` if cancelled.
 class AssignMachinesDialog extends HookConsumerWidget {
@@ -69,7 +70,9 @@ class AssignMachinesDialog extends HookConsumerWidget {
                 if (match.isEmpty) return '';
                 final name = match.first.name;
                 final count = counts[id] ?? 1;
-                return count > 1 ? '$name (x$count)' : name;
+                return count > 1
+                    ? '$name (x$count load${count == 1 ? '' : 's'})'
+                    : name;
               })
               .where((name) => name.isNotEmpty)
               .toList();
@@ -188,14 +191,12 @@ class AssignMachinesDialog extends HookConsumerWidget {
                           final counts = Map<String, int>.from(
                               currentCounts[itemId] ?? {});
 
-                          if (list.contains(machineId)) {
-                            // Already selected: increment count (cap at 5)
-                            final current = counts[machineId] ?? 1;
-                            if (current < 5) {
-                              counts[machineId] = current + 1;
-                            }
-                          } else {
-                            // Not selected: add with count 1
+                          // Select-only: tapping an unselected machine adds it
+                          // with a default load of 1. The load count is driven
+                          // by the weight (kg) input + machine load rules, not
+                          // by repeated taps. Tapping an already-selected
+                          // machine is a no-op (long-press to remove).
+                          if (!list.contains(machineId)) {
                             list.add(machineId);
                             counts[machineId] = 1;
                           }
@@ -226,6 +227,54 @@ class AssignMachinesDialog extends HookConsumerWidget {
                           currentCounts[itemId] = counts;
                           assignments.value = currentAssignments;
                           loadCounts.value = currentCounts;
+                        },
+                      ),
+                      // Per-machine load count steppers.
+                      Builder(
+                        builder: (context) {
+                          final selectedIds =
+                              assignments.value[activeItemId] ?? [];
+                          if (selectedIds.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          final selectedMachines = availableMachines
+                              .where((m) => selectedIds.contains(m.id))
+                              .toList();
+
+                          void setLoad(String machineId, int load) {
+                            final currentCounts =
+                                Map<String, Map<String, int>>.from(
+                                    loadCounts.value);
+                            final counts = Map<String, int>.from(
+                                currentCounts[activeItemId] ?? {});
+                            counts[machineId] = load;
+                            currentCounts[activeItemId] = counts;
+                            loadCounts.value = currentCounts;
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 16),
+                              const Divider(height: 1),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Loads',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              for (final m in selectedMachines)
+                                _MachineLoadRow(
+                                  machine: m,
+                                  loadCount: activeLoadCounts[m.id] ?? 1,
+                                  disabled: isSaving.value,
+                                  onChanged: (load) => setLoad(m.id, load),
+                                ),
+                            ],
+                          );
                         },
                       ),
                     ],
@@ -334,7 +383,7 @@ class _ActiveServiceLabel extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Tap to add load, hold to remove',
+          'Tap to select, hold to remove',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -578,6 +627,76 @@ class _MachineChip extends HookConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A single selected machine's editable load count, adjusted with a stepper.
+///
+/// The load count is set directly by the cashier (minimum 1). There is no
+/// kg/weight input or rule-based auto-computation.
+class _MachineLoadRow extends StatelessWidget {
+  const _MachineLoadRow({
+    required this.machine,
+    required this.loadCount,
+    required this.disabled,
+    required this.onChanged,
+  });
+
+  final Machine machine;
+  final int loadCount;
+  final bool disabled;
+
+  /// Called with the new load count (always >= 1).
+  final ValueChanged<int> onChanged;
+
+  static const int _maxLoad = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final canDecrement = !disabled && loadCount > 1;
+    final canIncrement = !disabled && loadCount < _maxLoad;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              machine.name,
+              style: theme.textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton.outlined(
+            onPressed: canDecrement ? () => onChanged(loadCount - 1) : null,
+            icon: const Icon(Icons.remove),
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Decrease load',
+          ),
+          SizedBox(
+            width: 64,
+            child: Text(
+              '$loadCount load${loadCount == 1 ? '' : 's'}',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton.outlined(
+            onPressed: canIncrement ? () => onChanged(loadCount + 1) : null,
+            icon: const Icon(Icons.add),
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Increase load',
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 enum SystemMode {
   productCategories,
   quantityUnits,
+  machines,
   printers,
   cashierGroups,
   appearance,
@@ -63,6 +64,15 @@ class SystemNavPanel extends StatelessWidget {
             label: 'Units',
             isSelected: currentMode == SystemMode.quantityUnits,
             onTap: () => onModeChanged(SystemMode.quantityUnits),
+          ),
+          const SizedBox(height: 4),
+          // Machines button
+          _NavButton(
+            icon: Icons.local_laundry_service_outlined,
+            selectedIcon: Icons.local_laundry_service,
+            label: 'Machines',
+            isSelected: currentMode == SystemMode.machines,
+            onTap: () => onModeChanged(SystemMode.machines),
           ),
           const SizedBox(height: 4),
           // Printers button

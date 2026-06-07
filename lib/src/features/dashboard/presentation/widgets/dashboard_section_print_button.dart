@@ -6,6 +6,7 @@ import '../../../../core/pdf/pdf_task_runner.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/add_ons_summary.dart';
+import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_date_override_provider.dart';
 import '../controllers/today_incentive_controller.dart';
@@ -25,7 +26,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
     required num this.total,
     this.color,
   })  : incentive = null,
-        addOns = null;
+        addOns = null,
+        loads = null;
 
   const DashboardSectionPrintButton.incentive({
     super.key,
@@ -34,7 +36,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = "Today's Incentive",
         salesItems = null,
         total = null,
-        addOns = null;
+        addOns = null,
+        loads = null;
 
   const DashboardSectionPrintButton.addOns({
     super.key,
@@ -43,13 +46,25 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = 'Add-ons Sold',
         salesItems = null,
         total = null,
-        incentive = null;
+        incentive = null,
+        loads = null;
+
+  const DashboardSectionPrintButton.loads({
+    super.key,
+    required LoadsSummaryData this.loads,
+    this.color,
+  })  : sectionTitle = 'Loads',
+        salesItems = null,
+        total = null,
+        incentive = null,
+        addOns = null;
 
   final String sectionTitle;
   final List<SalesSummaryItem>? salesItems;
   final num? total;
   final TodayIncentiveSummary? incentive;
   final AddOnsSummaryData? addOns;
+  final LoadsSummaryData? loads;
   final Color? color;
 
   @override
@@ -80,6 +95,15 @@ class DashboardSectionPrintButton extends ConsumerWidget {
           if (addOns != null) {
             return DashboardSectionPdfPayload.fromAddOns(
               summary: addOns!,
+              businessName: branch?.name,
+              reportDate: reportDate,
+              generatedAt: DateTime.now(),
+              isDateOverridden: isOverridden,
+            );
+          }
+          if (loads != null) {
+            return DashboardSectionPdfPayload.fromLoads(
+              summary: loads!,
               businessName: branch?.name,
               reportDate: reportDate,
               generatedAt: DateTime.now(),

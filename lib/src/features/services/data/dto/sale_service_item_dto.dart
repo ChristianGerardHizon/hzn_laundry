@@ -24,6 +24,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
   final List<String> machine;
   final String? machineName;
   final Map<String, dynamic> machineLoadCounts;
+  final Map<String, dynamic> machineWeights;
   final List<String> storage;
   final String? storageName;
   final String? status;
@@ -43,6 +44,7 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
     this.machine = const [],
     this.machineName,
     this.machineLoadCounts = const {},
+    this.machineWeights = const {},
     this.storage = const [],
     this.storageName,
     this.status,
@@ -65,6 +67,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       machineName: record.getStringValue('machineName'),
       machineLoadCounts: Map<String, dynamic>.from(
         (record.data['machineLoadCounts'] as Map?) ?? {},
+      ),
+      machineWeights: Map<String, dynamic>.from(
+        (record.data['machineWeights'] as Map?) ?? {},
       ),
       storage: record.getListValue<String>('storage'),
       storageName: record.getStringValue('storageName'),
@@ -95,6 +100,9 @@ class SaleServiceItemDto with SaleServiceItemDtoMappable {
       machineName: machineName,
       machineLoadCounts: machineLoadCounts.map(
         (k, v) => MapEntry(k, (v as num).toInt()),
+      ),
+      machineWeights: machineWeights.map(
+        (k, v) => MapEntry(k, (v as num).toDouble()),
       ),
       machine: machineExpanded != null
           ? MachineDto.fromRecord(machineExpanded).toEntity()
