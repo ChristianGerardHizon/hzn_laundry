@@ -8,8 +8,10 @@ import '../../../../core/widgets/nav_permissions.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../users/domain/user_role.dart';
 import '../../domain/sales_summary.dart';
+import '../controllers/add_ons_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/today_incentive_controller.dart';
+import 'add_ons_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
 import 'today_incentive_modal.dart';
@@ -104,9 +106,12 @@ class _SalesSummaryContent extends ConsumerWidget {
 
   String _fmt(num amount) => _currency.format(amount);
 
+  static final _qty = NumberFormat('#,##0.##');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
+    final addOnsAsync = ref.watch(addOnsSummaryProvider);
     final role = ref.watch(currentUserRoleProvider).value;
     final canViewIncentive = role?.isAdmin == true ||
         (role?.hasPermission(Permissions.incentiveView) ?? false);
@@ -114,7 +119,7 @@ class _SalesSummaryContent extends ConsumerWidget {
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 4 : 3;
+      cols = canViewIncentive ? 5 : 4;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
@@ -169,6 +174,25 @@ class _SalesSummaryContent extends ConsumerWidget {
           items: data.outstandingItems,
           total: data.totalOutstanding,
         ),
+      ),
+      addOnsAsync.when(
+        data: (summary) => KpiCard(
+          title: 'Add-ons Sold',
+          value: _qty.format(summary.totalQuantity),
+          icon: Icons.shopping_bag_outlined,
+          subtitle: summary.items.isEmpty
+              ? 'No add-ons today'
+              : '${summary.items.length} product${summary.items.length == 1 ? '' : 's'} · ${_fmt(summary.totalRevenue)}',
+          compact: true,
+          color: Colors.teal,
+          onTap: () => showAddOnsBreakdownModal(
+            context,
+            summary,
+            color: Colors.teal,
+          ),
+        ),
+        loading: () => const _LoadingCard(),
+        error: (_, __) => const _LoadingCard(),
       ),
       if (canViewIncentive)
         incentiveAsync.when(
@@ -621,11 +645,11 @@ class _LoadingCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final cardCount = canViewIncentive ? 4 : 3;
+    final cardCount = canViewIncentive ? 5 : 4;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 4 : 3;
+      cols = canViewIncentive ? 5 : 4;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
