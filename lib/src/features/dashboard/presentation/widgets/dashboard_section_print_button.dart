@@ -110,6 +110,16 @@ class DashboardSectionPrintButton extends ConsumerWidget {
               isDateOverridden: isOverridden,
             );
           }
+          if (sectionTitle == 'Total Sales') {
+            return DashboardSectionPdfPayload.fromTotalSales(
+              items: salesItems!,
+              total: total!,
+              businessName: branch?.name,
+              reportDate: reportDate,
+              generatedAt: DateTime.now(),
+              isDateOverridden: isOverridden,
+            );
+          }
           return DashboardSectionPdfPayload.fromSales(
             sectionTitle: sectionTitle,
             items: salesItems!,
