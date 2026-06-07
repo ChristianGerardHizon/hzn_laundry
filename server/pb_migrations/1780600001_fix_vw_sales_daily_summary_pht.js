@@ -4,9 +4,8 @@
 // Orders created 12:00–7:59 AM PHT have a UTC timestamp on the previous
 // calendar day, causing them to appear in the wrong day's report.
 
-migrate(function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_daily_summary");
+migrate((app) => {
+  const collection = app.findCollectionByNameOrId("vw_sales_daily_summary");
 
   collection.viewQuery = `
     SELECT
@@ -25,10 +24,9 @@ migrate(function(db) {
     ORDER BY sale_date DESC
   `;
 
-  dao.saveCollection(collection);
-}, function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_daily_summary");
+  app.save(collection);
+}, (app) => {
+  const collection = app.findCollectionByNameOrId("vw_sales_daily_summary");
 
   collection.viewQuery = `
     SELECT
@@ -47,5 +45,5 @@ migrate(function(db) {
     ORDER BY sale_date DESC
   `;
 
-  dao.saveCollection(collection);
+  app.save(collection);
 });

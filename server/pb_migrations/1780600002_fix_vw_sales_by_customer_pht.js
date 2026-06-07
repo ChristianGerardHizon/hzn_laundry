@@ -4,9 +4,8 @@
 // Orders created 12:00–7:59 AM PHT have a UTC timestamp on the previous
 // calendar day, causing them to be grouped under the wrong day.
 
-migrate(function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_by_customer");
+migrate((app) => {
+  const collection = app.findCollectionByNameOrId("vw_sales_by_customer");
 
   collection.viewQuery = `SELECT
   (ROW_NUMBER() OVER()) AS id,
@@ -23,10 +22,9 @@ WHERE s.status != 'voided'
 GROUP BY s.customer, s.customerName, s.branch, DATE(datetime(s.created, '+8 hours'))
 ORDER BY totalSpent DESC`;
 
-  dao.saveCollection(collection);
-}, function(db) {
-  var dao = new Dao(db);
-  var collection = dao.findCollectionByNameOrId("vw_sales_by_customer");
+  app.save(collection);
+}, (app) => {
+  const collection = app.findCollectionByNameOrId("vw_sales_by_customer");
 
   collection.viewQuery = `SELECT
   (ROW_NUMBER() OVER()) AS id,
@@ -43,5 +41,5 @@ WHERE s.status != 'voided'
 GROUP BY s.customer, s.customerName, s.branch, DATE(s.created)
 ORDER BY totalSpent DESC`;
 
-  dao.saveCollection(collection);
+  app.save(collection);
 });

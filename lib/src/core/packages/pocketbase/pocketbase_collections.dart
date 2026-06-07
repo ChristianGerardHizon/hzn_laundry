@@ -28,6 +28,7 @@ abstract class PocketBaseCollections {
 
   // Machines & Storages
   static const String machines = 'machines';
+  static const String machineLoadRules = 'machineLoadRules';
   static const String storages = 'storages';
 
   // Carts

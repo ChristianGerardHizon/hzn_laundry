@@ -3,6 +3,7 @@ import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../core/utils/date_utils.dart';
 import '../../domain/machine.dart';
+import '../../domain/machine_size.dart';
 import '../../domain/machine_type.dart';
 
 part 'machine_dto.mapper.dart';
@@ -15,6 +16,7 @@ class MachineDto with MachineDtoMappable {
   final String collectionName;
   final String name;
   final String type;
+  final String? size;
   final String? branch;
   final bool isAvailable;
   final bool strictSingleUse;
@@ -28,6 +30,7 @@ class MachineDto with MachineDtoMappable {
     required this.collectionName,
     required this.name,
     required this.type,
+    this.size,
     this.branch,
     this.isAvailable = true,
     this.strictSingleUse = false,
@@ -46,6 +49,7 @@ class MachineDto with MachineDtoMappable {
       collectionName: json['collectionName'] as String? ?? '',
       name: json['name'] as String? ?? '',
       type: json['type'] as String? ?? 'other',
+      size: json['size'] as String?,
       branch: json['branch'] as String?,
       isAvailable: json['isAvailable'] as bool? ?? true,
       strictSingleUse: json['strictSingleUse'] as bool? ?? false,
@@ -64,6 +68,7 @@ class MachineDto with MachineDtoMappable {
         (e) => e.name == type,
         orElse: () => MachineType.other,
       ),
+      size: MachineSize.fromName(size),
       branchId: branch,
       isAvailable: isAvailable,
       strictSingleUse: strictSingleUse,

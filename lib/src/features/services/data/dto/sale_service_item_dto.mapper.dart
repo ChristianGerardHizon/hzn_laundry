@@ -85,6 +85,15 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     opt: true,
     def: const {},
   );
+  static Map<String, dynamic> _$machineWeights(SaleServiceItemDto v) =>
+      v.machineWeights;
+  static const Field<SaleServiceItemDto, Map<String, dynamic>>
+  _f$machineWeights = Field(
+    'machineWeights',
+    _$machineWeights,
+    opt: true,
+    def: const {},
+  );
   static List<String> _$storage(SaleServiceItemDto v) => v.storage;
   static const Field<SaleServiceItemDto, List<String>> _f$storage = Field(
     'storage',
@@ -131,6 +140,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
     #machine: _f$machine,
     #machineName: _f$machineName,
     #machineLoadCounts: _f$machineLoadCounts,
+    #machineWeights: _f$machineWeights,
     #storage: _f$storage,
     #storageName: _f$storageName,
     #status: _f$status,
@@ -152,6 +162,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
       machine: data.dec(_f$machine),
       machineName: data.dec(_f$machineName),
       machineLoadCounts: data.dec(_f$machineLoadCounts),
+      machineWeights: data.dec(_f$machineWeights),
       storage: data.dec(_f$storage),
       storageName: data.dec(_f$storageName),
       status: data.dec(_f$status),
@@ -234,6 +245,8 @@ abstract class SaleServiceItemDtoCopyWith<
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machine;
   MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
   get machineLoadCounts;
+  MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
+  get machineWeights;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage;
   $R call({
     String? id,
@@ -248,6 +261,7 @@ abstract class SaleServiceItemDtoCopyWith<
     List<String>? machine,
     String? machineName,
     Map<String, dynamic>? machineLoadCounts,
+    Map<String, dynamic>? machineWeights,
     List<String>? storage,
     String? storageName,
     String? status,
@@ -282,6 +296,13 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     (v) => call(machineLoadCounts: v),
   );
   @override
+  MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
+  get machineWeights => MapCopyWith(
+    $value.machineWeights,
+    (v, t) => ObjectCopyWith(v, $identity, t),
+    (v) => call(machineWeights: v),
+  );
+  @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage =>
       ListCopyWith(
         $value.storage,
@@ -302,6 +323,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     List<String>? machine,
     Object? machineName = $none,
     Map<String, dynamic>? machineLoadCounts,
+    Map<String, dynamic>? machineWeights,
     List<String>? storage,
     Object? storageName = $none,
     Object? status = $none,
@@ -321,6 +343,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
       if (machine != null) #machine: machine,
       if (machineName != $none) #machineName: machineName,
       if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
+      if (machineWeights != null) #machineWeights: machineWeights,
       if (storage != null) #storage: storage,
       if (storageName != $none) #storageName: storageName,
       if (status != $none) #status: status,
@@ -345,6 +368,7 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
       #machineLoadCounts,
       or: $value.machineLoadCounts,
     ),
+    machineWeights: data.get(#machineWeights, or: $value.machineWeights),
     storage: data.get(#storage, or: $value.storage),
     storageName: data.get(#storageName, or: $value.storageName),
     status: data.get(#status, or: $value.status),

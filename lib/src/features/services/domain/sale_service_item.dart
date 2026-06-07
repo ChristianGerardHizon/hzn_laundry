@@ -26,6 +26,7 @@ class SaleServiceItem with SaleServiceItemMappable {
     this.machineName,
     this.machine,
     this.machineLoadCounts = const {},
+    this.machineWeights = const {},
     this.storageIds = const [],
     this.storageName,
     this.storageLocations = const [],
@@ -73,6 +74,11 @@ class SaleServiceItem with SaleServiceItemMappable {
   /// Load count per machine (machine ID → number of cycles).
   /// Machines not present default to 1.
   final Map<String, int> machineLoadCounts;
+
+  /// Entered weight (kg) per machine (machine ID → weight) that produced the
+  /// auto load count. Supplementary/auditable; [machineLoadCounts] remains the
+  /// source of truth for the actual load count.
+  final Map<String, double> machineWeights;
 
   /// Assigned storage IDs.
   final List<String> storageIds;

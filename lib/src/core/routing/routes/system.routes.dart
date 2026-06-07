@@ -18,6 +18,10 @@ import '../../../features/settings/presentation/widgets/quantity_unit_detail_pan
 import '../../../features/settings/presentation/controllers/quantity_units_controller.dart';
 import '../../../features/settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
 import '../../../features/quantity_units/domain/quantity_unit.dart';
+import '../../../features/machines/domain/machine.dart';
+import '../../../features/machines/presentation/controllers/machines_controller.dart';
+import '../../../features/machines/presentation/widgets/machine_detail_panel.dart';
+import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
 import '../../utils/breakpoints.dart';
 
 part 'system.routes.g.dart';
@@ -43,6 +47,13 @@ part 'system.routes.g.dart';
           path: 'quantity-units',
           routes: [
             TypedGoRoute<QuantityUnitDetailRoute>(path: ':id'),
+          ],
+        ),
+        // Machines with detail (incl. load rules)
+        TypedGoRoute<MachinesRoute>(
+          path: 'machines',
+          routes: [
+            TypedGoRoute<MachineDetailRoute>(path: ':id'),
           ],
         ),
         // Printer settings with detail
@@ -154,6 +165,33 @@ class QuantityUnitDetailRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return QuantityUnitDetailPanel(unitId: id);
+  }
+}
+
+/// Machines management route.
+class MachinesRoute extends GoRouteData with $MachinesRoute {
+  const MachinesRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    // On tablet, handled by shell - return empty
+    if (Breakpoints.isTabletOrLarger(context)) {
+      return const SizedBox.shrink();
+    }
+    // Mobile: Show machines list
+    return const _MobileMachinesListPage();
+  }
+}
+
+/// Machine detail route (machine info + load rules).
+class MachineDetailRoute extends GoRouteData with $MachineDetailRoute {
+  const MachineDetailRoute({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return MachineDetailPanel(machineId: id);
   }
 }
 
@@ -270,6 +308,14 @@ class _MobileSystemLandingPage extends StatelessWidget {
             description: 'Manage units of measurement',
             color: Colors.cyan,
             onTap: () => const QuantityUnitsRoute().go(context),
+          ),
+          const SizedBox(height: 16),
+          _SystemOptionCard(
+            icon: Icons.local_laundry_service,
+            title: 'Machines',
+            description: 'Manage machines and weight-based load rules',
+            color: Colors.blue,
+            onTap: () => const MachinesRoute().go(context),
           ),
           const SizedBox(height: 16),
           _SystemOptionCard(
@@ -776,6 +822,127 @@ class _MobileQuantityUnitListTile extends StatelessWidget {
       ),
       title: Text(unit.name),
       subtitle: Text(unit.shortPlural),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
+/// Mobile machines list page.
+class _MobileMachinesListPage extends ConsumerWidget {
+  const _MobileMachinesListPage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final machinesAsync = ref.watch(machinesControllerProvider);
+    final controller = ref.read(machinesControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Machines'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'machine_fab',
+        onPressed: () => showMachineFormDialog(context),
+        tooltip: 'Add Machine',
+        child: const Icon(Icons.add),
+      ),
+      body: machinesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (machines) {
+          if (machines.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.local_laundry_service_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No machines yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a machine',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: machines.length,
+              itemBuilder: (context, index) {
+                final machine = machines[index];
+                return _MobileMachineListTile(
+                  machine: machine,
+                  onTap: () =>
+                      MachineDetailRoute(id: machine.id).push(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MobileMachineListTile extends StatelessWidget {
+  const _MobileMachineListTile({
+    required this.machine,
+    required this.onTap,
+  });
+
+  final Machine machine;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sizeLabel = machine.size?.displayName;
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primaryContainer,
+        child: Icon(
+          Icons.local_laundry_service,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+      title: Text(machine.name),
+      subtitle: Text(
+        sizeLabel == null
+            ? machine.type.displayName
+            : '${machine.type.displayName} • $sizeLabel',
+      ),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
