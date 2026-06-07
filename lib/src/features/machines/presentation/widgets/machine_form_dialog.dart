@@ -11,6 +11,7 @@ import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../domain/machine.dart';
+import '../../domain/machine_size.dart';
 import '../../domain/machine_type.dart';
 import '../controllers/machines_controller.dart';
 
@@ -37,6 +38,7 @@ class MachineFormDialog extends HookConsumerWidget {
           ? {
               'name': machine!.name,
               'type': machine!.type,
+              'size': machine!.size,
               'isAvailable': machine!.isAvailable,
               'strictSingleUse': machine!.strictSingleUse,
             }
@@ -64,6 +66,7 @@ class MachineFormDialog extends HookConsumerWidget {
         id: machine?.id ?? '',
         name: (values['name'] as String).trim(),
         type: values['type'] as MachineType,
+        size: values['size'] as MachineSize?,
         branchId: machine?.branchId,
         isAvailable: values['isAvailable'] as bool? ?? true,
         strictSingleUse: values['strictSingleUse'] as bool? ?? false,
@@ -209,6 +212,27 @@ class MachineFormDialog extends HookConsumerWidget {
                               .map((type) => DropdownMenuItem(
                                     value: type,
                                     child: Text(type.displayName),
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Size dropdown (optional; drives weight-based load rules)
+                        FormBuilderDropdown<MachineSize>(
+                          name: 'size',
+                          initialValue: machine?.size,
+                          decoration: const InputDecoration(
+                            labelText: 'Size',
+                            helperText:
+                                'Used for weight-based load rules (optional)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.straighten),
+                          ),
+                          enabled: !isSaving.value,
+                          items: MachineSize.values
+                              .map((size) => DropdownMenuItem(
+                                    value: size,
+                                    child: Text(size.displayName),
                                   ))
                               .toList(),
                         ),

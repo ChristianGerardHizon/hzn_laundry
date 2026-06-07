@@ -37,6 +37,12 @@ class MachineDtoMapper extends ClassMapperBase<MachineDto> {
   static const Field<MachineDto, String> _f$name = Field('name', _$name);
   static String _$type(MachineDto v) => v.type;
   static const Field<MachineDto, String> _f$type = Field('type', _$type);
+  static String? _$size(MachineDto v) => v.size;
+  static const Field<MachineDto, String> _f$size = Field(
+    'size',
+    _$size,
+    opt: true,
+  );
   static String? _$branch(MachineDto v) => v.branch;
   static const Field<MachineDto, String> _f$branch = Field(
     'branch',
@@ -84,6 +90,7 @@ class MachineDtoMapper extends ClassMapperBase<MachineDto> {
     #collectionName: _f$collectionName,
     #name: _f$name,
     #type: _f$type,
+    #size: _f$size,
     #branch: _f$branch,
     #isAvailable: _f$isAvailable,
     #strictSingleUse: _f$strictSingleUse,
@@ -99,6 +106,7 @@ class MachineDtoMapper extends ClassMapperBase<MachineDto> {
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
       type: data.dec(_f$type),
+      size: data.dec(_f$size),
       branch: data.dec(_f$branch),
       isAvailable: data.dec(_f$isAvailable),
       strictSingleUse: data.dec(_f$strictSingleUse),
@@ -174,6 +182,7 @@ abstract class MachineDtoCopyWith<$R, $In extends MachineDto, $Out>
     String? collectionName,
     String? name,
     String? type,
+    String? size,
     String? branch,
     bool? isAvailable,
     bool? strictSingleUse,
@@ -199,6 +208,7 @@ class _MachineDtoCopyWithImpl<$R, $Out>
     String? collectionName,
     String? name,
     String? type,
+    Object? size = $none,
     Object? branch = $none,
     bool? isAvailable,
     bool? strictSingleUse,
@@ -212,6 +222,7 @@ class _MachineDtoCopyWithImpl<$R, $Out>
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
       if (type != null) #type: type,
+      if (size != $none) #size: size,
       if (branch != $none) #branch: branch,
       if (isAvailable != null) #isAvailable: isAvailable,
       if (strictSingleUse != null) #strictSingleUse: strictSingleUse,
@@ -227,6 +238,7 @@ class _MachineDtoCopyWithImpl<$R, $Out>
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
     type: data.get(#type, or: $value.type),
+    size: data.get(#size, or: $value.size),
     branch: data.get(#branch, or: $value.branch),
     isAvailable: data.get(#isAvailable, or: $value.isAvailable),
     strictSingleUse: data.get(#strictSingleUse, or: $value.strictSingleUse),

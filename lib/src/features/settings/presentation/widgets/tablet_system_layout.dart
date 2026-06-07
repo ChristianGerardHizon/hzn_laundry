@@ -7,6 +7,8 @@ import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/presentation/controllers/pos_groups_controller.dart';
 import '../../../pos/presentation/widgets/cashier_group_detail_panel.dart';
+import '../../../machines/presentation/controllers/machines_controller.dart';
+import '../../../machines/presentation/widgets/machine_form_dialog.dart';
 import '../../../products/domain/product_category.dart';
 import '../controllers/product_categories_controller.dart';
 import '../controllers/printer_configs_controller.dart';
@@ -43,6 +45,8 @@ class TabletSystemLayout extends ConsumerWidget {
     final SystemMode currentMode;
     if (path.contains('/quantity-units')) {
       currentMode = SystemMode.quantityUnits;
+    } else if (path.contains('/machines')) {
+      currentMode = SystemMode.machines;
     } else if (path.contains('/printers')) {
       currentMode = SystemMode.printers;
     } else if (path.contains('/cashier-groups')) {
@@ -66,6 +70,8 @@ class TabletSystemLayout extends ConsumerWidget {
                 const ProductCategoriesRoute().go(context);
               case SystemMode.quantityUnits:
                 const QuantityUnitsRoute().go(context);
+              case SystemMode.machines:
+                const MachinesRoute().go(context);
               case SystemMode.printers:
                 const PrinterSettingsRoute().go(context);
               case SystemMode.cashierGroups:
@@ -106,6 +112,8 @@ class TabletSystemLayout extends ConsumerWidget {
                 _ProductCategoryListWrapper(selectedId: selectedId),
               SystemMode.quantityUnits =>
                 _QuantityUnitListWrapper(selectedId: selectedId),
+              SystemMode.machines =>
+                _MachineListWrapper(selectedId: selectedId),
               SystemMode.printers =>
                 _PrinterListWrapper(selectedId: selectedId),
               SystemMode.appearance =>
@@ -526,6 +534,118 @@ class _QuantityUnitListWrapper extends ConsumerWidget {
                   subtitle: Text(unit.shortPlural),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => QuantityUnitDetailRoute(id: unit.id).go(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Wrapper for machine list with system-specific navigation.
+class _MachineListWrapper extends ConsumerWidget {
+  const _MachineListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final machinesAsync = ref.watch(machinesControllerProvider);
+    final controller = ref.read(machinesControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Machines'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'machine_fab',
+        onPressed: () => showMachineFormDialog(context),
+        tooltip: 'Add Machine',
+        child: const Icon(Icons.add),
+      ),
+      body: machinesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (machines) {
+          if (machines.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.local_laundry_service_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No machines yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a machine',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: machines.length,
+              itemBuilder: (context, index) {
+                final machine = machines[index];
+                final isSelected = machine.id == selectedId;
+                final sizeLabel = machine.size?.displayName;
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.local_laundry_service,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(machine.name),
+                  subtitle: Text(
+                    sizeLabel == null
+                        ? machine.type.displayName
+                        : '${machine.type.displayName} • $sizeLabel',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => MachineDetailRoute(id: machine.id).go(context),
                 );
               },
             ),

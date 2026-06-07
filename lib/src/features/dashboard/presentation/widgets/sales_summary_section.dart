@@ -9,11 +9,13 @@ import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../users/domain/user_role.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/add_ons_summary_controller.dart';
+import '../controllers/loads_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/today_incentive_controller.dart';
 import 'add_ons_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
+import 'loads_breakdown_modal.dart';
 import 'today_incentive_modal.dart';
 
 /// Dashboard section showing today's sales totals.
@@ -112,6 +114,7 @@ class _SalesSummaryContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
     final addOnsAsync = ref.watch(addOnsSummaryProvider);
+    final loadsAsync = ref.watch(loadsSummaryProvider);
     final role = ref.watch(currentUserRoleProvider).value;
     final canViewIncentive = role?.isAdmin == true ||
         (role?.hasPermission(Permissions.incentiveView) ?? false);
@@ -119,7 +122,7 @@ class _SalesSummaryContent extends ConsumerWidget {
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 5 : 4;
+      cols = canViewIncentive ? 6 : 5;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
@@ -189,6 +192,25 @@ class _SalesSummaryContent extends ConsumerWidget {
             context,
             summary,
             color: Colors.teal,
+          ),
+        ),
+        loading: () => const _LoadingCard(),
+        error: (_, __) => const _LoadingCard(),
+      ),
+      loadsAsync.when(
+        data: (summary) => KpiCard(
+          title: 'Loads',
+          value: '${summary.totalLoads}',
+          icon: Icons.local_laundry_service,
+          subtitle: summary.orders.isEmpty
+              ? 'No loads today'
+              : '${summary.orders.length} order${summary.orders.length == 1 ? '' : 's'}',
+          compact: true,
+          color: Colors.indigo,
+          onTap: () => showLoadsBreakdownModal(
+            context,
+            summary,
+            color: Colors.indigo,
           ),
         ),
         loading: () => const _LoadingCard(),
@@ -645,11 +667,11 @@ class _LoadingCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final cardCount = canViewIncentive ? 5 : 4;
+    final cardCount = canViewIncentive ? 6 : 5;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 5 : 4;
+      cols = canViewIncentive ? 6 : 5;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {

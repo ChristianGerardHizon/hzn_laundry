@@ -38,6 +38,16 @@ RouteBase get $systemShellRoute => ShellRouteData.$route(
               ],
             ),
             GoRouteData.$route(
+              path: 'machines',
+              factory: $MachinesRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':id',
+                  factory: $MachineDetailRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
               path: 'printers',
               factory: $PrinterSettingsRoute._fromState,
               routes: [
@@ -181,6 +191,55 @@ mixin $QuantityUnitDetailRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/system/quantity-units/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $MachinesRoute on GoRouteData {
+  static MachinesRoute _fromState(GoRouterState state) => const MachinesRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/system/machines',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $MachineDetailRoute on GoRouteData {
+  static MachineDetailRoute _fromState(GoRouterState state) =>
+      MachineDetailRoute(
+        id: state.pathParameters['id']!,
+      );
+
+  MachineDetailRoute get _self => this as MachineDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+        '/system/machines/${Uri.encodeComponent(_self.id)}',
       );
 
   @override

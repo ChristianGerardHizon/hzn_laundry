@@ -27,6 +27,11 @@ class EmptySystemState extends StatelessWidget {
           'Select a unit',
           'Choose a quantity unit from the list to view details',
         ),
+      SystemMode.machines => (
+          Icons.local_laundry_service_outlined,
+          'Select a machine',
+          'Choose a machine from the list to view and manage load rules',
+        ),
       SystemMode.printers => (
           Icons.print_outlined,
           'Select a printer',

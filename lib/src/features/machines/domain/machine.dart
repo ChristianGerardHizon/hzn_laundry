@@ -1,5 +1,6 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
+import 'machine_size.dart';
 import 'machine_type.dart';
 
 part 'machine.mapper.dart';
@@ -13,6 +14,7 @@ class Machine with MachineMappable {
     required this.id,
     required this.name,
     required this.type,
+    this.size,
     this.branchId,
     this.isAvailable = true,
     this.strictSingleUse = false,
@@ -31,6 +33,10 @@ class Machine with MachineMappable {
 
   /// Machine type.
   final MachineType type;
+
+  /// Machine size classification (small/large). Null = unspecified.
+  /// Determines which weight-based load rules apply.
+  final MachineSize? size;
 
   /// Branch this machine belongs to.
   final String? branchId;

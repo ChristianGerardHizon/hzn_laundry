@@ -15,6 +15,7 @@ class MachineMapper extends ClassMapperBase<Machine> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = MachineMapper._());
       MachineTypeMapper.ensureInitialized();
+      MachineSizeMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -28,6 +29,12 @@ class MachineMapper extends ClassMapperBase<Machine> {
   static const Field<Machine, String> _f$name = Field('name', _$name);
   static MachineType _$type(Machine v) => v.type;
   static const Field<Machine, MachineType> _f$type = Field('type', _$type);
+  static MachineSize? _$size(Machine v) => v.size;
+  static const Field<Machine, MachineSize> _f$size = Field(
+    'size',
+    _$size,
+    opt: true,
+  );
   static String? _$branchId(Machine v) => v.branchId;
   static const Field<Machine, String> _f$branchId = Field(
     'branchId',
@@ -73,6 +80,7 @@ class MachineMapper extends ClassMapperBase<Machine> {
     #id: _f$id,
     #name: _f$name,
     #type: _f$type,
+    #size: _f$size,
     #branchId: _f$branchId,
     #isAvailable: _f$isAvailable,
     #strictSingleUse: _f$strictSingleUse,
@@ -86,6 +94,7 @@ class MachineMapper extends ClassMapperBase<Machine> {
       id: data.dec(_f$id),
       name: data.dec(_f$name),
       type: data.dec(_f$type),
+      size: data.dec(_f$size),
       branchId: data.dec(_f$branchId),
       isAvailable: data.dec(_f$isAvailable),
       strictSingleUse: data.dec(_f$strictSingleUse),
@@ -156,6 +165,7 @@ abstract class MachineCopyWith<$R, $In extends Machine, $Out>
     String? id,
     String? name,
     MachineType? type,
+    MachineSize? size,
     String? branchId,
     bool? isAvailable,
     bool? strictSingleUse,
@@ -179,6 +189,7 @@ class _MachineCopyWithImpl<$R, $Out>
     String? id,
     String? name,
     MachineType? type,
+    Object? size = $none,
     Object? branchId = $none,
     bool? isAvailable,
     bool? strictSingleUse,
@@ -190,6 +201,7 @@ class _MachineCopyWithImpl<$R, $Out>
       if (id != null) #id: id,
       if (name != null) #name: name,
       if (type != null) #type: type,
+      if (size != $none) #size: size,
       if (branchId != $none) #branchId: branchId,
       if (isAvailable != null) #isAvailable: isAvailable,
       if (strictSingleUse != null) #strictSingleUse: strictSingleUse,
@@ -203,6 +215,7 @@ class _MachineCopyWithImpl<$R, $Out>
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
     type: data.get(#type, or: $value.type),
+    size: data.get(#size, or: $value.size),
     branchId: data.get(#branchId, or: $value.branchId),
     isAvailable: data.get(#isAvailable, or: $value.isAvailable),
     strictSingleUse: data.get(#strictSingleUse, or: $value.strictSingleUse),

@@ -94,6 +94,7 @@ class MachineRepositoryImpl implements MachineRepository {
         final body = <String, dynamic>{
           'name': machine.name,
           'type': machine.type.name,
+          'size': machine.size?.name ?? '',
           'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,
@@ -122,6 +123,7 @@ class MachineRepositoryImpl implements MachineRepository {
         final body = <String, dynamic>{
           'name': machine.name,
           'type': machine.type.name,
+          'size': machine.size?.name ?? '',
           'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,

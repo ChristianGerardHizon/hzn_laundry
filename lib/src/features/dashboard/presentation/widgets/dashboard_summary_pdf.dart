@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../domain/add_ons_summary.dart';
+import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/today_incentive_controller.dart';
 
@@ -15,12 +16,17 @@ class _PdfLine {
     required this.subtitle,
     required this.trailing,
     required this.amount,
+    this.amountText,
   });
 
   final String title;
   final String subtitle;
   final String trailing;
   final num amount;
+
+  /// When set, this string is rendered in the amount column instead of the
+  /// peso-formatted [amount] (e.g. a plain load count like "5 loads").
+  final String? amountText;
 }
 
 /// Maps sales/payment/outstanding breakdown items to PDF lines.
@@ -80,6 +86,23 @@ List<_PdfLine> _mapAddOnLines(List<AddOnBreakdownItem> items) {
   }).toList();
 }
 
+/// Maps per-order load entries to PDF lines (load count, not currency).
+List<_PdfLine> _mapLoadsLines(List<LoadsOrderEntry> orders) {
+  return orders.map((order) {
+    final name = (order.customerName != null && order.customerName!.isNotEmpty)
+        ? order.customerName!
+        : 'Walk-in';
+    return _PdfLine(
+      title: '$name  ·  ${_shortReceipt(order.receiptNumber)}',
+      subtitle: '',
+      trailing: '',
+      amount: order.loads,
+      amountText: '${_qtyPdf.format(order.loads)} '
+          'load${order.loads == 1 ? '' : 's'}',
+    );
+  }).toList();
+}
+
 /// Serializable payload for a single-section breakdown PDF (e.g. just
 /// "Total Sales" or just "Today's Incentive").
 class DashboardSectionPdfPayload {
@@ -92,6 +115,7 @@ class DashboardSectionPdfPayload {
     required this.total,
     required this.lines,
     required this.emptyText,
+    this.totalText,
   });
 
   final String sectionTitle;
@@ -102,6 +126,10 @@ class DashboardSectionPdfPayload {
   final num total;
   final List<_PdfLine> lines;
   final String emptyText;
+
+  /// When set, rendered as the section total instead of the peso-formatted
+  /// [total] (e.g. a plain load count).
+  final String? totalText;
 
   /// Builds the payload for a sales/payment/outstanding breakdown section.
   factory DashboardSectionPdfPayload.fromSales({
@@ -165,6 +193,28 @@ class DashboardSectionPdfPayload {
       emptyText: 'No add-ons sold this day.',
     );
   }
+
+  /// Builds the payload for the loads (machine cycles) breakdown section.
+  factory DashboardSectionPdfPayload.fromLoads({
+    required LoadsSummaryData summary,
+    required String? businessName,
+    required DateTime reportDate,
+    required DateTime generatedAt,
+    required bool isDateOverridden,
+  }) {
+    return DashboardSectionPdfPayload(
+      sectionTitle: 'Loads',
+      businessName: businessName,
+      reportDate: reportDate,
+      generatedAt: generatedAt,
+      isDateOverridden: isDateOverridden,
+      total: summary.totalLoads,
+      totalText: '${_qtyPdf.format(summary.totalLoads)} '
+          'load${summary.totalLoads == 1 ? '' : 's'}',
+      lines: _mapLoadsLines(summary.orders),
+      emptyText: 'No loads recorded this day.',
+    );
+  }
 }
 
 /// Builds the PDF bytes for a single breakdown section.
@@ -202,7 +252,7 @@ Future<Uint8List> buildDashboardSectionPdf(
         _buildSectionTitle(payload, dateFormat, generatedFormat),
         pw.SizedBox(height: 16),
         _buildSection(payload.sectionTitle, payload.lines, payload.total,
-            payload.emptyText),
+            payload.emptyText, totalText: payload.totalText),
       ],
     ),
   );
@@ -485,8 +535,9 @@ pw.Widget _buildSection(
   String title,
   List<_PdfLine> lines,
   num total,
-  String emptyText,
-) {
+  String emptyText, {
+  String? totalText,
+}) {
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
@@ -502,7 +553,7 @@ pw.Widget _buildSection(
               style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
             pw.Text(
-              _pesoPdf.format(total),
+              totalText ?? _pesoPdf.format(total),
               style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
             ),
           ],
@@ -566,7 +617,7 @@ pw.Widget _buildLine(_PdfLine line, int number) {
         pw.SizedBox(
           width: 80,
           child: pw.Text(
-            _pesoPdf.format(line.amount),
+            line.amountText ?? _pesoPdf.format(line.amount),
             style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
             textAlign: pw.TextAlign.right,
           ),
