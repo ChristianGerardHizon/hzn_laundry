@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../domain/add_ons_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/today_incentive_controller.dart';
 
@@ -62,6 +63,19 @@ List<_PdfLine> _mapIncentiveLines(List<TodayOrderIncentiveEntry> orders) {
       subtitle: 'Service: ${_pesoPdf.format(order.servicePrice)}',
       trailing: _statusLabel(order.orderStatus),
       amount: order.incentive,
+    );
+  }).toList();
+}
+
+/// Maps add-on breakdown items (aggregated per product) to PDF lines.
+List<_PdfLine> _mapAddOnLines(List<AddOnBreakdownItem> items) {
+  return items.map((item) {
+    final name = item.productName.isNotEmpty ? item.productName : 'Unnamed';
+    return _PdfLine(
+      title: name,
+      subtitle: 'in ${item.orderCount} order${item.orderCount == 1 ? '' : 's'}',
+      trailing: 'x${_qtyPdf.format(item.quantity)}',
+      amount: item.revenue,
     );
   }).toList();
 }
@@ -129,6 +143,26 @@ class DashboardSectionPdfPayload {
       total: incentive.totalIncentive,
       lines: _mapIncentiveLines(incentive.orders),
       emptyText: 'No qualifying orders.',
+    );
+  }
+
+  /// Builds the payload for the add-ons breakdown section.
+  factory DashboardSectionPdfPayload.fromAddOns({
+    required AddOnsSummaryData summary,
+    required String? businessName,
+    required DateTime reportDate,
+    required DateTime generatedAt,
+    required bool isDateOverridden,
+  }) {
+    return DashboardSectionPdfPayload(
+      sectionTitle: 'Add-ons Sold',
+      businessName: businessName,
+      reportDate: reportDate,
+      generatedAt: generatedAt,
+      isDateOverridden: isDateOverridden,
+      total: summary.totalRevenue,
+      lines: _mapAddOnLines(summary.items),
+      emptyText: 'No add-ons sold this day.',
     );
   }
 }
@@ -284,6 +318,7 @@ class DashboardSummaryPdfPayload {
 // Use 'P' instead of '₱' — the default Helvetica font in the pdf package does
 // not include the peso glyph.
 final NumberFormat _pesoPdf = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+final NumberFormat _qtyPdf = NumberFormat('#,##0.##');
 
 String _shortReceipt(String receipt) {
   final parts = receipt.split('-');
