@@ -17,6 +17,8 @@ class _PdfLine {
     required this.trailing,
     required this.amount,
     this.amountText,
+    this.machines,
+    this.loads,
   });
 
   final String title;
@@ -27,7 +29,112 @@ class _PdfLine {
   /// When set, this string is rendered in the amount column instead of the
   /// peso-formatted [amount] (e.g. a plain load count like "5 loads").
   final String? amountText;
+
+  /// Machine name(s) used on this order (Total Sales rows only). Null when no
+  /// machines were assigned.
+  final String? machines;
+
+  /// Total load count (machine cycles) for this order (Total Sales rows only).
+  /// Null when not a Total Sales row; 0 means no loads.
+  final int? loads;
 }
+
+/// Aggregated footer totals for the Total Sales section.
+class _SalesFooterTotals {
+  const _SalesFooterTotals({
+    required this.totalLoads,
+    required this.unpaidCount,
+    required this.unpaidAmount,
+    required this.partialCount,
+    required this.partialAmount,
+    required this.fullyPaidCount,
+    required this.fullyPaidAmount,
+    required this.addOnCount,
+    required this.addOnAmount,
+  });
+
+  final int totalLoads;
+  final int unpaidCount;
+  final num unpaidAmount;
+  final int partialCount;
+  final num partialAmount;
+  final int fullyPaidCount;
+  final num fullyPaidAmount;
+  final int addOnCount;
+  final num addOnAmount;
+
+  /// Builds the footer totals from the Total Sales breakdown items.
+  factory _SalesFooterTotals.fromItems(List<SalesSummaryItem> items) {
+    var totalLoads = 0;
+    var unpaidCount = 0;
+    num unpaidAmount = 0;
+    var partialCount = 0;
+    num partialAmount = 0;
+    var fullyPaidCount = 0;
+    num fullyPaidAmount = 0;
+    var addOnCount = 0;
+    num addOnAmount = 0;
+
+    for (final item in items) {
+      totalLoads += _orderLoads(item);
+
+      switch (item.statusLabel) {
+        case 'Paid':
+          fullyPaidCount++;
+          fullyPaidAmount += item.totalAmount;
+        case 'Partial':
+          partialCount++;
+          partialAmount += item.totalAmount;
+        default:
+          unpaidCount++;
+          unpaidAmount += item.totalAmount;
+      }
+
+      for (final addOn in item.saleItems) {
+        addOnCount++;
+        addOnAmount += addOn.subtotal;
+      }
+    }
+
+    return _SalesFooterTotals(
+      totalLoads: totalLoads,
+      unpaidCount: unpaidCount,
+      unpaidAmount: unpaidAmount,
+      partialCount: partialCount,
+      partialAmount: partialAmount,
+      fullyPaidCount: fullyPaidCount,
+      fullyPaidAmount: fullyPaidAmount,
+      addOnCount: addOnCount,
+      addOnAmount: addOnAmount,
+    );
+  }
+}
+
+/// Sums the load count (machine cycles) across all service items of an order.
+int _orderLoads(SalesSummaryItem item) {
+  var loads = 0;
+  for (final service in item.serviceItems) {
+    for (final count in service.machineLoadCounts.values) {
+      loads += count;
+    }
+  }
+  return loads;
+}
+
+/// Dedup-joins the machine name snapshot(s) across an order's service items.
+/// Returns null when no machine was assigned.
+String? _orderMachines(SalesSummaryItem item) {
+  final names = <String>{};
+  for (final service in item.serviceItems) {
+    final name = service.machineName;
+    if (name != null && name.trim().isNotEmpty) names.add(name.trim());
+  }
+  return names.isEmpty ? null : names.join(', ');
+}
+
+/// Short payment-status label for Total Sales rows ("Paid" → "Full").
+String _shortStatusLabel(String statusLabel) =>
+    statusLabel == 'Paid' ? 'Full' : statusLabel;
 
 /// Maps sales/payment/outstanding breakdown items to PDF lines.
 List<_PdfLine> _mapSalesLines(List<SalesSummaryItem> items) {
@@ -54,6 +161,38 @@ List<_PdfLine> _mapSalesLines(List<SalesSummaryItem> items) {
       subtitle: details,
       trailing: item.statusLabel,
       amount: item.totalAmount,
+    );
+  }).toList();
+}
+
+/// Maps Total Sales breakdown items to PDF lines with the extended columns
+/// (short payment status, machines used, and per-order load count).
+List<_PdfLine> _mapTotalSalesLines(List<SalesSummaryItem> items) {
+  return items.map((item) {
+    final services = item.serviceItems
+        .map((e) =>
+            '${e.serviceName} x${e.service?.formatQuantity(e.quantity) ?? '${e.quantity}'}')
+        .join(', ');
+    final addons =
+        item.saleItems.map((e) => '${e.productName} x${e.quantity}').join(', ');
+    final details = [
+      if (services.isNotEmpty) services,
+      if (addons.isNotEmpty) addons,
+    ].join(' · ');
+
+    final receipt = _shortReceipt(item.receiptNumber);
+    final name = (item.customerName != null && item.customerName!.isNotEmpty)
+        ? item.customerName!
+        : 'Walk-in';
+    final backlog = item.isBacklog ? '  [Backlog]' : '';
+
+    return _PdfLine(
+      title: '$name  ·  $receipt$backlog',
+      subtitle: details,
+      trailing: _shortStatusLabel(item.statusLabel),
+      amount: item.totalAmount,
+      machines: _orderMachines(item),
+      loads: _orderLoads(item),
     );
   }).toList();
 }
@@ -116,6 +255,7 @@ class DashboardSectionPdfPayload {
     required this.lines,
     required this.emptyText,
     this.totalText,
+    this.salesFooter,
   });
 
   final String sectionTitle;
@@ -130,6 +270,10 @@ class DashboardSectionPdfPayload {
   /// When set, rendered as the section total instead of the peso-formatted
   /// [total] (e.g. a plain load count).
   final String? totalText;
+
+  /// When set, this section renders as the extended Total Sales table (with
+  /// machines/loads columns) followed by this footer totals block.
+  final _SalesFooterTotals? salesFooter;
 
   /// Builds the payload for a sales/payment/outstanding breakdown section.
   factory DashboardSectionPdfPayload.fromSales({
@@ -151,6 +295,30 @@ class DashboardSectionPdfPayload {
       total: total,
       lines: _mapSalesLines(items),
       emptyText: emptyText,
+    );
+  }
+
+  /// Builds the payload for the extended Total Sales section, which adds
+  /// machines/loads columns per order and a totals footer.
+  factory DashboardSectionPdfPayload.fromTotalSales({
+    required List<SalesSummaryItem> items,
+    required num total,
+    required String? businessName,
+    required DateTime reportDate,
+    required DateTime generatedAt,
+    required bool isDateOverridden,
+    String emptyText = 'No orders for this day.',
+  }) {
+    return DashboardSectionPdfPayload(
+      sectionTitle: 'Total Sales',
+      businessName: businessName,
+      reportDate: reportDate,
+      generatedAt: generatedAt,
+      isDateOverridden: isDateOverridden,
+      total: total,
+      lines: _mapTotalSalesLines(items),
+      emptyText: emptyText,
+      salesFooter: _SalesFooterTotals.fromItems(items),
     );
   }
 
@@ -236,7 +404,7 @@ Future<Uint8List> buildDashboardSectionPdf(
               alignment: pw.Alignment.centerRight,
               margin: const pw.EdgeInsets.only(bottom: 12),
               child: pw.Text(
-                '${payload.sectionTitle} — ${dateFormat.format(payload.reportDate)}',
+                '${payload.sectionTitle} - ${dateFormat.format(payload.reportDate)}',
                 style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
               ),
             ),
@@ -251,8 +419,17 @@ Future<Uint8List> buildDashboardSectionPdf(
       build: (context) => [
         _buildSectionTitle(payload, dateFormat, generatedFormat),
         pw.SizedBox(height: 16),
-        _buildSection(payload.sectionTitle, payload.lines, payload.total,
-            payload.emptyText, totalText: payload.totalText),
+        if (payload.salesFooter != null)
+          _buildSalesSection(
+            payload.sectionTitle,
+            payload.lines,
+            payload.total,
+            payload.emptyText,
+            payload.salesFooter!,
+          )
+        else
+          _buildSection(payload.sectionTitle, payload.lines, payload.total,
+              payload.emptyText, totalText: payload.totalText),
       ],
     ),
   );
@@ -404,7 +581,7 @@ Future<Uint8List> buildDashboardSummaryPdf(
               alignment: pw.Alignment.centerRight,
               margin: const pw.EdgeInsets.only(bottom: 12),
               child: pw.Text(
-                'Sales Summary — ${dateFormat.format(payload.reportDate)}',
+                'Sales Summary - ${dateFormat.format(payload.reportDate)}',
                 style: const pw.TextStyle(
                   fontSize: 9,
                   color: PdfColors.grey600,
@@ -622,6 +799,222 @@ pw.Widget _buildLine(_PdfLine line, int number) {
             textAlign: pw.TextAlign.right,
           ),
         ),
+      ],
+    ),
+  );
+}
+
+// Fixed column widths (pt) for the extended Total Sales table. Description
+// takes the remaining space via Expanded.
+const double _salesNumWidth = 18;
+const double _salesStatusWidth = 48;
+const double _salesMachinesWidth = 95;
+const double _salesLoadsWidth = 38;
+const double _salesTotalWidth = 70;
+
+/// Builds the extended Total Sales section: a column header, per-order rows with
+/// machines/loads columns, and a totals footer block.
+pw.Widget _buildSalesSection(
+  String title,
+  List<_PdfLine> lines,
+  num total,
+  String emptyText,
+  _SalesFooterTotals footer,
+) {
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.SizedBox(height: 6),
+      pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.symmetric(vertical: 4),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              title,
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              _pesoPdf.format(total),
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+      pw.Divider(height: 6, thickness: 0.8),
+      if (lines.isEmpty)
+        pw.Padding(
+          padding: const pw.EdgeInsets.symmetric(vertical: 8),
+          child: pw.Text(
+            emptyText,
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+          ),
+        )
+      else ...[
+        _buildSalesHeaderRow(),
+        pw.Divider(height: 4, thickness: 0.4, color: PdfColors.grey400),
+        ...lines.asMap().entries.map(
+              (entry) => _buildSalesLine(entry.value, entry.key + 1),
+            ),
+      ],
+      pw.SizedBox(height: 12),
+      _buildSalesFooter(footer),
+      pw.SizedBox(height: 16),
+    ],
+  );
+}
+
+pw.Widget _buildSalesHeaderRow() {
+  pw.Widget cell(String text, double width, pw.TextAlign align) => pw.SizedBox(
+        width: width,
+        child: pw.Text(
+          text,
+          style: pw.TextStyle(
+            fontSize: 7.5,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.grey700,
+          ),
+          textAlign: align,
+        ),
+      );
+
+  return pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(vertical: 2),
+    child: pw.Row(
+      children: [
+        cell('#', _salesNumWidth, pw.TextAlign.left),
+        pw.Expanded(
+          child: pw.Text(
+            'Order',
+            style: pw.TextStyle(
+              fontSize: 7.5,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey700,
+            ),
+          ),
+        ),
+        cell('Status', _salesStatusWidth, pw.TextAlign.center),
+        cell('Machines', _salesMachinesWidth, pw.TextAlign.left),
+        cell('Loads', _salesLoadsWidth, pw.TextAlign.right),
+        cell('Total', _salesTotalWidth, pw.TextAlign.right),
+      ],
+    ),
+  );
+}
+
+pw.Widget _buildSalesLine(_PdfLine line, int number) {
+  final loadsText = (line.loads == null || line.loads == 0)
+      ? '-'
+      : _qtyPdf.format(line.loads);
+  final machinesText =
+      (line.machines == null || line.machines!.isEmpty) ? '-' : line.machines!;
+
+  return pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(vertical: 3),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(
+          width: _salesNumWidth,
+          child: pw.Text(
+            '$number.',
+            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+          ),
+        ),
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(line.title, style: const pw.TextStyle(fontSize: 9)),
+              if (line.subtitle.isNotEmpty)
+                pw.Text(
+                  line.subtitle,
+                  style: const pw.TextStyle(
+                      fontSize: 7.5, color: PdfColors.grey600),
+                ),
+            ],
+          ),
+        ),
+        pw.SizedBox(
+          width: _salesStatusWidth,
+          child: pw.Text(
+            line.trailing,
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        pw.SizedBox(
+          width: _salesMachinesWidth,
+          child: pw.Text(
+            machinesText,
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+          ),
+        ),
+        pw.SizedBox(
+          width: _salesLoadsWidth,
+          child: pw.Text(
+            loadsText,
+            style: const pw.TextStyle(fontSize: 9),
+            textAlign: pw.TextAlign.right,
+          ),
+        ),
+        pw.SizedBox(
+          width: _salesTotalWidth,
+          child: pw.Text(
+            line.amountText ?? _pesoPdf.format(line.amount),
+            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            textAlign: pw.TextAlign.right,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Renders the Total Sales totals footer (loads, payment-status breakdown,
+/// add-ons), each row showing the order count and peso amount where relevant.
+pw.Widget _buildSalesFooter(_SalesFooterTotals footer) {
+  pw.Widget row(String label, String value) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 2),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(label, style: const pw.TextStyle(fontSize: 9)),
+            pw.Text(
+              value,
+              style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+
+  String orders(int count, num amount) =>
+      '$count order${count == 1 ? '' : 's'}  -  ${_pesoPdf.format(amount)}';
+
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.all(10),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey400, width: 0.8),
+      borderRadius: pw.BorderRadius.circular(6),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Totals',
+          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 4),
+        row('Total Loads',
+            '${_qtyPdf.format(footer.totalLoads)} load${footer.totalLoads == 1 ? '' : 's'}'),
+        row('Total Fully Paid',
+            orders(footer.fullyPaidCount, footer.fullyPaidAmount)),
+        row('Total Partial', orders(footer.partialCount, footer.partialAmount)),
+        row('Total Unpaid', orders(footer.unpaidCount, footer.unpaidAmount)),
+        row('Total Add-ons',
+            '${footer.addOnCount} item${footer.addOnCount == 1 ? '' : 's'}  -  ${_pesoPdf.format(footer.addOnAmount)}'),
       ],
     ),
   );
