@@ -6,11 +6,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import 'add_ons_summary_controller.dart';
 import 'inventory_alerts_controller.dart';
 import 'kanban_sales_controller.dart';
 import 'dashboard_kpi_provider.dart';
+import 'loads_summary_controller.dart';
 import 'new_customers_controller.dart';
 import 'sales_summary_controller.dart';
+import 'today_incentive_controller.dart';
 import 'todays_sales_controller.dart';
 import 'top_selling_controller.dart';
 
@@ -43,6 +46,9 @@ Raw<void> dashboardRealtime(Ref ref) {
       ref.invalidate(notPickedUpCountProvider);
       ref.invalidate(salesSummaryProvider);
       ref.invalidate(todaySalesSummaryProvider);
+      ref.invalidate(todayIncentiveSummaryProvider);
+      ref.invalidate(addOnsSummaryProvider);
+      ref.invalidate(loadsSummaryProvider);
       ref.invalidate(topSellingProductsProvider);
       ref.invalidate(topSellingServicesProvider);
     });

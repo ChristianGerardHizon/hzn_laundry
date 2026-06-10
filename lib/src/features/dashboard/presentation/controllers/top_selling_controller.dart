@@ -13,7 +13,7 @@ part 'top_selling_controller.g.dart';
 /// Queries [PocketBaseCollections.vwTopSellingProducts], aggregates rows
 /// by product (since the view groups by date), sorts by revenue descending,
 /// and returns the top 5.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<TopSellingItem>> topSellingProducts(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
@@ -36,7 +36,7 @@ Future<List<TopSellingItem>> topSellingProducts(Ref ref) async {
 /// Queries [PocketBaseCollections.vwTopSellingServices], aggregates rows
 /// by service (since the view groups by date), sorts by revenue descending,
 /// and returns the top 5.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<List<TopSellingItem>> topSellingServices(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);

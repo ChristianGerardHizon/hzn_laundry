@@ -41,7 +41,7 @@ final class TopSellingProductsProvider extends $FunctionalProvider<
           argument: null,
           retry: null,
           name: r'topSellingProductsProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -62,7 +62,7 @@ final class TopSellingProductsProvider extends $FunctionalProvider<
 }
 
 String _$topSellingProductsHash() =>
-    r'f983b5508d2ca6c761179167ae1237d5df829773';
+    r'e27a0df07a2f653a99a9b5fa44c0ac2b7aac96b0';
 
 /// Top 5 selling services (all-time, aggregated from date-grouped view).
 ///
@@ -97,7 +97,7 @@ final class TopSellingServicesProvider extends $FunctionalProvider<
           argument: null,
           retry: null,
           name: r'topSellingServicesProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -118,4 +118,4 @@ final class TopSellingServicesProvider extends $FunctionalProvider<
 }
 
 String _$topSellingServicesHash() =>
-    r'1b5b7f2a11fc7590636e57c8a5da1d8abf1a4ee3';
+    r'5260178ae662e9beb139d17017a7c42304a78c26';

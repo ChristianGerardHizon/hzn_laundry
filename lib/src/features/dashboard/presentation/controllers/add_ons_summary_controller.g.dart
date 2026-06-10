@@ -12,7 +12,10 @@ part of 'add_ons_summary_controller.dart';
 /// date, aggregated per product.
 ///
 /// Add-ons are the product line items (`saleItems`) attached to sales, as
-/// opposed to laundry service items. Voided sales are excluded.
+/// opposed to laundry service items. The `vw_add_ons_summary` view collapses
+/// each sale's line items to one row per (sale, product) carrying the sale's
+/// branch + postedDate, so this provider range-filters by the day and folds
+/// the rows per product. Voided sales are excluded by the view.
 
 @ProviderFor(addOnsSummary)
 final addOnsSummaryProvider = AddOnsSummaryProvider._();
@@ -21,7 +24,10 @@ final addOnsSummaryProvider = AddOnsSummaryProvider._();
 /// date, aggregated per product.
 ///
 /// Add-ons are the product line items (`saleItems`) attached to sales, as
-/// opposed to laundry service items. Voided sales are excluded.
+/// opposed to laundry service items. The `vw_add_ons_summary` view collapses
+/// each sale's line items to one row per (sale, product) carrying the sale's
+/// branch + postedDate, so this provider range-filters by the day and folds
+/// the rows per product. Voided sales are excluded by the view.
 
 final class AddOnsSummaryProvider extends $FunctionalProvider<
         AsyncValue<AddOnsSummaryData>,
@@ -34,14 +40,17 @@ final class AddOnsSummaryProvider extends $FunctionalProvider<
   /// date, aggregated per product.
   ///
   /// Add-ons are the product line items (`saleItems`) attached to sales, as
-  /// opposed to laundry service items. Voided sales are excluded.
+  /// opposed to laundry service items. The `vw_add_ons_summary` view collapses
+  /// each sale's line items to one row per (sale, product) carrying the sale's
+  /// branch + postedDate, so this provider range-filters by the day and folds
+  /// the rows per product. Voided sales are excluded by the view.
   AddOnsSummaryProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
           name: r'addOnsSummaryProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -61,4 +70,4 @@ final class AddOnsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$addOnsSummaryHash() => r'0b92d8ee953de4745dac222de455480810c6c4d6';
+String _$addOnsSummaryHash() => r'6b1e3649469d20f53d047ea0a62daae3e0a875ba';

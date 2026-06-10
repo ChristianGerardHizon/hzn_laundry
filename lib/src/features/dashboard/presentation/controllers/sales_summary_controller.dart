@@ -26,7 +26,7 @@ part 'sales_summary_controller.g.dart';
 /// - Total Sales: all orders created on the effective date
 /// - Payments Received: all money posted on the effective date
 /// - Outstanding: remaining balance for orders created on the effective date
-@riverpod
+@Riverpod(keepAlive: true)
 Future<SalesSummaryData> salesSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);
@@ -89,6 +89,18 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
   final serviceItemsBySale = <String, List<SaleServiceItem>>{};
   final saleItemsBySale = <String, List<SaleItem>>{};
 
+  // Outstanding needs the all-time paid amount for today's sales (not just
+  // today's payments), so it requires its own payments query scoped to those
+  // sale ids. It is independent of the item fetches below, so run it in the
+  // same parallel batch instead of a per-sale loop (was an N+1).
+  final todaySaleIdsList = todaySaleIds.toList();
+  final outstandingPaymentsFilter = todaySaleIdsList.isEmpty
+      ? null
+      : '(${todaySaleIdsList.map((id) => 'sale = "$id"').join(' || ')}) '
+          '&& isVoided = false';
+
+  var outstandingPaymentRecords = const <RecordModel>[];
+
   if (allSaleIds.isNotEmpty) {
     final saleIdFilters = allSaleIds.map((id) => 'sale = "$id"').join(' || ');
 
@@ -100,6 +112,12 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
       pb.collection(PocketBaseCollections.saleItems).getFullList(
             filter: '($saleIdFilters)',
           ),
+      if (outstandingPaymentsFilter != null)
+        pb.collection(PocketBaseCollections.payments).getFullList(
+              filter: outstandingPaymentsFilter,
+            )
+      else
+        Future.value(<RecordModel>[]),
     ]);
 
     for (final record in itemResults[0]) {
@@ -114,6 +132,8 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
       final item = SaleItemDto.fromRecord(record).toEntity();
       saleItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
+
+    outstandingPaymentRecords = itemResults[2];
   }
 
   final salesItems = [
@@ -132,9 +152,9 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
       ),
   ];
 
-  final outstandingBySaleId = await _calculateOutstandingBySaleId(
-    pb: pb,
+  final outstandingBySaleId = _calculateOutstandingBySaleId(
     sales: todaySales,
+    paymentRecords: outstandingPaymentRecords,
   );
 
   final paymentItems = paymentSales.values
@@ -189,39 +209,30 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
   );
 }
 
-Future<Map<String, num>> _calculateOutstandingBySaleId({
-  required PocketBase pb,
+/// Computes the remaining balance per sale from a single batch of payment
+/// records (all-time, non-voided, scoped to the given sales). Payments are
+/// grouped by sale id in-memory, avoiding a per-sale query (was an N+1).
+Map<String, num> _calculateOutstandingBySaleId({
   required List<Sale> sales,
-}) async {
-  final outstandingBySaleId = <String, num>{};
+  required List<RecordModel> paymentRecords,
+}) {
+  final paidBySaleId = <String, num>{};
+  for (final record in paymentRecords) {
+    if (record.getBoolValue('isVoided')) continue;
+    final saleId = record.getStringValue('sale');
+    if (saleId.isEmpty) continue;
+    final payment = PaymentDto.fromRecord(record).toEntity();
+    paidBySaleId[saleId] =
+        (paidBySaleId[saleId] ?? 0) + _signedPaymentAmount(payment);
+  }
 
+  final outstandingBySaleId = <String, num>{};
   for (final sale in sales) {
-    final paidAmount = await _calculateSalePaidAmount(
-      pb: pb,
-      saleId: sale.id,
-    );
-    final outstanding = sale.totalAmount - paidAmount;
+    final outstanding = sale.totalAmount - (paidBySaleId[sale.id] ?? 0);
     outstandingBySaleId[sale.id] = outstanding > 0 ? outstanding : 0;
   }
 
   return outstandingBySaleId;
-}
-
-Future<num> _calculateSalePaidAmount({
-  required PocketBase pb,
-  required String saleId,
-}) async {
-  final records =
-      await pb.collection(PocketBaseCollections.payments).getFullList(
-            filter: 'sale = "$saleId" && isVoided = false',
-          );
-
-  num total = 0;
-  for (final record in records) {
-    if (record.getBoolValue('isVoided')) continue;
-    total += _signedPaymentAmount(PaymentDto.fromRecord(record).toEntity());
-  }
-  return total;
 }
 
 num _signedPaymentAmount(Payment payment) {
