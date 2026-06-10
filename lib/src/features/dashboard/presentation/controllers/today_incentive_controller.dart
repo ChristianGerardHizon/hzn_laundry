@@ -56,7 +56,7 @@ class TodayIncentiveSummary {
 /// Provider that calculates the total incentive for the effective dashboard date.
 ///
 /// Includes processing, ready, and pickedUp orders. Excludes pending.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);

@@ -12,9 +12,10 @@ part of 'loads_summary_controller.dart';
 /// order.
 ///
 /// A load is a machine cycle assigned to a sale's service items
-/// (`saleServiceItems.machineLoadCounts`). Loads are summed across every
-/// assigned machine of every service item in an order. Voided sales are
-/// excluded.
+/// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
+/// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
+/// the machine-load JSON map and sums it), so this provider only fetches one
+/// row per order. Voided sales are excluded by the view.
 
 @ProviderFor(loadsSummary)
 final loadsSummaryProvider = LoadsSummaryProvider._();
@@ -23,9 +24,10 @@ final loadsSummaryProvider = LoadsSummaryProvider._();
 /// order.
 ///
 /// A load is a machine cycle assigned to a sale's service items
-/// (`saleServiceItems.machineLoadCounts`). Loads are summed across every
-/// assigned machine of every service item in an order. Voided sales are
-/// excluded.
+/// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
+/// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
+/// the machine-load JSON map and sums it), so this provider only fetches one
+/// row per order. Voided sales are excluded by the view.
 
 final class LoadsSummaryProvider extends $FunctionalProvider<
         AsyncValue<LoadsSummaryData>,
@@ -36,16 +38,17 @@ final class LoadsSummaryProvider extends $FunctionalProvider<
   /// order.
   ///
   /// A load is a machine cycle assigned to a sale's service items
-  /// (`saleServiceItems.machineLoadCounts`). Loads are summed across every
-  /// assigned machine of every service item in an order. Voided sales are
-  /// excluded.
+  /// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
+  /// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
+  /// the machine-load JSON map and sums it), so this provider only fetches one
+  /// row per order. Voided sales are excluded by the view.
   LoadsSummaryProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
           name: r'loadsSummaryProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -65,4 +68,4 @@ final class LoadsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$loadsSummaryHash() => r'802eb0c8b233b38b8a59c214f817cf23c887055f';
+String _$loadsSummaryHash() => r'2a08c0281dfc7a5adcc9c3ab3a977987145b5694';
