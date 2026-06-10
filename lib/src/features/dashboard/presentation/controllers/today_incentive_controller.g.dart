@@ -35,7 +35,7 @@ final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
           argument: null,
           retry: null,
           name: r'todayIncentiveSummaryProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -56,4 +56,4 @@ final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
 }
 
 String _$todayIncentiveSummaryHash() =>
-    r'3c06d4329dee90dbdd4e4456bf09f889e69027df';
+    r'a126ee8ada90cdb45b769a71578dfdc8faa4a73c';

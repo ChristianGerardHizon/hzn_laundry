@@ -41,7 +41,7 @@ Future<List<Sale>> todaySales(Ref ref) async {
 /// When viewing today, uses vw_todays_sales view for optimized query.
 /// When viewing a different date, queries the sales collection directly.
 /// Filtered by the current branch.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<TodaySalesSummary> todaySalesSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
   final pb = ref.read(pocketbaseProvider);

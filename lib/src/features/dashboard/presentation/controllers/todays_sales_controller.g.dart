@@ -79,7 +79,7 @@ final class TodaySalesSummaryProvider extends $FunctionalProvider<
           argument: null,
           retry: null,
           name: r'todaySalesSummaryProvider',
-          isAutoDispose: true,
+          isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
@@ -99,4 +99,4 @@ final class TodaySalesSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$todaySalesSummaryHash() => r'49202f64536fb7e6f0611834ccba988496b7ec0f';
+String _$todaySalesSummaryHash() => r'49f40997da13f3161b8412cad4334e9575c432b2';
