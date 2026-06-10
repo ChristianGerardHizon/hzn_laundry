@@ -255,6 +255,7 @@ class CustomerFormDialog extends HookConsumerWidget {
                           validator: FormBuilderValidators.compose([
                             FormBuilderValidators.email(
                               errorText: 'Invalid email',
+                              checkNullOrEmpty: false,
                             ),
                           ]),
                         ),
