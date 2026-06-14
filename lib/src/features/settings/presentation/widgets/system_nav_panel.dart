@@ -9,6 +9,7 @@ enum SystemMode {
   cashierGroups,
   appearance,
   import,
+  featureFlags,
 }
 
 /// Vertical navigation panel for selecting system mode.
@@ -109,6 +110,15 @@ class SystemNavPanel extends StatelessWidget {
             label: 'Import',
             isSelected: currentMode == SystemMode.import,
             onTap: () => onModeChanged(SystemMode.import),
+          ),
+          const SizedBox(height: 4),
+          // Feature Flags / workflow settings button
+          _NavButton(
+            icon: Icons.tune_outlined,
+            selectedIcon: Icons.tune,
+            label: 'Settings',
+            isSelected: currentMode == SystemMode.featureFlags,
+            onTap: () => onModeChanged(SystemMode.featureFlags),
           ),
           const Spacer(),
         ],

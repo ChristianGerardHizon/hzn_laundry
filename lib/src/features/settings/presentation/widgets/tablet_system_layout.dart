@@ -17,6 +17,7 @@ import 'empty_system_state.dart';
 import 'dialogs/quantity_unit_form_dialog.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 import 'dialogs/product_category_form_dialog.dart';
+import 'email_settings_panel.dart';
 import 'import_landing_panel.dart';
 import 'system_nav_panel.dart';
 import 'theme_settings_panel.dart';
@@ -55,6 +56,8 @@ class TabletSystemLayout extends ConsumerWidget {
       currentMode = SystemMode.appearance;
     } else if (path.contains('/import')) {
       currentMode = SystemMode.import;
+    } else if (path.contains('/feature-flags')) {
+      currentMode = SystemMode.featureFlags;
     } else {
       currentMode = SystemMode.productCategories;
     }
@@ -80,6 +83,8 @@ class TabletSystemLayout extends ConsumerWidget {
                 const AppearanceRoute().go(context);
               case SystemMode.import:
                 const ImportRoute().go(context);
+              case SystemMode.featureFlags:
+                const FeatureFlagsRoute().go(context);
             }
           },
         ),
@@ -92,6 +97,9 @@ class TabletSystemLayout extends ConsumerWidget {
         ] else if (currentMode == SystemMode.import) ...[
           // Import mode: Show landing panel directly (no list/detail split)
           const Expanded(child: ImportLandingPanel()),
+        ] else if (currentMode == SystemMode.featureFlags) ...[
+          // Feature flags mode: Show settings panel directly (no list/detail split)
+          const Expanded(child: EmailSettingsPanel()),
         ] else if (currentMode == SystemMode.cashierGroups) ...[
           // Cashier groups mode: List + detail split
           SizedBox(
@@ -121,6 +129,8 @@ class TabletSystemLayout extends ConsumerWidget {
               SystemMode.import =>
                 const SizedBox.shrink(), // Handled above
               SystemMode.cashierGroups =>
+                const SizedBox.shrink(), // Handled above
+              SystemMode.featureFlags =>
                 const SizedBox.shrink(), // Handled above
             },
           ),
