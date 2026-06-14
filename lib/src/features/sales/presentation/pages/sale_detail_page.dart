@@ -679,9 +679,10 @@ class _SaleDetailContent extends HookConsumerWidget {
         }
       }
 
-      // Re-read service items after dialogs — assignments may have just been saved
+      // Invalidate and re-fetch service items so assignments saved by dialogs are reflected
+      ref.invalidate(saleServiceItemsProvider(sale.id));
       final freshServiceItems =
-          ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
+          await ref.read(saleServiceItemsProvider(sale.id).future).catchError((_) => <SaleServiceItem>[]);
 
       // Feature flag requirement checks
       if (status == OrderStatus.processing) {
