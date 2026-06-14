@@ -81,4 +81,7 @@ abstract class PocketBaseCollections {
 
   // Incentive Tiers
   static const String incentiveTiers = 'incentiveTiers';
+
+  // Settings
+  static const String featureFlags = 'featureFlags';
 }

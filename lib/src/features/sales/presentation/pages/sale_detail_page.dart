@@ -18,6 +18,7 @@ import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
+import '../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -654,10 +655,11 @@ class _SaleDetailContent extends HookConsumerWidget {
     final isUpdating = useState(false);
 
     Future<void> updateOrderStatus(OrderStatus status) async {
+      final serviceItems =
+          ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
+
       // Show assignment dialogs for processing/ready transitions
       if (status == OrderStatus.processing) {
-        final serviceItems =
-            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
         if (serviceItems.isNotEmpty) {
           final result = await showAssignMachinesDialog(
             context,
@@ -666,8 +668,6 @@ class _SaleDetailContent extends HookConsumerWidget {
           if (result == null || !context.mounted) return;
         }
       } else if (status == OrderStatus.ready) {
-        final serviceItems =
-            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
         if (serviceItems.isNotEmpty) {
           final result = await showAssignStoragesDialog(
             context,
@@ -675,6 +675,59 @@ class _SaleDetailContent extends HookConsumerWidget {
             serviceItems: serviceItems,
           );
           if (result == null || !context.mounted) return;
+        }
+      }
+
+      // Feature flag requirement checks
+      if (status == OrderStatus.processing) {
+        final machineRequired =
+            ref.read(requireMachineEnabledProvider).value ?? false;
+        if (machineRequired && serviceItems.isNotEmpty) {
+          final missing = serviceItems.any(
+            (item) => item.machineName == null || item.machineName!.isEmpty,
+          );
+          if (missing) {
+            if (context.mounted) {
+              showErrorSnackBar(
+                context,
+                message:
+                    'All services must have a machine assigned before processing.',
+              );
+            }
+            return;
+          }
+        }
+      }
+
+      if (status == OrderStatus.ready) {
+        final packRequired =
+            ref.read(requirePackEnabledProvider).value ?? false;
+        if (packRequired && sale.packs == 0) {
+          if (context.mounted) {
+            showErrorSnackBar(
+              context,
+              message: 'Pack count must be set before marking as Ready.',
+            );
+          }
+          return;
+        }
+
+        final storageRequired =
+            ref.read(requireStorageEnabledProvider).value ?? false;
+        if (storageRequired && serviceItems.isNotEmpty) {
+          final missing = serviceItems.any(
+            (item) => item.storageName == null || item.storageName!.isEmpty,
+          );
+          if (missing) {
+            if (context.mounted) {
+              showErrorSnackBar(
+                context,
+                message:
+                    'All services must have a storage location assigned before marking as Ready.',
+              );
+            }
+            return;
+          }
         }
       }
 
