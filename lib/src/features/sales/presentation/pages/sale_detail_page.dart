@@ -655,11 +655,10 @@ class _SaleDetailContent extends HookConsumerWidget {
     final isUpdating = useState(false);
 
     Future<void> updateOrderStatus(OrderStatus status) async {
-      final serviceItems =
-          ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
-
       // Show assignment dialogs for processing/ready transitions
       if (status == OrderStatus.processing) {
+        final serviceItems =
+            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
         if (serviceItems.isNotEmpty) {
           final result = await showAssignMachinesDialog(
             context,
@@ -668,6 +667,8 @@ class _SaleDetailContent extends HookConsumerWidget {
           if (result == null || !context.mounted) return;
         }
       } else if (status == OrderStatus.ready) {
+        final serviceItems =
+            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
         if (serviceItems.isNotEmpty) {
           final result = await showAssignStoragesDialog(
             context,
@@ -678,12 +679,16 @@ class _SaleDetailContent extends HookConsumerWidget {
         }
       }
 
+      // Re-read service items after dialogs — assignments may have just been saved
+      final freshServiceItems =
+          ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
+
       // Feature flag requirement checks
       if (status == OrderStatus.processing) {
         final machineRequired =
             ref.read(requireMachineEnabledProvider).value ?? false;
-        if (machineRequired && serviceItems.isNotEmpty) {
-          final missing = serviceItems.any(
+        if (machineRequired && freshServiceItems.isNotEmpty) {
+          final missing = freshServiceItems.any(
             (item) => item.machineName == null || item.machineName!.isEmpty,
           );
           if (missing) {
@@ -714,8 +719,8 @@ class _SaleDetailContent extends HookConsumerWidget {
 
         final storageRequired =
             ref.read(requireStorageEnabledProvider).value ?? false;
-        if (storageRequired && serviceItems.isNotEmpty) {
-          final missing = serviceItems.any(
+        if (storageRequired && freshServiceItems.isNotEmpty) {
+          final missing = freshServiceItems.any(
             (item) => item.storageName == null || item.storageName!.isEmpty,
           );
           if (missing) {
