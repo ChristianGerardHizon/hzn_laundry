@@ -1,29 +1,29 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
+  const collection = app.findCollectionByNameOrId("featureFlags");
+
   const flags = [
     {
       key: "emailUpdatesEnabled",
-      enabled: 1,
+      enabled: true,
       description: "Send order history link emails to customers",
     },
     {
       key: "requireMachine",
-      enabled: 0,
+      enabled: false,
       description: "Block moving to Processing if no machine is assigned",
     },
     {
       key: "requirePack",
-      enabled: 0,
+      enabled: false,
       description: "Block moving to Ready if no packs are set on the order",
     },
     {
       key: "requireStorage",
-      enabled: 0,
+      enabled: false,
       description: "Block moving to Ready if no storage location is assigned",
     },
   ];
-
-  const collection = app.findCollectionByNameOrId("featureFlags");
 
   for (const flag of flags) {
     try {
