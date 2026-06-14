@@ -52,6 +52,11 @@ class EmptySystemState extends StatelessWidget {
           'Import Products',
           'Import products and categories from a CSV file',
         ),
+      SystemMode.featureFlags => (
+          Icons.flag_outlined,
+          'Select a feature flag',
+          'Choose a feature flag from the list to configure',
+        ),
     };
 
     return Scaffold(
