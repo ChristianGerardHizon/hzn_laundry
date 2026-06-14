@@ -3,22 +3,22 @@ migrate((app) => {
   const flags = [
     {
       key: "emailUpdatesEnabled",
-      enabled: true,
+      enabled: 1,
       description: "Send order history link emails to customers",
     },
     {
       key: "requireMachine",
-      enabled: false,
+      enabled: 0,
       description: "Block moving to Processing if no machine is assigned",
     },
     {
       key: "requirePack",
-      enabled: false,
+      enabled: 0,
       description: "Block moving to Ready if no packs are set on the order",
     },
     {
       key: "requireStorage",
-      enabled: false,
+      enabled: 0,
       description: "Block moving to Ready if no storage location is assigned",
     },
   ];
