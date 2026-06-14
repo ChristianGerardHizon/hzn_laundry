@@ -23,9 +23,7 @@ const _skipVersionCheck =
 @Riverpod(keepAlive: true)
 Future<VersionCheckResult> versionCheck(Ref ref) async {
   // Skip version check in debug/profile modes or when explicitly disabled
-  debugPrint('[VersionCheck] kDebugMode=$kDebugMode, kProfileMode=$kProfileMode, skipFlag=$_skipVersionCheck');
   if (kDebugMode || kProfileMode || _skipVersionCheck) {
-    debugPrint('[VersionCheck] Skipping version check');
     return VersionCheckResult.upToDate;
   }
 

@@ -42,8 +42,6 @@ class _DeductionFormDialog extends HookConsumerWidget {
 
   bool get isEditing => deduction != null;
 
-  static final _monthYearFormat = DateFormat('MMM yyyy');
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);

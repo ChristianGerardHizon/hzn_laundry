@@ -20,19 +20,16 @@ sealed class Failure with FailureMappable {
     var returnMessage = 'Something went wrong';
 
     if (error is ClientException) {
-      print(error.toString());
       final defaultMessage = 'Server Request has failed';
       final data = error.response;
       returnMessage = data['message'] ?? defaultMessage;
     }
 
     if (error is JsonUnsupportedObjectError) {
-      print(error.toString());
       returnMessage = 'Unsupported Object';
     }
 
     if (error is GenericFailure) {
-      print(error.toString());
       final defaultMessage = 'Generic Failure';
       final data = error.message;
       returnMessage = data ?? defaultMessage;
@@ -61,8 +58,6 @@ sealed class Failure with FailureMappable {
     }
 
     if (error is MapperException) {
-      print(error.message.toString());
-
       return MapperFailure(error, stackTrace, 'mapper_error');
     }
 
