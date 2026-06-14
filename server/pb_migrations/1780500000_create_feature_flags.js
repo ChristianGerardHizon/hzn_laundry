@@ -25,7 +25,7 @@ migrate((app) => {
         "id": "bool1358543748",
         "name": "enabled",
         "presentable": false,
-        "required": true,
+        "required": false,
         "system": false,
         "type": "bool"
       },
