@@ -191,14 +191,14 @@ class AssignMachinesDialog extends HookConsumerWidget {
                           final counts = Map<String, int>.from(
                               currentCounts[itemId] ?? {});
 
-                          // Select-only: tapping an unselected machine adds it
-                          // with a default load of 1. The load count is driven
-                          // by the weight (kg) input + machine load rules, not
-                          // by repeated taps. Tapping an already-selected
-                          // machine is a no-op (long-press to remove).
                           if (!list.contains(machineId)) {
                             list.add(machineId);
                             counts[machineId] = 1;
+                          } else {
+                            final current = counts[machineId] ?? 1;
+                            if (current < _MachineLoadRow._maxLoad) {
+                              counts[machineId] = current + 1;
+                            }
                           }
 
                           currentAssignments[itemId] = list;
@@ -241,7 +241,52 @@ class AssignMachinesDialog extends HookConsumerWidget {
                               .where((m) => selectedIds.contains(m.id))
                               .toList();
 
+                          void removeMachine(String machineId) {
+                            final currentAssignments =
+                                Map<String, List<String>>.from(
+                                    assignments.value);
+                            final currentCounts =
+                                Map<String, Map<String, int>>.from(
+                                    loadCounts.value);
+                            final list = List<String>.from(
+                                currentAssignments[activeItemId] ?? []);
+                            final counts = Map<String, int>.from(
+                                currentCounts[activeItemId] ?? {});
+                            list.remove(machineId);
+                            counts.remove(machineId);
+                            currentAssignments[activeItemId] = list;
+                            currentCounts[activeItemId] = counts;
+                            assignments.value = currentAssignments;
+                            loadCounts.value = currentCounts;
+                          }
+
                           void setLoad(String machineId, int load) {
+                            if (load == 0) {
+                              showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text('Remove machine?'),
+                                  content: const Text(
+                                    'Setting load to 0 will remove this machine from the assignment.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Remove'),
+                                    ),
+                                  ],
+                                ),
+                              ).then((confirmed) {
+                                if (confirmed == true) removeMachine(machineId);
+                              });
+                              return;
+                            }
                             final currentCounts =
                                 Map<String, Map<String, int>>.from(
                                     loadCounts.value);
@@ -383,7 +428,7 @@ class _ActiveServiceLabel extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          'Tap to select, hold to remove',
+          'Tap to add load, hold to remove',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -656,7 +701,7 @@ class _MachineLoadRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canDecrement = !disabled && loadCount > 1;
+    final canDecrement = !disabled && loadCount >= 1;
     final canIncrement = !disabled && loadCount < _maxLoad;
 
     return Padding(

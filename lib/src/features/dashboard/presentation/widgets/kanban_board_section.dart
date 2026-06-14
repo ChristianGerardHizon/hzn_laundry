@@ -1141,20 +1141,19 @@ class _SaleCardContent extends StatelessWidget {
   String? _getAssignmentInfo() {
     if (serviceItems.isEmpty) return null;
 
-    if (sale.orderStatus == OrderStatus.processing) {
-      // Show machine names for processing orders with completion status
-      final machineInfos = serviceItems
-          .where((item) => item.machineName != null && item.machineName!.isNotEmpty)
-          .map((item) {
-            final isCompleted = item.status == ServiceItemStatus.completed;
-            return isCompleted ? '${item.machineName!} ✓' : item.machineName!;
-          })
-          .toSet()
-          .toList();
-      if (machineInfos.isEmpty) return null;
-      return machineInfos.join(', ');
-    } else if (sale.orderStatus == OrderStatus.ready) {
-      // Show storage names for ready orders
+    // Show machine names (with load qty) for all statuses when assigned
+    final machineInfos = serviceItems
+        .where((item) => item.machineName != null && item.machineName!.isNotEmpty)
+        .map((item) {
+          final isCompleted = item.status == ServiceItemStatus.completed;
+          return isCompleted ? '${item.machineName!} ✓' : item.machineName!;
+        })
+        .toSet()
+        .toList();
+    if (machineInfos.isNotEmpty) return machineInfos.join(', ');
+
+    // Fallback: storage names for ready orders with no machines
+    if (sale.orderStatus == OrderStatus.ready) {
       final storageNames = serviceItems
           .where((item) => item.storageName != null && item.storageName!.isNotEmpty)
           .map((item) => item.storageName!)
@@ -1199,24 +1198,22 @@ class _SaleCardContent extends StatelessWidget {
   }
 
   IconData? _getAssignmentIcon() {
-    if (sale.orderStatus == OrderStatus.processing) {
-      return Icons.local_laundry_service;
-    } else if (sale.orderStatus == OrderStatus.ready) {
-      return Icons.inventory_2;
-    }
+    final hasMachines = serviceItems.any(
+        (item) => item.machineName != null && item.machineName!.isNotEmpty);
+    if (hasMachines) return Icons.local_laundry_service;
+    if (sale.orderStatus == OrderStatus.ready) return Icons.inventory_2;
     return null;
   }
 
   Color _getAssignmentColor() {
-    if (sale.orderStatus == OrderStatus.processing) {
-      // Show green if all services completed (ready to advance)
+    final hasMachines = serviceItems.any(
+        (item) => item.machineName != null && item.machineName!.isNotEmpty);
+    if (hasMachines) {
       if (_allServicesCompleted) return Colors.green;
-      // Show orange if some services completed
       if (_someServicesCompleted) return Colors.orange;
       return Colors.blue;
-    } else if (sale.orderStatus == OrderStatus.ready) {
-      return Colors.teal;
     }
+    if (sale.orderStatus == OrderStatus.ready) return Colors.teal;
     return Colors.grey;
   }
 

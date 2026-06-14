@@ -22,6 +22,7 @@ import '../../../features/machines/domain/machine.dart';
 import '../../../features/machines/presentation/controllers/machines_controller.dart';
 import '../../../features/machines/presentation/widgets/machine_detail_panel.dart';
 import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
+import '../../../features/settings/presentation/widgets/email_settings_panel.dart';
 import '../../utils/breakpoints.dart';
 
 part 'system.routes.g.dart';
@@ -74,6 +75,8 @@ part 'system.routes.g.dart';
         TypedGoRoute<AppearanceRoute>(path: 'appearance'),
         // Import products from CSV
         TypedGoRoute<ImportRoute>(path: 'import'),
+        // Feature flags / workflow settings
+        TypedGoRoute<FeatureFlagsRoute>(path: 'feature-flags'),
       ],
     ),
   ],
@@ -244,6 +247,16 @@ class ImportRoute extends GoRouteData with $ImportRoute {
     }
     // Mobile: Show import landing page
     return const _MobileImportPage();
+  }
+}
+
+/// Feature flags / workflow settings route.
+class FeatureFlagsRoute extends GoRouteData with $FeatureFlagsRoute {
+  const FeatureFlagsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const EmailSettingsPanel();
   }
 }
 
