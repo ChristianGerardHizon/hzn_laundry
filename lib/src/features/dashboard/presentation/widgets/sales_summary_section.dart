@@ -31,6 +31,20 @@ class SalesSummarySection extends HookConsumerWidget {
     final summaryAsync = ref.watch(salesSummaryProvider);
     final theme = Theme.of(context);
     final isExpanded = useState(true);
+    final isRefreshing = useState(false);
+
+    Future<void> handleRefresh() async {
+      isRefreshing.value = true;
+      ref.invalidate(salesSummaryProvider);
+      ref.invalidate(todayIncentiveSummaryProvider);
+      ref.invalidate(addOnsSummaryProvider);
+      ref.invalidate(loadsSummaryProvider);
+      // Wait for salesSummary to settle before clearing spinner
+      try {
+        await ref.read(salesSummaryProvider.future);
+      } catch (_) {}
+      isRefreshing.value = false;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -38,39 +52,66 @@ class SalesSummarySection extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section header (tappable to toggle)
-          InkWell(
-            onTap: () => isExpanded.value = !isExpanded.value,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.analytics_outlined,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Today's Sales Summary",
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => isExpanded.value = !isExpanded.value,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.analytics_outlined,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Today's Sales Summary",
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        AnimatedRotation(
+                          turns: isExpanded.value ? 0.0 : -0.25,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            Icons.expand_more,
+                            size: 20,
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  AnimatedRotation(
-                    turns: isExpanded.value ? 0.0 : -0.25,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      Icons.expand_more,
-                      size: 20,
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: isRefreshing.value
+                    ? Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.outline,
+                        ),
+                      )
+                    : IconButton(
+                        onPressed: handleRefresh,
+                        icon: const Icon(Icons.refresh),
+                        iconSize: 18,
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Refresh KPIs',
+                        color: theme.colorScheme.outline,
+                      ),
+              ),
+            ],
           ),
           AnimatedCrossFade(
             firstChild: Padding(

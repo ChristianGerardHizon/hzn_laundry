@@ -75,6 +75,10 @@ RouteBase get $systemShellRoute => ShellRouteData.$route(
               path: 'import',
               factory: $ImportRoute._fromState,
             ),
+            GoRouteData.$route(
+              path: 'feature-flags',
+              factory: $FeatureFlagsRoute._fromState,
+            ),
           ],
         ),
       ],
@@ -385,6 +389,29 @@ mixin $ImportRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/system/import',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $FeatureFlagsRoute on GoRouteData {
+  static FeatureFlagsRoute _fromState(GoRouterState state) =>
+      const FeatureFlagsRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/system/feature-flags',
       );
 
   @override
