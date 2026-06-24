@@ -42,6 +42,7 @@ class SalesSummaryItem {
     required this.statusLabel,
     this.customerName,
     this.postedDate,
+    this.packs = 0,
     this.serviceItems = const [],
     this.saleItems = const [],
   });
@@ -59,6 +60,9 @@ class SalesSummaryItem {
 
   final String? customerName;
   final DateTime? postedDate;
+
+  /// Number of laundry bags/packs for this order.
+  final int packs;
 
   /// Service line items for this sale.
   final List<SaleServiceItem> serviceItems;

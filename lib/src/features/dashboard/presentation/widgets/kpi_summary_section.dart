@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/utils/breakpoints.dart';
-import '../controllers/today_incentive_controller.dart';
+import '../controllers/total_packs_summary_controller.dart';
 import 'kpi_card.dart';
-import 'today_incentive_modal.dart';
+import 'total_packs_modal.dart';
 
 /// Section displaying KPI summary cards on the dashboard.
 ///
@@ -16,12 +15,9 @@ import 'today_incentive_modal.dart';
 class KpiSummarySection extends ConsumerWidget {
   const KpiSummarySection({super.key});
 
-  static final _currency =
-      NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
+    final packsAsync = ref.watch(totalPacksSummaryProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -45,16 +41,17 @@ class KpiSummarySection extends ConsumerWidget {
           // constraints, which would throw a BoxConstraints assertion.
           final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
 
-          Widget incentiveCard = incentiveAsync.when(
+          Widget packsCard = packsAsync.when(
             data: (summary) => KpiCard(
-              title: "Today's Incentive",
-              value: _currency.format(summary.totalIncentive),
-              icon: Icons.payments,
-              subtitle:
-                  '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
+              title: 'Total Packs',
+              value: '${summary.totalPacks}',
+              icon: Icons.inventory_2_outlined,
+              subtitle: summary.orders.isEmpty
+                  ? 'No packs today'
+                  : '${summary.orders.length} order${summary.orders.length == 1 ? '' : 's'}',
               compact: true,
-              color: Colors.purple,
-              onTap: () => showTodayIncentiveModal(context, summary),
+              color: Colors.cyan,
+              onTap: () => showTotalPacksModal(context, summary),
             ),
             loading: () => _buildLoadingCard(),
             error: (_, __) => _buildErrorCard(context),
@@ -62,7 +59,7 @@ class KpiSummarySection extends ConsumerWidget {
 
           return SizedBox(
             width: cardWidth,
-            child: incentiveCard,
+            child: packsCard,
           );
         },
       ),
@@ -101,7 +98,7 @@ class KpiSummarySection extends ConsumerWidget {
                     color: theme.colorScheme.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(Icons.payments,
+                  child: Icon(Icons.inventory_2_outlined,
                       color: theme.colorScheme.error, size: 16),
                 ),
                 const SizedBox(width: 8),
@@ -118,7 +115,7 @@ class KpiSummarySection extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              "Today's Incentive",
+              'Total Packs',
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.outline,
               ),

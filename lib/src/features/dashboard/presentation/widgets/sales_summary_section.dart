@@ -4,19 +4,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/utils/breakpoints.dart';
-import '../../../../core/widgets/nav_permissions.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
-import '../../../users/domain/user_role.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/add_ons_summary_controller.dart';
 import '../controllers/loads_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
-import '../controllers/today_incentive_controller.dart';
+import '../controllers/total_packs_summary_controller.dart';
 import 'add_ons_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
-import 'today_incentive_modal.dart';
+import 'total_packs_modal.dart';
 
 /// Dashboard section showing today's sales totals.
 ///
@@ -36,7 +34,7 @@ class SalesSummarySection extends HookConsumerWidget {
     Future<void> handleRefresh() async {
       isRefreshing.value = true;
       ref.invalidate(salesSummaryProvider);
-      ref.invalidate(todayIncentiveSummaryProvider);
+      ref.invalidate(totalPacksSummaryProvider);
       ref.invalidate(addOnsSummaryProvider);
       ref.invalidate(loadsSummaryProvider);
       // Wait for salesSummary to settle before clearing spinner
@@ -118,12 +116,7 @@ class SalesSummarySection extends HookConsumerWidget {
               padding: const EdgeInsets.only(top: 12),
               child: summaryAsync.when(
                 data: (data) => _SalesSummaryContent(data: data),
-                loading: () {
-                  final role = ref.read(currentUserRoleProvider).value;
-                  final canViewIncentive = role?.isAdmin == true ||
-                      (role?.hasPermission(Permissions.incentiveView) ?? false);
-                  return _LoadingCards(canViewIncentive: canViewIncentive);
-                },
+                loading: () => const _LoadingCards(),
                 error: (_, __) => const SizedBox.shrink(),
               ),
             ),
@@ -153,17 +146,14 @@ class _SalesSummaryContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final incentiveAsync = ref.watch(todayIncentiveSummaryProvider);
+    final packsAsync = ref.watch(totalPacksSummaryProvider);
     final addOnsAsync = ref.watch(addOnsSummaryProvider);
     final loadsAsync = ref.watch(loadsSummaryProvider);
-    final role = ref.watch(currentUserRoleProvider).value;
-    final canViewIncentive = role?.isAdmin == true ||
-        (role?.hasPermission(Permissions.incentiveView) ?? false);
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 6 : 5;
+      cols = 6;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {
@@ -257,21 +247,21 @@ class _SalesSummaryContent extends ConsumerWidget {
         loading: () => const _LoadingCard(),
         error: (_, __) => const _LoadingCard(),
       ),
-      if (canViewIncentive)
-        incentiveAsync.when(
-          data: (summary) => KpiCard(
-            title: "Today's Incentive",
-            value: _fmt(summary.totalIncentive),
-            icon: Icons.payments,
-            subtitle:
-                '${summary.orders.length} qualifying order${summary.orders.length == 1 ? '' : 's'}',
-            compact: true,
-            color: Colors.purple,
-            onTap: () => showTodayIncentiveModal(context, summary),
-          ),
-          loading: () => const _LoadingCard(),
-          error: (_, __) => const _LoadingCard(),
+      packsAsync.when(
+        data: (summary) => KpiCard(
+          title: 'Total Packs',
+          value: '${summary.totalPacks}',
+          icon: Icons.inventory_2_outlined,
+          subtitle: summary.orders.isEmpty
+              ? 'No packs today'
+              : '${summary.orders.length} order${summary.orders.length == 1 ? '' : 's'}',
+          compact: true,
+          color: Colors.cyan,
+          onTap: () => showTotalPacksModal(context, summary),
         ),
+        loading: () => const _LoadingCard(),
+        error: (_, __) => const _LoadingCard(),
+      ),
     ];
 
     return LayoutBuilder(
@@ -701,18 +691,16 @@ class _PaymentChip extends StatelessWidget {
 }
 
 class _LoadingCards extends StatelessWidget {
-  const _LoadingCards({this.canViewIncentive = true});
-
-  final bool canViewIncentive;
+  const _LoadingCards();
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final cardCount = canViewIncentive ? 6 : 5;
+    const cardCount = 6;
 
     final int cols;
     if (screenWidth >= Breakpoints.desktop) {
-      cols = canViewIncentive ? 6 : 5;
+      cols = 6;
     } else if (screenWidth >= Breakpoints.mobile) {
       cols = 2;
     } else {

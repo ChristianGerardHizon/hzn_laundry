@@ -7,6 +7,7 @@ import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
+import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_date_override_provider.dart';
 import '../controllers/today_incentive_controller.dart';
@@ -27,7 +28,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
     this.color,
   })  : incentive = null,
         addOns = null,
-        loads = null;
+        loads = null,
+        packs = null;
 
   const DashboardSectionPrintButton.incentive({
     super.key,
@@ -37,7 +39,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         salesItems = null,
         total = null,
         addOns = null,
-        loads = null;
+        loads = null,
+        packs = null;
 
   const DashboardSectionPrintButton.addOns({
     super.key,
@@ -47,7 +50,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         salesItems = null,
         total = null,
         incentive = null,
-        loads = null;
+        loads = null,
+        packs = null;
 
   const DashboardSectionPrintButton.loads({
     super.key,
@@ -57,7 +61,19 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         salesItems = null,
         total = null,
         incentive = null,
-        addOns = null;
+        addOns = null,
+        packs = null;
+
+  const DashboardSectionPrintButton.packs({
+    super.key,
+    required TotalPacksSummary this.packs,
+    this.color,
+  })  : sectionTitle = 'Total Packs',
+        salesItems = null,
+        total = null,
+        incentive = null,
+        addOns = null,
+        loads = null;
 
   final String sectionTitle;
   final List<SalesSummaryItem>? salesItems;
@@ -65,6 +81,7 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   final TodayIncentiveSummary? incentive;
   final AddOnsSummaryData? addOns;
   final LoadsSummaryData? loads;
+  final TotalPacksSummary? packs;
   final Color? color;
 
   @override
@@ -104,6 +121,15 @@ class DashboardSectionPrintButton extends ConsumerWidget {
           if (loads != null) {
             return DashboardSectionPdfPayload.fromLoads(
               summary: loads!,
+              businessName: branch?.name,
+              reportDate: reportDate,
+              generatedAt: DateTime.now(),
+              isDateOverridden: isOverridden,
+            );
+          }
+          if (packs != null) {
+            return DashboardSectionPdfPayload.fromPacks(
+              summary: packs!,
               businessName: branch?.name,
               reportDate: reportDate,
               generatedAt: DateTime.now(),

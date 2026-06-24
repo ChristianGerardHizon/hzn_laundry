@@ -147,6 +147,7 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
         statusLabel: _paymentStatusLabel(sale.paymentStatus),
         customerName: sale.customerName,
         postedDate: sale.postedDate,
+        packs: sale.packs,
         serviceItems: serviceItemsBySale[sale.id] ?? const [],
         saleItems: saleItemsBySale[sale.id] ?? const [],
       ),
