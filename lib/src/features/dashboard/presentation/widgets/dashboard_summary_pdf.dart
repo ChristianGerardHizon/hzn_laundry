@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
+import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/today_incentive_controller.dart';
 
@@ -19,6 +20,7 @@ class _PdfLine {
     this.amountText,
     this.machines,
     this.loads,
+    this.packs,
   });
 
   final String title;
@@ -37,12 +39,17 @@ class _PdfLine {
   /// Total load count (machine cycles) for this order (Total Sales rows only).
   /// Null when not a Total Sales row; 0 means no loads.
   final int? loads;
+
+  /// Pack count for this order (Total Sales rows only).
+  /// Null when not a Total Sales row; 0 means no packs.
+  final int? packs;
 }
 
 /// Aggregated footer totals for the Total Sales section.
 class _SalesFooterTotals {
   const _SalesFooterTotals({
     required this.totalLoads,
+    required this.totalPacks,
     required this.unpaidCount,
     required this.unpaidAmount,
     required this.partialCount,
@@ -54,6 +61,7 @@ class _SalesFooterTotals {
   });
 
   final int totalLoads;
+  final int totalPacks;
   final int unpaidCount;
   final num unpaidAmount;
   final int partialCount;
@@ -66,6 +74,7 @@ class _SalesFooterTotals {
   /// Builds the footer totals from the Total Sales breakdown items.
   factory _SalesFooterTotals.fromItems(List<SalesSummaryItem> items) {
     var totalLoads = 0;
+    var totalPacks = 0;
     var unpaidCount = 0;
     num unpaidAmount = 0;
     var partialCount = 0;
@@ -77,6 +86,7 @@ class _SalesFooterTotals {
 
     for (final item in items) {
       totalLoads += _orderLoads(item);
+      totalPacks += item.packs;
 
       switch (item.statusLabel) {
         case 'Paid':
@@ -98,6 +108,7 @@ class _SalesFooterTotals {
 
     return _SalesFooterTotals(
       totalLoads: totalLoads,
+      totalPacks: totalPacks,
       unpaidCount: unpaidCount,
       unpaidAmount: unpaidAmount,
       partialCount: partialCount,
@@ -193,6 +204,7 @@ List<_PdfLine> _mapTotalSalesLines(List<SalesSummaryItem> items) {
       amount: item.totalAmount,
       machines: _orderMachines(item),
       loads: _orderLoads(item),
+      packs: item.packs,
     );
   }).toList();
 }
@@ -221,6 +233,23 @@ List<_PdfLine> _mapAddOnLines(List<AddOnBreakdownItem> items) {
       subtitle: 'in ${item.orderCount} order${item.orderCount == 1 ? '' : 's'}',
       trailing: 'x${_qtyPdf.format(item.quantity)}',
       amount: item.revenue,
+    );
+  }).toList();
+}
+
+/// Maps per-order packs entries to PDF lines (pack count, not currency).
+List<_PdfLine> _mapPacksLines(List<PacksOrderEntry> orders) {
+  return orders.map((order) {
+    final name = (order.customerName != null && order.customerName!.isNotEmpty)
+        ? order.customerName!
+        : 'Walk-in';
+    return _PdfLine(
+      title: '$name  ·  ${_shortReceipt(order.receiptNumber)}',
+      subtitle: '',
+      trailing: _statusLabel(order.orderStatus),
+      amount: order.packs,
+      amountText: '${_qtyPdf.format(order.packs)} '
+          'pack${order.packs == 1 ? '' : 's'}',
     );
   }).toList();
 }
@@ -359,6 +388,28 @@ class DashboardSectionPdfPayload {
       total: summary.totalRevenue,
       lines: _mapAddOnLines(summary.items),
       emptyText: 'No add-ons sold this day.',
+    );
+  }
+
+  /// Builds the payload for the total packs breakdown section.
+  factory DashboardSectionPdfPayload.fromPacks({
+    required TotalPacksSummary summary,
+    required String? businessName,
+    required DateTime reportDate,
+    required DateTime generatedAt,
+    required bool isDateOverridden,
+  }) {
+    return DashboardSectionPdfPayload(
+      sectionTitle: 'Total Packs',
+      businessName: businessName,
+      reportDate: reportDate,
+      generatedAt: generatedAt,
+      isDateOverridden: isDateOverridden,
+      total: summary.totalPacks,
+      totalText: '${_qtyPdf.format(summary.totalPacks)} '
+          'pack${summary.totalPacks == 1 ? '' : 's'}',
+      lines: _mapPacksLines(summary.orders),
+      emptyText: 'No packs recorded this day.',
     );
   }
 
@@ -808,8 +859,9 @@ pw.Widget _buildLine(_PdfLine line, int number) {
 // takes the remaining space via Expanded.
 const double _salesNumWidth = 18;
 const double _salesStatusWidth = 48;
-const double _salesMachinesWidth = 95;
-const double _salesLoadsWidth = 38;
+const double _salesMachinesWidth = 80;
+const double _salesLoadsWidth = 34;
+const double _salesPacksWidth = 34;
 const double _salesTotalWidth = 70;
 
 /// Builds the extended Total Sales section: a column header, per-order rows with
@@ -897,6 +949,7 @@ pw.Widget _buildSalesHeaderRow() {
         cell('Status', _salesStatusWidth, pw.TextAlign.center),
         cell('Machines', _salesMachinesWidth, pw.TextAlign.left),
         cell('Loads', _salesLoadsWidth, pw.TextAlign.right),
+        cell('Packs', _salesPacksWidth, pw.TextAlign.right),
         cell('Total', _salesTotalWidth, pw.TextAlign.right),
       ],
     ),
@@ -907,6 +960,9 @@ pw.Widget _buildSalesLine(_PdfLine line, int number) {
   final loadsText = (line.loads == null || line.loads == 0)
       ? '-'
       : _qtyPdf.format(line.loads);
+  final packsText = (line.packs == null || line.packs == 0)
+      ? '-'
+      : _qtyPdf.format(line.packs);
   final machinesText =
       (line.machines == null || line.machines!.isEmpty) ? '-' : line.machines!;
 
@@ -955,6 +1011,14 @@ pw.Widget _buildSalesLine(_PdfLine line, int number) {
           width: _salesLoadsWidth,
           child: pw.Text(
             loadsText,
+            style: const pw.TextStyle(fontSize: 9),
+            textAlign: pw.TextAlign.right,
+          ),
+        ),
+        pw.SizedBox(
+          width: _salesPacksWidth,
+          child: pw.Text(
+            packsText,
             style: const pw.TextStyle(fontSize: 9),
             textAlign: pw.TextAlign.right,
           ),
@@ -1009,6 +1073,8 @@ pw.Widget _buildSalesFooter(_SalesFooterTotals footer) {
         pw.SizedBox(height: 4),
         row('Total Loads',
             '${_qtyPdf.format(footer.totalLoads)} load${footer.totalLoads == 1 ? '' : 's'}'),
+        row('Total Packs',
+            '${_qtyPdf.format(footer.totalPacks)} pack${footer.totalPacks == 1 ? '' : 's'}'),
         row('Total Fully Paid',
             orders(footer.fullyPaidCount, footer.fullyPaidAmount)),
         row('Total Partial', orders(footer.partialCount, footer.partialAmount)),
