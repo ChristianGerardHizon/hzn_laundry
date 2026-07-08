@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -158,10 +159,10 @@ class _DialogFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final showPayment = sale != null && !sale!.isPaid;  // shows for unpaid and partial
-    final totalPaidAsync = showPayment
-        ? ref.watch(saleTotalPaidProvider(saleId))
-        : null;
+    final showPayment =
+        sale != null && !sale!.isPaid; // shows for unpaid and partial
+    final totalPaidAsync =
+        showPayment ? ref.watch(saleTotalPaidProvider(saleId)) : null;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -250,57 +251,108 @@ class _DialogPrintMenu extends HookConsumerWidget {
     final serviceItemsAsync = ref.watch(saleServiceItemsProvider(saleId));
     final saleItemsAsync = ref.watch(saleItemsProvider(saleId));
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
-      final printer = defaultPrinterAsync.value;
-      if (printer == null) {
-        showErrorSnackBar(context,
-            message: 'No default printer configured');
-        return;
-      }
-
+    OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
       final serviceItems = serviceItemsAsync.value ?? [];
       final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
       final addOnItems = saleItemsAsync.value ?? [];
-
-      // Derive unit label from service's quantity unit or weightBased flag
       final service = firstService?.service;
       final unitLabel = service?.quantityUnit?.shortPlural ??
           (service?.weightBased == true ? 'KG' : 'PCS');
-
-      isPrinting.value = true;
-      final printService = ref.read(thermalPrintServiceProvider.notifier);
       final currentBranch = branchAsync.value;
 
-      final result = await printService.printOrderReceipt(
-        printer: printer,
+      return OrderClaimSheetPdfData(
         customerName: sale.customerName ?? 'Walk-in',
         serviceName: firstService?.serviceName ?? 'Laundry',
         quantity: firstService?.quantity.toDouble() ?? 1.0,
         unitLabel: unitLabel,
         totalAmount: sale.totalAmount.toDouble(),
-        copyType: copyType,
+        createdDate: sale.postedDate ?? DateTime.now(),
+        storeCopy: storeCopy,
         businessName: currentBranch?.name,
         branchAddress: currentBranch?.address,
         contactNumber: currentBranch?.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: sale.notes,
+        claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
       );
+    }
 
-      isPrinting.value = false;
-      if (!context.mounted) return;
+    Future<void> printCopy(OrderReceiptCopy copyType) async {
+      if (isPrinting.value) return;
 
-      if (result is PrintFailure) {
-        showErrorSnackBar(context, message: result.message);
-      } else {
-        final label = copyType == OrderReceiptCopy.customer
-            ? 'Customer copy'
-            : 'Store copy';
-        showSuccessSnackBar(context, message: '$label printed');
+      final printer = defaultPrinterAsync.value;
+      if (printer == null) {
+        showErrorSnackBar(context, message: 'No default printer configured');
+        return;
+      }
+
+      final pdfData = buildPdfData(
+        storeCopy: copyType == OrderReceiptCopy.store,
+      );
+
+      isPrinting.value = true;
+      try {
+        final printService = ref.read(thermalPrintServiceProvider.notifier);
+
+        final result = await printService.printOrderReceipt(
+          printer: printer,
+          customerName: pdfData.customerName,
+          serviceName: pdfData.serviceName,
+          quantity: pdfData.quantity,
+          unitLabel: pdfData.unitLabel,
+          totalAmount: pdfData.totalAmount,
+          claimSheetNumber: pdfData.claimSheetNumber,
+          copyType: copyType,
+          businessName: pdfData.businessName,
+          branchAddress: pdfData.branchAddress,
+          contactNumber: pdfData.contactNumber,
+          cashierName: pdfData.cashierName,
+          specialInstructions: pdfData.specialInstructions,
+          addOnItems: pdfData.addOnItems,
+        );
+
+        if (!context.mounted) return;
+
+        if (result is PrintFailure) {
+          showErrorSnackBar(context, message: result.message);
+        } else {
+          final label = copyType == OrderReceiptCopy.customer
+              ? 'Claim sheet'
+              : 'Claim sheet (store)';
+          showSuccessSnackBar(context, message: '$label printed');
+        }
+      } finally {
+        if (context.mounted) isPrinting.value = false;
       }
     }
 
-    return PopupMenuButton<OrderReceiptCopy>(
+    Future<void> previewCopy({required bool storeCopy}) async {
+      if (isPrinting.value) return;
+
+      isPrinting.value = true;
+      try {
+        final pdfData = buildPdfData(storeCopy: storeCopy);
+        await previewOrderClaimSheetPdf(context: context, data: pdfData);
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> handleMenuSelection(String value) async {
+      switch (value) {
+        case 'print_customer':
+          await printCopy(OrderReceiptCopy.customer);
+        case 'print_store':
+          await printCopy(OrderReceiptCopy.store);
+        case 'preview_customer':
+          await previewCopy(storeCopy: false);
+        case 'preview_store':
+          await previewCopy(storeCopy: true);
+      }
+    }
+
+    return PopupMenuButton<String>(
       icon: isPrinting.value
           ? const SizedBox(
               width: 20,
@@ -308,26 +360,46 @@ class _DialogPrintMenu extends HookConsumerWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.print, size: 20),
-      tooltip: 'Print',
+      tooltip: 'Print & preview',
       enabled: !isPrinting.value,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      onSelected: printCopy,
+      onSelected: handleMenuSelection,
       itemBuilder: (context) => const [
-        PopupMenuItem<OrderReceiptCopy>(
-          value: OrderReceiptCopy.customer,
+        PopupMenuItem<String>(
+          value: 'print_customer',
           child: ListTile(
             leading: Icon(Icons.receipt_long),
-            title: Text('Print Customer Copy'),
+            title: Text('Print Claim Sheet'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
         ),
-        PopupMenuItem<OrderReceiptCopy>(
-          value: OrderReceiptCopy.store,
+        PopupMenuItem<String>(
+          value: 'print_store',
           child: ListTile(
             leading: Icon(Icons.local_laundry_service),
-            title: Text('Print Store Copy'),
+            title: Text('Print Claim Sheet (Store)'),
+            subtitle: Text('Machine tag'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'preview_customer',
+          child: ListTile(
+            leading: Icon(Icons.picture_as_pdf_outlined),
+            title: Text('Preview Claim Sheet'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'preview_store',
+          child: ListTile(
+            leading: Icon(Icons.picture_as_pdf_outlined),
+            title: Text('Preview Claim Sheet (Store)'),
             subtitle: Text('Machine tag'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,

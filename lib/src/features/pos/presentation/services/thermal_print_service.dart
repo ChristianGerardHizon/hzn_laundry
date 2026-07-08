@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/printing/claim_sheet_disclaimer.dart';
 import '../../../../core/utils/permission_service.dart';
 import '../../../settings/domain/printer_config.dart';
 import '../../../settings/domain/printer_paper_width.dart';
@@ -115,6 +116,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? contactNumber,
     String? cashierName,
     String? specialInstructions,
+    String? claimSheetNumber,
     List<SaleItem> addOnItems = const [],
   }) async {
     if (!printer.hasAddress) {
@@ -134,6 +136,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       cashierName: cashierName,
       specialInstructions: specialInstructions,
       copyType: copyType,
+      claimSheetNumber: claimSheetNumber,
       addOnItems: addOnItems,
     );
 
@@ -234,8 +237,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       // Verify the connection is actually ready.
       final isReady = await PrintBluetoothThermal.connectionStatus;
       if (!isReady) {
-        return const PrintFailure(
-            'Bluetooth connection lost before printing');
+        return const PrintFailure('Bluetooth connection lost before printing');
       }
 
       // Send data in chunks to avoid buffer overflow on macOS.
@@ -247,8 +249,9 @@ class ThermalPrintService extends _$ThermalPrintService {
       bool lastResult = true;
 
       for (var offset = 0; offset < bytes.length; offset += chunkSize) {
-        final end =
-            (offset + chunkSize > bytes.length) ? bytes.length : offset + chunkSize;
+        final end = (offset + chunkSize > bytes.length)
+            ? bytes.length
+            : offset + chunkSize;
         final chunk = List<int>.from(bytes.sublist(offset, end));
 
         try {
@@ -343,6 +346,69 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
   }
 
+  List<int> _appendBusinessHeader(
+    Generator generator,
+    List<int> bytes, {
+    required String businessName,
+    String? branchAddress,
+    String? contactNumber,
+  }) {
+    bytes += generator.text(
+      businessName,
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
+
+    if (branchAddress != null && branchAddress.isNotEmpty) {
+      bytes += generator.text(
+        branchAddress,
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+
+    if (contactNumber != null && contactNumber.isNotEmpty) {
+      bytes += generator.text(
+        'Tel: $contactNumber',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+
+    bytes += generator.hr(ch: '=');
+    return bytes;
+  }
+
+  List<int> _appendClaimSheetTitle(
+    Generator generator,
+    List<int> bytes, {
+    bool storeCopy = false,
+  }) {
+    bytes += generator.text(
+      storeCopy ? claimSheetStoreCopyTitle : claimSheetTitle,
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+      ),
+    );
+    return bytes;
+  }
+
+  List<int> _appendClaimSheetDisclaimer(Generator generator, List<int> bytes) {
+    for (final line in claimSheetDisclaimerLines) {
+      bytes += generator.text(
+        line,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      );
+    }
+    return bytes;
+  }
+
   /// Generates receipt bytes for the given sale.
   Future<List<int>> _generateReceiptBytes({
     required Sale sale,
@@ -362,37 +428,20 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     List<int> bytes = [];
 
-    // Header - Business Name
-    bytes += generator.text(
-      businessName,
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
-      ),
+    bytes = _appendBusinessHeader(
+      generator,
+      bytes,
+      businessName: businessName,
+      branchAddress: branchAddress,
+      contactNumber: contactNumber,
     );
 
-    // Address
-    if (branchAddress != null && branchAddress.isNotEmpty) {
-      bytes += generator.text(
-        branchAddress,
-        styles: const PosStyles(align: PosAlign.center),
-      );
-    }
+    bytes = _appendClaimSheetTitle(generator, bytes);
 
-    // Contact Number
-    if (contactNumber != null && contactNumber.isNotEmpty) {
-      bytes += generator.text(
-        'Tel: $contactNumber',
-        styles: const PosStyles(align: PosAlign.center),
-      );
-    }
-
-    bytes += generator.hr(ch: '=');
-
-    // Receipt info
-    bytes += generator.text('Receipt: ${sale.receiptNumber}');
+    // Claim sheet info
+    bytes += generator.text(
+      '$claimSheetNumberLabel ${sale.receiptNumber}',
+    );
 
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final dateStr = sale.postedDate != null
@@ -491,6 +540,8 @@ class ThermalPrintService extends _$ThermalPrintService {
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
 
+    bytes += generator.hr();
+    bytes = _appendClaimSheetDisclaimer(generator, bytes);
     bytes += generator.hr(ch: '=');
 
     // Feed and optionally cut
@@ -519,6 +570,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? contactNumber,
     String? cashierName,
     String? specialInstructions,
+    String? claimSheetNumber,
     List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
@@ -527,8 +579,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       profile,
     );
 
-    final currencyFormat =
-        NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
 
     List<int> bytes = [];
@@ -536,13 +587,13 @@ class ThermalPrintService extends _$ThermalPrintService {
     if (copyType == OrderReceiptCopy.store) {
       // ── Store copy — compact machine tag ─────────────────────────────
       bytes += generator.hr(ch: '=');
-      bytes += generator.text(
-        'STORE COPY',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-        ),
-      );
+      bytes = _appendClaimSheetTitle(generator, bytes, storeCopy: true);
+      if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
+        bytes += generator.text(
+          '$claimSheetNumberLabel $claimSheetNumber',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+      }
       bytes += generator.hr(ch: '=');
 
       // Large customer name for easy identification on the machine
@@ -657,46 +708,29 @@ class ThermalPrintService extends _$ThermalPrintService {
             : 'No special instructions',
       );
 
+      bytes += generator.hr();
+      bytes = _appendClaimSheetDisclaimer(generator, bytes);
       bytes += generator.hr(ch: '=');
       bytes += generator.feed(_autoCut ? 2 : 4);
       if (_autoCut) bytes += generator.cut();
     } else {
-      // ── Customer copy — full receipt ──────────────────────────────────
+      // ── Customer copy — full claim sheet ──────────────────────────────
 
-      // Header - Business Name
-      bytes += generator.text(
-        businessName,
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
+      bytes = _appendBusinessHeader(
+        generator,
+        bytes,
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
       );
 
-      if (branchAddress != null && branchAddress.isNotEmpty) {
-        bytes += generator.text(
-          branchAddress,
-          styles: const PosStyles(align: PosAlign.center),
-        );
+      bytes = _appendClaimSheetTitle(generator, bytes);
+
+      if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
+        bytes += generator.text('$claimSheetNumberLabel $claimSheetNumber');
       }
 
-      if (contactNumber != null && contactNumber.isNotEmpty) {
-        bytes += generator.text(
-          'Tel: $contactNumber',
-          styles: const PosStyles(align: PosAlign.center),
-        );
-      }
-
-      bytes += generator.hr(ch: '=');
-
-      // Order info
-      bytes += generator.text(
-        'ORDER RECEIPT',
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      );
-      bytes += generator.text(
-          'Date: ${dateFormat.format(DateTime.now())}');
+      bytes += generator.text('Date: ${dateFormat.format(DateTime.now())}');
 
       if (cashierName != null && cashierName.isNotEmpty) {
         bytes += generator.text('Cashier: $cashierName');
@@ -832,6 +866,8 @@ class ThermalPrintService extends _$ThermalPrintService {
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
 
+      bytes += generator.hr();
+      bytes = _appendClaimSheetDisclaimer(generator, bytes);
       bytes += generator.hr(ch: '=');
       bytes += generator.feed(_autoCut ? 2 : 4);
       if (_autoCut) bytes += generator.cut();
@@ -883,5 +919,4 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     return bytes;
   }
-
 }

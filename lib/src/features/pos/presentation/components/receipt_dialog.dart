@@ -10,6 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../../core/pdf/pdf_task_runner.dart';
+import '../../../../core/printing/claim_sheet_disclaimer.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -34,6 +35,9 @@ class _ReceiptPdfPayload {
     required this.items,
     required this.serviceItems,
     this.notes,
+    this.businessName,
+    this.branchAddress,
+    this.contactNumber,
   });
 
   final String receiptNumber;
@@ -43,6 +47,9 @@ class _ReceiptPdfPayload {
   final List<SaleItem> items;
   final List<SaleServiceItem> serviceItems;
   final String? notes;
+  final String? businessName;
+  final String? branchAddress;
+  final String? contactNumber;
 }
 
 /// Top-level function that builds receipt PDF bytes in an isolate.
@@ -59,9 +66,41 @@ Future<Uint8List> _buildReceiptPdfBytes(_ReceiptPdfPayload payload) async {
       build: (context) => pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
+          if (payload.businessName != null &&
+              payload.businessName!.isNotEmpty) ...[
+            pw.Center(
+              child: pw.Text(
+                payload.businessName!,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+            if (payload.branchAddress != null &&
+                payload.branchAddress!.isNotEmpty)
+              pw.Center(
+                child: pw.Text(
+                  payload.branchAddress!,
+                  style: const pw.TextStyle(fontSize: 10),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            if (payload.contactNumber != null &&
+                payload.contactNumber!.isNotEmpty)
+              pw.Center(
+                child: pw.Text(
+                  'Tel: ${payload.contactNumber}',
+                  style: const pw.TextStyle(fontSize: 10),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            pw.SizedBox(height: 12),
+          ],
           pw.Center(
             child: pw.Text(
-              'Receipt',
+              claimSheetTitle,
               style: pw.TextStyle(
                 fontSize: 24,
                 fontWeight: pw.FontWeight.bold,
@@ -71,7 +110,7 @@ Future<Uint8List> _buildReceiptPdfBytes(_ReceiptPdfPayload payload) async {
           pw.SizedBox(height: 8),
           pw.Center(
             child: pw.Text(
-              '#${payload.receiptNumber}',
+              '$claimSheetNumberLabel ${payload.receiptNumber}',
               style: const pw.TextStyle(fontSize: 12),
             ),
           ),
@@ -219,6 +258,21 @@ Future<Uint8List> _buildReceiptPdfBytes(_ReceiptPdfPayload payload) async {
               style: const pw.TextStyle(fontSize: 12),
             ),
           ),
+          pw.SizedBox(height: 16),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          ...claimSheetDisclaimerLines.map(
+            (line) => pw.Center(
+              child: pw.Text(
+                line,
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
+            ),
+          ),
         ],
       ),
     ),
@@ -340,7 +394,7 @@ class ReceiptDialog extends HookConsumerWidget {
           if (context.mounted) {
             showErrorSnackBar(
               context,
-              message: 'Customer copy printed, but cashier copy failed',
+              message: 'Claim sheet printed (duplicate failed)',
               useRootMessenger: false,
             );
           }
@@ -355,7 +409,7 @@ class ReceiptDialog extends HookConsumerWidget {
       if (showSuccessMessage) {
         final copies = printCashierCopy.value ? '2 copies' : '1 copy';
         showSuccessSnackBar(context,
-            message: 'Receipt printed ($copies)', useRootMessenger: false);
+            message: 'Claim sheet printed ($copies)', useRootMessenger: false);
       }
     }
 
@@ -377,16 +431,22 @@ class ReceiptDialog extends HookConsumerWidget {
     Future<void> handlePdfPrint() async {
       final result = await runPdfTask<_ReceiptPdfPayload>(
         context: context,
-        message: 'Generating receipt...',
-        preload: () async => _ReceiptPdfPayload(
-          receiptNumber: sale.receiptNumber,
-          createdDate: sale.postedDate ?? DateTime.now(),
-          totalAmount: sale.totalAmount.toDouble(),
-          isPaid: sale.isPaid,
-          items: saleItems,
-          serviceItems: saleServiceItems,
-          notes: sale.notes,
-        ),
+        message: 'Generating claim sheet...',
+        preload: () async {
+          final currentBranch = branchAsync.value;
+          return _ReceiptPdfPayload(
+            receiptNumber: sale.receiptNumber,
+            createdDate: sale.postedDate ?? DateTime.now(),
+            totalAmount: sale.totalAmount.toDouble(),
+            isPaid: sale.isPaid,
+            items: saleItems,
+            serviceItems: saleServiceItems,
+            notes: sale.notes,
+            businessName: currentBranch?.name,
+            branchAddress: currentBranch?.address,
+            contactNumber: currentBranch?.contactNumber,
+          );
+        },
         generate: _buildReceiptPdfBytes,
       );
       if (result is! PdfTaskSuccess) return;
@@ -402,200 +462,200 @@ class ReceiptDialog extends HookConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => context.pop(),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => context.pop(),
+                ),
+                Expanded(
+                  child: Text(
+                    'Claim Sheet',
+                    style: theme.textTheme.titleLarge,
                   ),
-                  Expanded(
-                    child: Text(
-                      'Receipt',
-                      style: theme.textTheme.titleLarge,
-                    ),
+                ),
+                if (hasDefaultPrinter) ...[
+                  IconButton.outlined(
+                    onPressed: handlePdfPrint,
+                    icon: const Icon(Icons.picture_as_pdf),
+                    tooltip: 'Print as PDF',
                   ),
-                  if (hasDefaultPrinter) ...[
-                    IconButton.outlined(
-                      onPressed: handlePdfPrint,
-                      icon: const Icon(Icons.picture_as_pdf),
-                      tooltip: 'Print as PDF',
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton.icon(
-                      onPressed: isPrinting.value ? null : handleThermalPrint,
-                      icon: isPrinting.value
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.print),
-                      label: Text(isPrinting.value ? 'Printing...' : 'Print'),
-                    ),
-                  ] else ...[
-                    OutlinedButton.icon(
-                      onPressed: handlePdfPrint,
-                      icon: const Icon(Icons.print_outlined),
-                      label: const Text('Print PDF'),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () {
-                        DialogDismissingObserver.dismissAllDialogs();
-                        const PrinterSettingsRoute().go(context);
-                      },
-                      child: const Text('Setup Printer'),
-                    ),
-                  ],
                   const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: isPrinting.value ? null : handleThermalPrint,
+                    icon: isPrinting.value
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.print),
+                    label: Text(isPrinting.value ? 'Printing...' : 'Print'),
+                  ),
+                ] else ...[
+                  OutlinedButton.icon(
+                    onPressed: handlePdfPrint,
+                    icon: const Icon(Icons.print_outlined),
+                    label: const Text('Print PDF'),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      DialogDismissingObserver.dismissAllDialogs();
+                      const PrinterSettingsRoute().go(context);
+                    },
+                    child: const Text('Setup Printer'),
+                  ),
                 ],
-              ),
+                const SizedBox(width: 8),
+              ],
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 16),
 
-            // Success icon
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_rounded,
-                size: 40,
-                color: theme.colorScheme.primary,
-              ),
+          // Success icon
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 16),
-
-            Text(
-              'Sale Complete!',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            child: Icon(
+              Icons.check_rounded,
+              size: 40,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 16),
 
-            Text(
-              'Receipt #${sale.receiptNumber}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          Text(
+            'Sale Complete!',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 8),
 
-            // Receipt details
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailRow(
-                        context,
-                        'Date',
-                        sale.postedDate != null
-                            ? dateFormat.format(sale.postedDate!)
-                            : dateFormat.format(DateTime.now()),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow(
-                        context,
-                        'Payment Status',
-                        sale.isPaid ? 'Paid' : 'Unpaid',
-                      ),
-                      const SizedBox(height: 16),
-                      // Prominent total display
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total Amount',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              sale.totalAmount.toCurrency(),
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (sale.notes != null && sale.notes!.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          'Notes',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          sale.notes!,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+          Text(
+            'Claim Sheet #${sale.receiptNumber}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
+          ),
+          const SizedBox(height: 24),
 
-            // Cashier copy option (only show if printer configured)
-            if (hasDefaultPrinter)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: CheckboxListTile(
-                  value: printCashierCopy.value,
-                  onChanged: (value) => printCashierCopy.value = value ?? true,
-                  title: const Text('Print cashier copy'),
-                  subtitle: const Text('Prints 2 copies: customer + business'),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-              ),
-
-            // Done button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: SizedBox(
+          // Receipt details
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
                 width: double.infinity,
-                child: hasDefaultPrinter
-                    ? OutlinedButton(
-                        onPressed: () => context.pop(),
-                        child: const Text('Done'),
-                      )
-                    : FilledButton(
-                        onPressed: () => context.pop(),
-                        child: const Text('Done'),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow(
+                      context,
+                      'Date',
+                      sale.postedDate != null
+                          ? dateFormat.format(sale.postedDate!)
+                          : dateFormat.format(DateTime.now()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      context,
+                      'Payment Status',
+                      sale.isPaid ? 'Paid' : 'Unpaid',
+                    ),
+                    const SizedBox(height: 16),
+                    // Prominent total display
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Total Amount',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            sale.totalAmount.toCurrency(),
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (sale.notes != null && sale.notes!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Notes',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        sale.notes!,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Cashier copy option (only show if printer configured)
+          if (hasDefaultPrinter)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: CheckboxListTile(
+                value: printCashierCopy.value,
+                onChanged: (value) => printCashierCopy.value = value ?? true,
+                title: const Text('Print duplicate claim sheet'),
+                subtitle: const Text('Prints 2 copies: customer + business'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ),
+
+          // Done button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: SizedBox(
+              width: double.infinity,
+              child: hasDefaultPrinter
+                  ? OutlinedButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('Done'),
+                    )
+                  : FilledButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('Done'),
+                    ),
+            ),
+          ),
         ],
       ),
     );

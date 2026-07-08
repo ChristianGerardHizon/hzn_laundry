@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../../../core/printing/claim_sheet_disclaimer.dart';
 import '../../domain/customer_history.dart';
 
 /// Cross-platform print using PDF. Web override calls window.print() instead.
@@ -23,12 +24,22 @@ Future<void> printOrderDetail(CustomerHistorySaleDetail detail) async {
         return pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            pw.Center(
+              child: pw.Text(
+                claimSheetTitle,
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 8),
             pw.Text(
               sale.receiptNumber.isEmpty
                   ? 'Order ${sale.id}'
-                  : '#${sale.receiptNumber}',
+                  : '$claimSheetNumberLabel ${sale.receiptNumber}',
               style: pw.TextStyle(
-                fontSize: 22,
+                fontSize: 14,
                 fontWeight: pw.FontWeight.bold,
               ),
             ),
@@ -111,6 +122,21 @@ Future<void> printOrderDetail(CustomerHistorySaleDetail detail) async {
               ),
               pw.Text(sale.notes!),
             ],
+            pw.SizedBox(height: 16),
+            pw.Divider(),
+            pw.SizedBox(height: 8),
+            ...claimSheetDisclaimerLines.map(
+              (line) => pw.Center(
+                child: pw.Text(
+                  line,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                  textAlign: pw.TextAlign.center,
+                ),
+              ),
+            ),
           ],
         );
       },
