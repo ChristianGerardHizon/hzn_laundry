@@ -1,0 +1,32 @@
+---
+description: Follow project conventions defined in CLAUDE.md
+alwaysApply: true
+---
+
+# Follow CLAUDE.md
+
+`CLAUDE.md` at the repo root is the authoritative guide for this project. **Read it** before making architectural changes, adding features, or creating PRs. When in doubt, follow CLAUDE.md over general defaults.
+
+## Non-negotiables
+
+- **Architecture:** Feature-based clean architecture under `lib/src/features/` (`data/`, `domain/`, `presentation/`).
+- **Widgets:** Use `HookConsumerWidget` with flutter_hooks for Riverpod + local state.
+- **State:** `@riverpod` providers; plural controllers for lists, singular providers for single entities (separate files).
+- **Routing:** Generated GoRouter routes (`PatientsRoute().go(context)`); use `context.pop()`, not `Navigator.pop`.
+- **Forms:** `flutter_form_builder`, not raw `TextField`/`DropdownMenu`.
+- **Models:** `@MappableClass()`, extend `PBObject`, camelCase PocketBase fields.
+- **DateTime:** `.toUtc()` to server, `.toLocal()` from server.
+- **Currency:** Philippine Peso (`₱`) via `NumberFormat.currency(symbol: '₱', decimalDigits: 2)`.
+- **Errors:** `Failure` + `Either<Failure, T>` (fpdart).
+- **Dialogs/sheets with snackbars:** Wrap in `ScaffoldMessenger` + `Builder`; `useRootMessenger: false`.
+- **Unimplemented work:** Add descriptive `// TODO:` comments.
+- **Code search:** Use `grepai search`/`trace` for intent-based exploration; fall back to Grep/Glob for exact matches.
+- **Build runner:** Always pass `--low-resources-mode`.
+- **PRs:** Target `staging`; ask user about version/deploy/minimum-version labels; include QA Notes.
+- **Docs:** Update `docs/app_overview.md` when adding or changing features.
+- **PocketBase changes:** Use the API (credentials in `.env`), not direct DB edits alone.
+
+## Related docs
+
+- `docs/entities.md`, `docs/folder_structure.md`, `docs/ui.md`, `docs/app_overview.md`
+- `AGENTS.md` for repo-level agent guidelines (complements CLAUDE.md)

@@ -2456,10 +2456,26 @@ class _OrderSuccessPage extends HookConsumerWidget {
     }
 
     Future<void> handlePdfPreview({required bool storeCopy}) async {
-      await previewOrderClaimSheetPdf(
-        context: context,
-        data: buildPdfData(storeCopy: storeCopy),
-      );
+      if (isPrinting.value) return;
+
+      isPrinting.value = true;
+      try {
+        await previewOrderClaimSheetPdf(
+          context: context,
+          data: buildPdfData(storeCopy: storeCopy),
+        );
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> handlePreviewMenuSelection(String value) async {
+      switch (value) {
+        case 'preview_customer':
+          await handlePdfPreview(storeCopy: false);
+        case 'preview_store':
+          await handlePdfPreview(storeCopy: true);
+      }
     }
 
     Future<void> handleThermalPrint({bool showSuccessMessage = true}) async {
@@ -2578,15 +2594,15 @@ class _OrderSuccessPage extends HookConsumerWidget {
               ),
               PopupMenuButton<String>(
                 tooltip: 'Preview claim sheet',
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'preview_customer':
-                      handlePdfPreview(storeCopy: false);
-                    case 'preview_store':
-                      handlePdfPreview(storeCopy: true);
-                  }
-                },
+                enabled: !isPrinting.value,
+                icon: isPrinting.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.picture_as_pdf_outlined),
+                onSelected: handlePreviewMenuSelection,
                 itemBuilder: (context) => const [
                   PopupMenuItem<String>(
                     value: 'preview_customer',

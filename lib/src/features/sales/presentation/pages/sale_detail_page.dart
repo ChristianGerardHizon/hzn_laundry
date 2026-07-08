@@ -2123,6 +2123,8 @@ class _PrintMenuButton extends HookConsumerWidget {
     }
 
     Future<void> printCopy(OrderReceiptCopy copyType) async {
+      if (isPrinting.value) return;
+
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context, message: 'No default printer configured');
@@ -2134,43 +2136,64 @@ class _PrintMenuButton extends HookConsumerWidget {
       );
 
       isPrinting.value = true;
-      final printService = ref.read(thermalPrintServiceProvider.notifier);
+      try {
+        final printService = ref.read(thermalPrintServiceProvider.notifier);
 
-      final result = await printService.printOrderReceipt(
-        printer: printer,
-        customerName: pdfData.customerName,
-        serviceName: pdfData.serviceName,
-        quantity: pdfData.quantity,
-        unitLabel: pdfData.unitLabel,
-        totalAmount: pdfData.totalAmount,
-        claimSheetNumber: pdfData.claimSheetNumber,
-        copyType: copyType,
-        businessName: pdfData.businessName,
-        branchAddress: pdfData.branchAddress,
-        contactNumber: pdfData.contactNumber,
-        cashierName: pdfData.cashierName,
-        specialInstructions: pdfData.specialInstructions,
-        addOnItems: pdfData.addOnItems,
-      );
+        final result = await printService.printOrderReceipt(
+          printer: printer,
+          customerName: pdfData.customerName,
+          serviceName: pdfData.serviceName,
+          quantity: pdfData.quantity,
+          unitLabel: pdfData.unitLabel,
+          totalAmount: pdfData.totalAmount,
+          claimSheetNumber: pdfData.claimSheetNumber,
+          copyType: copyType,
+          businessName: pdfData.businessName,
+          branchAddress: pdfData.branchAddress,
+          contactNumber: pdfData.contactNumber,
+          cashierName: pdfData.cashierName,
+          specialInstructions: pdfData.specialInstructions,
+          addOnItems: pdfData.addOnItems,
+        );
 
-      isPrinting.value = false;
-      if (!context.mounted) return;
+        if (!context.mounted) return;
 
-      if (result is PrintFailure) {
-        showErrorSnackBar(context, message: result.message);
-      } else {
-        final label = copyType == OrderReceiptCopy.customer
-            ? 'Claim sheet'
-            : 'Claim sheet (store)';
-        showSuccessSnackBar(context, message: '$label printed');
+        if (result is PrintFailure) {
+          showErrorSnackBar(context, message: result.message);
+        } else {
+          final label = copyType == OrderReceiptCopy.customer
+              ? 'Claim sheet'
+              : 'Claim sheet (store)';
+          showSuccessSnackBar(context, message: '$label printed');
+        }
+      } finally {
+        if (context.mounted) isPrinting.value = false;
       }
     }
 
     Future<void> previewCopy({required bool storeCopy}) async {
+      if (isPrinting.value) return;
+
       isPrinting.value = true;
-      final pdfData = buildPdfData(storeCopy: storeCopy);
-      await previewOrderClaimSheetPdf(context: context, data: pdfData);
-      isPrinting.value = false;
+      try {
+        final pdfData = buildPdfData(storeCopy: storeCopy);
+        await previewOrderClaimSheetPdf(context: context, data: pdfData);
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> handleMenuSelection(String value) async {
+      switch (value) {
+        case 'print_customer':
+          await printCopy(OrderReceiptCopy.customer);
+        case 'print_store':
+          await printCopy(OrderReceiptCopy.store);
+        case 'preview_customer':
+          await previewCopy(storeCopy: false);
+        case 'preview_store':
+          await previewCopy(storeCopy: true);
+      }
     }
 
     return PopupMenuButton<String>(
@@ -2183,18 +2206,7 @@ class _PrintMenuButton extends HookConsumerWidget {
           : const Icon(Icons.print),
       tooltip: 'Print & preview',
       enabled: !isPrinting.value,
-      onSelected: (value) {
-        switch (value) {
-          case 'print_customer':
-            printCopy(OrderReceiptCopy.customer);
-          case 'print_store':
-            printCopy(OrderReceiptCopy.store);
-          case 'preview_customer':
-            previewCopy(storeCopy: false);
-          case 'preview_store':
-            previewCopy(storeCopy: true);
-        }
-      },
+      onSelected: handleMenuSelection,
       itemBuilder: (context) => [
         const PopupMenuItem<String>(
           value: 'print_customer',
