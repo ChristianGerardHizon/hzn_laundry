@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
+import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -681,8 +682,9 @@ class _SaleDetailContent extends HookConsumerWidget {
 
       // Invalidate and re-fetch service items so assignments saved by dialogs are reflected
       ref.invalidate(saleServiceItemsProvider(sale.id));
-      final freshServiceItems =
-          await ref.read(saleServiceItemsProvider(sale.id).future).catchError((_) => <SaleServiceItem>[]);
+      final freshServiceItems = await ref
+          .read(saleServiceItemsProvider(sale.id).future)
+          .catchError((_) => <SaleServiceItem>[]);
 
       // Feature flag requirement checks
       if (status == OrderStatus.processing) {
@@ -2092,54 +2094,105 @@ class _PrintMenuButton extends HookConsumerWidget {
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
 
+    OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
+      final serviceItems =
+          (serviceItemsAsync.value as List<SaleServiceItem>?) ?? [];
+      final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
+      final addOnItems = (saleItemsAsync.value as List<SaleItem>?) ?? [];
+      final service = firstService?.service;
+      final unitLabel = service?.quantityUnit?.shortPlural ??
+          (service?.weightBased == true ? 'KG' : 'PCS');
+      final currentBranch = branchAsync.value;
+
+      return OrderClaimSheetPdfData(
+        customerName: sale.customerName ?? 'Walk-in',
+        serviceName: firstService?.serviceName ?? 'Laundry',
+        quantity: firstService?.quantity.toDouble() ?? 1.0,
+        unitLabel: unitLabel,
+        totalAmount: sale.totalAmount.toDouble(),
+        createdDate: sale.postedDate ?? DateTime.now(),
+        storeCopy: storeCopy,
+        businessName: currentBranch?.name,
+        branchAddress: currentBranch?.address,
+        contactNumber: currentBranch?.contactNumber,
+        cashierName: currentAuth?.user.name,
+        specialInstructions: sale.notes,
+        claimSheetNumber: sale.receiptNumber,
+        addOnItems: addOnItems,
+      );
+    }
+
     Future<void> printCopy(OrderReceiptCopy copyType) async {
+      if (isPrinting.value) return;
+
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context, message: 'No default printer configured');
         return;
       }
 
-      // Get service item info for the receipt
-      final serviceItems =
-          (serviceItemsAsync.value as List<SaleServiceItem>?) ?? [];
-      final firstService = serviceItems.isNotEmpty ? serviceItems.first : null;
-      final addOnItems = (saleItemsAsync.value as List<SaleItem>?) ?? [];
-
-      // Derive unit label from service's quantity unit or weightBased flag
-      final service = firstService?.service;
-      final unitLabel = service?.quantityUnit?.shortPlural ??
-          (service?.weightBased == true ? 'KG' : 'PCS');
-
-      isPrinting.value = true;
-      final printService = ref.read(thermalPrintServiceProvider.notifier);
-      final currentBranch = branchAsync.value;
-
-      final result = await printService.printOrderReceipt(
-        printer: printer,
-        customerName: sale.customerName ?? 'Walk-in',
-        serviceName: firstService?.serviceName ?? 'Laundry',
-        quantity: firstService?.quantity.toDouble() ?? 1.0,
-        unitLabel: unitLabel,
-        totalAmount: sale.totalAmount.toDouble(),
-        copyType: copyType,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
-        cashierName: currentAuth?.user.name,
-        specialInstructions: sale.notes,
-        addOnItems: addOnItems,
+      final pdfData = buildPdfData(
+        storeCopy: copyType == OrderReceiptCopy.store,
       );
 
-      isPrinting.value = false;
-      if (!context.mounted) return;
+      isPrinting.value = true;
+      try {
+        final printService = ref.read(thermalPrintServiceProvider.notifier);
 
-      if (result is PrintFailure) {
-        showErrorSnackBar(context, message: result.message);
-      } else {
-        final label = copyType == OrderReceiptCopy.customer
-            ? 'Customer copy'
-            : 'Store copy';
-        showSuccessSnackBar(context, message: '$label printed');
+        final result = await printService.printOrderReceipt(
+          printer: printer,
+          customerName: pdfData.customerName,
+          serviceName: pdfData.serviceName,
+          quantity: pdfData.quantity,
+          unitLabel: pdfData.unitLabel,
+          totalAmount: pdfData.totalAmount,
+          claimSheetNumber: pdfData.claimSheetNumber,
+          copyType: copyType,
+          businessName: pdfData.businessName,
+          branchAddress: pdfData.branchAddress,
+          contactNumber: pdfData.contactNumber,
+          cashierName: pdfData.cashierName,
+          specialInstructions: pdfData.specialInstructions,
+          addOnItems: pdfData.addOnItems,
+        );
+
+        if (!context.mounted) return;
+
+        if (result is PrintFailure) {
+          showErrorSnackBar(context, message: result.message);
+        } else {
+          final label = copyType == OrderReceiptCopy.customer
+              ? 'Claim sheet'
+              : 'Claim sheet (store)';
+          showSuccessSnackBar(context, message: '$label printed');
+        }
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> previewCopy({required bool storeCopy}) async {
+      if (isPrinting.value) return;
+
+      isPrinting.value = true;
+      try {
+        final pdfData = buildPdfData(storeCopy: storeCopy);
+        await previewOrderClaimSheetPdf(context: context, data: pdfData);
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> handleMenuSelection(String value) async {
+      switch (value) {
+        case 'print_customer':
+          await printCopy(OrderReceiptCopy.customer);
+        case 'print_store':
+          await printCopy(OrderReceiptCopy.store);
+        case 'preview_customer':
+          await previewCopy(storeCopy: false);
+        case 'preview_store':
+          await previewCopy(storeCopy: true);
       }
     }
 
@@ -2151,31 +2204,44 @@ class _PrintMenuButton extends HookConsumerWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.print),
-      tooltip: 'Print',
+      tooltip: 'Print & preview',
       enabled: !isPrinting.value,
-      onSelected: (value) {
-        switch (value) {
-          case 'customer':
-            printCopy(OrderReceiptCopy.customer);
-          case 'store':
-            printCopy(OrderReceiptCopy.store);
-        }
-      },
+      onSelected: handleMenuSelection,
       itemBuilder: (context) => [
         const PopupMenuItem<String>(
-          value: 'customer',
+          value: 'print_customer',
           child: ListTile(
             leading: Icon(Icons.receipt_long),
-            title: Text('Print Customer Copy'),
+            title: Text('Print Claim Sheet'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
           ),
         ),
         const PopupMenuItem<String>(
-          value: 'store',
+          value: 'print_store',
           child: ListTile(
             leading: Icon(Icons.local_laundry_service),
-            title: Text('Print Store Copy'),
+            title: Text('Print Claim Sheet (Store)'),
+            subtitle: Text('Machine tag'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'preview_customer',
+          child: ListTile(
+            leading: Icon(Icons.picture_as_pdf_outlined),
+            title: Text('Preview Claim Sheet'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'preview_store',
+          child: ListTile(
+            leading: Icon(Icons.picture_as_pdf_outlined),
+            title: Text('Preview Claim Sheet (Store)'),
             subtitle: Text('Machine tag'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,

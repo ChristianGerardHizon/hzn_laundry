@@ -60,8 +60,14 @@ class AuthRepositoryImpl implements AuthRepository {
   FutureEither<AuthState> login(String username, String password) async {
     return TaskEither.tryCatch(
       () async {
+        // Usernames are stored lowercase (see create/edit user dialogs).
+        // PocketBase identity lookup is case-sensitive, so normalize input.
+        final identity = username.trim().toLowerCase();
+
+        pb.authStore.clear();
+
         final result = await _collection.authWithPassword(
-          username,
+          identity,
           password,
           expand: _expand,
         );

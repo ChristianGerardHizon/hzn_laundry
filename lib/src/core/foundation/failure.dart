@@ -66,7 +66,10 @@ sealed class Failure with FailureMappable {
       debugPrint(error.response.toString());
 
       final code = error.statusCode;
-      if (code == 401 || code == 403) {
+      final message = error.response['message']?.toString() ?? '';
+      if (code == 401 ||
+          code == 403 ||
+          (code == 400 && message.toLowerCase().contains('authenticate'))) {
         return AuthFailure(error, stackTrace, 'auth_error');
       }
     }
