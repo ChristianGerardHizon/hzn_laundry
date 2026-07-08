@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -141,6 +142,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
     // Tracks whether order was created → show success page
     final orderCreated = useState(false);
+    final createdReceiptNumber = useState<String?>(null);
 
     // Loyalty promo redemption
     final selectedPromoRedemption = useState<CustomerPromo?>(null);
@@ -205,11 +207,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
       final computedServiceTotal = tiers.isEmpty
           ? (tieredUnitPrice * qty).toDouble()
           : resolveTieredTotal(tiers, qty, service.price).toDouble();
-      final serviceTotal =
-          customServiceTotal.value ?? computedServiceTotal;
-      final effectiveUnitPrice = qty > 0
-          ? serviceTotal / qty
-          : tieredUnitPrice;
+      final serviceTotal = customServiceTotal.value ?? computedServiceTotal;
+      final effectiveUnitPrice = qty > 0 ? serviceTotal / qty : tieredUnitPrice;
       final productsTotal = productItems.value.fold<double>(
         0.0,
         (sum, item) => sum + item.subtotal.toDouble(),
@@ -221,13 +220,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
       final redeemPromo = selectedPromoRedemption.value;
       if (redeemPromo != null && redeemPromo.promo != null) {
         final freeWeight = redeemPromo.promo!.rewardFreeWeight.toDouble();
-        loyaltyDiscount = (freeWeight * effectiveUnitPrice)
-            .clamp(0.0, serviceTotal);
+        loyaltyDiscount =
+            (freeWeight * effectiveUnitPrice).clamp(0.0, serviceTotal);
       }
 
       final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity);
-      final userNotes = formKey
-          .currentState?.fields['specialInstructions']?.value as String?;
+      final userNotes =
+          formKey.currentState?.fields['specialInstructions']?.value as String?;
 
       // Append loyalty info to notes
       String? notes = userNotes;
@@ -300,8 +299,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
           final branchFilter = ref.read(currentBranchFilterProvider);
 
           if (redeemPromo != null) {
-            customerPromoRepo.redeemReward(
-                redeemPromo.id, createdSale.id);
+            customerPromoRepo.redeemReward(redeemPromo.id, createdSale.id);
           }
 
           // Increment order counts and auto-enroll
@@ -322,6 +320,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
           ref.invalidate(paginatedSalesControllerProvider);
 
           orderCreated.value = true;
+          createdReceiptNumber.value = createdSale.receiptNumber;
         },
       );
     }
@@ -329,14 +328,14 @@ class _CreateOrderDialog extends HookConsumerWidget {
     final displayUnitPrice = selectedService.value == null
         ? 0.0
         : resolveTieredPrice(
-            tiers, quantity.value, selectedService.value!.price)
+                tiers, quantity.value, selectedService.value!.price)
             .toDouble();
     final computedServiceTotal = selectedService.value == null
         ? 0.0
         : tiers.isEmpty
             ? (displayUnitPrice * quantity.value).toDouble()
             : resolveTieredTotal(
-                tiers, quantity.value, selectedService.value!.price)
+                    tiers, quantity.value, selectedService.value!.price)
                 .toDouble();
     final serviceTotal = customServiceTotal.value ?? computedServiceTotal;
     final productsTotal = productItems.value.fold<double>(
@@ -366,10 +365,11 @@ class _CreateOrderDialog extends HookConsumerWidget {
           service: selectedService.value!,
           quantity: quantity.value,
           orderDate: orderDate,
-          specialInstructions: formKey.currentState
-              ?.fields['specialInstructions']?.value as String?,
+          specialInstructions: formKey
+              .currentState?.fields['specialInstructions']?.value as String?,
           estimatedTotal: estimatedTotal,
           productItems: productItems.value,
+          claimSheetNumber: createdReceiptNumber.value,
         ),
       );
     }
@@ -377,151 +377,150 @@ class _CreateOrderDialog extends HookConsumerWidget {
     // ── Order form ──────────────────────────────────────────────────────
     return DialogCloseHandler(
       child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Header ──────────────────────────────────────────────────────
-            _DialogHeader(
-              isSaving: isSaving.value,
-              onClose: handleClose,
-            ),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          _DialogHeader(
+            isSaving: isSaving.value,
+            onClose: handleClose,
+          ),
 
-            // ── Scrollable body ──────────────────────────────────────────────
-            Flexible(
-              child: FormBuilder(
-                key: formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Customer selection
-                      _SectionLabel(
-                        label: 'Customer Selection',
-                        trailing: TextButton.icon(
-                          icon: const Icon(Icons.person_add, size: 16),
-                          label: const Text('New Customer'),
-                          onPressed: isSaving.value
-                              ? null
-                              : () {
-                                  showCustomerFormDialog(
-                                    context,
-                                    onSaved: (created) {
-                                      selectedCustomer.value = created;
-                                      isDirty.value = true;
-                                    },
-                                  );
-                                },
-                        ),
+          // ── Scrollable body ──────────────────────────────────────────────
+          Flexible(
+            child: FormBuilder(
+              key: formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Customer selection
+                    _SectionLabel(
+                      label: 'Customer Selection',
+                      trailing: TextButton.icon(
+                        icon: const Icon(Icons.person_add, size: 16),
+                        label: const Text('New Customer'),
+                        onPressed: isSaving.value
+                            ? null
+                            : () {
+                                showCustomerFormDialog(
+                                  context,
+                                  onSaved: (created) {
+                                    selectedCustomer.value = created;
+                                    isDirty.value = true;
+                                  },
+                                );
+                              },
                       ),
-                      const SizedBox(height: 8),
-                      _CustomerSearchField(
-                        selectedCustomer: selectedCustomer,
-                        enabled: !isSaving.value,
-                        onChanged: () {
+                    ),
+                    const SizedBox(height: 8),
+                    _CustomerSearchField(
+                      selectedCustomer: selectedCustomer,
+                      enabled: !isSaving.value,
+                      onChanged: () {
+                        isDirty.value = true;
+                        selectedPromoRedemption.value = null;
+                      },
+                      ref: ref,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Loyalty rewards (only when customer selected)
+                    if (selectedCustomer.value != null)
+                      LoyaltyRewardsSection(
+                        customerId: selectedCustomer.value!.id,
+                        selectedPromo: selectedPromoRedemption.value,
+                        onPromoSelected: (promo) {
+                          selectedPromoRedemption.value = promo;
                           isDirty.value = true;
-                          selectedPromoRedemption.value = null;
                         },
-                        ref: ref,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Loyalty rewards (only when customer selected)
-                      if (selectedCustomer.value != null)
-                        LoyaltyRewardsSection(
-                          customerId: selectedCustomer.value!.id,
-                          selectedPromo: selectedPromoRedemption.value,
-                          onPromoSelected: (promo) {
-                            selectedPromoRedemption.value = promo;
-                            isDirty.value = true;
-                          },
-                          enabled: !isSaving.value,
-                        ),
-                      const SizedBox(height: 8),
-
-                      // Service selection
-                      _SectionLabel(label: 'Service Selection'),
-                      const SizedBox(height: 8),
-                      _ServiceSelector(
-                        selectedService: selectedService,
                         enabled: !isSaving.value,
-                        onChanged: () {
+                      ),
+                    const SizedBox(height: 8),
+
+                    // Service selection
+                    _SectionLabel(label: 'Service Selection'),
+                    const SizedBox(height: 8),
+                    _ServiceSelector(
+                      selectedService: selectedService,
+                      enabled: !isSaving.value,
+                      onChanged: () {
+                        isDirty.value = true;
+                        customServiceTotal.value = null;
+                      },
+                      ref: ref,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Quantity & Order Date
+                    _QuantityStepper(
+                      quantity: quantity,
+                      unitLabel:
+                          selectedService.value?.quantityUnit?.shortPlural ??
+                              (selectedService.value?.weightBased == false
+                                  ? 'PCS'
+                                  : 'kg'),
+                      enabled: !isSaving.value,
+                      onChanged: () {
+                        isDirty.value = true;
+                        customServiceTotal.value = null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Service subtotal (editable)
+                    if (selectedService.value != null)
+                      _ServiceSubtotal(
+                        service: selectedService.value!,
+                        quantity: quantity.value,
+                        tiers: tiers,
+                        customTotal: customServiceTotal.value,
+                        enabled: !isSaving.value,
+                        onCustomTotalChanged: (value) {
+                          customServiceTotal.value = value;
                           isDirty.value = true;
-                          customServiceTotal.value = null;
-                        },
-                        ref: ref,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Quantity & Order Date
-                      _QuantityStepper(
-                        quantity: quantity,
-                        unitLabel: selectedService
-                                .value?.quantityUnit?.shortPlural ??
-                            (selectedService.value?.weightBased == false
-                                ? 'PCS'
-                                : 'kg'),
-                        enabled: !isSaving.value,
-                        onChanged: () {
-                          isDirty.value = true;
-                          customServiceTotal.value = null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                      // Service subtotal (editable)
-                      if (selectedService.value != null)
-                        _ServiceSubtotal(
-                          service: selectedService.value!,
-                          quantity: quantity.value,
-                          tiers: tiers,
-                          customTotal: customServiceTotal.value,
-                          enabled: !isSaving.value,
-                          onCustomTotalChanged: (value) {
-                            customServiceTotal.value = value;
-                            isDirty.value = true;
-                          },
-                        ),
-                      const SizedBox(height: 20),
+                    // Products (optional add-ons)
+                    _ProductsSection(
+                      productItems: productItems,
+                      enabled: !isSaving.value,
+                      onChanged: () => isDirty.value = true,
+                    ),
+                    const SizedBox(height: 20),
 
-                      // Products (optional add-ons)
-                      _ProductsSection(
-                        productItems: productItems,
-                        enabled: !isSaving.value,
-                        onChanged: () => isDirty.value = true,
-                      ),
-                      const SizedBox(height: 20),
+                    // Special instructions
+                    _SpecialInstructionsField(
+                      enabled: !isSaving.value,
+                      onChanged: () => isDirty.value = true,
+                    ),
+                    const SizedBox(height: 20),
 
-                      // Special instructions
-                      _SpecialInstructionsField(
-                        enabled: !isSaving.value,
-                        onChanged: () => isDirty.value = true,
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Order date (read-only)
-                      _OrderDateDisplay(date: orderDate),
-                    ],
-                  ),
+                    // Order date (read-only)
+                    _OrderDateDisplay(date: orderDate),
+                  ],
                 ),
               ),
             ),
+          ),
 
-            // ── Footer ───────────────────────────────────────────────────────
-            _DialogFooter(
-              estimatedTotal: estimatedTotal,
-              subtotal: subtotalDisplay,
-              loyaltyDiscount: displayLoyaltyDiscount,
-              isSaving: isSaving.value,
-              canCreate: selectedCustomer.value != null &&
-                  selectedService.value != null,
-              onCreateOrder: handleCreateOrder,
-            ),
-          ],
-        ),
+          // ── Footer ───────────────────────────────────────────────────────
+          _DialogFooter(
+            estimatedTotal: estimatedTotal,
+            subtotal: subtotalDisplay,
+            loyaltyDiscount: displayLoyaltyDiscount,
+            isSaving: isSaving.value,
+            canCreate:
+                selectedCustomer.value != null && selectedService.value != null,
+            onCreateOrder: handleCreateOrder,
+          ),
+        ],
+      ),
     );
   }
-
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -629,8 +628,8 @@ class _DialogFooter extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Icon(Icons.loyalty, size: 12,
-                          color: theme.colorScheme.tertiary),
+                      Icon(Icons.loyalty,
+                          size: 12, color: theme.colorScheme.tertiary),
                       const SizedBox(width: 4),
                       Text(
                         'Discount: -${loyaltyDiscount.toCurrency()}',
@@ -799,77 +798,70 @@ class _CustomerSearchField extends HookConsumerWidget {
               ],
             ),
             child: () {
-                  final hasExactMatch = filtered.any(
-                    (c) =>
-                        c.name.toLowerCase() ==
-                        searchQuery.value.toLowerCase(),
-                  );
-                  return ListView(
-                    shrinkWrap: true,
-                    children: [
-                      ...filtered.map((c) => ListTile(
-                            dense: true,
-                            leading: CircleAvatar(
-                              radius: 16,
-                              backgroundColor:
-                                  theme.colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.person,
-                                size: 16,
-                                color:
-                                    theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                            title: Text(c.name),
-                            subtitle:
-                                c.phone != null ? Text(c.phone!) : null,
-                            onTap: () {
-                              selectedCustomer.value = c;
-                              searchController.text = c.name;
-                              searchQuery.value = '';
-                              isSearching.value = false;
-                              onChanged();
-                            },
-                          )),
-                      if (!hasExactMatch)
-                        ListTile(
-                          dense: true,
-                          leading: CircleAvatar(
-                            radius: 16,
-                            backgroundColor:
-                                theme.colorScheme.tertiaryContainer,
-                            child: Icon(
-                              Icons.person_add,
-                              size: 16,
-                              color:
-                                  theme.colorScheme.onTertiaryContainer,
-                            ),
+              final hasExactMatch = filtered.any(
+                (c) => c.name.toLowerCase() == searchQuery.value.toLowerCase(),
+              );
+              return ListView(
+                shrinkWrap: true,
+                children: [
+                  ...filtered.map((c) => ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.person,
+                            size: 16,
+                            color: theme.colorScheme.onPrimaryContainer,
                           ),
-                          title: Text(
-                            'Create "${searchQuery.value}"',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.tertiary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () {
-                            showCustomerFormDialog(
-                              context,
-                              initialName: searchQuery.value,
-                              onSaved: (customer) {
-                                selectedCustomer.value = customer;
-                                searchController.text = customer.name;
-                                searchQuery.value = '';
-                                isSearching.value = false;
-                                onChanged();
-                              },
-                            );
-                          },
                         ),
-                      const SizedBox(height: 8),
-                    ],
-                  );
-                }(),
+                        title: Text(c.name),
+                        subtitle: c.phone != null ? Text(c.phone!) : null,
+                        onTap: () {
+                          selectedCustomer.value = c;
+                          searchController.text = c.name;
+                          searchQuery.value = '';
+                          isSearching.value = false;
+                          onChanged();
+                        },
+                      )),
+                  if (!hasExactMatch)
+                    ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: theme.colorScheme.tertiaryContainer,
+                        child: Icon(
+                          Icons.person_add,
+                          size: 16,
+                          color: theme.colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                      title: Text(
+                        'Create "${searchQuery.value}"',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.tertiary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () {
+                        showCustomerFormDialog(
+                          context,
+                          initialName: searchQuery.value,
+                          onSaved: (customer) {
+                            selectedCustomer.value = customer;
+                            searchController.text = customer.name;
+                            searchQuery.value = '';
+                            isSearching.value = false;
+                            onChanged();
+                          },
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            }(),
           ),
         ],
       ],
@@ -981,8 +973,8 @@ class _ServiceSelector extends HookConsumerWidget {
       final defaultService = activeServices
           .cast<Service?>()
           .firstWhere((s) => s!.isDefault, orElse: () => null);
-      final autoSelect =
-          defaultService ?? (activeServices.length == 1 ? activeServices.first : null);
+      final autoSelect = defaultService ??
+          (activeServices.length == 1 ? activeServices.first : null);
       if (autoSelect != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           selectedService.value = autoSelect;
@@ -1485,8 +1477,7 @@ class _TierBreakdown extends HookWidget {
     // Find which tier is active
     int activeIndex = -1;
     for (var i = 0; i < sorted.length; i++) {
-      final nextMin =
-          i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
+      final nextMin = i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
       if (sorted[i].containsQuantityWithNext(
         currentQuantity,
         nextTierMin: nextMin,
@@ -1512,8 +1503,7 @@ class _TierBreakdown extends HookWidget {
         start = activeIndex - 1;
       }
       start = start.clamp(0, sorted.length - _visibleCount);
-      visibleIndices =
-          List.generate(_visibleCount, (i) => start + i);
+      visibleIndices = List.generate(_visibleCount, (i) => start + i);
     }
 
     return Container(
@@ -1536,11 +1526,10 @@ class _TierBreakdown extends HookWidget {
           ...visibleIndices.map((i) {
             final tier = sorted[i];
             final isActive = i == activeIndex;
-            final nextTierMin = i + 1 < sorted.length
-                ? sorted[i + 1].minQuantity
-                : null;
-            final rangeText = tier.displayRange(unitLabel,
-                nextTierMin: nextTierMin);
+            final nextTierMin =
+                i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
+            final rangeText =
+                tier.displayRange(unitLabel, nextTierMin: nextTierMin);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 1),
               child: Row(
@@ -1597,9 +1586,7 @@ class _TierBreakdown extends HookWidget {
                       ),
                     ),
                     Icon(
-                      isExpanded.value
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                      isExpanded.value ? Icons.expand_less : Icons.expand_more,
                       size: 14,
                       color: theme.colorScheme.primary,
                     ),
@@ -1679,10 +1666,8 @@ class _ProductsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final items = productItems.value;
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-    final addOnsTotal =
-        items.fold<num>(0, (sum, item) => sum + item.subtotal);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final addOnsTotal = items.fold<num>(0, (sum, item) => sum + item.subtotal);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1699,8 +1684,7 @@ class _ProductsSection extends StatelessWidget {
             if (items.isNotEmpty) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
@@ -1716,9 +1700,7 @@ class _ProductsSection extends StatelessWidget {
             ],
             const Spacer(),
             TextButton.icon(
-              onPressed: enabled
-                  ? () => _showAddOnsSheet(context)
-                  : null,
+              onPressed: enabled ? () => _showAddOnsSheet(context) : null,
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Add'),
             ),
@@ -1749,8 +1731,7 @@ class _ProductsSection extends StatelessWidget {
                     currencyFormat: currencyFormat,
                     enabled: enabled,
                     onIncrement: () {
-                      final updated =
-                          List<_OrderProductItem>.from(items);
+                      final updated = List<_OrderProductItem>.from(items);
                       updated[i] = _OrderProductItem(
                         product: items[i].product,
                         quantity: items[i].quantity + 1,
@@ -1760,8 +1741,7 @@ class _ProductsSection extends StatelessWidget {
                       onChanged();
                     },
                     onDecrement: () {
-                      final updated =
-                          List<_OrderProductItem>.from(items);
+                      final updated = List<_OrderProductItem>.from(items);
                       if (items[i].quantity <= 1) {
                         updated.removeAt(i);
                       } else {
@@ -1775,8 +1755,7 @@ class _ProductsSection extends StatelessWidget {
                       onChanged();
                     },
                     onRemove: () {
-                      final updated =
-                          List<_OrderProductItem>.from(items);
+                      final updated = List<_OrderProductItem>.from(items);
                       updated.removeAt(i);
                       productItems.value = updated;
                       onChanged();
@@ -1873,8 +1852,8 @@ class _AddOnItemRow extends StatelessWidget {
         // Quantity stepper
         Container(
           decoration: BoxDecoration(
-            border: Border.all(
-                color: theme.colorScheme.outlineVariant, width: 0.5),
+            border:
+                Border.all(color: theme.colorScheme.outlineVariant, width: 0.5),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
@@ -1882,14 +1861,13 @@ class _AddOnItemRow extends StatelessWidget {
             children: [
               InkWell(
                 onTap: enabled ? onDecrement : null,
-                borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(6)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(6)),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   child: Icon(Icons.remove,
-                      size: 14,
-                      color: theme.colorScheme.onSurfaceVariant),
+                      size: 14, color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
               Padding(
@@ -1903,11 +1881,11 @@ class _AddOnItemRow extends StatelessWidget {
               ),
               InkWell(
                 onTap: enabled ? onIncrement : null,
-                borderRadius: const BorderRadius.horizontal(
-                    right: Radius.circular(6)),
+                borderRadius:
+                    const BorderRadius.horizontal(right: Radius.circular(6)),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   child: Icon(Icons.add,
                       size: 14, color: theme.colorScheme.primary),
                 ),
@@ -1933,8 +1911,7 @@ class _AddOnItemRow extends StatelessWidget {
                 size: 14, color: theme.colorScheme.onSurfaceVariant),
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
-            constraints:
-                const BoxConstraints(minWidth: 24, minHeight: 24),
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
             onPressed: enabled ? onRemove : null,
           ),
         ),
@@ -1976,8 +1953,7 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
     final productsAsync = useState<List<Product>?>(null);
     final isLoading = useState(true);
     final items = useState(List<_OrderProductItem>.from(currentItems));
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
     useEffect(() {
       () async {
@@ -2095,8 +2071,8 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                   ),
                   filled: true,
                   fillColor: theme.colorScheme.surfaceContainerHighest,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   isDense: true,
                 ),
                 onChanged: (v) => searchQuery.value = v,
@@ -2119,20 +2095,16 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
+                          separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (_, i) {
                             final product = filtered[i];
-                            final qty = _qtyForProduct(
-                                items.value, product.id);
+                            final qty = _qtyForProduct(items.value, product.id);
                             final isAdded = qty > 0;
 
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -2142,8 +2114,7 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                       children: [
                                         Text(
                                           product.name,
-                                          style: theme
-                                              .textTheme.bodyMedium
+                                          style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                             fontWeight: isAdded
                                                 ? FontWeight.w600
@@ -2154,13 +2125,12 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                         Text(
                                           product.isVariablePrice
                                               ? 'Variable price'
-                                              : currencyFormat.format(
-                                                  product.price),
-                                          style: theme
-                                              .textTheme.bodySmall
+                                              : currencyFormat
+                                                  .format(product.price),
+                                          style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                            color: theme.colorScheme
-                                                .onSurfaceVariant,
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
@@ -2169,11 +2139,10 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                   if (isAdded)
                                     Container(
                                       decoration: BoxDecoration(
-                                        color: theme.colorScheme
-                                            .primaryContainer
+                                        color: theme
+                                            .colorScheme.primaryContainer
                                             .withValues(alpha: 0.5),
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -2185,45 +2154,35 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                                   : Icons.remove,
                                               size: 18,
                                               color: qty == 1
-                                                  ? theme
-                                                      .colorScheme.error
-                                                  : theme.colorScheme
-                                                      .primary,
+                                                  ? theme.colorScheme.error
+                                                  : theme.colorScheme.primary,
                                             ),
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            constraints:
-                                                const BoxConstraints(
-                                                    minWidth: 36,
-                                                    minHeight: 36),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 36, minHeight: 36),
                                             onPressed: () {
-                                              final updated = List<
-                                                      _OrderProductItem>
-                                                  .from(items.value);
-                                              final idx = updated
-                                                  .lastIndexWhere(
-                                                      (e) =>
-                                                          e.product.id ==
-                                                          product.id);
+                                              final updated =
+                                                  List<_OrderProductItem>.from(
+                                                      items.value);
+                                              final idx =
+                                                  updated.lastIndexWhere((e) =>
+                                                      e.product.id ==
+                                                      product.id);
                                               if (idx != -1) {
-                                                if (updated[idx]
-                                                        .quantity <=
+                                                if (updated[idx].quantity <=
                                                     1) {
-                                                  updated
-                                                      .removeAt(idx);
+                                                  updated.removeAt(idx);
                                                 } else {
                                                   updated[idx] =
                                                       _OrderProductItem(
                                                     product:
-                                                        updated[idx]
-                                                            .product,
+                                                        updated[idx].product,
                                                     quantity:
-                                                        updated[idx]
-                                                                .quantity -
+                                                        updated[idx].quantity -
                                                             1,
-                                                    customPrice:
-                                                        updated[idx]
-                                                            .customPrice,
+                                                    customPrice: updated[idx]
+                                                        .customPrice,
                                                   );
                                                 }
                                               }
@@ -2232,50 +2191,38 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                           ),
                                           Text(
                                             '$qty',
-                                            style: theme
-                                                .textTheme.titleSmall
+                                            style: theme.textTheme.titleSmall
                                                 ?.copyWith(
-                                              fontWeight:
-                                                  FontWeight.w700,
-                                              color: theme
-                                                  .colorScheme.primary,
+                                              fontWeight: FontWeight.w700,
+                                              color: theme.colorScheme.primary,
                                             ),
                                           ),
                                           IconButton(
                                             icon: Icon(
                                               Icons.add,
                                               size: 18,
-                                              color: theme
-                                                  .colorScheme.primary,
+                                              color: theme.colorScheme.primary,
                                             ),
                                             visualDensity:
                                                 VisualDensity.compact,
-                                            constraints:
-                                                const BoxConstraints(
-                                                    minWidth: 36,
-                                                    minHeight: 36),
+                                            constraints: const BoxConstraints(
+                                                minWidth: 36, minHeight: 36),
                                             onPressed: () {
-                                              final updated = List<
-                                                      _OrderProductItem>
-                                                  .from(items.value);
-                                              final idx = updated
-                                                  .lastIndexWhere(
-                                                      (e) =>
-                                                          e.product.id ==
-                                                          product.id);
+                                              final updated =
+                                                  List<_OrderProductItem>.from(
+                                                      items.value);
+                                              final idx =
+                                                  updated.lastIndexWhere((e) =>
+                                                      e.product.id ==
+                                                      product.id);
                                               if (idx != -1) {
                                                 updated[idx] =
                                                     _OrderProductItem(
-                                                  product:
-                                                      updated[idx]
-                                                          .product,
+                                                  product: updated[idx].product,
                                                   quantity:
-                                                      updated[idx]
-                                                              .quantity +
-                                                          1,
+                                                      updated[idx].quantity + 1,
                                                   customPrice:
-                                                      updated[idx]
-                                                          .customPrice,
+                                                      updated[idx].customPrice,
                                                 );
                                               }
                                               items.value = updated;
@@ -2288,24 +2235,21 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                                     IconButton(
                                       icon: Icon(
                                         Icons.add_circle_outline,
-                                        color:
-                                            theme.colorScheme.primary,
+                                        color: theme.colorScheme.primary,
                                       ),
                                       onPressed: () async {
                                         num? price;
                                         if (product.isVariablePrice) {
-                                          price =
-                                              await showVariablePriceDialog(
+                                          price = await showVariablePriceDialog(
                                             context,
                                             productName: product.name,
                                           );
                                           if (price == null) return;
                                         }
-                                        final updated = List<
-                                                _OrderProductItem>
-                                            .from(items.value);
-                                        updated.add(
-                                            _OrderProductItem(
+                                        final updated =
+                                            List<_OrderProductItem>.from(
+                                                items.value);
+                                        updated.add(_OrderProductItem(
                                           product: product,
                                           customPrice: price,
                                         ));
@@ -2357,8 +2301,7 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: () =>
-                        Navigator.of(context).pop(items.value),
+                    onPressed: () => Navigator.of(context).pop(items.value),
                     child: const Text('Save'),
                   ),
                 ],
@@ -2451,6 +2394,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     required this.estimatedTotal,
     this.specialInstructions,
     this.productItems = const [],
+    this.claimSheetNumber,
   });
 
   final Customer customer;
@@ -2460,6 +2404,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final double estimatedTotal;
   final String? specialInstructions;
   final List<_OrderProductItem> productItems;
+  final String? claimSheetNumber;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2490,6 +2435,33 @@ class _OrderSuccessPage extends HookConsumerWidget {
             ))
         .toList();
 
+    OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
+      final currentBranch = branchAsync.value;
+      return OrderClaimSheetPdfData(
+        customerName: customer.name,
+        serviceName: service.name,
+        quantity: quantity,
+        unitLabel: unitLabel,
+        totalAmount: estimatedTotal,
+        createdDate: orderDate,
+        storeCopy: storeCopy,
+        businessName: currentBranch?.name,
+        branchAddress: currentBranch?.address,
+        contactNumber: currentBranch?.contactNumber,
+        cashierName: currentAuth?.user.name,
+        specialInstructions: specialInstructions,
+        claimSheetNumber: claimSheetNumber,
+        addOnItems: addOnSaleItems,
+      );
+    }
+
+    Future<void> handlePdfPreview({required bool storeCopy}) async {
+      await previewOrderClaimSheetPdf(
+        context: context,
+        data: buildPdfData(storeCopy: storeCopy),
+      );
+    }
+
     Future<void> handleThermalPrint({bool showSuccessMessage = true}) async {
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
@@ -2512,6 +2484,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
           unitLabel: unitLabel,
           totalAmount: estimatedTotal,
           copyType: OrderReceiptCopy.store,
+          claimSheetNumber: claimSheetNumber,
           businessName: currentBranch?.name,
           branchAddress: currentBranch?.address,
           contactNumber: currentBranch?.contactNumber,
@@ -2541,6 +2514,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         unitLabel: unitLabel,
         totalAmount: estimatedTotal,
         copyType: OrderReceiptCopy.customer,
+        claimSheetNumber: claimSheetNumber,
         businessName: currentBranch?.name,
         branchAddress: currentBranch?.address,
         contactNumber: currentBranch?.contactNumber,
@@ -2555,7 +2529,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
           showErrorSnackBar(
             context,
             message: printStoreCopy.value
-                ? 'Store copy printed, but customer copy failed'
+                ? 'Claim sheet printed (customer copy failed)'
                 : customerResult.message,
             useRootMessenger: false,
           );
@@ -2568,8 +2542,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
 
       if (showSuccessMessage) {
         final msg = printStoreCopy.value
-            ? 'Printed: store copy + customer copy'
-            : 'Printed: customer copy';
+            ? 'Printed: store + customer claim sheets'
+            : 'Claim sheet printed';
         showSuccessSnackBar(context, message: msg, useRootMessenger: false);
       }
     }
@@ -2600,8 +2574,42 @@ class _OrderSuccessPage extends HookConsumerWidget {
                 onPressed: () => context.pop(),
               ),
               Expanded(
-                child: Text('Receipt', style: theme.textTheme.titleLarge),
+                child: Text('Claim Sheet', style: theme.textTheme.titleLarge),
               ),
+              PopupMenuButton<String>(
+                tooltip: 'Preview claim sheet',
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'preview_customer':
+                      handlePdfPreview(storeCopy: false);
+                    case 'preview_store':
+                      handlePdfPreview(storeCopy: true);
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem<String>(
+                    value: 'preview_customer',
+                    child: ListTile(
+                      leading: Icon(Icons.picture_as_pdf_outlined),
+                      title: Text('Preview Claim Sheet'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'preview_store',
+                    child: ListTile(
+                      leading: Icon(Icons.picture_as_pdf_outlined),
+                      title: Text('Preview Claim Sheet (Store)'),
+                      subtitle: Text('Machine tag'),
+                      contentPadding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
               if (hasDefaultPrinter)
                 FilledButton.icon(
                   onPressed: isPrinting.value ? null : handleThermalPrint,
@@ -2723,8 +2731,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
             child: CheckboxListTile(
               value: printStoreCopy.value,
               onChanged: (v) => printStoreCopy.value = v ?? true,
-              title: const Text('Print store copy'),
-              subtitle: const Text('Prints a machine tag with customer name'),
+              title: const Text('Print store claim sheet'),
+              subtitle: const Text('Prints a compact tag for machines'),
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,

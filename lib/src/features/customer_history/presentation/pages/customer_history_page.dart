@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/printing/claim_sheet_disclaimer.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../domain/customer_history.dart';
@@ -240,9 +241,7 @@ class _SaleTile extends HookConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Icon(
-                        expanded.value
-                            ? Icons.expand_less
-                            : Icons.expand_more,
+                        expanded.value ? Icons.expand_less : Icons.expand_more,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ],
@@ -349,8 +348,7 @@ class _ExpandedDetail extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest
-            .withValues(alpha: 0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: Border(
           top: BorderSide(color: theme.dividerColor),
         ),
@@ -381,6 +379,16 @@ class _DetailBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (sale.receiptNumber.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              '$claimSheetNumberLabel ${sale.receiptNumber}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         if (detail.services.isNotEmpty) ...[
           Text('Services', style: theme.textTheme.titleSmall),
           const SizedBox(height: 4),
@@ -426,6 +434,18 @@ class _DetailBody extends StatelessWidget {
           const SizedBox(height: 4),
           Text(sale.notes!),
         ],
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 8),
+        ...claimSheetDisclaimerLines.map(
+          (line) => Text(
+            line,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
         const SizedBox(height: 12),
         Align(
           alignment: Alignment.centerRight,
