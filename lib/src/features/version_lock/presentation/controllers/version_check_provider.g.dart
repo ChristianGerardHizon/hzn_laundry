@@ -70,4 +70,4 @@ final class VersionCheckProvider extends $FunctionalProvider<
   }
 }
 
-String _$versionCheckHash() => r'1365031a819a5661bec4c96ee803801c4bf31cf3';
+String _$versionCheckHash() => r'b6006c7803e9750e10f4e2d24dbe763ceef4dd90';
