@@ -6,6 +6,8 @@ import '../../domain/machine.dart';
 part 'machines_controller.g.dart';
 
 /// Controller for managing machine list state.
+///
+/// Machines are org-global in live PocketBase (no branch field).
 @Riverpod(keepAlive: true)
 class MachinesController extends _$MachinesController {
   MachineRepository get _repository => ref.read(machineRepositoryProvider);

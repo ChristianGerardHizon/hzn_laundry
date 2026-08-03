@@ -38,7 +38,7 @@ final class StorageLocationsControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$storageLocationsControllerHash() =>
-    r'f616e547723aab60bc86202194ae8724aa07f525';
+    r'9f45ee83e6a8d899a1e67e7bdc105ec6edefb5cf';
 
 /// Controller for managing storage location list state.
 

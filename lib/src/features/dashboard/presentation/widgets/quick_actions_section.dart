@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../sales/presentation/widgets/create_order_dialog.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../users/domain/user_role.dart';
 import 'orders_by_resource_dialog.dart';
 
@@ -28,6 +31,7 @@ class QuickActionsSection extends ConsumerWidget {
     final roleAsync = ref.watch(currentUserRoleProvider);
     final role = roleAsync.value;
     final isAdmin = role?.isAdmin ?? false;
+    final isAllBranches = ref.watch(isAllBranchesProvider);
     final canAttendance = isAdmin ||
         (role?.hasPermission(Permissions.attendanceView) ?? false) ||
         (role?.hasPermission(Permissions.attendanceCreate) ?? false);
@@ -67,7 +71,18 @@ class QuickActionsSection extends ConsumerWidget {
                     label: 'New Sale',
                     color: Colors.green,
                     filled: true,
-                    onTap: () => showCreateOrderDialog(context),
+                    onTap: () {
+                      if (isAllBranches) {
+                        showWarningSnackBar(
+                          context,
+                          message: Translations.of(context)
+                              .navigation
+                              .createUnavailableAllBranches,
+                        );
+                        return;
+                      }
+                      showCreateOrderDialog(context);
+                    },
                   ),
                 if (canCreateCustomer)
                   _QuickActionButton(

@@ -5,6 +5,11 @@ on:
     types: [ closed ]
     branches: [ "staging", "main" ]
   workflow_dispatch:
+    inputs:
+      build_windows:
+        description: 'Also build a Windows release ZIP'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -56,6 +61,8 @@ jobs:
     needs: preflight-staging
     if: needs.preflight-staging.outputs.skip != 'true'
     runs-on: ubuntu-latest
+    outputs:
+      staging_tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,6 +135,7 @@ jobs:
           echo "Calculated Staging Version: $STAGING_VER (bump: $BUMP)"
 
       - name: Resolve unique staging tag
+        id: resolve_tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -143,6 +151,7 @@ jobs:
           fi
 
           echo "STAGING_TAG=$TAG" >> $GITHUB_ENV
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Resolved staging tag: $TAG"
 
       # --- SETUP & CACHE START ---
@@ -237,6 +246,92 @@ jobs:
           name: ${{ env.STAGING_TAG }}
           prerelease: true
           files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================
+  # JOB 1b: WINDOWS BUILD (STAGING) — opt-in via 'build-windows' label or workflow_dispatch input
+  # ==========================================
+  build-windows-staging:
+    needs: preflight-staging
+    if: |
+      needs.preflight-staging.outputs.skip != 'true' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.build_windows == true) ||
+       (github.event_name != 'workflow_dispatch' && contains(github.event.pull_request.labels.*.name, 'build-windows')))
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Independent, read-only version fetch for --build-name stamping only.
+      # The authoritative release tag comes from deploy-staging (see attach-windows-staging).
+      - name: Calculate Staging Version
+        id: calc_staging_win
+        shell: bash
+        env:
+          URL: ${{ secrets.VERSION_MANAGER_URL }}
+          ID: ${{ secrets.VERSION_COLLECTION_ID }}
+          BUMP: ${{ needs.preflight-staging.outputs.bump }}
+        run: |
+          RESPONSE=$(curl -s "$URL/$ID")
+          MAJOR=$(echo $RESPONSE | jq -r '.major')
+          MINOR=$(echo $RESPONSE | jq -r '.minor')
+          PATCH=$(echo $RESPONSE | jq -r '.patch')
+
+          if [ "$MAJOR" == "null" ]; then
+             echo "::error::Failed to parse version. Response: $RESPONSE"
+             exit 1
+          fi
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            *) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          echo "STAGING_VER=$MAJOR.$MINOR.$PATCH-staging" >> $GITHUB_ENV
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows (Release)
+        run: flutter build windows --release --build-name=${{ env.STAGING_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=staging --dart-define=API_URL=${{ secrets.POCKETBASE_URL_STAGING }}
+
+      - name: Zip Windows build
+        shell: pwsh
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath hizonelaundry-staging-windows.zip
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-staging
+          path: hizonelaundry-staging-windows.zip
+          retention-days: 1
+
+  # ==========================================
+  # JOB 1c: ATTACH WINDOWS ASSET (STAGING)
+  # ==========================================
+  attach-windows-staging:
+    needs: [ deploy-staging, build-windows-staging ]
+    if: needs.build-windows-staging.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-staging
+
+      - name: Attach Windows asset to Staging Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.deploy-staging.outputs.staging_tag }}
+          files: hizonelaundry-staging-windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -453,6 +548,86 @@ jobs:
           retention-days: 1
 
   # ==========================================
+  # JOB 2b: WINDOWS BUILD (PRODUCTION) — opt-in via 'build-windows' label
+  # ==========================================
+  build-windows-production:
+    if: |
+      github.event.pull_request.merged == true && github.base_ref == 'main' &&
+      contains(github.event.pull_request.labels.*.name, 'build-windows')
+    runs-on: windows-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Independent, read-only version fetch for --build-name stamping only.
+      # The authoritative release tag comes from deploy-production (see attach-windows-production).
+      - name: Detect version bump type
+        id: bump_type
+        shell: bash
+        run: |
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+
+          if echo "$LABELS" | grep -q '"version:major"'; then
+            BUMP="major"
+          elif echo "$LABELS" | grep -q '"version:minor"'; then
+            BUMP="minor"
+          elif echo "$LABELS" | grep -q '"version:patch"'; then
+            BUMP="patch"
+          else
+            echo "::error::Missing version label! Add one of: version:patch, version:minor, version:major"
+            exit 1
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+
+      - name: Calculate Prod Version
+        id: calc_prod_win
+        shell: bash
+        env:
+          URL: ${{ secrets.VERSION_MANAGER_URL }}
+          ID: ${{ secrets.VERSION_COLLECTION_ID }}
+          BUMP: ${{ steps.bump_type.outputs.bump }}
+        run: |
+          RESPONSE=$(curl -s "$URL/$ID")
+          MAJOR=$(echo $RESPONSE | jq -r '.major')
+          MINOR=$(echo $RESPONSE | jq -r '.minor')
+          PATCH=$(echo $RESPONSE | jq -r '.patch')
+
+          if [ "$MAJOR" == "null" ]; then exit 1; fi
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            *) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          echo "PROD_VER=$MAJOR.$MINOR.$PATCH" >> $GITHUB_ENV
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows (Release)
+        run: flutter build windows --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
+
+      - name: Zip Windows build
+        shell: pwsh
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath hizonelaundry-windows.zip
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-production
+          path: hizonelaundry-windows.zip
+          retention-days: 1
+
+  # ==========================================
   # JOB 3: RELEASE & SYNC
   # ==========================================
   release-and-sync:
@@ -500,3 +675,26 @@ jobs:
            else
               curl -s -X PATCH "$URL/$ID" -H "Content-Type: application/json" -H "Authorization: $TOKEN" -d "$PAYLOAD"
            fi
+
+  # ==========================================
+  # JOB 4: ATTACH WINDOWS ASSET (PRODUCTION)
+  # ==========================================
+  attach-windows-production:
+    needs: [ deploy-production, release-and-sync, build-windows-production ]
+    if: needs.build-windows-production.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-production
+
+      - name: Attach Windows asset to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.deploy-production.outputs.prod_ver }}
+          files: hizonelaundry-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

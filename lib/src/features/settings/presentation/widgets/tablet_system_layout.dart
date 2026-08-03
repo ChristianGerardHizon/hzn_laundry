@@ -13,6 +13,7 @@ import '../../../products/domain/product_category.dart';
 import '../controllers/product_categories_controller.dart';
 import '../controllers/printer_configs_controller.dart';
 import '../controllers/quantity_units_controller.dart';
+import '../../../pos/presentation/services/thermal_print_service.dart';
 import 'empty_system_state.dart';
 import 'dialogs/quantity_unit_form_dialog.dart';
 import 'dialogs/printer_config_form_dialog.dart';
@@ -334,7 +335,35 @@ class _PrinterListWrapper extends ConsumerWidget {
         onPressed: () => _showCreateSheet(context),
         child: const Icon(Icons.add),
       ),
-      body: printersAsync.when(
+      body: Column(
+        children: [
+          if (!isThermalPrintingSupported)
+            Container(
+              width: double.infinity,
+              color: theme.colorScheme.secondaryContainer,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      kThermalPrintingUnsupportedMessage,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: printersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
@@ -438,6 +467,9 @@ class _PrinterListWrapper extends ConsumerWidget {
             ),
           );
         },
+            ),
+          ),
+        ],
       ),
     );
   }

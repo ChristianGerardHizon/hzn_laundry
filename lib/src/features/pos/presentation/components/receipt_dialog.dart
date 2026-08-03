@@ -339,6 +339,15 @@ class ReceiptDialog extends HookConsumerWidget {
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
 
     Future<void> handleThermalPrint({bool showSuccessMessage = true}) async {
+      if (!isThermalPrintingSupported) {
+        showErrorSnackBar(
+          context,
+          message: kThermalPrintingUnsupportedMessage,
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       // Get printer before async operations to avoid ref disposal issues
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
@@ -416,7 +425,8 @@ class ReceiptDialog extends HookConsumerWidget {
     // Auto-print when dialog opens if default printer is configured
     useEffect(() {
       final defaultPrinter = defaultPrinterAsync.value;
-      if (defaultPrinter != null &&
+      if (isThermalPrintingSupported &&
+          defaultPrinter != null &&
           !hasAutoPrinted.value &&
           !isPrinting.value) {
         hasAutoPrinted.value = true;
@@ -457,6 +467,8 @@ class ReceiptDialog extends HookConsumerWidget {
     }
 
     final hasDefaultPrinter = defaultPrinterAsync.value != null;
+    final canThermalPrint =
+        isThermalPrintingSupported && hasDefaultPrinter;
 
     return DialogCloseHandler(
       child: Column(
@@ -477,7 +489,7 @@ class ReceiptDialog extends HookConsumerWidget {
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
-                if (hasDefaultPrinter) ...[
+                if (canThermalPrint) ...[
                   IconButton.outlined(
                     onPressed: handlePdfPrint,
                     icon: const Icon(Icons.picture_as_pdf),
@@ -501,14 +513,16 @@ class ReceiptDialog extends HookConsumerWidget {
                     icon: const Icon(Icons.print_outlined),
                     label: const Text('Print PDF'),
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      DialogDismissingObserver.dismissAllDialogs();
-                      const PrinterSettingsRoute().go(context);
-                    },
-                    child: const Text('Setup Printer'),
-                  ),
+                  if (isThermalPrintingSupported) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () {
+                        DialogDismissingObserver.dismissAllDialogs();
+                        const PrinterSettingsRoute().go(context);
+                      },
+                      child: const Text('Setup Printer'),
+                    ),
+                  ],
                 ],
                 const SizedBox(width: 8),
               ],
@@ -625,8 +639,8 @@ class ReceiptDialog extends HookConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // Cashier copy option (only show if printer configured)
-          if (hasDefaultPrinter)
+          // Cashier copy option (only show if thermal printing is available)
+          if (canThermalPrint)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: CheckboxListTile(
@@ -645,7 +659,7 @@ class ReceiptDialog extends HookConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: SizedBox(
               width: double.infinity,
-              child: hasDefaultPrinter
+              child: canThermalPrint
                   ? OutlinedButton(
                       onPressed: () => context.pop(),
                       child: const Text('Done'),

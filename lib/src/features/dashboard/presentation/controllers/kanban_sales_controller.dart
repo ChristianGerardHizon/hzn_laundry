@@ -263,8 +263,15 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
           '$filter && postedDate < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
   }
 
-  final records =
-      await pb.collection(PocketBaseCollections.sales).getFullList(
+  final records = branchId == null
+      ? (await pb.collection(PocketBaseCollections.sales).getList(
+            page: 1,
+            perPage: 500,
+            filter: filter,
+            sort: '-postedDate',
+          ))
+          .items
+      : await pb.collection(PocketBaseCollections.sales).getFullList(
             filter: filter,
             sort: '-postedDate',
           );

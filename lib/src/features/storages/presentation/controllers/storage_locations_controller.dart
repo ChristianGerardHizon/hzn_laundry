@@ -6,6 +6,8 @@ import '../../domain/storage_location.dart';
 part 'storage_locations_controller.g.dart';
 
 /// Controller for managing storage location list state.
+///
+/// Storages are org-global in live PocketBase (no branch field).
 @Riverpod(keepAlive: true)
 class StorageLocationsController extends _$StorageLocationsController {
   StorageLocationRepository get _repository =>

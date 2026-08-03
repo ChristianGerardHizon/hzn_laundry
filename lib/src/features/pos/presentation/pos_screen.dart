@@ -1,9 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/i18n/strings.g.dart';
 import '../../../core/utils/breakpoints.dart';
 import '../../../core/utils/currency_format.dart';
+import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../domain/pos_group.dart';
 import 'cart_controller.dart';
 import 'components/cart_view.dart';
@@ -24,10 +28,11 @@ class PosScreen extends HookConsumerWidget {
     final posGroupsAsync = ref.watch(posGroupsControllerProvider);
     final groups = posGroupsAsync.value ?? [];
     final hasGroups = groups.isNotEmpty;
+    final isAllBranches = ref.watch(isAllBranchesProvider);
 
     final isMobile = Breakpoints.isMobile(context);
 
-    return isMobile
+    final content = isMobile
         ? _MobileLayout(
             scaffoldKey: scaffoldKey,
             hasGroups: hasGroups,
@@ -37,6 +42,76 @@ class PosScreen extends HookConsumerWidget {
             hasGroups: hasGroups,
             groups: groups,
           );
+
+    if (!isAllBranches) return content;
+
+    return Stack(
+      children: [
+        AbsorbPointer(
+          absorbing: true,
+          child: content,
+        ),
+        const Positioned.fill(
+          child: _AllBranchesPosOverlay(),
+        ),
+      ],
+    );
+  }
+}
+
+class _AllBranchesPosOverlay extends StatelessWidget {
+  const _AllBranchesPosOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = Translations.of(context);
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: ColoredBox(
+          color: theme.colorScheme.scrim.withValues(alpha: 0.45),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                margin: const EdgeInsets.all(24),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.storefront_outlined,
+                        size: 48,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        t.navigation.allBranches,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        t.navigation.posUnavailableAllBranches,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

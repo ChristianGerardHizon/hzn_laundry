@@ -28,6 +28,12 @@ class PrinterDiscoveryDialog extends HookConsumerWidget {
     final isPermissionPermanentlyDenied = useState(false);
 
     Future<void> scanForPrinters() async {
+      if (!isThermalPrintingSupported) {
+        error.value = kThermalPrintingUnsupportedMessage;
+        isScanning.value = false;
+        return;
+      }
+
       isScanning.value = true;
       error.value = null;
       isPermissionPermanentlyDenied.value = false;

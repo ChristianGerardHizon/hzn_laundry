@@ -18,5 +18,8 @@
     "system": "System",
     "account": "Account",
     "noBranch": "No Branch",
+    "allBranches": "All Branches",
+    "posUnavailableAllBranches": "Cashier is not available when All Branches is selected. Choose a specific branch to continue.",
+    "createUnavailableAllBranches": "This action requires a specific branch. Choose a branch before continuing.",
     "activities": "Activities"
 }
