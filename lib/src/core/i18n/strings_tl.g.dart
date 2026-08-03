@@ -117,6 +117,8 @@ class _TranslationsCommonTl implements TranslationsCommonEn {
 	@override String get discard => 'I-discard';
 	@override String get keepEditing => 'Magpatuloy sa Pag-edit';
 	@override String get sort => 'Ayusin';
+	@override String get fullScreen => 'Buong Screen';
+	@override String get exitFullScreen => 'Lumabas sa Buong Screen';
 }
 
 // Path: failures
@@ -301,6 +303,8 @@ extension on TranslationsTl {
 			'common.discard' => 'I-discard',
 			'common.keepEditing' => 'Magpatuloy sa Pag-edit',
 			'common.sort' => 'Ayusin',
+			'common.fullScreen' => 'Buong Screen',
+			'common.exitFullScreen' => 'Lumabas sa Buong Screen',
 			'failures.generic' => 'May nangyaring mali. Pakisubukang muli.',
 			'failures.networkError' => 'Error sa network. Pakitingnan ang iyong koneksyon.',
 			'failures.serverError' => 'Error sa server. Pakisubukang muli mamaya.',

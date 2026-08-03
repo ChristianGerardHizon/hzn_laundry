@@ -23,6 +23,7 @@ import '../routing/routes/promos.routes.dart';
 import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
 import '../widgets/branch_switcher.dart';
+import '../widgets/fullscreen_toggle_button.dart';
 import '../widgets/mobile_bottom_nav.dart';
 import '../widgets/mobile_drawer.dart';
 import '../widgets/nav_permissions.dart';
@@ -217,7 +218,12 @@ class _AppRootState extends ConsumerState<AppRoot> {
           color: Theme.of(context).scaffoldBackgroundColor,
           child: Column(
             children: [
-              const BranchSwitcher(compact: true),
+              Row(
+                children: [
+                  const Expanded(child: BranchSwitcher(compact: true)),
+                  const FullscreenToggleButton(),
+                ],
+              ),
               Expanded(child: widget.child),
             ],
           ),
@@ -257,7 +263,12 @@ class _AppRootState extends ConsumerState<AppRoot> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const BranchSwitcher(compact: true),
+                      Row(
+                        children: [
+                          const Expanded(child: BranchSwitcher(compact: true)),
+                          const FullscreenToggleButton(),
+                        ],
+                      ),
                       Expanded(child: widget.child),
                     ],
                   ),

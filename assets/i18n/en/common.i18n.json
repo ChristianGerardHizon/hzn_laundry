@@ -30,5 +30,7 @@
     "discardChangesMessage": "You have unsaved changes. Are you sure you want to discard them?",
     "discard": "Discard",
     "keepEditing": "Keep Editing",
-    "sort": "Sort"
+    "sort": "Sort",
+    "fullScreen": "Full Screen",
+    "exitFullScreen": "Exit Full Screen"
 }
