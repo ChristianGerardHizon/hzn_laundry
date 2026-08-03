@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
-import '../assets/assets.gen.dart';
 import '../i18n/strings.g.dart';
 import '../packages/pocketbase/pocketbase_provider.dart';
 import 'branch_switcher.dart';
 import 'nav_permissions.dart';
+import 'network_health_logo.dart';
 
 /// Mobile drawer with permission-filtered navigation menu.
 class MobileDrawer extends ConsumerWidget {
@@ -51,10 +51,7 @@ class MobileDrawer extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Assets.icons.appIconTransparent.image(
-                    width: 48,
-                    height: 48,
-                  ),
+                  const NetworkHealthLogo(size: 48),
                   const SizedBox(height: 8),
                   Text(
                     'Hi-Zone Laundry',

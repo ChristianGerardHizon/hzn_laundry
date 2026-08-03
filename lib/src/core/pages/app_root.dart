@@ -10,6 +10,7 @@ import '../../features/version_lock/presentation/controllers/update_dismissed_pr
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../../features/version_lock/presentation/widgets/optional_update_dialog.dart';
 import '../i18n/strings.g.dart';
+import '../packages/pocketbase/pb_connectivity_provider.dart';
 import '../routing/routes/dashboard.routes.dart';
 import '../routing/routes/organization.routes.dart';
 import '../routing/routes/products.routes.dart';
@@ -119,6 +120,9 @@ class _AppRootState extends ConsumerState<AppRoot> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep PocketBase health polling alive for the authenticated shell.
+    ref.watch(pbConnectivityProvider);
+
     // Initialize cart controller early to load any active cart
     ref.watch(cartControllerProvider);
 

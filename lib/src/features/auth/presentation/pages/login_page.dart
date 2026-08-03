@@ -4,11 +4,11 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import '../../../../core/assets/assets.gen.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/auth.routes.dart';
 import '../../../../core/widgets/app_version_indicator.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../../core/widgets/network_health_logo.dart';
 import '../controllers/auth_controller.dart';
 
 /// Login page for user authentication.
@@ -72,11 +72,11 @@ class LoginPage extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
-                  Assets.icons.appIconTransparent.image(
-                    width: 150,
-                    height: 150,
+                  // Logo with network health border
+                  const Center(
+                    child: NetworkHealthLogo(size: 150, borderWidth: 4),
                   ),
+
                   const SizedBox(height: 16),
                   Text(
                     t.common.appName,
