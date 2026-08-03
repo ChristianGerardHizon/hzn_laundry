@@ -7,6 +7,7 @@ import '../../../../core/utils/breakpoints.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/add_ons_summary_controller.dart';
+import '../controllers/dashboard_refresh.dart';
 import '../controllers/loads_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/total_packs_summary_controller.dart';
@@ -33,14 +34,7 @@ class SalesSummarySection extends HookConsumerWidget {
 
     Future<void> handleRefresh() async {
       isRefreshing.value = true;
-      ref.invalidate(salesSummaryProvider);
-      ref.invalidate(totalPacksSummaryProvider);
-      ref.invalidate(addOnsSummaryProvider);
-      ref.invalidate(loadsSummaryProvider);
-      // Wait for salesSummary to settle before clearing spinner
-      try {
-        await ref.read(salesSummaryProvider.future);
-      } catch (_) {}
+      await refreshAllDashboardData(ref);
       isRefreshing.value = false;
     }
 
@@ -105,7 +99,7 @@ class SalesSummarySection extends HookConsumerWidget {
                         icon: const Icon(Icons.refresh),
                         iconSize: 18,
                         padding: EdgeInsets.zero,
-                        tooltip: 'Refresh KPIs',
+                        tooltip: 'Refresh dashboard',
                         color: theme.colorScheme.outline,
                       ),
               ),

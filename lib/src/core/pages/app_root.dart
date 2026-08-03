@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/pos/presentation/cart_controller.dart';
-import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../../features/version_lock/domain/version_check_result.dart';
 import '../../features/version_lock/presentation/controllers/update_dismissed_provider.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
@@ -23,6 +22,7 @@ import '../routing/routes/sales_history.routes.dart';
 import '../routing/routes/promos.routes.dart';
 import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
+import '../widgets/branch_switcher.dart';
 import '../widgets/mobile_bottom_nav.dart';
 import '../widgets/mobile_drawer.dart';
 import '../widgets/nav_permissions.dart';
@@ -202,41 +202,6 @@ class _AppRootState extends ConsumerState<AppRoot> {
     );
   }
 
-  Widget _buildBranchBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final branchAsync = ref.watch(currentBranchControllerProvider);
-
-    return branchAsync.when(
-      data: (branch) {
-        if (branch == null) return const SizedBox.shrink();
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.store,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                branch.name,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
   Widget _buildMobileLayout(BuildContext context, List<NavItem> visibleItems) {
     final selectedIndex = _getSelectedIndex(context, visibleItems);
 
@@ -252,7 +217,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
           color: Theme.of(context).scaffoldBackgroundColor,
           child: Column(
             children: [
-              _buildBranchBar(context),
+              const BranchSwitcher(compact: true),
               Expanded(child: widget.child),
             ],
           ),
@@ -292,7 +257,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildBranchBar(context),
+                      const BranchSwitcher(compact: true),
                       Expanded(child: widget.child),
                     ],
                   ),

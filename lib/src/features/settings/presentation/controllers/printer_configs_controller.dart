@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/repositories/printer_config_repository.dart';
 import '../../domain/printer_config.dart';
+import 'current_branch_controller.dart';
 
 part 'printer_configs_controller.g.dart';
 
@@ -15,7 +16,8 @@ class PrinterConfigsController extends _$PrinterConfigsController {
 
   @override
   Future<List<PrinterConfig>> build() async {
-    final result = await _repository.fetchAll();
+    final branchFilter = ref.watch(currentBranchFilterProvider);
+    final result = await _repository.fetchAll(filter: branchFilter);
     return result.fold(
       (failure) => throw failure,
       (configs) => configs,
@@ -26,7 +28,8 @@ class PrinterConfigsController extends _$PrinterConfigsController {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    final result = await _repository.fetchAll();
+    final branchFilter = ref.read(currentBranchFilterProvider);
+    final result = await _repository.fetchAll(filter: branchFilter);
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),
@@ -41,7 +44,6 @@ class PrinterConfigsController extends _$PrinterConfigsController {
     return result.fold(
       (failure) => false,
       (newConfig) {
-        // If the new config is default, update other configs in list
         final currentList = state.value ?? [];
         List<PrinterConfig> updatedList;
 
@@ -69,7 +71,6 @@ class PrinterConfigsController extends _$PrinterConfigsController {
       (updatedConfig) {
         final currentList = state.value ?? [];
 
-        // If updated config is default, unset default on others
         final updatedList = currentList.map((c) {
           if (c.id == updatedConfig.id) {
             return updatedConfig;

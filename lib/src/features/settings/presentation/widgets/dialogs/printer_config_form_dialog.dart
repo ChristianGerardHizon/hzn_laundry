@@ -5,11 +5,13 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
 import '../../../domain/printer_config.dart';
 import '../../../domain/printer_connection_type.dart';
 import '../../../domain/printer_paper_width.dart';
+import '../../controllers/current_branch_controller.dart';
 import '../../controllers/printer_configs_controller.dart';
 import 'printer_discovery_dialog.dart';
 
@@ -49,6 +51,30 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
 
       isSaving.value = true;
 
+      final t = Translations.of(context);
+
+      if (!isEditing && ref.read(isAllBranchesProvider)) {
+        isSaving.value = false;
+        showFormErrorDialog(
+          context,
+          errors: [t.navigation.createUnavailableAllBranches],
+        );
+        return;
+      }
+
+      final branchId = isEditing
+          ? config?.branchId
+          : ref.read(currentBranchIdProvider);
+
+      if (!isEditing && (branchId == null || branchId.isEmpty)) {
+        isSaving.value = false;
+        showFormErrorDialog(
+          context,
+          errors: [t.navigation.createUnavailableAllBranches],
+        );
+        return;
+      }
+
       final configData = PrinterConfig(
         id: config?.id ?? '',
         name: (values['name'] as String).trim(),
@@ -61,6 +87,7 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
             values['paperWidth'] as PrinterPaperWidth? ?? PrinterPaperWidth.mm80,
         isDefault: values['isDefault'] as bool? ?? false,
         isEnabled: values['isEnabled'] as bool? ?? true,
+        branchId: branchId,
       );
 
       bool success;

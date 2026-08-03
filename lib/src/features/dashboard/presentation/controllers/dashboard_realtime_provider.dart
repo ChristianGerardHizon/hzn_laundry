@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import 'add_ons_summary_controller.dart';
+import 'dashboard_refresh.dart';
 import 'inventory_alerts_controller.dart';
 import 'kanban_sales_controller.dart';
 import 'dashboard_kpi_provider.dart';
@@ -16,6 +17,7 @@ import 'sales_summary_controller.dart';
 import 'today_incentive_controller.dart';
 import 'todays_sales_controller.dart';
 import 'top_selling_controller.dart';
+import 'total_packs_summary_controller.dart';
 
 part 'dashboard_realtime_provider.g.dart';
 
@@ -44,7 +46,9 @@ Raw<void> dashboardRealtime(Ref ref) {
       ref.invalidate(kanbanSalesProvider);
       ref.invalidate(todayCountProvider);
       ref.invalidate(notPickedUpCountProvider);
+      ref.invalidate(backlogPendingCountProvider);
       ref.invalidate(salesSummaryProvider);
+      ref.invalidate(totalPacksSummaryProvider);
       ref.invalidate(todaySalesSummaryProvider);
       ref.invalidate(todayIncentiveSummaryProvider);
       ref.invalidate(addOnsSummaryProvider);
@@ -72,9 +76,7 @@ Raw<void> dashboardRealtime(Ref ref) {
   }
 
   void invalidateAllProviders() {
-    invalidateSalesProviders();
-    invalidateInventoryProviders();
-    invalidateCustomerProviders();
+    invalidateAllDashboardProviders(ref.invalidate);
   }
 
   // Track whether this is the initial connection (skip refresh on first connect).

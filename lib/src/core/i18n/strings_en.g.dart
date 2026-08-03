@@ -393,6 +393,15 @@ class TranslationsNavigationEn {
 	/// en: 'No Branch'
 	String get noBranch => 'No Branch';
 
+	/// en: 'All Branches'
+	String get allBranches => 'All Branches';
+
+	/// en: 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.'
+	String get posUnavailableAllBranches => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.';
+
+	/// en: 'This action requires a specific branch. Choose a branch before continuing.'
+	String get createUnavailableAllBranches => 'This action requires a specific branch. Choose a branch before continuing.';
+
 	/// en: 'Activities'
 	String get activities => 'Activities';
 }
@@ -596,6 +605,9 @@ extension on Translations {
 			'navigation.system' => 'System',
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'No Branch',
+			'navigation.allBranches' => 'All Branches',
+			'navigation.posUnavailableAllBranches' => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.',
+			'navigation.createUnavailableAllBranches' => 'This action requires a specific branch. Choose a branch before continuing.',
 			'navigation.activities' => 'Activities',
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',

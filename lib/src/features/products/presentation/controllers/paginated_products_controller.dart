@@ -38,16 +38,13 @@ class PaginatedProductsController extends _$PaginatedProductsController {
       refresh();
     });
 
-    // Listen to branch changes and refresh
-    ref.listen(currentBranchFilterProvider, (_, __) {
-      refresh();
-    });
+    final branchFilter = ref.watch(currentBranchFilterProvider);
 
     final result = await _repository.fetchPaginated(
       page: 1,
       perPage: Pagination.defaultPageSize,
       sort: _currentSort,
-      filter: _branchFilter,
+      filter: branchFilter,
     );
 
     final paginated = result.fold(
