@@ -128,6 +128,14 @@ class _PrinterDetailContent extends HookConsumerWidget {
     final isLocalDefault = localDefaultId == config.id;
 
     Future<void> handleTestPrint() async {
+      if (!isThermalPrintingSupported) {
+        showErrorSnackBar(
+          context,
+          message: kThermalPrintingUnsupportedMessage,
+        );
+        return;
+      }
+
       isPrinting.value = true;
 
       final result = await printService.printTestPage(config);
@@ -308,7 +316,9 @@ class _PrinterDetailContent extends HookConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: isPrinting.value || !config.hasAddress
+                onPressed: !isThermalPrintingSupported ||
+                        isPrinting.value ||
+                        !config.hasAddress
                     ? null
                     : handleTestPrint,
                 icon: isPrinting.value
@@ -322,7 +332,16 @@ class _PrinterDetailContent extends HookConsumerWidget {
               ),
             ),
 
-            if (!config.hasAddress) ...[
+            if (!isThermalPrintingSupported) ...[
+              const SizedBox(height: 8),
+              Text(
+                kThermalPrintingUnsupportedMessage,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ] else if (!config.hasAddress) ...[
               const SizedBox(height: 8),
               Text(
                 'Configure the printer address to enable test printing.',

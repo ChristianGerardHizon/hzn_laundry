@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../packages/app_info/app_info_provider.dart';
+import '../packages/pocketbase/pb_connectivity_provider.dart';
 import '../packages/pocketbase/pocketbase_provider.dart';
+import 'network_health_logo.dart';
 
 /// Reusable widget displaying server domain, app version, and environment.
 ///
 /// Shows:
+/// - Online / poor / offline status from PocketBase health
 /// - Server domain: `staging.hizonelaundry.hznsystems.com`
 /// - Version and build number: `v1.0.0+1`
 /// - Environment badge (only for non-prod): `DEV` or `STAGING`
@@ -17,6 +20,7 @@ class AppVersionIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final appInfoAsync = ref.watch(appInfoProvider);
+    final connectivityAsync = ref.watch(pbConnectivityProvider);
     final env = currentEnvironment;
     final serverUrl = pocketbaseUrl;
 
@@ -26,6 +30,21 @@ class AppVersionIndicator extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Connectivity status
+        connectivityAsync.when(
+          data: (snapshot) => _ConnectivityStatus(status: snapshot.status),
+          loading: () => Text(
+            'Checking…',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+              fontSize: 10,
+            ),
+          ),
+          error: (_, __) =>
+              const _ConnectivityStatus(status: PbConnectionStatus.offline),
+        ),
+        const SizedBox(height: 4),
+
         // Server domain
         Text(
           domain,
@@ -79,6 +98,39 @@ class AppVersionIndicator extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectivityStatus extends StatelessWidget {
+  const _ConnectivityStatus({required this.status});
+
+  final PbConnectionStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = NetworkHealthLogo.colorFor(status);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          NetworkHealthLogo.labelFor(status),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

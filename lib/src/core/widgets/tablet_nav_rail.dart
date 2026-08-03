@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
-import '../assets/assets.gen.dart';
 import '../i18n/strings.g.dart';
 import '../utils/breakpoints.dart';
 import 'nav_permissions.dart';
+import 'network_health_logo.dart';
 
 /// Navigation rail for tablet and desktop layouts.
 ///
@@ -35,12 +35,9 @@ class TabletNavRail extends ConsumerWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Assets.icons.appIconTransparent.image(
-            width: 40,
-            height: 40,
-          ),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: NetworkHealthLogo(size: 40),
         ),
         Expanded(
           child: SingleChildScrollView(

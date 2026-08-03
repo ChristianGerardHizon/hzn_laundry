@@ -2418,6 +2418,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
     final hasDefaultPrinter = defaultPrinterAsync.value != null;
+    final canThermalPrint =
+        isThermalPrintingSupported && hasDefaultPrinter;
 
     final unitLabel = service.quantityUnit?.shortPlural ??
         (service.weightBased == true ? 'KG' : 'PCS');
@@ -2479,6 +2481,15 @@ class _OrderSuccessPage extends HookConsumerWidget {
     }
 
     Future<void> handleThermalPrint({bool showSuccessMessage = true}) async {
+      if (!isThermalPrintingSupported) {
+        showErrorSnackBar(
+          context,
+          message: kThermalPrintingUnsupportedMessage,
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context,
@@ -2567,7 +2578,10 @@ class _OrderSuccessPage extends HookConsumerWidget {
     // Auto-print when page appears if a default printer is set
     useEffect(() {
       final printer = defaultPrinterAsync.value;
-      if (printer != null && !hasAutoPrinted.value && !isPrinting.value) {
+      if (isThermalPrintingSupported &&
+          printer != null &&
+          !hasAutoPrinted.value &&
+          !isPrinting.value) {
         hasAutoPrinted.value = true;
         Future.delayed(const Duration(milliseconds: 300), () {
           handleThermalPrint(showSuccessMessage: true);
@@ -2626,7 +2640,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(width: 4),
-              if (hasDefaultPrinter)
+              if (canThermalPrint)
                 FilledButton.icon(
                   onPressed: isPrinting.value ? null : handleThermalPrint,
                   icon: isPrinting.value
@@ -2638,7 +2652,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                       : const Icon(Icons.print),
                   label: Text(isPrinting.value ? 'Printing...' : 'Print'),
                 )
-              else
+              else if (isThermalPrintingSupported)
                 TextButton(
                   onPressed: () {
                     DialogDismissingObserver.dismissAllDialogs();
@@ -2741,7 +2755,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         const SizedBox(height: 16),
 
         // ── Cashier copy option ─────────────────────────────────────────
-        if (hasDefaultPrinter)
+        if (canThermalPrint)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: CheckboxListTile(
@@ -2760,7 +2774,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: SizedBox(
             width: double.infinity,
-            child: hasDefaultPrinter
+            child: canThermalPrint
                 ? OutlinedButton(
                     onPressed: () => context.pop(),
                     child: const Text('Done'),

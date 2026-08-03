@@ -565,6 +565,9 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 03 | Web Thermal Print Guard | Disabled thermal printing on web (Bluetooth discovery, test print, auto-print, claim-sheet print actions); PDF preview/print remains available |
+| Aug 03 | All Branches Mode | Admins can select All Branches in the branch switcher to view unfiltered data across features; Cashier/POS shows a blurred overlay warning until a specific branch is chosen |
+| Aug 03 | Network Health | Polls PocketBase `/api/health` for online/poor/offline status; logo circular border is green (connected), amber (poor, ≥1s latency), or red (no connection) on nav rail, drawer, and login |
 | Jun 07 | Machine Load | Added machine size (small/large) and per-machine weight→load rules (customizable, non-linear tiers) managed under System → Machines, with a "copy rules to same type/size" action. When assigning machines to an order, entering weight (kg) auto-computes the load count from the matching rule, still overridable manually; weights are stored on the sale service item |
 | Jun 06 | Fix Report Date Grouping | Fixed vw_sales_daily_summary and vw_sales_by_customer to group by PHT date (UTC+8) — orders created 12:00–7:59 AM PHT were appearing in the previous day's report |
 | Apr 01 | Users & Roles | Replaced old vet-clinic roles (Veterinarian, Staff, Cashier) with laundry-appropriate roles: Admin, Manager, Cashier, Attendant. Added test user accounts for each role |

@@ -13,12 +13,7 @@ class PromosController extends _$PromosController {
 
   @override
   Future<List<Promo>> build() async {
-    // Listen to branch changes and refresh
-    ref.listen(currentBranchFilterProvider, (_, __) {
-      refresh();
-    });
-
-    final branchFilter = ref.read(currentBranchFilterProvider);
+    final branchFilter = ref.watch(currentBranchFilterProvider);
     final result = await _repository.fetchAll(filter: branchFilter);
 
     return result.fold(

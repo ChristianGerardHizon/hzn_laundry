@@ -15,7 +15,7 @@ part 'printer_config_repository.g.dart';
 /// Repository interface for printer configuration operations.
 abstract class PrinterConfigRepository {
   /// Fetches all printer configurations.
-  FutureEither<List<PrinterConfig>> fetchAll();
+  FutureEither<List<PrinterConfig>> fetchAll({String? filter});
 
   /// Fetches a single printer configuration by ID.
   FutureEither<PrinterConfig> fetchOne(String id);
@@ -57,13 +57,15 @@ class PrinterConfigRepositoryImpl implements PrinterConfigRepository {
   }
 
   @override
-  FutureEither<List<PrinterConfig>> fetchAll() async {
+  FutureEither<List<PrinterConfig>> fetchAll({String? filter}) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilters.active.build();
+        final baseFilter = PBFilters.active.build();
+        final combinedFilter =
+            filter != null ? '$baseFilter && $filter' : baseFilter;
 
         final records = await _collection.getFullList(
-          filter: filter,
+          filter: combinedFilter,
           sort: '-isDefault,name',
         );
 

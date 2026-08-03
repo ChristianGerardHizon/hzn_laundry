@@ -10,7 +10,7 @@ part of 'current_branch_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Controller for managing the current working branch.
 ///
-/// - For admins: Allows switching between branches, persists selection
+/// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
 
 @ProviderFor(CurrentBranchController)
@@ -18,13 +18,13 @@ final currentBranchControllerProvider = CurrentBranchControllerProvider._();
 
 /// Controller for managing the current working branch.
 ///
-/// - For admins: Allows switching between branches, persists selection
+/// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
 final class CurrentBranchControllerProvider
     extends $AsyncNotifierProvider<CurrentBranchController, Branch?> {
   /// Controller for managing the current working branch.
   ///
-  /// - For admins: Allows switching between branches, persists selection
+  /// - For admins: Allows switching between branches (or All Branches), persists selection
   /// - For regular users: Locked to their assigned branch
   CurrentBranchControllerProvider._()
       : super(
@@ -46,11 +46,11 @@ final class CurrentBranchControllerProvider
 }
 
 String _$currentBranchControllerHash() =>
-    r'4de5ac89dd9fe98da0a90aa7768e3336b8b401d0';
+    r'3d60c1e2ab3867a13809d29c9a542c1c0332763e';
 
 /// Controller for managing the current working branch.
 ///
-/// - For admins: Allows switching between branches, persists selection
+/// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
 
 abstract class _$CurrentBranchController extends $AsyncNotifier<Branch?> {
@@ -68,17 +68,68 @@ abstract class _$CurrentBranchController extends $AsyncNotifier<Branch?> {
   }
 }
 
+/// Whether the admin has selected All Branches mode.
+
+@ProviderFor(isAllBranches)
+final isAllBranchesProvider = IsAllBranchesProvider._();
+
+/// Whether the admin has selected All Branches mode.
+
+final class IsAllBranchesProvider extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the admin has selected All Branches mode.
+  IsAllBranchesProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'isAllBranchesProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$isAllBranchesHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return isAllBranches(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$isAllBranchesHash() => r'a19f6940de9c8c75bf0116d63b717d22ebc2bb61';
+
 /// Convenience provider for current branch ID.
+///
+/// Returns null when All Branches is selected or no branch is available.
 
 @ProviderFor(currentBranchId)
 final currentBranchIdProvider = CurrentBranchIdProvider._();
 
 /// Convenience provider for current branch ID.
+///
+/// Returns null when All Branches is selected or no branch is available.
 
 final class CurrentBranchIdProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
   /// Convenience provider for current branch ID.
+  ///
+  /// Returns null when All Branches is selected or no branch is available.
   CurrentBranchIdProvider._()
       : super(
           from: null,
@@ -116,21 +167,21 @@ String _$currentBranchIdHash() => r'dd457fa7bdc31f57c2153247e3976e7a0f88db10';
 
 /// Convenience provider for branch filter string.
 ///
-/// Returns a filter string like `branch = "id"` or null if no branch selected.
+/// Returns a filter string like `branch = "id"` or null if All Branches / none.
 
 @ProviderFor(currentBranchFilter)
 final currentBranchFilterProvider = CurrentBranchFilterProvider._();
 
 /// Convenience provider for branch filter string.
 ///
-/// Returns a filter string like `branch = "id"` or null if no branch selected.
+/// Returns a filter string like `branch = "id"` or null if All Branches / none.
 
 final class CurrentBranchFilterProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
   /// Convenience provider for branch filter string.
   ///
-  /// Returns a filter string like `branch = "id"` or null if no branch selected.
+  /// Returns a filter string like `branch = "id"` or null if All Branches / none.
   CurrentBranchFilterProvider._()
       : super(
           from: null,

@@ -2125,6 +2125,14 @@ class _PrintMenuButton extends HookConsumerWidget {
     Future<void> printCopy(OrderReceiptCopy copyType) async {
       if (isPrinting.value) return;
 
+      if (!isThermalPrintingSupported) {
+        showErrorSnackBar(
+          context,
+          message: kThermalPrintingUnsupportedMessage,
+        );
+        return;
+      }
+
       final printer = defaultPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context, message: 'No default printer configured');
@@ -2208,26 +2216,28 @@ class _PrintMenuButton extends HookConsumerWidget {
       enabled: !isPrinting.value,
       onSelected: handleMenuSelection,
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'print_customer',
-          child: ListTile(
-            leading: Icon(Icons.receipt_long),
-            title: Text('Print Claim Sheet'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
+        if (isThermalPrintingSupported) ...[
+          const PopupMenuItem<String>(
+            value: 'print_customer',
+            child: ListTile(
+              leading: Icon(Icons.receipt_long),
+              title: Text('Print Claim Sheet'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
           ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'print_store',
-          child: ListTile(
-            leading: Icon(Icons.local_laundry_service),
-            title: Text('Print Claim Sheet (Store)'),
-            subtitle: Text('Machine tag'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
+          const PopupMenuItem<String>(
+            value: 'print_store',
+            child: ListTile(
+              leading: Icon(Icons.local_laundry_service),
+              title: Text('Print Claim Sheet (Store)'),
+              subtitle: Text('Machine tag'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
           ),
-        ),
-        const PopupMenuDivider(),
+          const PopupMenuDivider(),
+        ],
         const PopupMenuItem<String>(
           value: 'preview_customer',
           child: ListTile(

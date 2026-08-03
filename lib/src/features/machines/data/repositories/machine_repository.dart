@@ -95,7 +95,6 @@ class MachineRepositoryImpl implements MachineRepository {
           'name': machine.name,
           'type': machine.type.name,
           'size': machine.size?.name ?? '',
-          'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,
           'isDeleted': false,
@@ -124,7 +123,6 @@ class MachineRepositoryImpl implements MachineRepository {
           'name': machine.name,
           'type': machine.type.name,
           'size': machine.size?.name ?? '',
-          'branch': machine.branchId,
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,
         };

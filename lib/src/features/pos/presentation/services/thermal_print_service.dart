@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
@@ -15,6 +16,16 @@ import '../../domain/sale.dart';
 import '../../domain/sale_item.dart';
 
 part 'thermal_print_service.g.dart';
+
+/// Whether ESC/POS thermal printing (Bluetooth or network socket) works on
+/// this platform. Browsers cannot open classic Bluetooth or raw TCP sockets.
+bool get isThermalPrintingSupported => !kIsWeb;
+
+/// User-facing message when thermal printing is requested on an unsupported
+/// platform (currently web).
+const String kThermalPrintingUnsupportedMessage =
+    'Thermal printing is not supported in the browser. '
+    'Use the desktop or mobile app.';
 
 /// Result of a print operation.
 sealed class PrintResult {
@@ -157,7 +168,12 @@ class ThermalPrintService extends _$ThermalPrintService {
   ///
   /// Requests Bluetooth permissions if not yet granted.
   /// Throws [PermissionDeniedException] if permissions are permanently denied.
+  /// Throws [UnsupportedError] on web where Bluetooth is unavailable.
   Future<List<BluetoothInfo>> discoverBluetoothPrinters() async {
+    if (!isThermalPrintingSupported) {
+      throw UnsupportedError(kThermalPrintingUnsupportedMessage);
+    }
+
     // Ensure Bluetooth permissions are granted before scanning
     await PermissionService.ensureBluetoothPermissions();
 
@@ -180,6 +196,8 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// Requests Bluetooth permissions if not yet granted.
   /// Throws [PermissionDeniedException] if permissions are permanently denied.
   Future<bool> isBluetoothEnabled() async {
+    if (!isThermalPrintingSupported) return false;
+
     try {
       await PermissionService.ensureBluetoothPermissions();
       return await PrintBluetoothThermal.bluetoothEnabled;
@@ -191,6 +209,10 @@ class ThermalPrintService extends _$ThermalPrintService {
 
   /// Prints bytes to the configured printer.
   Future<PrintResult> _printBytes(PrinterConfig config, List<int> bytes) async {
+    if (!isThermalPrintingSupported) {
+      return const PrintFailure(kThermalPrintingUnsupportedMessage);
+    }
+
     try {
       if (config.isBluetooth) {
         return _printViaBluetooth(config.address!, bytes);
