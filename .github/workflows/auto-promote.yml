@@ -104,6 +104,10 @@ jobs:
             fi
           fi
 
+          if echo "$LABELS" | grep -q '"build-windows"'; then
+            FORWARD_LABELS="${FORWARD_LABELS:+$FORWARD_LABELS,}build-windows"
+          fi
+
           if [ -n "$FORWARD_LABELS" ]; then
             gh pr edit "$PR_NUMBER" \
               --repo "${{ github.repository }}" \

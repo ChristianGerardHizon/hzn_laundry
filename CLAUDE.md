@@ -303,6 +303,7 @@ return ScaffoldMessenger(
      - **Yes** — Add the `minimum version` label. Forces all users on older versions to update.
      - **No** — Users on older versions can continue without updating.
 
+  - **Optional:** Add the `build-windows` label if a Windows release ZIP is needed for this deploy. Not part of the required questions above — only add it when actually needed. If present on a `staging` PR alongside `deploy`, it carries over automatically to the auto-created staging→main PR, so production also gets a Windows build.
   - Add labels using: `gh pr edit <number> --add-label "version:patch,deploy,minimum version"`
 
 ### QA Notes

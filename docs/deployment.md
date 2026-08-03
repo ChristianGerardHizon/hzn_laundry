@@ -28,7 +28,7 @@ feature branch → staging → main
 
 - **All development PRs** merge into `staging`.
 - **Only `staging`** can merge into `main` (enforced by `branch-protection.yml`).
-- Adding the `promote-to-main` label on a staging PR auto-creates a release PR to `main`.
+- Adding the `deploy` label on a staging PR auto-creates a release PR to `main`.
 
 ---
 
@@ -37,7 +37,7 @@ feature branch → staging → main
 | File | Purpose |
 |------|---------|
 | `.github/workflows/deploy.yml` | Main deployment — staging + production builds and releases |
-| `.github/workflows/auto-promote.yml` | Auto-creates a PR from `staging` → `main` when a merged PR has the `promote-to-main` label |
+| `.github/workflows/auto-promote.yml` | Auto-creates a PR from `staging` → `main` when a merged PR has the `deploy` label |
 | `.github/workflows/branch-protection.yml` | Blocks PRs to `main` that don't originate from `staging` |
 
 ---
@@ -78,6 +78,11 @@ PR merged to staging (or manual dispatch)
   └─ Create GitHub Release (prerelease)
       Tag: staging-X.Y.Z[-build.N]
       Artifact: app-release.apk
+
+  (in parallel, only if the `build-windows` label or workflow_dispatch
+   `build_windows` input is set — see "Windows Build (opt-in)" below)
+  ├─ [build-windows-staging job] flutter build windows --release → zip
+  └─ [attach-windows-staging job] attach zip to the release created above
 ```
 
 ### Production Deployment
@@ -115,17 +120,22 @@ PR merged to main
   │   │
   │   └─ Upload APK as GitHub Actions artifact
   │
-  └─ [release-and-sync job] (depends on deploy-production)
-      ├─ Download APK artifact
-      ├─ Create GitHub Release
-      │   Tag: vX.Y.Z
-      │   Artifact: app-release.apk
-      └─ PATCH Version Manager API with new version
+  ├─ [release-and-sync job] (depends on deploy-production)
+  │   ├─ Download APK artifact
+  │   ├─ Create GitHub Release
+  │   │   Tag: vX.Y.Z
+  │   │   Artifact: app-release.apk
+  │   └─ PATCH Version Manager API with new version
+  │
+  (in parallel with deploy-production, only if the `build-windows` label is set)
+  ├─ [build-windows-production job] flutter build windows --release → zip
+  └─ [attach-windows-production job] (depends on release-and-sync + build-windows-production)
+      attach zip to the release created above
 ```
 
 ### Auto-Promote Flow
 
-**Trigger:** PR with `promote-to-main` label merged to `staging`.
+**Trigger:** PR with `deploy` label merged to `staging`.
 
 ```
 Labeled PR merged to staging
@@ -136,7 +146,17 @@ Labeled PR merged to staging
   └─ Create PR: staging → main
       Title: "Release: promote staging to main"
       Body: includes source PR number and title
+      Forwards labels: version:*, minimum version, build-windows (if present on source PR)
 ```
+
+### Windows Build (opt-in)
+
+**Trigger:** the `build-windows` PR label (or the `build_windows` boolean input on a manual `workflow_dispatch` run, staging only).
+
+- Not part of the required PR label checklist — add it only when a Windows build is actually needed for that release.
+- Produces an **unsigned ZIP** of the `flutter build windows --release` output (no MSIX/installer, no code-signing cert). Running the `.exe` inside may trigger a SmartScreen warning.
+- Runs on `windows-latest`, in parallel with the Android/Web build, then attaches the ZIP to the same GitHub Release as an additional asset once it's created.
+- **Carries over automatically**: if a staging PR has both `deploy` and `build-windows`, the auto-created staging→main PR also gets `build-windows`, so the production release gets a Windows build too without re-labeling.
 
 ---
 
@@ -292,7 +312,7 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 | iOS | Not configured | Would require macOS runner + signing certificates |
 | macOS | Not configured | Would require macOS runner |
 | Linux | Not configured | Could use standard Ubuntu runner |
-| Windows | Not configured | Would require Windows runner |
+| Windows | Automated, opt-in | Unsigned release ZIP, built only when the `build-windows` label is present (see [Windows Build (opt-in)](#windows-build-opt-in)) |
 
 ---
 
