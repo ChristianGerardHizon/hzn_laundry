@@ -259,6 +259,8 @@ jobs:
       ((github.event_name == 'workflow_dispatch' && inputs.build_windows == true) ||
        (github.event_name != 'workflow_dispatch' && contains(github.event.pull_request.labels.*.name, 'build-windows')))
     runs-on: windows-latest
+    outputs:
+      zip_name: ${{ steps.calc_staging_win.outputs.zip_name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -290,7 +292,12 @@ jobs:
             *) PATCH=$((PATCH + 1)) ;;
           esac
 
-          echo "STAGING_VER=$MAJOR.$MINOR.$PATCH-staging" >> $GITHUB_ENV
+          STAGING_VER="$MAJOR.$MINOR.$PATCH-staging"
+          ZIP_NAME="hizonelaundry-staging-windows-$STAGING_VER.zip"
+
+          echo "STAGING_VER=$STAGING_VER" >> $GITHUB_ENV
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - uses: subosito/flutter-action@v2
         with:
@@ -305,13 +312,13 @@ jobs:
 
       - name: Zip Windows build
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath hizonelaundry-staging-windows.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath ${{ env.ZIP_NAME }}
 
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-release-staging
-          path: hizonelaundry-staging-windows.zip
+          path: ${{ env.ZIP_NAME }}
           retention-days: 1
 
   # ==========================================
@@ -331,7 +338,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.deploy-staging.outputs.staging_tag }}
-          files: hizonelaundry-staging-windows.zip
+          files: ${{ needs.build-windows-staging.outputs.zip_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -556,6 +563,8 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'build-windows')
     runs-on: windows-latest
     environment: Production
+    outputs:
+      zip_name: ${{ steps.calc_prod_win.outputs.zip_name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -603,7 +612,12 @@ jobs:
             *) PATCH=$((PATCH + 1)) ;;
           esac
 
-          echo "PROD_VER=$MAJOR.$MINOR.$PATCH" >> $GITHUB_ENV
+          PROD_VER="$MAJOR.$MINOR.$PATCH"
+          ZIP_NAME="hizonelaundry-windows-$PROD_VER.zip"
+
+          echo "PROD_VER=$PROD_VER" >> $GITHUB_ENV
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - uses: subosito/flutter-action@v2
         with:
@@ -618,13 +632,13 @@ jobs:
 
       - name: Zip Windows build
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath hizonelaundry-windows.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath ${{ env.ZIP_NAME }}
 
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-release-production
-          path: hizonelaundry-windows.zip
+          path: ${{ env.ZIP_NAME }}
           retention-days: 1
 
   # ==========================================
@@ -695,6 +709,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-production.outputs.prod_ver }}
-          files: hizonelaundry-windows.zip
+          files: ${{ needs.build-windows-production.outputs.zip_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
