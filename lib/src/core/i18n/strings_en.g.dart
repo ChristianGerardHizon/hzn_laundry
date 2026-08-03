@@ -215,6 +215,12 @@ class TranslationsCommonEn {
 
 	/// en: 'Sort'
 	String get sort => 'Sort';
+
+	/// en: 'Full Screen'
+	String get fullScreen => 'Full Screen';
+
+	/// en: 'Exit Full Screen'
+	String get exitFullScreen => 'Exit Full Screen';
 }
 
 // Path: failures
@@ -555,6 +561,8 @@ extension on Translations {
 			'common.discard' => 'Discard',
 			'common.keepEditing' => 'Keep Editing',
 			'common.sort' => 'Sort',
+			'common.fullScreen' => 'Full Screen',
+			'common.exitFullScreen' => 'Exit Full Screen',
 			'failures.generic' => 'Something went wrong. Please try again.',
 			'failures.networkError' => 'Network error. Please check your connection.',
 			'failures.serverError' => 'Server error. Please try again later.',
