@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
+import '../../../pos/presentation/services/thermal_print_service.dart';
 import '../../domain/printer_config.dart';
 import '../controllers/local_default_printer_provider.dart';
 import '../controllers/printer_configs_controller.dart';
@@ -27,6 +28,30 @@ class PrinterConfigListPanel extends ConsumerWidget {
 
     return Column(
       children: [
+        if (!isThermalPrintingSupported)
+          Container(
+            width: double.infinity,
+            color: theme.colorScheme.secondaryContainer,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    kThermalPrintingUnsupportedMessage,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         // Header
         Container(
           padding: const EdgeInsets.all(16),

@@ -13,6 +13,7 @@ import '../../../domain/printer_connection_type.dart';
 import '../../../domain/printer_paper_width.dart';
 import '../../controllers/current_branch_controller.dart';
 import '../../controllers/printer_configs_controller.dart';
+import '../../../../pos/presentation/services/thermal_print_service.dart';
 import 'printer_discovery_dialog.dart';
 
 /// Dialog for creating or editing a printer configuration.
@@ -261,8 +262,9 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
                             textInputAction: TextInputAction.next,
                           ),
                         ),
-                        if (selectedConnectionType.value ==
-                            PrinterConnectionType.bluetooth) ...[
+                        if (isThermalPrintingSupported &&
+                            selectedConnectionType.value ==
+                                PrinterConnectionType.bluetooth) ...[
                           const SizedBox(width: 8),
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
