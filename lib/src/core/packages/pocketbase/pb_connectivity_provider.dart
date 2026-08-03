@@ -56,9 +56,15 @@ class PbConnectivity extends _$PbConnectivity {
 
   Timer? _timer;
 
+  /// First successful check skips the poor-latency classification — Dart HTTP
+  /// cold-start plus competing app boot requests often push RTT over 1s even
+  /// when talking to a local PocketBase that answers in milliseconds.
+  var _warmupDone = false;
+
   @override
   Future<PbHealthSnapshot> build() async {
     ref.onDispose(() => _timer?.cancel());
+    _warmupDone = false;
 
     final snapshot = await _checkHealth();
     _scheduleNext(snapshot.status);
@@ -88,7 +94,10 @@ class PbConnectivity extends _$PbConnectivity {
       }
 
       final latency = stopwatch.elapsed;
-      final status = latency >= _poorThreshold
+      final skipPoor = !_warmupDone;
+      _warmupDone = true;
+
+      final status = (!skipPoor && latency >= _poorThreshold)
           ? PbConnectionStatus.poor
           : PbConnectionStatus.online;
       return PbHealthSnapshot(status: status, latency: latency);

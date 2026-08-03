@@ -54,7 +54,7 @@ final class PbConnectivityProvider
   PbConnectivity create() => PbConnectivity();
 }
 
-String _$pbConnectivityHash() => r'ba73c07bbcf44321c2cb5d6696497b8ff5995cfc';
+String _$pbConnectivityHash() => r'4fd2527d7a16e043b3b036062c3be9ea3c928937';
 
 /// Polls PocketBase `/api/health` to determine server reachability quality.
 ///
