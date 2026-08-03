@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../core/hooks/use_form_dirty_guard.dart';
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/routing/dialog_dismissing_observer.dart';
+import '../../../../../core/routing/router.dart';
 import '../../../../../core/routing/routes/organization.routes.dart';
 import '../../../../../core/routing/routes/users.routes.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
@@ -83,6 +84,11 @@ class CreateUserDialog extends HookConsumerWidget {
 
       if (context.mounted) {
         isSaving.value = false;
+
+        // Capture path before dismissing — dialog context loses GoRouterState
+        final isOrganization =
+            GoRouterState.of(context).uri.path.startsWith('/organization');
+
         DialogDismissingObserver.dismissAllDialogs();
 
         showSuccessSnackBar(context, message: 'User created successfully');
@@ -90,12 +96,14 @@ class CreateUserDialog extends HookConsumerWidget {
         // Pre-cache the user before navigation to avoid race condition
         ref.read(userEntityCacheProvider.notifier).cacheUser(createdUser);
 
-        // Navigate to user detail based on current route context
-        final currentPath = GoRouterState.of(context).uri.path;
-        if (currentPath.startsWith('/organization')) {
-          OrganizationUserDetailRoute(id: createdUser.id).go(context);
+        // Use root navigator context; dialog context is unmounted after dismiss
+        final navContext = rootNavigatorKey.currentContext;
+        if (navContext == null) return;
+
+        if (isOrganization) {
+          OrganizationUserDetailRoute(id: createdUser.id).go(navContext);
         } else {
-          UserDetailRoute(id: createdUser.id).go(context);
+          UserDetailRoute(id: createdUser.id).go(navContext);
         }
       }
     }
