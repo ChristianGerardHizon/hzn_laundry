@@ -37,7 +37,7 @@ final class MachinesControllerProvider
 }
 
 String _$machinesControllerHash() =>
-    r'15110dd0e65039aec149f2b8ba71634c9e48ffd5';
+    r'3f69c8739edad8ce9c41d6d6d656f38b0fc11cbc';
 
 /// Controller for managing machine list state.
 

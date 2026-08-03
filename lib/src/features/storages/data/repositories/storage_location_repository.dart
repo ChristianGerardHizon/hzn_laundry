@@ -94,7 +94,6 @@ class StorageLocationRepositoryImpl implements StorageLocationRepository {
       () async {
         final body = <String, dynamic>{
           'name': storageLocation.name,
-          'branch': storageLocation.branchId,
           'isAvailable': storageLocation.isAvailable,
           'isDeleted': false,
         };
@@ -120,7 +119,6 @@ class StorageLocationRepositoryImpl implements StorageLocationRepository {
 
         final body = <String, dynamic>{
           'name': storageLocation.name,
-          'branch': storageLocation.branchId,
           'isAvailable': storageLocation.isAvailable,
         };
 
