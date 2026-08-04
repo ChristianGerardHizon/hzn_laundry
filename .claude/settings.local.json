@@ -24,7 +24,10 @@
       "Bash(xargs git add:*)",
       "WebFetch(domain:pub.dev)",
       "mcp__ide__getDiagnostics",
-      "WebSearch"
+      "WebSearch",
+      "Bash(python -c \"import yaml\")",
+      "Bash(node -e \"console.log\\('node ok'\\)\")",
+      "Bash(node -e \"require\\('js-yaml'\\)\")"
     ],
     "deny": [
       "Bash(rm:*)",
