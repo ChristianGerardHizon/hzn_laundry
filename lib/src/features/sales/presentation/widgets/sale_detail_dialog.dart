@@ -70,7 +70,7 @@ class SaleDetailDialog extends HookConsumerWidget {
                       ),
                     ),
                   ),
-                  // Print menu
+                  // PDF + thermal print menus
                   if (saleAsync.value != null)
                     _DialogPrintMenu(
                       sale: saleAsync.value!,
@@ -230,7 +230,7 @@ Future<void> showSaleDetailDialog(
   );
 }
 
-// ── Print menu for the dialog header ─────────────────────────────────────────
+// ── PDF + Print menus for the dialog header ──────────────────────────────────
 
 class _DialogPrintMenu extends HookConsumerWidget {
   const _DialogPrintMenu({
@@ -347,12 +347,8 @@ class _DialogPrintMenu extends HookConsumerWidget {
       }
     }
 
-    Future<void> handleMenuSelection(String value) async {
+    Future<void> handlePdfMenuSelection(String value) async {
       switch (value) {
-        case 'print_customer':
-          await printCopy(OrderReceiptCopy.customer);
-        case 'print_store':
-          await printCopy(OrderReceiptCopy.store);
         case 'preview_customer':
           await previewCopy(storeCopy: false);
         case 'preview_store':
@@ -360,61 +356,87 @@ class _DialogPrintMenu extends HookConsumerWidget {
       }
     }
 
-    return PopupMenuButton<String>(
-      icon: isPrinting.value
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.print, size: 20),
-      tooltip: 'Print & preview',
-      enabled: !isPrinting.value,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      onSelected: handleMenuSelection,
-      itemBuilder: (context) => [
-        if (isThermalPrintingSupported) ...[
-          const PopupMenuItem<String>(
-            value: 'print_customer',
-            child: ListTile(
-              leading: Icon(Icons.receipt_long),
-              title: Text('Print Claim Sheet'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+    Future<void> handlePrintMenuSelection(String value) async {
+      switch (value) {
+        case 'print_customer':
+          await printCopy(OrderReceiptCopy.customer);
+        case 'print_store':
+          await printCopy(OrderReceiptCopy.store);
+      }
+    }
+
+    final menuConstraints = const BoxConstraints(minWidth: 32, minHeight: 32);
+    Widget? loadingIcon() => isPrinting.value
+        ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PopupMenuButton<String>(
+          icon: loadingIcon() ??
+              const Icon(Icons.picture_as_pdf_outlined, size: 20),
+          tooltip: 'Generate PDF',
+          enabled: !isPrinting.value,
+          padding: EdgeInsets.zero,
+          constraints: menuConstraints,
+          onSelected: handlePdfMenuSelection,
+          itemBuilder: (context) => const [
+            PopupMenuItem<String>(
+              value: 'preview_customer',
+              child: ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined),
+                title: Text('Preview Claim Sheet'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
             ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'print_store',
-            child: ListTile(
-              leading: Icon(Icons.local_laundry_service),
-              title: Text('Print Claim Sheet (Store)'),
-              subtitle: Text('Machine tag'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+            PopupMenuItem<String>(
+              value: 'preview_store',
+              child: ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined),
+                title: Text('Preview Claim Sheet (Store)'),
+                subtitle: Text('Machine tag'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
             ),
-          ),
-          const PopupMenuDivider(),
-        ],
-        const PopupMenuItem<String>(
-          value: 'preview_customer',
-          child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('Preview Claim Sheet'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
+          ],
         ),
-        const PopupMenuItem<String>(
-          value: 'preview_store',
-          child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('Preview Claim Sheet (Store)'),
-            subtitle: Text('Machine tag'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
+        if (isThermalPrintingSupported)
+          PopupMenuButton<String>(
+            icon: loadingIcon() ?? const Icon(Icons.print, size: 20),
+            tooltip: 'Print',
+            enabled: !isPrinting.value,
+            padding: EdgeInsets.zero,
+            constraints: menuConstraints,
+            onSelected: handlePrintMenuSelection,
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'print_customer',
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long),
+                  title: Text('Print Claim Sheet'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'print_store',
+                child: ListTile(
+                  leading: Icon(Icons.local_laundry_service),
+                  title: Text('Print Claim Sheet (Store)'),
+                  subtitle: Text('Machine tag'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
-        ),
       ],
     );
   }

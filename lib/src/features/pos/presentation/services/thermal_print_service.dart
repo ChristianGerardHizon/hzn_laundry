@@ -3,8 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -123,7 +122,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
 
     if (error != null) {
-      Sentry.captureException(error, stackTrace: stackTrace, withScope: applyScope);
+      Sentry.captureException(error,
+          stackTrace: stackTrace, withScope: applyScope);
     } else if (message != null) {
       Sentry.captureMessage(message, level: level, withScope: applyScope);
     }
@@ -396,7 +396,8 @@ class ThermalPrintService extends _$ThermalPrintService {
         await PermissionService.ensureBluetoothPermissions();
         debugPrint('[ThermalPrint] Bluetooth: permissions OK');
       } on PermissionDeniedException catch (e) {
-        debugPrint('[ThermalPrint] Bluetooth: permission denied — ${e.message}');
+        debugPrint(
+            '[ThermalPrint] Bluetooth: permission denied — ${e.message}');
         _reportPrinterIssue(
           'bluetooth_permission_denied',
           message: e.message,
@@ -463,7 +464,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       // Use List<int>.from() to avoid Uint8List sublist view issues with
       // platform channel serialisation.
       const chunkSize = 200;
-      bool lastResult = true;
+      const maxChunkAttempts = 3;
 
       for (var offset = 0; offset < bytes.length;) {
         final desiredEnd = (offset + chunkSize > bytes.length)
@@ -480,15 +481,61 @@ class ThermalPrintService extends _$ThermalPrintService {
         final end = _safeChunkEnd(bytes, offset, desiredEnd);
         final chunk = List<int>.from(bytes.sublist(offset, end));
 
-        try {
-          lastResult = await PrintBluetoothThermal.writeBytes(chunk);
-        } catch (e) {
-          // On macOS the plugin may throw due to duplicate platform channel
-          // responses. The data is often still sent successfully, so we
-          // log and continue rather than failing.
+        // Unlike a dropped text line, a lost chunk inside a continuous
+        // binary run (e.g. an image band) desyncs every byte after it —
+        // the printer keeps decoding, just shifted, which shows up as
+        // garbled/sheared output. So a definite "false" from writeBytes
+        // is retried a few times, and the whole print is aborted if it
+        // still fails, instead of marching on with missing bytes.
+        var chunkSucceeded = false;
+        for (var attempt = 1; attempt <= maxChunkAttempts; attempt++) {
+          try {
+            chunkSucceeded = await PrintBluetoothThermal.writeBytes(chunk);
+          } catch (e) {
+            // On macOS the plugin may throw due to duplicate platform
+            // channel responses. The data is often still sent
+            // successfully, so we treat this as a likely success rather
+            // than retrying/aborting.
+            debugPrint(
+              '[ThermalPrint] Bluetooth: write chunk warning at offset '
+              '$offset: $e',
+            );
+            chunkSucceeded = true;
+          }
+
+          if (chunkSucceeded) break;
+
           debugPrint(
-            '[ThermalPrint] Bluetooth: write chunk warning at offset '
-            '$offset: $e',
+            '[ThermalPrint] Bluetooth: writeBytes returned false at '
+            'offset $offset (attempt $attempt/$maxChunkAttempts)'
+            '${attempt < maxChunkAttempts ? ' — retrying' : ''}',
+          );
+          if (attempt < maxChunkAttempts) {
+            await Future.delayed(const Duration(milliseconds: 100));
+          }
+        }
+
+        if (!chunkSucceeded) {
+          debugPrint(
+            '[ThermalPrint] Bluetooth: giving up after $maxChunkAttempts '
+            'failed attempts at offset $offset/${bytes.length} — aborting '
+            'print instead of sending a corrupted/garbled receipt',
+          );
+          _reportPrinterIssue(
+            'bluetooth_chunk_write_failed',
+            message: 'Bluetooth chunk write failed after '
+                '$maxChunkAttempts attempts at byte offset '
+                '$offset/${bytes.length}',
+            printer: config,
+          );
+          try {
+            await PrintBluetoothThermal.disconnect;
+          } catch (_) {
+            // Ignore disconnect errors while already aborting.
+          }
+          return const PrintFailure(
+            'Lost connection to printer while sending data. '
+            'Please try printing again.',
           );
         }
 
@@ -512,18 +559,8 @@ class ThermalPrintService extends _$ThermalPrintService {
         debugPrint('[ThermalPrint] Bluetooth: disconnect warning: $e');
       }
 
-      if (lastResult) {
-        debugPrint('[ThermalPrint] Bluetooth: print succeeded');
-        return const PrintSuccess();
-      } else {
-        debugPrint('[ThermalPrint] Bluetooth: writeBytes returned false');
-        _reportPrinterIssue(
-          'bluetooth_write_failed',
-          message: 'Failed to send data to printer',
-          printer: config,
-        );
-        return const PrintFailure('Failed to send data to printer');
-      }
+      debugPrint('[ThermalPrint] Bluetooth: print succeeded');
+      return const PrintSuccess();
     } catch (e, stackTrace) {
       debugPrint('[ThermalPrint] Bluetooth: unhandled error: $e\n$stackTrace');
       _reportPrinterIssue(
@@ -665,13 +702,25 @@ class ThermalPrintService extends _$ThermalPrintService {
     PosTextSize.size8,
   ];
 
-  /// Picks the largest [PosTextSize] multiplier that still keeps [text] on
-  /// a single physical line for the given [maxCharsPerLine], so short
-  /// customer names print at the printer's maximum size while long ones
-  /// don't wrap into unplanned extra lines.
+  /// The largest `GS !` text-size multiplier this hardware (Vozy G80, a
+  /// generic ESC/POS-compatible 80mm printer) actually honors.
+  ///
+  /// The ESC/POS spec allows up to 8x magnification in each dimension, but
+  /// hardware testing on the real unit showed anything above 4x is
+  /// silently ignored — the byte is accepted without error, it just keeps
+  /// rendering at 4x. This is common on cheap clone controllers that only
+  /// implement a subset of the spec.
+  static const PosTextSize _maxReliableTextSize = PosTextSize.size4;
+
+  /// Picks the largest text-size multiplier — never exceeding
+  /// [_maxReliableTextSize] — that still keeps [text] on a single
+  /// physical line for the given [maxCharsPerLine], so short customer
+  /// names print as big as this printer reliably supports while long
+  /// ones don't wrap into unplanned extra lines.
   PosTextSize _largestFittingTextSize(String text, int maxCharsPerLine) {
     final length = text.isEmpty ? 1 : text.length;
     for (final size in _posTextSizes.reversed) {
+      if (size.value > _maxReliableTextSize.value) continue;
       if (maxCharsPerLine ~/ size.value >= length) {
         return size;
       }
@@ -907,10 +956,9 @@ class ThermalPrintService extends _$ThermalPrintService {
     List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
-    final generator = Generator(
-      paperWidth == PrinterPaperWidth.mm58 ? PaperSize.mm58 : PaperSize.mm80,
-      profile,
-    );
+    final paperSize =
+        paperWidth == PrinterPaperWidth.mm58 ? PaperSize.mm58 : PaperSize.mm80;
+    final generator = Generator(paperSize, profile);
 
     final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
     final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
@@ -929,10 +977,10 @@ class ThermalPrintService extends _$ThermalPrintService {
       }
       bytes = _appendDivider(generator, bytes, ch: '=');
 
-      // Large customer name for easy identification on the machine — sized
-      // to the largest multiplier that still fits on one line, so short
-      // names print as big as the printer allows and long ones don't wrap
-      // into unplanned extra lines.
+      // Large customer name for easy identification on the machine —
+      // sized to the largest multiplier this printer reliably honors (see
+      // _largestFittingTextSize) so short names print as big as possible
+      // and long ones don't wrap into unplanned extra lines.
       final upperCustomerName = customerName.toUpperCase();
       final customerNameSize = _largestFittingTextSize(
         upperCustomerName,
