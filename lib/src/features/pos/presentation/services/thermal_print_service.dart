@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../../../core/printing/claim_sheet_disclaimer.dart';
 import '../../../../core/utils/permission_service.dart';
@@ -60,6 +62,17 @@ class ThermalPrintService extends _$ThermalPrintService {
   String? _socketAddress;
   int? _socketPort;
 
+  /// Tracks the currently-running Bluetooth/network print operation.
+  ///
+  /// `Future.timeout()` in `_printBytes` does not cancel the underlying
+  /// operation — it only stops awaiting it. A timed-out attempt keeps
+  /// running in the background against shared connection state (the
+  /// cached [_socket], the Bluetooth connection). If a retry were allowed
+  /// to start immediately, both would race on that state. This future
+  /// resolves only when the real operation finishes, so the next print
+  /// call can wait for it first instead of racing.
+  Future<void>? _inFlightPrint;
+
   /// Whether the printer should auto-cut after printing.
   bool _autoCut = true;
 
@@ -76,6 +89,44 @@ class ThermalPrintService extends _$ThermalPrintService {
       _socket?.destroy();
       _socket = null;
     });
+  }
+
+  /// Reports a printer error/warning to Sentry with printer context attached
+  /// (stage, platform, connection type) so failures like "printer not
+  /// found" can be diagnosed remotely instead of only appearing as a toast.
+  ///
+  /// Pass either [error] (an actual exception) or [message] (a known failure
+  /// condition with no exception, e.g. "failed to connect").
+  void _reportPrinterIssue(
+    String stage, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? message,
+    SentryLevel level = SentryLevel.error,
+    PrinterConfig? printer,
+  }) {
+    void applyScope(Scope scope) {
+      scope.level = level;
+      scope.setTag('printer.stage', stage);
+      scope.setTag('printer.platform', Platform.operatingSystem);
+      if (printer != null) {
+        scope.setTag('printer.connectionType', printer.connectionType.name);
+        scope.setContexts('printer', {
+          'id': printer.id,
+          'name': printer.name,
+          'connectionType': printer.connectionType.name,
+          'paperWidth': printer.paperWidth.name,
+          'port': printer.port,
+          'hasAddress': printer.hasAddress,
+        });
+      }
+    }
+
+    if (error != null) {
+      Sentry.captureException(error, stackTrace: stackTrace, withScope: applyScope);
+    } else if (message != null) {
+      Sentry.captureMessage(message, level: level, withScope: applyScope);
+    }
   }
 
   /// Prints a sale receipt to the specified printer.
@@ -185,8 +236,13 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       final devices = await PrintBluetoothThermal.pairedBluetooths;
       return devices;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error discovering Bluetooth printers: $e');
+      _reportPrinterIssue(
+        'bluetooth_discovery_error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }
@@ -201,11 +257,26 @@ class ThermalPrintService extends _$ThermalPrintService {
     try {
       await PermissionService.ensureBluetoothPermissions();
       return await PrintBluetoothThermal.bluetoothEnabled;
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (e is PermissionDeniedException) rethrow;
+      _reportPrinterIssue(
+        'bluetooth_enabled_check_error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
+
+  /// Hard ceiling on a single print attempt.
+  ///
+  /// Neither the `print_bluetooth_thermal` plugin's Windows connect path
+  /// (`win_ble`) nor `dart:io` Socket writes have a guaranteed timeout on
+  /// every internal await, so a bad connection can otherwise hang the
+  /// "Print" button forever with no error ever surfacing. This wraps the
+  /// whole attempt so it always resolves, and reports to Sentry when it
+  /// doesn't finish in time.
+  static const _printTimeout = Duration(seconds: 15);
 
   /// Prints bytes to the configured printer.
   Future<PrintResult> _printBytes(PrinterConfig config, List<int> bytes) async {
@@ -213,13 +284,56 @@ class ThermalPrintService extends _$ThermalPrintService {
       return const PrintFailure(kThermalPrintingUnsupportedMessage);
     }
 
-    try {
-      if (config.isBluetooth) {
-        return _printViaBluetooth(config.address!, bytes);
-      } else {
-        return _printViaNetwork(config.address!, config.port, bytes);
+    // If a prior attempt timed out but is still running in the background,
+    // wait for it to actually finish before touching shared connection
+    // state (the cached socket, the Bluetooth connection) again.
+    while (_inFlightPrint != null) {
+      await _inFlightPrint;
+    }
+
+    final printFuture = config.isBluetooth
+        ? _printViaBluetooth(config, bytes)
+        : _printViaNetwork(config, bytes);
+
+    // Track real completion of the operation separately from the
+    // timeout-wrapped await below, so `_inFlightPrint` only clears once
+    // the underlying Bluetooth/network work is actually done.
+    final release = printFuture.then((_) {}, onError: (_, __) {});
+    _inFlightPrint = release;
+    unawaited(release.whenComplete(() {
+      if (identical(_inFlightPrint, release)) {
+        _inFlightPrint = null;
       }
-    } catch (e) {
+    }));
+
+    try {
+      // No onTimeout handler — let this throw TimeoutException on expiry
+      // so it flows through the catch below with a real stack trace
+      // instead of silently resolving to a failure value.
+      return await printFuture.timeout(_printTimeout);
+    } on TimeoutException catch (e, stackTrace) {
+      final isWindowsBluetoothHang = config.isBluetooth && Platform.isWindows;
+      _reportPrinterIssue(
+        'print_timeout',
+        error: e,
+        stackTrace: stackTrace,
+        printer: config,
+      );
+      return PrintFailure(
+        isWindowsBluetoothHang
+            ? 'Print timed out. This printer may use classic Bluetooth, '
+                'which Windows cannot connect to — try a network '
+                '(WiFi/LAN) printer instead.'
+            : 'Print operation timed out. Check the printer connection '
+                'and try again.',
+      );
+    } catch (e, stackTrace) {
+      _reportPrinterIssue(
+        'print_bytes',
+        error: e,
+        stackTrace: stackTrace,
+        printer: config,
+      );
       return PrintFailure('Print error: $e');
     }
   }
@@ -230,19 +344,40 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// quirks (duplicate responses, writeBytes type errors). We work around
   /// them by sending data in small chunks and catching channel errors
   /// gracefully.
+  ///
+  /// On Windows the plugin scans for Bluetooth Low Energy (BLE) devices
+  /// only (via `win_ble`), since Windows classic-Bluetooth (SPP/RFCOMM)
+  /// APIs aren't exposed the same way. Most ESC/POS thermal printers use
+  /// classic Bluetooth, not BLE, so they will not be discovered or will
+  /// fail to connect here — that's the most common cause of "printer not
+  /// found" on Windows. Network (WiFi/LAN) printing is the reliable path
+  /// on Windows.
   Future<PrintResult> _printViaBluetooth(
-      String macAddress, List<int> bytes) async {
+      PrinterConfig config, List<int> bytes) async {
+    final macAddress = config.address!;
     try {
       // Ensure Bluetooth permissions are granted before printing
       try {
         await PermissionService.ensureBluetoothPermissions();
       } on PermissionDeniedException catch (e) {
+        _reportPrinterIssue(
+          'bluetooth_permission_denied',
+          message: e.message,
+          level: SentryLevel.warning,
+          printer: config,
+        );
         return PrintFailure(e.message);
       }
 
       // Check if Bluetooth is enabled
       final isEnabled = await PrintBluetoothThermal.bluetoothEnabled;
       if (!isEnabled) {
+        _reportPrinterIssue(
+          'bluetooth_disabled',
+          message: 'Bluetooth is not enabled',
+          level: SentryLevel.warning,
+          printer: config,
+        );
         return const PrintFailure('Bluetooth is not enabled');
       }
 
@@ -250,6 +385,15 @@ class ThermalPrintService extends _$ThermalPrintService {
       final connected =
           await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
       if (!connected) {
+        _reportPrinterIssue(
+          'bluetooth_connect_failed',
+          message: Platform.isWindows
+              ? 'Failed to connect to Bluetooth printer on Windows '
+                  '(likely a classic Bluetooth/SPP printer, which the '
+                  'Windows BLE-only scanner cannot see)'
+              : 'Failed to connect to Bluetooth printer',
+          printer: config,
+        );
         return const PrintFailure('Failed to connect to Bluetooth printer');
       }
 
@@ -259,6 +403,11 @@ class ThermalPrintService extends _$ThermalPrintService {
       // Verify the connection is actually ready.
       final isReady = await PrintBluetoothThermal.connectionStatus;
       if (!isReady) {
+        _reportPrinterIssue(
+          'bluetooth_connection_lost',
+          message: 'Bluetooth connection lost before printing',
+          printer: config,
+        );
         return const PrintFailure('Bluetooth connection lost before printing');
       }
 
@@ -304,9 +453,20 @@ class ThermalPrintService extends _$ThermalPrintService {
       if (lastResult) {
         return const PrintSuccess();
       } else {
+        _reportPrinterIssue(
+          'bluetooth_write_failed',
+          message: 'Failed to send data to printer',
+          printer: config,
+        );
         return const PrintFailure('Failed to send data to printer');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _reportPrinterIssue(
+        'bluetooth_print_error',
+        error: e,
+        stackTrace: stackTrace,
+        printer: config,
+      );
       return PrintFailure('Bluetooth print error: $e');
     }
   }
@@ -320,7 +480,9 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// If the cached socket is stale or the address changed, a new connection
   /// is established automatically.
   Future<PrintResult> _printViaNetwork(
-      String ipAddress, int port, List<int> bytes) async {
+      PrinterConfig config, List<int> bytes) async {
+    final ipAddress = config.address!;
+    final port = config.port;
     try {
       // Reuse existing socket if it matches the target address.
       if (_socket == null ||
@@ -358,12 +520,18 @@ class ThermalPrintService extends _$ThermalPrintService {
       await Future.delayed(const Duration(milliseconds: 500));
 
       return const PrintSuccess();
-    } catch (e) {
+    } catch (e, stackTrace) {
       // Connection fully failed — clean up.
       _socket?.destroy();
       _socket = null;
       _socketAddress = null;
       _socketPort = null;
+      _reportPrinterIssue(
+        'network_print_error',
+        error: e,
+        stackTrace: stackTrace,
+        printer: config,
+      );
       return PrintFailure('Network print error: $e');
     }
   }
