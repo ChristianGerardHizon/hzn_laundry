@@ -536,6 +536,53 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
   }
 
+  /// Draws a full-width divider line.
+  ///
+  /// Forces an unconditional style reset (`ESC @`) before the divider
+  /// instead of relying on [Generator]'s diff-based style tracking.
+  /// [Generator.hr] only emits a reset when its in-memory style disagrees
+  /// with the target style — if a prior escape sequence was split or
+  /// dropped in transit (e.g. a Bluetooth write chunked mid-command), the
+  /// in-memory state can claim "already normal size" while the physical
+  /// printer is still stuck in the double-height/width mode left over from
+  /// large text. That leaves the divider printing at that oversized scale,
+  /// wrapping one line of dashes into two or three.
+  List<int> _appendDivider(
+    Generator generator,
+    List<int> bytes, {
+    String ch = '-',
+  }) {
+    bytes += generator.reset();
+    bytes += generator.hr(ch: ch);
+    return bytes;
+  }
+
+  /// All text-size multipliers supported by [PosTextSize], smallest first.
+  static const List<PosTextSize> _posTextSizes = [
+    PosTextSize.size1,
+    PosTextSize.size2,
+    PosTextSize.size3,
+    PosTextSize.size4,
+    PosTextSize.size5,
+    PosTextSize.size6,
+    PosTextSize.size7,
+    PosTextSize.size8,
+  ];
+
+  /// Picks the largest [PosTextSize] multiplier that still keeps [text] on
+  /// a single physical line for the given [maxCharsPerLine], so short
+  /// customer names print at the printer's maximum size while long ones
+  /// don't wrap into unplanned extra lines.
+  PosTextSize _largestFittingTextSize(String text, int maxCharsPerLine) {
+    final length = text.isEmpty ? 1 : text.length;
+    for (final size in _posTextSizes.reversed) {
+      if (maxCharsPerLine ~/ size.value >= length) {
+        return size;
+      }
+    }
+    return PosTextSize.size1;
+  }
+
   List<int> _appendBusinessHeader(
     Generator generator,
     List<int> bytes, {
@@ -567,7 +614,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       );
     }
 
-    bytes += generator.hr(ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: '=');
     return bytes;
   }
 
@@ -644,7 +691,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       bytes += generator.text('Cashier: $cashierName');
     }
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
 
     // Column headers
     bytes += generator.row([
@@ -665,7 +712,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       ),
     ]);
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
 
     // Items - Use 'P' instead of '₱' for thermal printer ASCII compatibility
     final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
@@ -691,7 +738,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       ]);
     }
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
 
     // Total
     bytes += generator.row([
@@ -708,7 +755,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       ),
     ]);
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
 
     // Payment info
     bytes += generator.text('Status: ${sale.isPaid ? 'PAID' : 'UNPAID'}');
@@ -718,11 +765,11 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
 
     if (sale.notes != null && sale.notes!.isNotEmpty) {
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
       bytes += generator.text('Notes: ${sale.notes}');
     }
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
 
     // Footer
     bytes += generator.text(
@@ -730,9 +777,9 @@ class ThermalPrintService extends _$ThermalPrintService {
       styles: const PosStyles(align: PosAlign.center, bold: true),
     );
 
-    bytes += generator.hr();
+    bytes = _appendDivider(generator, bytes);
     bytes = _appendClaimSheetDisclaimer(generator, bytes);
-    bytes += generator.hr(ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: '=');
 
     // Feed and optionally cut
     bytes += generator.feed(_autoCut ? 2 : 4);
@@ -776,7 +823,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     if (copyType == OrderReceiptCopy.store) {
       // ── Store copy — compact machine tag ─────────────────────────────
-      bytes += generator.hr(ch: '=');
+      bytes = _appendDivider(generator, bytes, ch: '=');
       bytes = _appendClaimSheetTitle(generator, bytes, storeCopy: true);
       if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
         bytes += generator.text(
@@ -784,16 +831,24 @@ class ThermalPrintService extends _$ThermalPrintService {
           styles: const PosStyles(align: PosAlign.center),
         );
       }
-      bytes += generator.hr(ch: '=');
+      bytes = _appendDivider(generator, bytes, ch: '=');
 
-      // Large customer name for easy identification on the machine
+      // Large customer name for easy identification on the machine — sized
+      // to the largest multiplier that still fits on one line, so short
+      // names print as big as the printer allows and long ones don't wrap
+      // into unplanned extra lines.
+      final upperCustomerName = customerName.toUpperCase();
+      final customerNameSize = _largestFittingTextSize(
+        upperCustomerName,
+        paperWidth.charsPerLine,
+      );
       bytes += generator.text(
-        customerName.toUpperCase(),
-        styles: const PosStyles(
+        upperCustomerName,
+        styles: PosStyles(
           align: PosAlign.center,
           bold: true,
-          height: PosTextSize.size4,
-          width: PosTextSize.size4,
+          height: customerNameSize,
+          width: customerNameSize,
         ),
       );
 
@@ -821,7 +876,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       );
 
       // ── Price breakdown ──────────────────────────────────────────────
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       final storeAddOnsTotal =
           addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
@@ -858,7 +913,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         }
       }
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Total — large and bold for easy reading
       bytes += generator.text(
@@ -878,7 +933,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         ),
       );
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Date & time
       bytes += generator.text(
@@ -887,7 +942,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       );
 
       // Special instructions (important for machine operators)
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
       bytes += generator.text(
         'NOTES:',
         styles: const PosStyles(bold: true),
@@ -898,9 +953,9 @@ class ThermalPrintService extends _$ThermalPrintService {
             : 'No special instructions',
       );
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
       bytes = _appendClaimSheetDisclaimer(generator, bytes);
-      bytes += generator.hr(ch: '=');
+      bytes = _appendDivider(generator, bytes, ch: '=');
       bytes += generator.feed(_autoCut ? 2 : 4);
       if (_autoCut) bytes += generator.cut();
     } else {
@@ -926,12 +981,12 @@ class ThermalPrintService extends _$ThermalPrintService {
         bytes += generator.text('Cashier: $cashierName');
       }
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Customer
       bytes += generator.text('Customer: $customerName');
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Service details
       bytes += generator.row([
@@ -952,7 +1007,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         ),
       ]);
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Service subtotal excludes add-on prices
       final addOnsTotal =
@@ -980,7 +1035,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       // Add-on items
       if (addOnItems.isNotEmpty) {
-        bytes += generator.hr();
+        bytes = _appendDivider(generator, bytes);
         bytes += generator.row([
           PosColumn(
             text: 'ADD-ONS',
@@ -998,7 +1053,7 @@ class ThermalPrintService extends _$ThermalPrintService {
             styles: const PosStyles(bold: true, align: PosAlign.right),
           ),
         ]);
-        bytes += generator.hr();
+        bytes = _appendDivider(generator, bytes);
 
         for (final item in addOnItems) {
           String addOnName = item.productName;
@@ -1021,7 +1076,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         }
       }
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Total — large and bold
       bytes += generator.text(
@@ -1041,14 +1096,14 @@ class ThermalPrintService extends _$ThermalPrintService {
         ),
       );
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       bytes += generator.text(
         (specialInstructions != null && specialInstructions.isNotEmpty)
             ? 'Notes: $specialInstructions'
             : 'Notes: No special instructions',
       );
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
 
       // Footer
       bytes += generator.text(
@@ -1056,9 +1111,9 @@ class ThermalPrintService extends _$ThermalPrintService {
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
 
-      bytes += generator.hr();
+      bytes = _appendDivider(generator, bytes);
       bytes = _appendClaimSheetDisclaimer(generator, bytes);
-      bytes += generator.hr(ch: '=');
+      bytes = _appendDivider(generator, bytes, ch: '=');
       bytes += generator.feed(_autoCut ? 2 : 4);
       if (_autoCut) bytes += generator.cut();
     }
@@ -1076,7 +1131,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     List<int> bytes = [];
 
-    bytes += generator.hr(ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: '=');
     bytes += generator.text(
       'PRINTER TEST',
       styles: const PosStyles(
@@ -1086,7 +1141,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         width: PosTextSize.size2,
       ),
     );
-    bytes += generator.hr(ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: '=');
 
     bytes += generator.text('If you can read this,');
     bytes += generator.text('the printer is working correctly.');
@@ -1103,7 +1158,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       styles: const PosStyles(align: PosAlign.center),
     );
 
-    bytes += generator.hr(ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: '=');
     bytes += generator.feed(_autoCut ? 2 : 4);
     if (_autoCut) bytes += generator.cut();
 
