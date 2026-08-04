@@ -62,6 +62,17 @@ class ThermalPrintService extends _$ThermalPrintService {
   String? _socketAddress;
   int? _socketPort;
 
+  /// Tracks the currently-running Bluetooth/network print operation.
+  ///
+  /// `Future.timeout()` in `_printBytes` does not cancel the underlying
+  /// operation — it only stops awaiting it. A timed-out attempt keeps
+  /// running in the background against shared connection state (the
+  /// cached [_socket], the Bluetooth connection). If a retry were allowed
+  /// to start immediately, both would race on that state. This future
+  /// resolves only when the real operation finishes, so the next print
+  /// call can wait for it first instead of racing.
+  Future<void>? _inFlightPrint;
+
   /// Whether the printer should auto-cut after printing.
   bool _autoCut = true;
 
@@ -273,11 +284,29 @@ class ThermalPrintService extends _$ThermalPrintService {
       return const PrintFailure(kThermalPrintingUnsupportedMessage);
     }
 
-    try {
-      final printFuture = config.isBluetooth
-          ? _printViaBluetooth(config, bytes)
-          : _printViaNetwork(config, bytes);
+    // If a prior attempt timed out but is still running in the background,
+    // wait for it to actually finish before touching shared connection
+    // state (the cached socket, the Bluetooth connection) again.
+    while (_inFlightPrint != null) {
+      await _inFlightPrint;
+    }
 
+    final printFuture = config.isBluetooth
+        ? _printViaBluetooth(config, bytes)
+        : _printViaNetwork(config, bytes);
+
+    // Track real completion of the operation separately from the
+    // timeout-wrapped await below, so `_inFlightPrint` only clears once
+    // the underlying Bluetooth/network work is actually done.
+    final release = printFuture.then((_) {}, onError: (_, __) {});
+    _inFlightPrint = release;
+    unawaited(release.whenComplete(() {
+      if (identical(_inFlightPrint, release)) {
+        _inFlightPrint = null;
+      }
+    }));
+
+    try {
       // No onTimeout handler — let this throw TimeoutException on expiry
       // so it flows through the catch below with a real stack trace
       // instead of silently resolving to a failure value.
