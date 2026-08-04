@@ -103,6 +103,12 @@ dependency_overrides:
       url: https://github.com/EchoEllet/flutter_keyboard_visibility_temp_fork.git
       ref: master
       path: flutter_keyboard_visibility_web
+  # Vendored fork: upstream's Android connect() only tries SDP-based RFCOMM
+  # lookup, which fails with "read failed, socket might closed or timeout"
+  # on printers with broken/incomplete SDP records. This fork adds a
+  # channel-1 fallback that bypasses SDP. See packages/print_bluetooth_thermal.
+  print_bluetooth_thermal:
+    path: packages/print_bluetooth_thermal
 
 flutter:
   uses-material-design: true

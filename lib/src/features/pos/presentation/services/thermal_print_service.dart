@@ -276,17 +276,29 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// "Print" button forever with no error ever surfacing. This wraps the
   /// whole attempt so it always resolves, and reports to Sentry when it
   /// doesn't finish in time.
-  static const _printTimeout = Duration(seconds: 15);
+  static const _printTimeout = Duration(seconds: 40);
 
   /// Prints bytes to the configured printer.
   Future<PrintResult> _printBytes(PrinterConfig config, List<int> bytes) async {
+    debugPrint(
+      '[ThermalPrint] _printBytes: printer="${config.name}" '
+      'type=${config.connectionType.name} address=${config.address} '
+      'port=${config.port} hasAddress=${config.hasAddress}',
+    );
     if (!isThermalPrintingSupported) {
+      debugPrint('[ThermalPrint] _printBytes: unsupported platform');
       return const PrintFailure(kThermalPrintingUnsupportedMessage);
     }
 
     // If a prior attempt timed out but is still running in the background,
     // wait for it to actually finish before touching shared connection
     // state (the cached socket, the Bluetooth connection) again.
+    if (_inFlightPrint != null) {
+      debugPrint(
+        '[ThermalPrint] _printBytes: waiting for prior in-flight print '
+        'to finish before starting a new one',
+      );
+    }
     while (_inFlightPrint != null) {
       await _inFlightPrint;
     }
@@ -313,6 +325,12 @@ class ThermalPrintService extends _$ThermalPrintService {
       return await printFuture.timeout(_printTimeout);
     } on TimeoutException catch (e, stackTrace) {
       final isWindowsBluetoothHang = config.isBluetooth && Platform.isWindows;
+      debugPrint(
+        '[ThermalPrint] _printBytes: timed out after '
+        '${_printTimeout.inSeconds}s connecting/printing to '
+        '"${config.name}" (${config.connectionType.name}, '
+        '${config.address}:${config.port})',
+      );
       _reportPrinterIssue(
         'print_timeout',
         error: e,
@@ -338,6 +356,19 @@ class ThermalPrintService extends _$ThermalPrintService {
     }
   }
 
+  /// Finds a chunk boundary at or before [desiredEnd] that falls right
+  /// after a line break (`\n`), so a Bluetooth write never splits a
+  /// printer command/character run in half. Falls back to [desiredEnd]
+  /// itself if no line break exists between [start] and [desiredEnd]
+  /// (e.g. a single run, such as image data, longer than one chunk).
+  int _safeChunkEnd(List<int> bytes, int start, int desiredEnd) {
+    if (desiredEnd >= bytes.length) return bytes.length;
+    for (var i = desiredEnd; i > start; i--) {
+      if (bytes[i - 1] == 0x0A) return i;
+    }
+    return desiredEnd;
+  }
+
   /// Prints via Bluetooth connection.
   ///
   /// On macOS the `print_bluetooth_thermal` plugin has platform-channel
@@ -355,11 +386,17 @@ class ThermalPrintService extends _$ThermalPrintService {
   Future<PrintResult> _printViaBluetooth(
       PrinterConfig config, List<int> bytes) async {
     final macAddress = config.address!;
+    debugPrint(
+      '[ThermalPrint] Bluetooth: starting print to $macAddress '
+      '(${bytes.length} bytes, platform=${Platform.operatingSystem})',
+    );
     try {
       // Ensure Bluetooth permissions are granted before printing
       try {
         await PermissionService.ensureBluetoothPermissions();
+        debugPrint('[ThermalPrint] Bluetooth: permissions OK');
       } on PermissionDeniedException catch (e) {
+        debugPrint('[ThermalPrint] Bluetooth: permission denied — ${e.message}');
         _reportPrinterIssue(
           'bluetooth_permission_denied',
           message: e.message,
@@ -371,6 +408,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       // Check if Bluetooth is enabled
       final isEnabled = await PrintBluetoothThermal.bluetoothEnabled;
+      debugPrint('[ThermalPrint] Bluetooth: adapter enabled=$isEnabled');
       if (!isEnabled) {
         _reportPrinterIssue(
           'bluetooth_disabled',
@@ -382,8 +420,15 @@ class ThermalPrintService extends _$ThermalPrintService {
       }
 
       // Connect to the printer
+      debugPrint('[ThermalPrint] Bluetooth: connecting to $macAddress...');
+      final connectStart = DateTime.now();
       final connected =
           await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+      final connectMs = DateTime.now().difference(connectStart).inMilliseconds;
+      debugPrint(
+        '[ThermalPrint] Bluetooth: connect() returned $connected '
+        'after ${connectMs}ms',
+      );
       if (!connected) {
         _reportPrinterIssue(
           'bluetooth_connect_failed',
@@ -402,6 +447,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
       // Verify the connection is actually ready.
       final isReady = await PrintBluetoothThermal.connectionStatus;
+      debugPrint('[ThermalPrint] Bluetooth: connectionStatus ready=$isReady');
       if (!isReady) {
         _reportPrinterIssue(
           'bluetooth_connection_lost',
@@ -419,10 +465,19 @@ class ThermalPrintService extends _$ThermalPrintService {
       const chunkSize = 200;
       bool lastResult = true;
 
-      for (var offset = 0; offset < bytes.length; offset += chunkSize) {
-        final end = (offset + chunkSize > bytes.length)
+      for (var offset = 0; offset < bytes.length;) {
+        final desiredEnd = (offset + chunkSize > bytes.length)
             ? bytes.length
             : offset + chunkSize;
+        // Cut at the last line break in the window instead of an arbitrary
+        // byte offset. Each printed line (divider, text, row) is a self-
+        // contained run of position/style commands followed by characters
+        // and a trailing '\n'. Slicing a fixed byte count can land inside
+        // that run — e.g. mid-divider — so half the command reaches the
+        // printer in one write and the rest arrives in the next as if it
+        // were new data, leaving a corrupted gap in that line. Backing up
+        // to the previous '\n' keeps every line's bytes in one write.
+        final end = _safeChunkEnd(bytes, offset, desiredEnd);
         final chunk = List<int>.from(bytes.sublist(offset, end));
 
         try {
@@ -431,13 +486,18 @@ class ThermalPrintService extends _$ThermalPrintService {
           // On macOS the plugin may throw due to duplicate platform channel
           // responses. The data is often still sent successfully, so we
           // log and continue rather than failing.
-          debugPrint('Bluetooth write chunk warning: $e');
+          debugPrint(
+            '[ThermalPrint] Bluetooth: write chunk warning at offset '
+            '$offset: $e',
+          );
         }
 
         // Small delay between chunks to let the printer process
         if (end < bytes.length) {
           await Future.delayed(const Duration(milliseconds: 50));
         }
+
+        offset = end;
       }
 
       // Allow final chunk to flush before disconnecting.
@@ -446,13 +506,17 @@ class ThermalPrintService extends _$ThermalPrintService {
       // Disconnect
       try {
         await PrintBluetoothThermal.disconnect;
-      } catch (_) {
+        debugPrint('[ThermalPrint] Bluetooth: disconnected');
+      } catch (e) {
         // Ignore disconnect errors on macOS
+        debugPrint('[ThermalPrint] Bluetooth: disconnect warning: $e');
       }
 
       if (lastResult) {
+        debugPrint('[ThermalPrint] Bluetooth: print succeeded');
         return const PrintSuccess();
       } else {
+        debugPrint('[ThermalPrint] Bluetooth: writeBytes returned false');
         _reportPrinterIssue(
           'bluetooth_write_failed',
           message: 'Failed to send data to printer',
@@ -461,6 +525,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         return const PrintFailure('Failed to send data to printer');
       }
     } catch (e, stackTrace) {
+      debugPrint('[ThermalPrint] Bluetooth: unhandled error: $e\n$stackTrace');
       _reportPrinterIssue(
         'bluetooth_print_error',
         error: e,
@@ -483,45 +548,76 @@ class ThermalPrintService extends _$ThermalPrintService {
       PrinterConfig config, List<int> bytes) async {
     final ipAddress = config.address!;
     final port = config.port;
+    debugPrint(
+      '[ThermalPrint] Network: starting print to $ipAddress:$port '
+      '(${bytes.length} bytes)',
+    );
     try {
       // Reuse existing socket if it matches the target address.
       if (_socket == null ||
           _socketAddress != ipAddress ||
           _socketPort != port) {
+        debugPrint(
+          '[ThermalPrint] Network: no reusable socket '
+          '(cached=${_socketAddress ?? 'none'}:${_socketPort ?? '-'}) '
+          '— connecting to $ipAddress:$port...',
+        );
         _socket?.destroy();
+        final connectStart = DateTime.now();
         _socket = await Socket.connect(
           ipAddress,
           port,
           timeout: const Duration(seconds: 5),
         );
+        debugPrint(
+          '[ThermalPrint] Network: connected in '
+          '${DateTime.now().difference(connectStart).inMilliseconds}ms',
+        );
         _socketAddress = ipAddress;
         _socketPort = port;
+      } else {
+        debugPrint('[ThermalPrint] Network: reusing cached socket');
       }
 
       try {
         _socket!.add(Uint8List.fromList(bytes));
         await _socket!.flush();
-      } catch (_) {
+        debugPrint('[ThermalPrint] Network: wrote and flushed bytes');
+      } catch (e) {
         // Socket was stale — reconnect once and retry.
+        debugPrint(
+          '[ThermalPrint] Network: write failed on cached socket ($e) '
+          '— reconnecting and retrying...',
+        );
         _socket?.destroy();
+        final reconnectStart = DateTime.now();
         _socket = await Socket.connect(
           ipAddress,
           port,
           timeout: const Duration(seconds: 5),
+        );
+        debugPrint(
+          '[ThermalPrint] Network: reconnected in '
+          '${DateTime.now().difference(reconnectStart).inMilliseconds}ms',
         );
         _socketAddress = ipAddress;
         _socketPort = port;
 
         _socket!.add(Uint8List.fromList(bytes));
         await _socket!.flush();
+        debugPrint('[ThermalPrint] Network: wrote and flushed bytes on retry');
       }
 
       // Wait for the printer to finish processing.
       await Future.delayed(const Duration(milliseconds: 500));
 
+      debugPrint('[ThermalPrint] Network: print succeeded');
       return const PrintSuccess();
     } catch (e, stackTrace) {
       // Connection fully failed — clean up.
+      debugPrint(
+        '[ThermalPrint] Network: connection failed to $ipAddress:$port — $e',
+      );
       _socket?.destroy();
       _socket = null;
       _socketAddress = null;
@@ -981,8 +1077,6 @@ class ThermalPrintService extends _$ThermalPrintService {
         bytes += generator.text('Cashier: $cashierName');
       }
 
-      bytes = _appendDivider(generator, bytes);
-
       // Customer
       bytes += generator.text('Customer: $customerName');
 
@@ -1006,8 +1100,6 @@ class ThermalPrintService extends _$ThermalPrintService {
           styles: const PosStyles(bold: true, align: PosAlign.right),
         ),
       ]);
-
-      bytes = _appendDivider(generator, bytes);
 
       // Service subtotal excludes add-on prices
       final addOnsTotal =
@@ -1033,27 +1125,13 @@ class ThermalPrintService extends _$ThermalPrintService {
         ),
       ]);
 
-      // Add-on items
+      // Add-on items — appended as extra rows in the same table, no extra
+      // header/dividers, so the list of dashes doesn't balloon per order.
       if (addOnItems.isNotEmpty) {
-        bytes = _appendDivider(generator, bytes);
-        bytes += generator.row([
-          PosColumn(
-            text: 'ADD-ONS',
-            width: 5,
-            styles: const PosStyles(bold: true),
-          ),
-          PosColumn(
-            text: 'QTY',
-            width: 3,
-            styles: const PosStyles(bold: true, align: PosAlign.center),
-          ),
-          PosColumn(
-            text: 'AMOUNT',
-            width: 4,
-            styles: const PosStyles(bold: true, align: PosAlign.right),
-          ),
-        ]);
-        bytes = _appendDivider(generator, bytes);
+        bytes += generator.text(
+          'ADD-ONS',
+          styles: const PosStyles(bold: true),
+        );
 
         for (final item in addOnItems) {
           String addOnName = item.productName;
@@ -1103,7 +1181,6 @@ class ThermalPrintService extends _$ThermalPrintService {
             ? 'Notes: $specialInstructions'
             : 'Notes: No special instructions',
       );
-      bytes = _appendDivider(generator, bytes);
 
       // Footer
       bytes += generator.text(
@@ -1111,7 +1188,6 @@ class ThermalPrintService extends _$ThermalPrintService {
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
 
-      bytes = _appendDivider(generator, bytes);
       bytes = _appendClaimSheetDisclaimer(generator, bytes);
       bytes = _appendDivider(generator, bytes, ch: '=');
       bytes += generator.feed(_autoCut ? 2 : 4);

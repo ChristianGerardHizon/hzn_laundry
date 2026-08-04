@@ -1513,10 +1513,9 @@ packages:
   print_bluetooth_thermal:
     dependency: "direct main"
     description:
-      name: print_bluetooth_thermal
-      sha256: "17b204a5340174c02acf5f6caf7279b5000344f1f1e1bcd01dbdbf912bce6e46"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/print_bluetooth_thermal"
+      relative: true
+    source: path
     version: "1.1.9"
   printing:
     dependency: "direct main"
