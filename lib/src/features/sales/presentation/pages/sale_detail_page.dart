@@ -2073,7 +2073,7 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
   }
 }
 
-// ── Print menu button ────────────────────────────────────────────────────────
+// ── Print / PDF menu buttons ─────────────────────────────────────────────────
 
 class _PrintMenuButton extends HookConsumerWidget {
   const _PrintMenuButton({
@@ -2191,12 +2191,8 @@ class _PrintMenuButton extends HookConsumerWidget {
       }
     }
 
-    Future<void> handleMenuSelection(String value) async {
+    Future<void> handlePdfMenuSelection(String value) async {
       switch (value) {
-        case 'print_customer':
-          await printCopy(OrderReceiptCopy.customer);
-        case 'print_store':
-          await printCopy(OrderReceiptCopy.store);
         case 'preview_customer':
           await previewCopy(storeCopy: false);
         case 'preview_store':
@@ -2204,59 +2200,81 @@ class _PrintMenuButton extends HookConsumerWidget {
       }
     }
 
-    return PopupMenuButton<String>(
-      icon: isPrinting.value
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.print),
-      tooltip: 'Print & preview',
-      enabled: !isPrinting.value,
-      onSelected: handleMenuSelection,
-      itemBuilder: (context) => [
-        if (isThermalPrintingSupported) ...[
-          const PopupMenuItem<String>(
-            value: 'print_customer',
-            child: ListTile(
-              leading: Icon(Icons.receipt_long),
-              title: Text('Print Claim Sheet'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+    Future<void> handlePrintMenuSelection(String value) async {
+      switch (value) {
+        case 'print_customer':
+          await printCopy(OrderReceiptCopy.customer);
+        case 'print_store':
+          await printCopy(OrderReceiptCopy.store);
+      }
+    }
+
+    Widget? loadingIcon() => isPrinting.value
+        ? const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : null;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PopupMenuButton<String>(
+          icon: loadingIcon() ?? const Icon(Icons.picture_as_pdf_outlined),
+          tooltip: 'Generate PDF',
+          enabled: !isPrinting.value,
+          onSelected: handlePdfMenuSelection,
+          itemBuilder: (context) => const [
+            PopupMenuItem<String>(
+              value: 'preview_customer',
+              child: ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined),
+                title: Text('Preview Claim Sheet'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
             ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'print_store',
-            child: ListTile(
-              leading: Icon(Icons.local_laundry_service),
-              title: Text('Print Claim Sheet (Store)'),
-              subtitle: Text('Machine tag'),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+            PopupMenuItem<String>(
+              value: 'preview_store',
+              child: ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined),
+                title: Text('Preview Claim Sheet (Store)'),
+                subtitle: Text('Machine tag'),
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
             ),
-          ),
-          const PopupMenuDivider(),
-        ],
-        const PopupMenuItem<String>(
-          value: 'preview_customer',
-          child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('Preview Claim Sheet'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
+          ],
         ),
-        const PopupMenuItem<String>(
-          value: 'preview_store',
-          child: ListTile(
-            leading: Icon(Icons.picture_as_pdf_outlined),
-            title: Text('Preview Claim Sheet (Store)'),
-            subtitle: Text('Machine tag'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
+        if (isThermalPrintingSupported)
+          PopupMenuButton<String>(
+            icon: loadingIcon() ?? const Icon(Icons.print),
+            tooltip: 'Print',
+            enabled: !isPrinting.value,
+            onSelected: handlePrintMenuSelection,
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'print_customer',
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long),
+                  title: Text('Print Claim Sheet'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'print_store',
+                child: ListTile(
+                  leading: Icon(Icons.local_laundry_service),
+                  title: Text('Print Claim Sheet (Store)'),
+                  subtitle: Text('Machine tag'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
-        ),
       ],
     );
   }

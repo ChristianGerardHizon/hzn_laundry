@@ -493,7 +493,7 @@ class ReceiptDialog extends HookConsumerWidget {
                   IconButton.outlined(
                     onPressed: handlePdfPrint,
                     icon: const Icon(Icons.picture_as_pdf),
-                    tooltip: 'Print as PDF',
+                    tooltip: 'Generate PDF',
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
@@ -510,8 +510,8 @@ class ReceiptDialog extends HookConsumerWidget {
                 ] else ...[
                   OutlinedButton.icon(
                     onPressed: handlePdfPrint,
-                    icon: const Icon(Icons.print_outlined),
-                    label: const Text('Print PDF'),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: const Text('Generate PDF'),
                   ),
                   if (isThermalPrintingSupported) ...[
                     const SizedBox(width: 8),

@@ -2607,7 +2607,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                 child: Text('Claim Sheet', style: theme.textTheme.titleLarge),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Preview claim sheet',
+                tooltip: 'Generate PDF',
                 enabled: !isPrinting.value,
                 icon: isPrinting.value
                     ? const SizedBox(
