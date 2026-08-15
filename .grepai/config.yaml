@@ -97,7 +97,7 @@ ignore:
     - linux
     - windows
     - web
-    - packages
+    - packages/print_bluetooth_thermal
     - build
     - node_modules
     - vendor
