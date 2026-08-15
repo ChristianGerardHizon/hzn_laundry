@@ -10,6 +10,7 @@ class Customer with CustomerMappable {
   const Customer({
     required this.id,
     required this.name,
+    this.branchId,
     this.phone,
     this.email,
     this.address,
@@ -23,6 +24,9 @@ class Customer with CustomerMappable {
 
   /// Customer name.
   final String name;
+
+  /// Branch ID where this customer was created.
+  final String? branchId;
 
   /// Customer phone number (optional).
   final String? phone;

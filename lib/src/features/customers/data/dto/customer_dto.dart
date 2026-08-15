@@ -13,6 +13,7 @@ class CustomerDto with CustomerDtoMappable {
   final String collectionId;
   final String collectionName;
   final String name;
+  final String? branch;
   final String? phone;
   final String? email;
   final String? address;
@@ -25,6 +26,7 @@ class CustomerDto with CustomerDtoMappable {
     required this.collectionId,
     required this.collectionName,
     required this.name,
+    this.branch,
     this.phone,
     this.email,
     this.address,
@@ -40,6 +42,7 @@ class CustomerDto with CustomerDtoMappable {
       collectionId: record.collectionId,
       collectionName: record.collectionName,
       name: record.getStringValue('name'),
+      branch: record.getStringValue('branch'),
       phone: record.getStringValue('phone'),
       email: record.getStringValue('email'),
       address: record.getStringValue('address'),
@@ -54,6 +57,7 @@ class CustomerDto with CustomerDtoMappable {
     return Customer(
       id: id,
       name: name,
+      branchId: branch != null && branch!.isNotEmpty ? branch : null,
       phone: phone != null && phone!.isNotEmpty ? phone : null,
       email: email != null && email!.isNotEmpty ? email : null,
       address: address != null && address!.isNotEmpty ? address : null,

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/customer.dart';
 import '../controllers/customers_controller.dart';
 import 'customer_form_sheet.dart';
@@ -26,6 +29,7 @@ class CustomerListPanel extends HookConsumerWidget {
       void listener() {
         searchQuery.value = searchController.text;
       }
+
       searchController.addListener(listener);
       return () => searchController.removeListener(listener);
     }, [searchController]);
@@ -119,6 +123,14 @@ class CustomerListPanel extends HookConsumerWidget {
   }
 
   void _showCreateSheet(BuildContext context, WidgetRef ref) {
+    if (ref.read(isAllBranchesProvider)) {
+      showWarningSnackBar(
+        context,
+        message:
+            Translations.of(context).navigation.createUnavailableAllBranches,
+      );
+      return;
+    }
     showCustomerFormDialog(context);
   }
 }

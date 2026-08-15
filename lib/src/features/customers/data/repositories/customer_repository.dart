@@ -33,10 +33,15 @@ abstract class CustomerRepository {
   FutureEither<List<Customer>> fetchForDateRange({
     required DateTime startDate,
     required DateTime endDate,
+    String? branchId,
   });
 
   /// Searches customers by name or phone.
-  FutureEither<List<Customer>> search(String query, {List<String>? fields});
+  FutureEither<List<Customer>> search(
+    String query, {
+    List<String>? fields,
+    String? branchId,
+  });
 
   /// Invalidates the customer list cache.
   void invalidateCache();
@@ -142,6 +147,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
           'address': customer.address,
           'notes': customer.notes,
         };
+        if (customer.branchId != null && customer.branchId!.isNotEmpty) {
+          body['branch'] = customer.branchId;
+        }
 
         final record = await _collection.create(body: body);
         invalidateCache();
@@ -162,6 +170,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
           'address': customer.address,
           'notes': customer.notes,
         };
+        if (customer.branchId != null && customer.branchId!.isNotEmpty) {
+          body['branch'] = customer.branchId;
+        }
 
         final record = await _collection.update(customer.id, body: body);
         invalidateCache();
@@ -186,14 +197,17 @@ class CustomerRepositoryImpl implements CustomerRepository {
   FutureEither<List<Customer>> fetchForDateRange({
     required DateTime startDate,
     required DateTime endDate,
+    String? branchId,
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter =
-            PBFilter().between('created', startDate, endDate).build();
+        var filter = PBFilter().between('created', startDate, endDate);
+        if (branchId != null && branchId.isNotEmpty) {
+          filter = filter.relation('branch', branchId);
+        }
 
         final records = await _collection.getFullList(
-          filter: filter,
+          filter: filter.build(),
           sort: '-created',
         );
         return records.map(_toEntity).toList();
@@ -206,15 +220,18 @@ class CustomerRepositoryImpl implements CustomerRepository {
   FutureEither<List<Customer>> search(
     String query, {
     List<String>? fields,
+    String? branchId,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name', 'phone'];
-        final filter =
-            PBFilter().searchFields(query, searchFields).build();
+        var filter = PBFilter().searchFields(query, searchFields);
+        if (branchId != null && branchId.isNotEmpty) {
+          filter = filter.relation('branch', branchId);
+        }
 
         final records = await _collection.getFullList(
-          filter: filter,
+          filter: filter.build(),
           sort: 'name',
         );
 

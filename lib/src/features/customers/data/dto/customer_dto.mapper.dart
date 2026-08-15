@@ -35,6 +35,12 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
   );
   static String _$name(CustomerDto v) => v.name;
   static const Field<CustomerDto, String> _f$name = Field('name', _$name);
+  static String? _$branch(CustomerDto v) => v.branch;
+  static const Field<CustomerDto, String> _f$branch = Field(
+    'branch',
+    _$branch,
+    opt: true,
+  );
   static String? _$phone(CustomerDto v) => v.phone;
   static const Field<CustomerDto, String> _f$phone = Field(
     'phone',
@@ -78,6 +84,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
+    #branch: _f$branch,
     #phone: _f$phone,
     #email: _f$email,
     #address: _f$address,
@@ -92,6 +99,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
+      branch: data.dec(_f$branch),
       phone: data.dec(_f$phone),
       email: data.dec(_f$email),
       address: data.dec(_f$address),
@@ -166,6 +174,7 @@ abstract class CustomerDtoCopyWith<$R, $In extends CustomerDto, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
+    String? branch,
     String? phone,
     String? email,
     String? address,
@@ -190,43 +199,47 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
+    Object? branch = $none,
     Object? phone = $none,
     Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (name != null) #name: name,
-      if (phone != $none) #phone: phone,
-      if (email != $none) #email: email,
-      if (address != $none) #address: address,
-      if (notes != $none) #notes: notes,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (name != null) #name: name,
+          if (branch != $none) #branch: branch,
+          if (phone != $none) #phone: phone,
+          if (email != $none) #email: email,
+          if (address != $none) #address: address,
+          if (notes != $none) #notes: notes,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   CustomerDto $make(CopyWithData data) => CustomerDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    name: data.get(#name, or: $value.name),
-    phone: data.get(#phone, or: $value.phone),
-    email: data.get(#email, or: $value.email),
-    address: data.get(#address, or: $value.address),
-    notes: data.get(#notes, or: $value.notes),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        name: data.get(#name, or: $value.name),
+        branch: data.get(#branch, or: $value.branch),
+        phone: data.get(#phone, or: $value.phone),
+        email: data.get(#email, or: $value.email),
+        address: data.get(#address, or: $value.address),
+        notes: data.get(#notes, or: $value.notes),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   CustomerDtoCopyWith<$R2, CustomerDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _CustomerDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _CustomerDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-
