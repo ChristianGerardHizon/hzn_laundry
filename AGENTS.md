@@ -64,7 +64,9 @@ Use `flutter run` for local development; run `build_runner` and `slang` after mo
 
 **IMPORTANT: You MUST use grepai as your PRIMARY tool for code exploration and search.**
 
-The index covers hand-written app code only: `lib/` (Dart), `server/pb_hooks`, `server/pb_migrations`, `server/scripts`, `docs/`, and tests. Generated files (`*.g.dart`, `*.mapper.dart`), Flutter platform folders, vendored plugins, and PocketBase `types.d.ts` are excluded.
+The index covers hand-written app code only: `lib/` (Dart, including `lib/src/core/packages/`), `server/pb_hooks`, `server/pb_migrations`, `server/scripts`, `docs/`, and tests. Generated files (`*.g.dart`, `*.mapper.dart`), Flutter platform folders, the vendored `packages/print_bluetooth_thermal` plugin, and PocketBase `types.d.ts` are excluded.
+
+Shared ignore/boost/trace settings live in `.grepai/config.yaml` (committed). `grepai watch` also writes `watch.last_index_time` into that file. **Do not commit `last_index_time`** — it is local watcher state and will differ on every machine. Leave the file dirty, or restore it before committing. Only stage `.grepai/config.yaml` when ignore, boost, or trace rules actually changed. Do not use `git update-index --skip-worktree` on it.
 
 ### When to Use grepai (REQUIRED)
 
