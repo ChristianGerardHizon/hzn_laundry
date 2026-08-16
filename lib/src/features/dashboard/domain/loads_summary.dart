@@ -1,3 +1,5 @@
+import 'sales_summary.dart';
+
 /// Data class holding today's machine-load summary, broken down per order.
 ///
 /// A "load" is a machine cycle assigned to a sale's service items
@@ -8,6 +10,34 @@ class LoadsSummaryData {
     required this.totalLoads,
     required this.orders,
   });
+
+  /// Aggregates machine-load counts from today's sales, one row per order.
+  factory LoadsSummaryData.fromSalesItems(List<SalesSummaryItem> sales) {
+    var totalLoads = 0;
+    final orders = <LoadsOrderEntry>[];
+
+    for (final sale in sales) {
+      var loads = 0;
+      for (final service in sale.serviceItems) {
+        for (final count in service.machineLoadCounts.values) {
+          loads += count;
+        }
+      }
+      if (loads <= 0) continue;
+      totalLoads += loads;
+      orders.add(
+        LoadsOrderEntry(
+          saleId: sale.saleId,
+          receiptNumber: sale.receiptNumber,
+          loads: loads,
+          customerName: sale.customerName,
+        ),
+      );
+    }
+
+    orders.sort((a, b) => b.loads.compareTo(a.loads));
+    return LoadsSummaryData(totalLoads: totalLoads, orders: orders);
+  }
 
   /// Total number of machine loads across all orders on the selected day.
   final int totalLoads;
