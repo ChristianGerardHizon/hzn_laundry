@@ -2359,7 +2359,7 @@
   },
   {
     "id": "pbc_4092854851",
-    "listRule": "(@request.auth.id != null &&  @request.auth.branch.id = branch.id && @request.auth.collectionName = \"users\") || (@request.auth.id != null && @request.auth.collectionName = \"admins\")",
+    "listRule": "@request.auth.id != \"\"",
     "viewRule": "",
     "createRule": "",
     "updateRule": "",
