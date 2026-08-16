@@ -412,11 +412,15 @@ curl -H "Authorization: Bearer <token>" http://127.0.0.1:8090/api/collections
 
 **IMPORTANT: You MUST use grepai as your PRIMARY tool for code exploration and search.**
 
+The index covers hand-written app code only: `lib/` (Dart, including `lib/src/core/packages/`), `server/pb_hooks`, `server/pb_migrations`, `server/scripts`, `docs/`, and tests. Generated files (`*.g.dart`, `*.mapper.dart`), Flutter platform folders, the vendored `packages/print_bluetooth_thermal` plugin, and PocketBase `types.d.ts` are excluded.
+
+Shared ignore/boost/trace settings live in `.grepai/config.yaml` (committed). `grepai watch` also writes `watch.last_index_time` into that file. **Do not commit `last_index_time`** — it is local watcher state and will differ on every machine. Leave the file dirty, or restore it before committing. Only stage `.grepai/config.yaml` when ignore, boost, or trace rules actually changed. Do not use `git update-index --skip-worktree` on it.
+
 ### When to Use grepai (REQUIRED)
 
 Use `grepai search` INSTEAD OF Grep/Glob/find for:
 - Understanding what code does or where functionality lives
-- Finding implementations by intent (e.g., "authentication logic", "error handling")
+- Finding implementations by intent (e.g., "POS checkout", "order status transition")
 - Exploring unfamiliar parts of the codebase
 - Any search where you describe WHAT the code does rather than exact text
 
@@ -424,7 +428,8 @@ Use `grepai search` INSTEAD OF Grep/Glob/find for:
 
 Only use Grep/Glob when you need:
 - Exact text matching (variable names, imports, specific strings)
-- File path patterns (e.g., `**/*.go`)
+- File path patterns (e.g., `**/*.dart`)
+- Dart call relationships (grepai trace does not support Dart)
 
 ### Fallback
 
@@ -434,45 +439,34 @@ If grepai fails (not running, index unavailable, or errors), fall back to standa
 
 ```bash
 # ALWAYS use English queries for best results (--compact saves ~80% tokens)
-grepai search "user authentication flow" --json --compact
-grepai search "error handling middleware" --json --compact
-grepai search "database connection pool" --json --compact
-grepai search "API request validation" --json --compact
+grepai search "POS checkout cart and payment flow" --json --compact
+grepai search "sale order status transition" --json --compact
+grepai search "customer order history PocketBase hook" --json --compact
+grepai search "Riverpod sales list controller" --json --compact
 ```
 
 ### Query Tips
 
 - **Use English** for queries (better semantic matching)
 - **Describe intent**, not implementation: "handles user login" not "func Login"
-- **Be specific**: "JWT token validation" better than "token"
+- **Be specific**: "thermal printer Bluetooth discovery" better than "print"
 - Results include: file path, line numbers, relevance score, code preview
 
 ### Call Graph Tracing
 
-Use `grepai trace` to understand function relationships:
-- Finding all callers of a function before modifying it
-- Understanding what functions are called by a given function
-- Visualizing the complete call graph around a symbol
-
-#### Trace Commands
-
-**IMPORTANT: Always use `--json` flag for optimal AI agent integration.**
+`grepai trace` only works for PocketBase JS hooks (`.js`). For Dart, search then Grep the class or function name.
 
 ```bash
-# Find all functions that call a symbol
-grepai trace callers "HandleRequest" --json
-
-# Find all functions called by a symbol
-grepai trace callees "ProcessOrder" --json
-
-# Build complete call graph (callers + callees)
-grepai trace graph "ValidateToken" --depth 3 --json
+# PocketBase hooks (JS) only
+grepai trace callers "routerAdd" --json
+grepai trace callees "routerAdd" --json
+grepai trace graph "routerAdd" --depth 3 --json
 ```
 
 ### Workflow
 
 1. Start with `grepai search` to find relevant code
-2. Use `grepai trace` to understand function relationships
+2. Use `grepai trace` only for PocketBase hook JS symbols
 3. Use `Read` tool to examine files from results
 4. Only use Grep for exact string searches if needed
 

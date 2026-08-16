@@ -21,6 +21,7 @@ alwaysApply: true
 - **Dialogs/sheets with snackbars:** Wrap in `ScaffoldMessenger` + `Builder`; `useRootMessenger: false`.
 - **Unimplemented work:** Add descriptive `// TODO:` comments.
 - **Code search:** Use `grepai search`/`trace` for intent-based exploration; fall back to Grep/Glob for exact matches.
+- **Grepai config:** `.grepai/config.yaml` is shared (ignore/boost/trace). Never commit `watch.last_index_time` — local watcher state. Restore or leave dirty; only stage the file when ignore/boost/trace rules changed. Do not use `--skip-worktree`.
 - **Build runner:** Always pass `--low-resources-mode`.
 - **PRs:** Target `staging`; ask user about version/deploy/minimum-version labels; include QA Notes.
 - **Docs:** Update `docs/app_overview.md` when adding or changing features.
