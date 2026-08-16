@@ -568,6 +568,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 17 | Products list across branches | Products list rule now allows any logged-in user to list products; the app still filters by the selected branch, so admins switching branches (e.g. Hi-Zone → Magsaysay) can see that branch's catalog |
 | Aug 15 | Branch-scoped customers | Customers (members) belong to the branch they were created on; list/search/create follow the current branch. Existing customers were assigned from their most recent sale. Customer detail can transfer a member to another branch |
 | Aug 03 | Web Thermal Print Guard | Disabled thermal printing on web (Bluetooth discovery, test print, auto-print, claim-sheet print actions); PDF preview/print remains available |
 | Aug 03 | All Branches Mode | Admins can select All Branches in the branch switcher to view unfiltered data across features; Cashier/POS shows a blurred overlay warning until a specific branch is chosen |
