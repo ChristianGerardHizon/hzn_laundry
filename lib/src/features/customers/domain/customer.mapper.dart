@@ -25,6 +25,12 @@ class CustomerMapper extends ClassMapperBase<Customer> {
   static const Field<Customer, String> _f$id = Field('id', _$id);
   static String _$name(Customer v) => v.name;
   static const Field<Customer, String> _f$name = Field('name', _$name);
+  static String? _$branchId(Customer v) => v.branchId;
+  static const Field<Customer, String> _f$branchId = Field(
+    'branchId',
+    _$branchId,
+    opt: true,
+  );
   static String? _$phone(Customer v) => v.phone;
   static const Field<Customer, String> _f$phone = Field(
     'phone',
@@ -66,6 +72,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
   final MappableFields<Customer> fields = const {
     #id: _f$id,
     #name: _f$name,
+    #branchId: _f$branchId,
     #phone: _f$phone,
     #email: _f$email,
     #address: _f$address,
@@ -78,6 +85,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
     return Customer(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
+      branchId: data.dec(_f$branchId),
       phone: data.dec(_f$phone),
       email: data.dec(_f$email),
       address: data.dec(_f$address),
@@ -147,6 +155,7 @@ abstract class CustomerCopyWith<$R, $In extends Customer, $Out>
   $R call({
     String? id,
     String? name,
+    String? branchId,
     String? phone,
     String? email,
     String? address,
@@ -169,39 +178,43 @@ class _CustomerCopyWithImpl<$R, $Out>
   $R call({
     String? id,
     String? name,
+    Object? branchId = $none,
     Object? phone = $none,
     Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (phone != $none) #phone: phone,
-      if (email != $none) #email: email,
-      if (address != $none) #address: address,
-      if (notes != $none) #notes: notes,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (branchId != $none) #branchId: branchId,
+          if (phone != $none) #phone: phone,
+          if (email != $none) #email: email,
+          if (address != $none) #address: address,
+          if (notes != $none) #notes: notes,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   Customer $make(CopyWithData data) => Customer(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    phone: data.get(#phone, or: $value.phone),
-    email: data.get(#email, or: $value.email),
-    address: data.get(#address, or: $value.address),
-    notes: data.get(#notes, or: $value.notes),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        branchId: data.get(#branchId, or: $value.branchId),
+        phone: data.get(#phone, or: $value.phone),
+        email: data.get(#email, or: $value.email),
+        address: data.get(#address, or: $value.address),
+        notes: data.get(#notes, or: $value.notes),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   CustomerCopyWith<$R2, Customer, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _CustomerCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _CustomerCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

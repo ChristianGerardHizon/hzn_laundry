@@ -28,6 +28,7 @@ This document contains all entities (domain models) in the project with their fi
 | Service | ServiceCategory | `service_categories` | Service categories |
 | Service | CartServiceItem | `cart_service_items` | Service items in shopping cart |
 | Service | SaleServiceItem | `sale_service_items` | Service items in completed sale |
+| Customer | Customer | `customers` | Branch-scoped laundry customers |
 | Sales | OrderStatusHistory | `orderStatusHistory` | Status change audit trail for sales |
 | Machine | Machine | `machines` | Laundry machines (washer, dryer, etc.) |
 | Storage | StorageLocation | `storages` | Storage locations for laundry items |
@@ -184,7 +185,7 @@ Business branches or locations.
 
 **Collection:** `branches`
 
-**Referenced by:** User, Patient, Product, PatientRecord, AppointmentSchedule
+**Referenced by:** User, Patient, Product, Customer, PatientRecord, AppointmentSchedule
 
 ---
 
@@ -511,6 +512,37 @@ Stock adjustment records.
 **Subtypes:**
 - `ProductAdjustmentSimple` - Adjusts Product quantity directly
 - `ProductAdjustmentStock` - Adjusts ProductStock quantity
+
+---
+
+## Customer Domain
+
+### Customer
+
+Laundry customers (members), scoped to the branch they were created on.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Customer name |
+| `branchId` | String (FK) | No | FK to Branch (stamped on create) |
+| `phone` | String | No | Phone number |
+| `email` | String | No | Email (used for order history links) |
+| `address` | String | No | Physical address |
+| `notes` | String | No | Notes about the customer |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `customers`
+
+**Relationships:**
+- `branch` -> Branch (optional in schema; always set by the app on create)
+
+**Notes:**
+- List, search, and create are filtered by the current working branch
+- Admins in All Branches mode can view all customers but cannot create until a specific branch is selected
+- Existing customers were backfilled to the branch of their most recent sale (or the first branch if they have no sales)
+- A customer can be transferred to another branch from the customer detail page; historical sales stay on the branch where they were created
 
 ---
 

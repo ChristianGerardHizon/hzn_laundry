@@ -21,9 +21,13 @@ import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../promos/domain/customer_promo.dart';
 import '../../../promos/presentation/controllers/customer_promos_provider.dart';
+import '../../../settings/domain/branch.dart';
+import '../../../settings/presentation/controllers/branches_controller.dart';
+import '../../domain/customer.dart';
 import '../controllers/customer_provider.dart';
 import '../controllers/customers_controller.dart';
 import '../widgets/customer_form_sheet.dart';
+import '../widgets/customer_transfer_branch_dialog.dart';
 
 /// Customer detail page showing customer information and sales history.
 class CustomerDetailPage extends HookConsumerWidget {
@@ -54,6 +58,8 @@ class CustomerDetailPage extends HookConsumerWidget {
         }
 
         final theme = Theme.of(context);
+        final branches = ref.watch(branchesControllerProvider).value;
+        final branchName = _branchName(branches, customer.branchId);
 
         return Scaffold(
           appBar: AppBar(
@@ -78,8 +84,17 @@ class CustomerDetailPage extends HookConsumerWidget {
               ),
               PopupMenuButton<String>(
                 onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, customer.id),
+                    _handleMenuAction(context, ref, value, customer),
                 itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'transfer',
+                    child: ListTile(
+                      leading: Icon(Icons.swap_horiz),
+                      title: Text('Transfer Branch'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
@@ -109,6 +124,7 @@ class CustomerDetailPage extends HookConsumerWidget {
                       ),
                       const SizedBox(height: 16),
                       _InfoRow(label: 'Name', value: customer.name),
+                      _InfoRow(label: 'Branch', value: branchName),
                       if (customer.phone != null && customer.phone!.isNotEmpty)
                         _InfoRow(label: 'Phone', value: customer.phone!),
                       if (customer.address != null &&
@@ -169,15 +185,29 @@ class CustomerDetailPage extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String action,
-    String id,
+    Customer customer,
   ) async {
+    if (action == 'transfer') {
+      final transferred = await showCustomerTransferBranchDialog(
+        context,
+        customer: customer,
+      );
+      if (transferred == true && context.mounted) {
+        ref.invalidate(customerProvider(customerId));
+        showSuccessSnackBar(
+          context,
+          message: 'Customer transferred to the selected branch',
+        );
+      }
+      return;
+    }
+
     if (action == 'delete') {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Delete Customer'),
-          content:
-              const Text('Are you sure you want to delete this customer?'),
+          content: const Text('Are you sure you want to delete this customer?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -197,7 +227,7 @@ class CustomerDetailPage extends HookConsumerWidget {
       if (confirmed == true && context.mounted) {
         final success = await ref
             .read(customersControllerProvider.notifier)
-            .deleteCustomer(id);
+            .deleteCustomer(customer.id);
         if (success && context.mounted) {
           showSuccessSnackBar(context, message: 'Customer deleted');
           context.pop();
@@ -206,6 +236,15 @@ class CustomerDetailPage extends HookConsumerWidget {
         }
       }
     }
+  }
+
+  static String _branchName(List<Branch>? branches, String? branchId) {
+    if (branchId == null || branchId.isEmpty) return 'Unassigned';
+    if (branches == null) return '…';
+    for (final branch in branches) {
+      if (branch.id == branchId) return branch.name;
+    }
+    return 'Unknown';
   }
 }
 
@@ -253,8 +292,8 @@ enum _SalesFilterMode {
 
   /// Returns a PocketBase date filter for a custom date range.
   static String dateFilterForRange(DateTime start, DateTime end) {
-    final endExclusive = DateTime(end.year, end.month, end.day)
-        .add(const Duration(days: 1));
+    final endExclusive =
+        DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
     return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${endExclusive.toPocketBaseUtc()}"';
   }
 }
@@ -371,8 +410,8 @@ class _CustomerSalesHistory extends HookConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer
-                    .withValues(alpha: 0.3),
+                color:
+                    theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -496,14 +535,14 @@ class _CustomerSalesHistory extends HookConsumerWidget {
       }
     }
 
-    final records = await pb.collection(PocketBaseCollections.sales).getFullList(
-      filter: filter,
-      sort: '-postedDate',
-    );
+    final records =
+        await pb.collection(PocketBaseCollections.sales).getFullList(
+              filter: filter,
+              sort: '-postedDate',
+            );
 
-    final sales = records
-        .map((record) => SaleDto.fromRecord(record).toEntity())
-        .toList();
+    final sales =
+        records.map((record) => SaleDto.fromRecord(record).toEntity()).toList();
 
     if (sales.isEmpty) return const _CustomerSalesData(sales: []);
 
@@ -525,8 +564,8 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     for (final record in results[0]) {
       final serviceExpanded = record.get<RecordModel?>('expand.service');
       final item = SaleServiceItemDto.fromRecord(record).toEntity(
-            serviceExpanded: serviceExpanded,
-          );
+        serviceExpanded: serviceExpanded,
+      );
       serviceItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
 
@@ -591,8 +630,7 @@ class _SaleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final statusColor = _orderStatusColor(sale);
     final paymentColor = sale.isPaid ? Colors.green : Colors.orange;
 
