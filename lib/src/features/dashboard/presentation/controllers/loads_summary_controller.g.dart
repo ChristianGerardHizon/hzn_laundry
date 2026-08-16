@@ -12,10 +12,9 @@ part of 'loads_summary_controller.dart';
 /// order.
 ///
 /// A load is a machine cycle assigned to a sale's service items
-/// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
-/// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
-/// the machine-load JSON map and sums it), so this provider only fetches one
-/// row per order. Voided sales are excluded by the view.
+/// (`saleServiceItems.machineLoadCounts`). Counts come from the service items
+/// already loaded with today's sales, so this does not scan
+/// `vw_loads_summary`. Voided sales are excluded by [salesSummary].
 
 @ProviderFor(loadsSummary)
 final loadsSummaryProvider = LoadsSummaryProvider._();
@@ -24,10 +23,9 @@ final loadsSummaryProvider = LoadsSummaryProvider._();
 /// order.
 ///
 /// A load is a machine cycle assigned to a sale's service items
-/// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
-/// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
-/// the machine-load JSON map and sums it), so this provider only fetches one
-/// row per order. Voided sales are excluded by the view.
+/// (`saleServiceItems.machineLoadCounts`). Counts come from the service items
+/// already loaded with today's sales, so this does not scan
+/// `vw_loads_summary`. Voided sales are excluded by [salesSummary].
 
 final class LoadsSummaryProvider extends $FunctionalProvider<
         AsyncValue<LoadsSummaryData>,
@@ -38,10 +36,9 @@ final class LoadsSummaryProvider extends $FunctionalProvider<
   /// order.
   ///
   /// A load is a machine cycle assigned to a sale's service items
-  /// (`saleServiceItems.machineLoadCounts`). The per-sale totals are
-  /// pre-aggregated server-side by the `vw_loads_summary` view (which unrolls
-  /// the machine-load JSON map and sums it), so this provider only fetches one
-  /// row per order. Voided sales are excluded by the view.
+  /// (`saleServiceItems.machineLoadCounts`). Counts come from the service items
+  /// already loaded with today's sales, so this does not scan
+  /// `vw_loads_summary`. Voided sales are excluded by [salesSummary].
   LoadsSummaryProvider._()
       : super(
           from: null,

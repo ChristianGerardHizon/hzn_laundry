@@ -11,11 +11,9 @@ part of 'add_ons_summary_controller.dart';
 /// Summary of add-ons (product line items) sold on the effective dashboard
 /// date, aggregated per product.
 ///
-/// Add-ons are the product line items (`saleItems`) attached to sales, as
-/// opposed to laundry service items. The `vw_add_ons_summary` view collapses
-/// each sale's line items to one row per (sale, product) carrying the sale's
-/// branch + postedDate, so this provider range-filters by the day and folds
-/// the rows per product. Voided sales are excluded by the view.
+/// Add-ons are the product line items (`saleItems`) already loaded with
+/// today's sales. Aggregating in memory avoids a full-history scan of
+/// `vw_add_ons_summary`. Voided sales are excluded by [salesSummary].
 
 @ProviderFor(addOnsSummary)
 final addOnsSummaryProvider = AddOnsSummaryProvider._();
@@ -23,11 +21,9 @@ final addOnsSummaryProvider = AddOnsSummaryProvider._();
 /// Summary of add-ons (product line items) sold on the effective dashboard
 /// date, aggregated per product.
 ///
-/// Add-ons are the product line items (`saleItems`) attached to sales, as
-/// opposed to laundry service items. The `vw_add_ons_summary` view collapses
-/// each sale's line items to one row per (sale, product) carrying the sale's
-/// branch + postedDate, so this provider range-filters by the day and folds
-/// the rows per product. Voided sales are excluded by the view.
+/// Add-ons are the product line items (`saleItems`) already loaded with
+/// today's sales. Aggregating in memory avoids a full-history scan of
+/// `vw_add_ons_summary`. Voided sales are excluded by [salesSummary].
 
 final class AddOnsSummaryProvider extends $FunctionalProvider<
         AsyncValue<AddOnsSummaryData>,
@@ -39,11 +35,9 @@ final class AddOnsSummaryProvider extends $FunctionalProvider<
   /// Summary of add-ons (product line items) sold on the effective dashboard
   /// date, aggregated per product.
   ///
-  /// Add-ons are the product line items (`saleItems`) attached to sales, as
-  /// opposed to laundry service items. The `vw_add_ons_summary` view collapses
-  /// each sale's line items to one row per (sale, product) carrying the sale's
-  /// branch + postedDate, so this provider range-filters by the day and folds
-  /// the rows per product. Voided sales are excluded by the view.
+  /// Add-ons are the product line items (`saleItems`) already loaded with
+  /// today's sales. Aggregating in memory avoids a full-history scan of
+  /// `vw_add_ons_summary`. Voided sales are excluded by [salesSummary].
   AddOnsSummaryProvider._()
       : super(
           from: null,

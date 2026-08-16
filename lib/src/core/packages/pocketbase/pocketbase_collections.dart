@@ -76,8 +76,6 @@ abstract class PocketBaseCollections {
   static const String vwSalesByCustomer = 'vw_sales_by_customer';
   static const String vwPaymentsDailySummary = 'vw_payments_daily_summary';
   static const String vwSaleServiceTotals = 'vw_sale_service_totals';
-  static const String vwLoadsSummary = 'vw_loads_summary';
-  static const String vwAddOnsSummary = 'vw_add_ons_summary';
 
   // Incentive Tiers
   static const String incentiveTiers = 'incentiveTiers';
