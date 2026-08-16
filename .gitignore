@@ -75,6 +75,8 @@ app.*.map.json
 
 # un-ignore scripts
 !/server/scripts/**
-.grepai/
+# grepai index/symbols are local; share ignore/boost config
+.grepai/*
+!.grepai/config.yaml
 pocketbase.env
 .env

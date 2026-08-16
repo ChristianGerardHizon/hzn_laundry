@@ -1,0 +1,144 @@
+version: 1
+embedder:
+    provider: ollama
+    model: nomic-embed-text
+    endpoint: http://localhost:11434
+    dimensions: 768
+    parallelism: 4
+store:
+    backend: gob
+chunking:
+    size: 512
+    overlap: 50
+watch:
+    debounce_ms: 500
+    rpg_persist_interval_ms: 1000
+    rpg_derived_debounce_ms: 300
+    rpg_full_reconcile_interval_sec: 300
+    rpg_max_dirty_files_per_batch: 128
+search:
+    boost:
+        enabled: true
+        penalties:
+            - pattern: /test/
+              factor: 0.5
+            - pattern: /tests/
+              factor: 0.5
+            - pattern: _test.
+              factor: 0.5
+            - pattern: .test.
+              factor: 0.5
+            - pattern: .spec.
+              factor: 0.5
+            - pattern: /mocks/
+              factor: 0.4
+            - pattern: /mock/
+              factor: 0.4
+            - pattern: .mock.
+              factor: 0.4
+            - pattern: /fixtures/
+              factor: 0.4
+            - pattern: /testdata/
+              factor: 0.4
+            - pattern: /pb_migrations/
+              factor: 0.7
+            - pattern: .i18n.json
+              factor: 0.5
+            - pattern: .md
+              factor: 0.6
+            - pattern: /docs/
+              factor: 0.55
+        bonuses:
+            - pattern: /lib/src/
+              factor: 1.25
+            - pattern: /features/
+              factor: 1.15
+            - pattern: /pb_hooks/
+              factor: 1.2
+            - pattern: /lib/
+              factor: 1.1
+    hybrid:
+        enabled: false
+        k: 60
+trace:
+    mode: fast
+    enabled_languages:
+        - .js
+    exclude_patterns:
+        - '*.spec.js'
+        - '*.test.js'
+        - types.d.ts
+rpg:
+    enabled: false
+    feature_mode: local
+    drift_threshold: 0.35
+    max_traversal_depth: 3
+    llm_provider: ollama
+    llm_endpoint: http://localhost:11434/v1
+    llm_timeout_ms: 8000
+    feature_group_strategy: sample
+update:
+    check_on_startup: false
+ignore:
+    - .git
+    - .grepai
+    - .dart_tool
+    - .idea
+    - .vscode
+    - .claude
+    - .codex
+    - .cursor
+    - .github
+    - .flutter-plugins
+    - .flutter-plugins-dependencies
+    - android
+    - ios
+    - macos
+    - linux
+    - windows
+    - web
+    - packages/print_bluetooth_thermal
+    - build
+    - node_modules
+    - vendor
+    - bin
+    - dist
+    - coverage
+    - __pycache__
+    - .venv
+    - venv
+    - target
+    - .zig-cache
+    - zig-out
+    - qdrant_storage
+    - '*.g.dart'
+    - '*.mapper.dart'
+    - '*.freezed.dart'
+    - '*.mocks.dart'
+    - types.d.ts
+    - pb_data
+    - '*.lock'
+    - pubspec.lock
+    - '*.min.js'
+    - '*.map'
+    - '*.class'
+    - '*.jar'
+    - '*.apk'
+    - '*.so'
+    - '*.dll'
+    - '*.exe'
+    - '*.png'
+    - '*.jpg'
+    - '*.jpeg'
+    - '*.gif'
+    - '*.svg'
+    - '*.ico'
+    - '*.ttf'
+    - '*.otf'
+    - '*.woff'
+    - '*.webp'
+    - pb_schema.json
+    - updated_pb_schema.json
+    - '*.schema'
+    - riverpod_pattern
+    - docs/examples
