@@ -74,16 +74,18 @@ Service management and POS integration for laundry services.
 - **POS Integration**: Services appear in a separate tab in the cashier alongside products
 
 #### Customers (`/customers`)
-Customer management with sales history tracking.
+Customer (member) management with sales history tracking. Customers are scoped to the branch they were created on.
 
 - **Sub-features**:
-  - Customers list with search by name or phone
-  - Customer detail with info and full sales history
-  - Create/edit customer via bottom sheet form
+  - Customers list with search by name or phone (current branch only)
+  - Customer detail with info, branch, and full sales history
+  - Transfer a customer to another branch from the detail menu
+  - Create/edit customer via dialog form (stamped with the current branch)
   - Inline customer creation from POS checkout
 - **Key Models**: `Customer`
-- **POS Integration**: Customer selection is required at checkout with search/autocomplete and quick "New Customer" creation
+- **POS Integration**: Customer selection is required at checkout with search/autocomplete and quick "New Customer" creation, both limited to the current branch
 - **Master-Detail Layout**: Tablet shows list + detail side-by-side; mobile navigates between pages
+- **All Branches**: Admins can view customers across branches; creating a customer requires a specific branch
 
 #### Dashboard (`/`)
 Home screen with quick summary and today's appointments.
@@ -271,9 +273,10 @@ Located in `/lib/src/core/`
 | `PosGroup` | Named groups for cashier layout (per-branch) |
 | `PosGroupItem` | Many-to-many link between groups and products/services |
 
-#### Sales Domain (5 collections)
+#### Sales Domain (6 collections)
 | Collection | Description |
 |------------|-------------|
+| `Customer` | Branch-scoped laundry customers (members) |
 | `Sale` | Transaction records |
 | `SaleItem` | Product items in transaction |
 | `SaleServiceItem` | Service items in transaction |
@@ -565,6 +568,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 15 | Branch-scoped customers | Customers (members) belong to the branch they were created on; list/search/create follow the current branch. Existing customers were assigned from their most recent sale. Customer detail can transfer a member to another branch |
 | Aug 03 | Web Thermal Print Guard | Disabled thermal printing on web (Bluetooth discovery, test print, auto-print, claim-sheet print actions); PDF preview/print remains available |
 | Aug 03 | All Branches Mode | Admins can select All Branches in the branch switcher to view unfiltered data across features; Cashier/POS shows a blurred overlay warning until a specific branch is chosen |
 | Aug 03 | Network Health | Polls PocketBase `/api/health` for online/poor/offline status; logo circular border is green (connected), amber (poor, ≥1s latency), or red (no connection) on nav rail, drawer, and login |

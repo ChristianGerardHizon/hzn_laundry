@@ -35,10 +35,10 @@ class QuickActionsSection extends ConsumerWidget {
     final canAttendance = isAdmin ||
         (role?.hasPermission(Permissions.attendanceView) ?? false) ||
         (role?.hasPermission(Permissions.attendanceCreate) ?? false);
-    final canCreateSale = isAdmin ||
-        (role?.hasPermission(Permissions.salesCreate) ?? false);
-    final canCreateCustomer = isAdmin ||
-        (role?.hasPermission(Permissions.customersCreate) ?? false);
+    final canCreateSale =
+        isAdmin || (role?.hasPermission(Permissions.salesCreate) ?? false);
+    final canCreateCustomer =
+        isAdmin || (role?.hasPermission(Permissions.customersCreate) ?? false);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -89,7 +89,18 @@ class QuickActionsSection extends ConsumerWidget {
                     icon: Icons.person_add,
                     label: 'New Customer',
                     color: Colors.blue,
-                    onTap: () => showCustomerFormDialog(context),
+                    onTap: () {
+                      if (isAllBranches) {
+                        showWarningSnackBar(
+                          context,
+                          message: Translations.of(context)
+                              .navigation
+                              .createUnavailableAllBranches,
+                        );
+                        return;
+                      }
+                      showCustomerFormDialog(context);
+                    },
                   ),
                 if (canAttendance)
                   _QuickActionButton(

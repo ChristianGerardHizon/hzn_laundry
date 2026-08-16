@@ -10,24 +10,24 @@ part of 'new_customers_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Count of new customers registered on the effective dashboard date.
 ///
-/// Queries the customers collection with a date filter on `created`.
-/// Customers are global (no branch filter).
+/// Queries the customers collection with a date filter on `created`,
+/// scoped to the current branch when one is selected.
 
 @ProviderFor(todaysNewCustomersCount)
 final todaysNewCustomersCountProvider = TodaysNewCustomersCountProvider._();
 
 /// Count of new customers registered on the effective dashboard date.
 ///
-/// Queries the customers collection with a date filter on `created`.
-/// Customers are global (no branch filter).
+/// Queries the customers collection with a date filter on `created`,
+/// scoped to the current branch when one is selected.
 
 final class TodaysNewCustomersCountProvider
     extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
     with $FutureModifier<int>, $FutureProvider<int> {
   /// Count of new customers registered on the effective dashboard date.
   ///
-  /// Queries the customers collection with a date filter on `created`.
-  /// Customers are global (no branch filter).
+  /// Queries the customers collection with a date filter on `created`,
+  /// scoped to the current branch when one is selected.
   TodaysNewCustomersCountProvider._()
       : super(
           from: null,
@@ -54,4 +54,4 @@ final class TodaysNewCustomersCountProvider
 }
 
 String _$todaysNewCustomersCountHash() =>
-    r'2f2255c6eab581c792b3d05fba04770796dee236';
+    r'7e15097e522dbc4064416ff348742f9b639d2e19';

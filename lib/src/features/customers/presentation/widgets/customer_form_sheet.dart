@@ -10,6 +10,7 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/customer.dart';
 import '../controllers/customers_controller.dart';
 
@@ -94,11 +95,21 @@ class CustomerFormDialog extends HookConsumerWidget {
       }
 
       final values = formKey.currentState!.value;
+
+      if (!isEditing && ref.read(isAllBranchesProvider)) {
+        showFormErrorDialog(
+          context,
+          errors: [t.navigation.createUnavailableAllBranches],
+        );
+        return;
+      }
+
       isSaving.value = true;
 
       final customerData = Customer(
         id: customer?.id ?? '',
         name: (values['name'] as String).trim(),
+        branchId: customer?.branchId,
         phone: values['phone'] as String?,
         email: values['email'] as String?,
         address: values['address'] as String?,
@@ -175,8 +186,7 @@ class CustomerFormDialog extends HookConsumerWidget {
                         onPressed: isSaving.value
                             ? null
                             : () async {
-                                if (await dirtyGuard
-                                    .confirmDiscard(context)) {
+                                if (await dirtyGuard.confirmDiscard(context)) {
                                   if (context.mounted) context.pop();
                                 }
                               },
@@ -189,8 +199,7 @@ class CustomerFormDialog extends HookConsumerWidget {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(t.common.save),
                     ),
@@ -244,8 +253,7 @@ class CustomerFormDialog extends HookConsumerWidget {
                           initialValue: customer?.email,
                           decoration: const InputDecoration(
                             labelText: 'Email',
-                            helperText:
-                                'Used to send order history link',
+                            helperText: 'Used to send order history link',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.email),
                           ),
