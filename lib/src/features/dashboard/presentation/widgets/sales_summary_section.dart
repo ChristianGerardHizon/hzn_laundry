@@ -5,10 +5,10 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
+import '../../domain/add_ons_summary.dart';
+import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
-import '../controllers/add_ons_summary_controller.dart';
 import '../controllers/dashboard_refresh.dart';
-import '../controllers/loads_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/total_packs_summary_controller.dart';
 import 'add_ons_breakdown_modal.dart';
@@ -131,8 +131,7 @@ class _SalesSummaryContent extends ConsumerWidget {
 
   final SalesSummaryData data;
 
-  static final _currency =
-      NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+  static final _currency = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
   String _fmt(num amount) => _currency.format(amount);
 
@@ -141,8 +140,8 @@ class _SalesSummaryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final packsAsync = ref.watch(totalPacksSummaryProvider);
-    final addOnsAsync = ref.watch(addOnsSummaryProvider);
-    final loadsAsync = ref.watch(loadsSummaryProvider);
+    final addOns = AddOnsSummaryData.fromSalesItems(data.salesItems);
+    final loads = LoadsSummaryData.fromSalesItems(data.salesItems);
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     final int cols;
@@ -203,43 +202,35 @@ class _SalesSummaryContent extends ConsumerWidget {
           total: data.totalOutstanding,
         ),
       ),
-      addOnsAsync.when(
-        data: (summary) => KpiCard(
-          title: 'Add-ons Sold',
-          value: _qty.format(summary.totalQuantity),
-          icon: Icons.shopping_bag_outlined,
-          subtitle: summary.items.isEmpty
-              ? 'No add-ons today'
-              : '${summary.items.length} product${summary.items.length == 1 ? '' : 's'} · ${_fmt(summary.totalRevenue)}',
-          compact: true,
+      KpiCard(
+        title: 'Add-ons Sold',
+        value: _qty.format(addOns.totalQuantity),
+        icon: Icons.shopping_bag_outlined,
+        subtitle: addOns.items.isEmpty
+            ? 'No add-ons today'
+            : '${addOns.items.length} product${addOns.items.length == 1 ? '' : 's'} · ${_fmt(addOns.totalRevenue)}',
+        compact: true,
+        color: Colors.teal,
+        onTap: () => showAddOnsBreakdownModal(
+          context,
+          addOns,
           color: Colors.teal,
-          onTap: () => showAddOnsBreakdownModal(
-            context,
-            summary,
-            color: Colors.teal,
-          ),
         ),
-        loading: () => const _LoadingCard(),
-        error: (_, __) => const _LoadingCard(),
       ),
-      loadsAsync.when(
-        data: (summary) => KpiCard(
-          title: 'Loads',
-          value: '${summary.totalLoads}',
-          icon: Icons.local_laundry_service,
-          subtitle: summary.orders.isEmpty
-              ? 'No loads today'
-              : '${summary.orders.length} order${summary.orders.length == 1 ? '' : 's'}',
-          compact: true,
+      KpiCard(
+        title: 'Loads',
+        value: '${loads.totalLoads}',
+        icon: Icons.local_laundry_service,
+        subtitle: loads.orders.isEmpty
+            ? 'No loads today'
+            : '${loads.orders.length} order${loads.orders.length == 1 ? '' : 's'}',
+        compact: true,
+        color: Colors.indigo,
+        onTap: () => showLoadsBreakdownModal(
+          context,
+          loads,
           color: Colors.indigo,
-          onTap: () => showLoadsBreakdownModal(
-            context,
-            summary,
-            color: Colors.indigo,
-          ),
         ),
-        loading: () => const _LoadingCard(),
-        error: (_, __) => const _LoadingCard(),
       ),
       packsAsync.when(
         data: (summary) => KpiCard(
@@ -261,8 +252,7 @@ class _SalesSummaryContent extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 8.0;
-        final rawWidth =
-            (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        final rawWidth = (constraints.maxWidth - spacing * (cols - 1)) / cols;
         // Guard against negative/zero widths on extremely narrow constraints,
         // which would throw a BoxConstraints assertion.
         final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
@@ -395,12 +385,11 @@ class _BreakdownDialog extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) =>
-                      _SalesBreakdownTile(
-                        item: items[index],
-                        itemNumber: index + 1,
-                        accentColor: color,
-                      ),
+                  itemBuilder: (context, index) => _SalesBreakdownTile(
+                    item: items[index],
+                    itemNumber: index + 1,
+                    accentColor: color,
+                  ),
                 ),
               ),
           ],
@@ -498,8 +487,8 @@ class _SalesBreakdownTile extends StatelessWidget {
                                       vertical: 1,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          Colors.deepPurple.withValues(alpha: 0.1),
+                                      color: Colors.deepPurple
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Text(
@@ -572,8 +561,9 @@ class _SalesBreakdownTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             item.serviceItems.map((e) {
-                              final qty = e.service?.formatQuantity(e.quantity) ??
-                                  '${e.quantity}';
+                              final qty =
+                                  e.service?.formatQuantity(e.quantity) ??
+                                      '${e.quantity}';
                               return '${e.serviceName} x$qty';
                             }).join(', '),
                             style: theme.textTheme.labelSmall?.copyWith(
@@ -704,8 +694,7 @@ class _LoadingCards extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 8.0;
-        final rawWidth =
-            (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        final rawWidth = (constraints.maxWidth - spacing * (cols - 1)) / cols;
         final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
 
         return Wrap(

@@ -1,3 +1,5 @@
+import 'sales_summary.dart';
+
 /// Data class holding today's add-ons (product line items) summary.
 ///
 /// "Add-ons" are the product line items attached to sales (e.g. detergent,
@@ -8,6 +10,59 @@ class AddOnsSummaryData {
     required this.totalRevenue,
     required this.items,
   });
+
+  /// Aggregates product line items from today's sales, grouped per product.
+  factory AddOnsSummaryData.fromSalesItems(List<SalesSummaryItem> sales) {
+    if (sales.isEmpty) {
+      return const AddOnsSummaryData(
+        totalQuantity: 0,
+        totalRevenue: 0,
+        items: [],
+      );
+    }
+
+    final byProduct = <String, _AddOnAggregate>{};
+    num totalQuantity = 0;
+    num totalRevenue = 0;
+
+    for (final sale in sales) {
+      for (final item in sale.saleItems) {
+        if (item.productId.isEmpty) continue;
+        totalQuantity += item.quantity;
+        totalRevenue += item.subtotal;
+
+        final aggregate = byProduct.putIfAbsent(
+          item.productId,
+          () => _AddOnAggregate(productName: item.productName),
+        );
+        aggregate.quantity += item.quantity;
+        aggregate.revenue += item.subtotal;
+        aggregate.saleIds.add(sale.saleId);
+        if (item.productName.isNotEmpty) {
+          aggregate.productName = item.productName;
+        }
+      }
+    }
+
+    final items = byProduct.entries
+        .map(
+          (entry) => AddOnBreakdownItem(
+            productId: entry.key,
+            productName: entry.value.productName,
+            quantity: entry.value.quantity,
+            revenue: entry.value.revenue,
+            orderCount: entry.value.saleIds.length,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.quantity.compareTo(a.quantity));
+
+    return AddOnsSummaryData(
+      totalQuantity: totalQuantity,
+      totalRevenue: totalRevenue,
+      items: items,
+    );
+  }
 
   /// Total number of add-on units sold on the selected day.
   final num totalQuantity;
@@ -43,4 +98,14 @@ class AddOnBreakdownItem {
 
   /// Number of distinct orders that included this add-on.
   final int orderCount;
+}
+
+/// Mutable accumulator used while aggregating add-on line items per product.
+class _AddOnAggregate {
+  _AddOnAggregate({required this.productName});
+
+  String productName;
+  num quantity = 0;
+  num revenue = 0;
+  final Set<String> saleIds = {};
 }
