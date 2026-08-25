@@ -61,6 +61,7 @@ Inventory and product management with lot tracking.
   - Stock adjustments with audit trail
   - Hierarchical category organization
 - **Key Models**: `Product`, `ProductCategory`, `ProductLot`, `ProductAdjustment`
+- **Branch scope**: Product list, POS grid, cashier search, POS group picker, and order add-ons are limited to the current working branch
 
 #### Services (`/services`)
 Service management and POS integration for laundry services.
@@ -71,7 +72,7 @@ Service management and POS integration for laundry services.
   - Variable price and weight-based service support
   - Estimated duration tracking
 - **Key Models**: `Service`, `ServiceCategory`, `CartServiceItem`, `SaleServiceItem`
-- **POS Integration**: Services appear in a separate tab in the cashier alongside products
+- **POS Integration**: Services appear in a separate tab in the cashier alongside products; both the services list and POS/cashier pickers are limited to the current working branch
 
 #### Customers (`/customers`)
 Customer (member) management with sales history tracking. Customers are scoped to the branch they were created on.
@@ -104,9 +105,9 @@ Complete POS system for processing sales of products and services.
 - **Features**:
   - **Customizable Cashier Layout** (POS Groups): Create named groups of products/services per branch to define the cashier page layout. Groups display as scrollable sections with sticky headers. Items can belong to multiple groups. Falls back to default Products/Services tabs when no groups are configured.
   - Products/Services tab toggle (SegmentedButton) — default mode when no groups exist
-  - Product grid with search and category filtering
-  - Service grid with search
-  - Search dropdown overlay (grouped mode) — searches across all products and services, results show in a dropdown with type icons
+  - Product grid with search and category filtering (current branch only)
+  - Service grid with search (current branch only)
+  - Search dropdown overlay (grouped mode) — searches products and services for the current branch, results show in a dropdown with type icons
   - Shopping cart with mixed product + service items
   - Lot selection with FEFO ordering for lot-tracked products
   - Variable price support for both products and services
@@ -125,9 +126,10 @@ Complete POS system for processing sales of products and services.
 #### Sales History (`/sales`)
 View and manage completed transactions.
 
-- Paginated sales history with search
+- Paginated sales history with search (current branch)
 - Sale status display (pending, completed, refunded, cancelled)
 - Detailed sale view with items and payment info
+- Create-order add-ons picker shows only products for the current branch
 
 #### Messages (`/messages`)
 Communication system for appointments and follow-ups.
@@ -160,8 +162,8 @@ Plan and track multi-visit treatment courses.
 - **Users** (`/organization/users`) - User CRUD, role assignment, branch association
 - **Roles** (`/organization/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/organization/branches`) - Multi-location support with address and contact info
-- **Machines** (`/organization/machines`) - Laundry machine management (washer, dryer, other) with availability tracking
-- **Storages** (`/organization/storages`) - Storage location management for ready laundry items
+- **Machines** (`/organization/machines`) - Laundry machine management (washer, dryer, other) scoped to the current branch; unassigned machines remain visible
+- **Storages** (`/organization/storages`) - Storage location management for ready laundry items, scoped to the current branch; unassigned locations remain visible
 
 #### System Settings (`/system`)
 3-panel tablet layout for system configuration.
@@ -568,6 +570,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 26 | Branch-scoped catalogs | Order add-ons, POS product/service grids, cashier search, and POS group pickers now show only the current branch's products and services. New machines and storage locations are stamped with the current branch |
 | Aug 17 | Dashboard Add-ons / Loads KPIs | Add-ons Sold and Loads now aggregate from today's already-fetched sale line items instead of full-history PocketBase views (`vw_add_ons_summary`, `vw_loads_summary` removed) |
 | Aug 17 | Products list across branches | Products list rule now allows any logged-in user to list products; the app still filters by the selected branch, so admins switching branches (e.g. Hi-Zone → Magsaysay) can see that branch's catalog |
 | Aug 15 | Branch-scoped customers | Customers (members) belong to the branch they were created on; list/search/create follow the current branch. Existing customers were assigned from their most recent sale. Customer detail can transfer a member to another branch |

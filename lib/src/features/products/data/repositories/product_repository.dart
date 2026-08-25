@@ -41,7 +41,11 @@ abstract class ProductRepository {
   FutureEither<void> delete(String id);
 
   /// Searches products by the specified fields.
-  FutureEither<List<Product>> search(String query, {List<String>? fields});
+  FutureEither<List<Product>> search(
+    String query, {
+    List<String>? fields,
+    String? filter,
+  });
 
   /// Searches products with pagination.
   FutureEitherPaginated<Product> searchPaginated(
@@ -269,18 +273,18 @@ class ProductRepositoryImpl implements ProductRepository {
   FutureEither<List<Product>> search(
     String query, {
     List<String>? fields,
+    String? filter,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name'];
-        final filter = PBFilter()
-            .notDeleted()
-            .searchFields(query, searchFields)
-            .build();
+        final searchFilter =
+            PBFilter().notDeleted().searchFields(query, searchFields).build();
+        final combinedFilter = PBFilters.combine(searchFilter, filter);
 
         final records = await _collection.getFullList(
           expand: _expand,
-          filter: filter,
+          filter: combinedFilter,
           sort: 'name',
         );
 
@@ -302,10 +306,8 @@ class ProductRepositoryImpl implements ProductRepository {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name'];
-        final searchFilter = PBFilter()
-            .notDeleted()
-            .searchFields(query, searchFields)
-            .build();
+        final searchFilter =
+            PBFilter().notDeleted().searchFields(query, searchFields).build();
 
         // Combine search filter with optional branch filter
         final combinedFilter =
