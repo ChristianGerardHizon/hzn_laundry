@@ -3,11 +3,13 @@ import 'package:fpdart/fpdart.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/foundation/failure.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../products/data/repositories/product_repository.dart';
 import '../../../products/domain/product.dart';
 import '../../../products/domain/product_status.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../cart_controller.dart';
 import '../providers/pos_product_stock_provider.dart';
 import 'lot_selection_dialog.dart';
@@ -24,6 +26,7 @@ class ProductGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    ref.watch(currentBranchFilterProvider);
 
     return FutureBuilder(
       future: _fetchProducts(ref),
@@ -110,18 +113,20 @@ class ProductGrid extends ConsumerWidget {
 
   Future<Either<Failure, List<Product>>> _fetchProducts(WidgetRef ref) async {
     final repository = ref.read(productRepositoryProvider);
+    final branchFilter = ref.read(currentBranchFilterProvider);
+    final forSaleFilter = PBFilters.combine(branchFilter, 'forSale = true');
 
     final Either<Failure, List<Product>> result;
     if (searchQuery.trim().isEmpty) {
-      result = await repository.fetchAll();
+      result = await repository.fetchAll(filter: forSaleFilter);
     } else {
       result = await repository.search(
         searchQuery.trim(),
         fields: ['name', 'description'],
+        filter: forSaleFilter,
       );
     }
 
-    // Filter to only show products that are for sale
     return result.map(
       (products) => products.where((p) => p.forSale).toList(),
     );

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../products/data/repositories/product_repository.dart';
 import '../../../products/domain/product.dart';
 import '../../../services/data/repositories/service_repository.dart';
 import '../../../services/domain/service.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/pos_group.dart';
 import '../controllers/pos_groups_controller.dart';
 
@@ -96,9 +98,7 @@ class _GroupItemPickerDialog extends HookConsumerWidget {
               controller: tabController,
               tabs: const [
                 Tab(text: 'Products', icon: Icon(Icons.inventory_2)),
-                Tab(
-                    text: 'Services',
-                    icon: Icon(Icons.miscellaneous_services)),
+                Tab(text: 'Services', icon: Icon(Icons.miscellaneous_services)),
               ],
             ),
             // Tab content
@@ -139,6 +139,8 @@ class _ProductPickerList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(currentBranchFilterProvider);
+
     return FutureBuilder(
       future: _fetchProducts(ref),
       builder: (context, snapshot) {
@@ -201,10 +203,15 @@ class _ProductPickerList extends ConsumerWidget {
 
   Future<List<Product>> _fetchProducts(WidgetRef ref) async {
     final repository = ref.read(productRepositoryProvider);
+    final branchFilter = ref.read(currentBranchFilterProvider);
+    final forSaleFilter = PBFilters.combine(branchFilter, 'forSale = true');
     final result = searchQuery.trim().isEmpty
-        ? await repository.fetchAll()
-        : await repository.search(searchQuery.trim(),
-            fields: ['name', 'description']);
+        ? await repository.fetchAll(filter: forSaleFilter)
+        : await repository.search(
+            searchQuery.trim(),
+            fields: ['name', 'description'],
+            filter: forSaleFilter,
+          );
 
     return result.fold(
       (failure) => [],
@@ -226,6 +233,8 @@ class _ServicePickerList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(currentBranchFilterProvider);
+
     return FutureBuilder(
       future: _fetchServices(ref),
       builder: (context, snapshot) {
@@ -288,10 +297,14 @@ class _ServicePickerList extends ConsumerWidget {
 
   Future<List<Service>> _fetchServices(WidgetRef ref) async {
     final repository = ref.read(serviceRepositoryProvider);
+    final branchFilter = ref.read(currentBranchFilterProvider);
     final result = searchQuery.trim().isEmpty
-        ? await repository.fetchAll()
-        : await repository.search(searchQuery.trim(),
-            fields: ['name', 'description']);
+        ? await repository.fetchAll(filter: branchFilter)
+        : await repository.search(
+            searchQuery.trim(),
+            fields: ['name', 'description'],
+            filter: branchFilter,
+          );
 
     return result.fold(
       (failure) => [],

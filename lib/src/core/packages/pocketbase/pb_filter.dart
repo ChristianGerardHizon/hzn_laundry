@@ -243,4 +243,25 @@ abstract class PBFilters {
   /// Result: `branch = "id" && isDeleted = false`
   static PBFilter forBranch(String branchId) =>
       PBFilter().relation('branch', branchId).notDeleted();
+
+  /// AND-combines filter fragments, skipping null/empty parts.
+  static String? combine(String? a, [String? b, String? c]) {
+    final parts = <String>[];
+    for (final part in [a, b, c]) {
+      final trimmed = part?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        parts.add(trimmed);
+      }
+    }
+    if (parts.isEmpty) return null;
+    return parts.join(' && ');
+  }
+
+  /// Records for [branchId], plus records with no branch assigned.
+  ///
+  /// Returns null when [branchId] is null (All Branches).
+  static String? forBranchIncludingUnassigned(String? branchId) {
+    if (branchId == null || branchId.isEmpty) return null;
+    return '(branch = "$branchId" || branch = "" || branch = null)';
+  }
 }

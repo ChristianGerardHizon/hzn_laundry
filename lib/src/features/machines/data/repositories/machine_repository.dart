@@ -98,6 +98,8 @@ class MachineRepositoryImpl implements MachineRepository {
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,
           'isDeleted': false,
+          if (machine.branchId != null && machine.branchId!.isNotEmpty)
+            'branch': machine.branchId,
         };
 
         final record = await _collection.create(body: body);
@@ -125,6 +127,8 @@ class MachineRepositoryImpl implements MachineRepository {
           'size': machine.size?.name ?? '',
           'isAvailable': machine.isAvailable,
           'strictSingleUse': machine.strictSingleUse,
+          if (machine.branchId != null && machine.branchId!.isNotEmpty)
+            'branch': machine.branchId,
         };
 
         final record = await _collection.update(machine.id, body: body);

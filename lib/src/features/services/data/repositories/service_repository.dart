@@ -30,7 +30,11 @@ abstract class ServiceRepository {
   FutureEither<void> delete(String id);
 
   /// Searches services by the specified fields.
-  FutureEither<List<Service>> search(String query, {List<String>? fields});
+  FutureEither<List<Service>> search(
+    String query, {
+    List<String>? fields,
+    String? filter,
+  });
 
   /// Invalidates the service list cache.
   void invalidateCache();
@@ -205,18 +209,18 @@ class ServiceRepositoryImpl implements ServiceRepository {
   FutureEither<List<Service>> search(
     String query, {
     List<String>? fields,
+    String? filter,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name'];
-        final filter = PBFilter()
-            .notDeleted()
-            .searchFields(query, searchFields)
-            .build();
+        final searchFilter =
+            PBFilter().notDeleted().searchFields(query, searchFields).build();
+        final combinedFilter = PBFilters.combine(searchFilter, filter);
 
         final records = await _collection.getFullList(
           expand: _expand,
-          filter: filter,
+          filter: combinedFilter,
           sort: 'name',
         );
 

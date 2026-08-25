@@ -10,6 +10,7 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/machine.dart';
 import '../../domain/machine_size.dart';
 import '../../domain/machine_type.dart';
@@ -67,7 +68,7 @@ class MachineFormDialog extends HookConsumerWidget {
         name: (values['name'] as String).trim(),
         type: values['type'] as MachineType,
         size: values['size'] as MachineSize?,
-        branchId: machine?.branchId,
+        branchId: machine?.branchId ?? ref.read(currentBranchIdProvider),
         isAvailable: values['isAvailable'] as bool? ?? true,
         strictSingleUse: values['strictSingleUse'] as bool? ?? false,
       );
@@ -154,8 +155,7 @@ class MachineFormDialog extends HookConsumerWidget {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(t.common.save),
                     ),
@@ -197,8 +197,7 @@ class MachineFormDialog extends HookConsumerWidget {
                         // Type dropdown
                         FormBuilderDropdown<MachineType>(
                           name: 'type',
-                          initialValue:
-                              machine?.type ?? MachineType.washer,
+                          initialValue: machine?.type ?? MachineType.washer,
                           decoration: const InputDecoration(
                             labelText: 'Type *',
                             border: OutlineInputBorder(),

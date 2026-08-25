@@ -7,6 +7,7 @@ import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../services/data/repositories/service_repository.dart';
 import '../../../services/domain/service.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../cart_controller.dart';
 import 'quantity_prompt_dialog.dart';
 import 'variable_price_dialog.dart';
@@ -22,6 +23,7 @@ class ServiceGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    ref.watch(currentBranchFilterProvider);
 
     return FutureBuilder(
       future: _fetchServices(ref),
@@ -106,13 +108,15 @@ class ServiceGrid extends ConsumerWidget {
 
   Future<Either<Failure, List<Service>>> _fetchServices(WidgetRef ref) async {
     final repository = ref.read(serviceRepositoryProvider);
+    final branchFilter = ref.read(currentBranchFilterProvider);
 
     if (searchQuery.trim().isEmpty) {
-      return repository.fetchAll();
+      return repository.fetchAll(filter: branchFilter);
     } else {
       return repository.search(
         searchQuery.trim(),
         fields: ['name', 'description'],
+        filter: branchFilter,
       );
     }
   }
