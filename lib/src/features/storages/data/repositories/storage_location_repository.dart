@@ -96,6 +96,9 @@ class StorageLocationRepositoryImpl implements StorageLocationRepository {
           'name': storageLocation.name,
           'isAvailable': storageLocation.isAvailable,
           'isDeleted': false,
+          if (storageLocation.branchId != null &&
+              storageLocation.branchId!.isNotEmpty)
+            'branch': storageLocation.branchId,
         };
 
         final record = await _collection.create(body: body);
@@ -120,10 +123,12 @@ class StorageLocationRepositoryImpl implements StorageLocationRepository {
         final body = <String, dynamic>{
           'name': storageLocation.name,
           'isAvailable': storageLocation.isAvailable,
+          if (storageLocation.branchId != null &&
+              storageLocation.branchId!.isNotEmpty)
+            'branch': storageLocation.branchId,
         };
 
-        final record =
-            await _collection.update(storageLocation.id, body: body);
+        final record = await _collection.update(storageLocation.id, body: body);
         return _toEntity(record);
       },
       Failure.handle,

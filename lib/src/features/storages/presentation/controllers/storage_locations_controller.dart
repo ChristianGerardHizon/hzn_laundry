@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/storage_location_repository.dart';
 import '../../domain/storage_location.dart';
 
@@ -7,15 +9,21 @@ part 'storage_locations_controller.g.dart';
 
 /// Controller for managing storage location list state.
 ///
-/// Storages are org-global in live PocketBase (no branch field).
+/// Storages are scoped to the current working branch. Unassigned locations
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 @Riverpod(keepAlive: true)
 class StorageLocationsController extends _$StorageLocationsController {
   StorageLocationRepository get _repository =>
       ref.read(storageLocationRepositoryProvider);
 
+  String? get _branchFilter => PBFilters.forBranchIncludingUnassigned(
+        ref.read(currentBranchIdProvider),
+      );
+
   @override
   Future<List<StorageLocation>> build() async {
-    final result = await _repository.fetchAll();
+    ref.watch(currentBranchIdProvider);
+    final result = await _repository.fetchAll(filter: _branchFilter);
     return result.fold(
       (failure) => throw failure,
       (storages) => storages,
@@ -26,7 +34,7 @@ class StorageLocationsController extends _$StorageLocationsController {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    final result = await _repository.fetchAll();
+    final result = await _repository.fetchAll(filter: _branchFilter);
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),

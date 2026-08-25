@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
@@ -1955,11 +1956,17 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
     final items = useState(List<_OrderProductItem>.from(currentItems));
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
+    final branchFilter = ref.watch(currentBranchFilterProvider);
+
     useEffect(() {
       () async {
+        isLoading.value = true;
         final repo = ref.read(productRepositoryProvider);
         final result = await repo.fetchAll(
-          filter: "isDeleted = false && forSale = true",
+          filter: PBFilters.combine(
+            branchFilter,
+            'isDeleted = false && forSale = true',
+          ),
           sort: 'name',
         );
         result.fold(
@@ -1969,7 +1976,7 @@ class _AddOnsPickerDialog extends HookConsumerWidget {
         isLoading.value = false;
       }();
       return null;
-    }, []);
+    }, [branchFilter]);
 
     final allProducts = productsAsync.value ?? [];
     final filtered = searchQuery.value.isEmpty
@@ -2418,8 +2425,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
     final hasDefaultPrinter = defaultPrinterAsync.value != null;
-    final canThermalPrint =
-        isThermalPrintingSupported && hasDefaultPrinter;
+    final canThermalPrint = isThermalPrintingSupported && hasDefaultPrinter;
 
     final unitLabel = service.quantityUnit?.shortPlural ??
         (service.weightBased == true ? 'KG' : 'PCS');

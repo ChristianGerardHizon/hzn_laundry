@@ -10,6 +10,7 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/storage_location.dart';
 import '../controllers/storage_locations_controller.dart';
 
@@ -60,7 +61,7 @@ class StorageLocationFormDialog extends HookConsumerWidget {
       final storageData = StorageLocation(
         id: storage?.id ?? '',
         name: (values['name'] as String).trim(),
-        branchId: storage?.branchId,
+        branchId: storage?.branchId ?? ref.read(currentBranchIdProvider),
         isAvailable: values['isAvailable'] as bool? ?? true,
       );
 
@@ -148,8 +149,7 @@ class StorageLocationFormDialog extends HookConsumerWidget {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(t.common.save),
                     ),

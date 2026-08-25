@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/machine_repository.dart';
 import '../../domain/machine.dart';
 
@@ -7,14 +9,20 @@ part 'machines_controller.g.dart';
 
 /// Controller for managing machine list state.
 ///
-/// Machines are org-global in live PocketBase (no branch field).
+/// Machines are scoped to the current working branch. Unassigned machines
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 @Riverpod(keepAlive: true)
 class MachinesController extends _$MachinesController {
   MachineRepository get _repository => ref.read(machineRepositoryProvider);
 
+  String? get _branchFilter => PBFilters.forBranchIncludingUnassigned(
+        ref.read(currentBranchIdProvider),
+      );
+
   @override
   Future<List<Machine>> build() async {
-    final result = await _repository.fetchAll();
+    ref.watch(currentBranchIdProvider);
+    final result = await _repository.fetchAll(filter: _branchFilter);
     return result.fold(
       (failure) => throw failure,
       (machines) => machines,
@@ -25,7 +33,7 @@ class MachinesController extends _$MachinesController {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    final result = await _repository.fetchAll();
+    final result = await _repository.fetchAll(filter: _branchFilter);
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),

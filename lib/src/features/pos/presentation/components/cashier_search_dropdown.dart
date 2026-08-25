@@ -9,6 +9,7 @@ import '../../../products/data/repositories/product_repository.dart';
 import '../../../products/domain/product.dart';
 import '../../../services/data/repositories/service_repository.dart';
 import '../../../services/domain/service.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../cart_controller.dart';
 import 'lot_selection_dialog.dart';
 import 'quantity_prompt_dialog.dart';
@@ -259,11 +260,15 @@ class _SearchResultsList extends StatelessWidget {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
 
+    final branchId = ref.read(currentBranchIdProvider);
+    final branchClause = branchId != null ? 'branch = "$branchId"' : null;
+
     try {
       final pb = ref.read(pocketbaseProvider);
-      final filter = PBFilter()
-          .searchFields(trimmed, ['name', 'description'])
-          .build();
+      final filter = PBFilters.combine(
+        PBFilter().searchFields(trimmed, ['name', 'description']).build(),
+        branchClause,
+      );
 
       final records = await pb
           .collection(PocketBaseCollections.vwPosSearchItems)
@@ -295,10 +300,13 @@ class _SearchResultsList extends StatelessWidget {
 
     final productRepo = ref.read(productRepositoryProvider);
     final serviceRepo = ref.read(serviceRepositoryProvider);
+    final branchFilter = ref.read(currentBranchFilterProvider);
 
     final results = await Future.wait([
-      productRepo.search(trimmed, fields: ['name', 'description']),
-      serviceRepo.search(trimmed, fields: ['name', 'description']),
+      productRepo.search(trimmed,
+          fields: ['name', 'description'], filter: branchFilter),
+      serviceRepo.search(trimmed,
+          fields: ['name', 'description'], filter: branchFilter),
     ]);
 
     final items = <_SearchResult>[];
@@ -365,7 +373,8 @@ class _SearchResultTile extends StatelessWidget {
       dense: true,
       leading: Icon(
         isProduct ? Icons.inventory_2 : Icons.miscellaneous_services,
-        color: isProduct ? theme.colorScheme.primary : theme.colorScheme.tertiary,
+        color:
+            isProduct ? theme.colorScheme.primary : theme.colorScheme.tertiary,
       ),
       title: Text(item.name),
       subtitle: Text(
