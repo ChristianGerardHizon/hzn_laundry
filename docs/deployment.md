@@ -400,6 +400,19 @@ After one successful console upload, later production deploys use the API.
 
 Until this secret exists, production still deploys web and GitHub Releases; the Play upload step is skipped.
 
+#### Privacy policy URL (Play Console)
+
+A static privacy policy page ships with every web build at:
+
+| Environment | URL |
+|-------------|-----|
+| Production | `https://hizonelaundry.hznsystems.com/privacy-policy.html` |
+| Staging | `https://staging.hizonelaundry.hznsystems.com/privacy-policy.html` |
+
+Source: [`web/privacy-policy.html`](web/privacy-policy.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** URL in Play Console → App content → Privacy policy.
+
+Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
+
 #### 6. After each production deploy
 
 1. Wait for `deploy-production` to finish.
