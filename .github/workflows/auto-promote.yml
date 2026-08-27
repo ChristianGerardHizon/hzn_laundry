@@ -48,7 +48,6 @@ jobs:
           echo "Calculated next version: $VERSION"
 
       - name: Compile release notes
-        id: release_notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -57,17 +56,11 @@ jobs:
             --mode production \
             --output-markdown release-notes/release-notes.md \
             --output-play release-notes/whatsnew/whatsnew-en-US
-          {
-            echo "body<<EOF"
-            cat release-notes/release-notes.md
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Create PR from staging to main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.version }}
-          RELEASE_NOTES: ${{ steps.release_notes.outputs.body }}
         run: |
           # Check if an open PR from staging to main already exists
           EXISTING=$(gh pr list \
@@ -83,12 +76,7 @@ jobs:
             exit 0
           fi
 
-          PR_URL=$(gh pr create \
-            --repo "${{ github.repository }}" \
-            --head staging \
-            --base main \
-            --title "Deploy v${VERSION} to Production" \
-            --body "$(cat <<EOF
+          cat > /tmp/production-pr-body.md <<EOF
           ## Production Deployment — v${VERSION}
 
           This PR was automatically created after merging PR #${{ github.event.pull_request.number }} into staging.
@@ -97,9 +85,15 @@ jobs:
 
           Merging this PR will build and deploy **v${VERSION}** to production.
 
-          ${RELEASE_NOTES}
           EOF
-          )")
+          cat release-notes/release-notes.md >> /tmp/production-pr-body.md
+
+          PR_URL=$(gh pr create \
+            --repo "${{ github.repository }}" \
+            --head staging \
+            --base main \
+            --title "Deploy v${VERSION} to Production" \
+            --body-file /tmp/production-pr-body.md)
 
           PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
 

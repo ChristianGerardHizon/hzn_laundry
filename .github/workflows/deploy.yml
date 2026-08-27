@@ -599,8 +599,19 @@ jobs:
           path: release-notes/
           retention-days: 1
 
+      - name: Detect Play upload credentials
+        id: play_upload
+        env:
+          PLAYSTORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAYSTORE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload to Google Play (internal testing)
-        if: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON != '' }}
+        if: steps.play_upload.outputs.enabled == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
