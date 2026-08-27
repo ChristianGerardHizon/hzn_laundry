@@ -621,7 +621,6 @@ jobs:
           status: completed
           releaseName: ${{ env.PROD_VER }}
           whatsNewDirectory: release-notes/whatsnew
-          changesNotSentForReview: true
 
   # ==========================================
   # JOB 2b: WINDOWS BUILD (PRODUCTION) — opt-in via 'build-windows' label
