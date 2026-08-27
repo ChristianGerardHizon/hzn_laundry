@@ -511,6 +511,15 @@ jobs:
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
 
+      - name: Build App Bundle (Release)
+        env:
+          CI: "true"
+          CM_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
+          CM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: flutter build appbundle --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
+
       # --- SSH DEPLOY START ---
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -553,6 +562,25 @@ jobs:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 1
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 1
+
+      - name: Upload to Google Play (internal testing)
+        if: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.hznsystems.hizonelaundry
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          releaseName: ${{ env.PROD_VER }}
+          changesNotSentForReview: true
 
   # ==========================================
   # JOB 2b: WINDOWS BUILD (PRODUCTION) — opt-in via 'build-windows' label
@@ -655,13 +683,20 @@ jobs:
         with:
           name: app-release-apk
 
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release-aab
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-production.outputs.prod_ver }}
           target_commitish: ${{ needs.deploy-production.outputs.commit_sha }}
           name: "v${{ needs.deploy-production.outputs.prod_ver }}"
-          files: app-release.apk
+          files: |
+            app-release.apk
+            app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

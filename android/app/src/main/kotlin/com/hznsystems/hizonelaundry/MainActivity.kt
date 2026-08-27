@@ -1,4 +1,4 @@
-package com.app.hizonelaundry
+package com.hznsystems.hizonelaundry
 
 import io.flutter.embedding.android.FlutterActivity
 
