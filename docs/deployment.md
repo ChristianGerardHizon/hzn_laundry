@@ -413,6 +413,8 @@ Source: [`web/privacy-policy.html`](web/privacy-policy.html) (copied into `build
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 
+The web build also ships `robots.txt` and `noindex` meta tags on the main app so search engines and bots are asked not to index the staff application. The privacy policy URL stays publicly fetchable for Play Console.
+
 #### 6. After each production deploy
 
 1. Wait for `deploy-production` to finish.
