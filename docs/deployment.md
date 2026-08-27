@@ -79,6 +79,7 @@ PR merged to staging (or manual dispatch)
   └─ Create GitHub Release (prerelease)
       Tag: staging-X.Y.Z[-build.N]
       Artifact: app-release.apk
+      Body: compiled release notes from merged staging PRs
 
   (in parallel, only if the `build-windows` label or workflow_dispatch
    `build_windows` input is set — see "Windows Build (opt-in)" below)
@@ -124,11 +125,12 @@ PR merged to main
   │   ├─ Restart PocketBase production service
   │   │
   │   ├─ Upload APK + AAB as GitHub Actions artifacts
-  │   └─ Upload AAB to Google Play (internal testing, published)
+  │   ├─ Compile user-facing release notes from merged staging PRs
+  │   └─ Upload AAB to Google Play Internal testing (published, with What's new)
   │
   ├─ [release-and-sync job] (depends on deploy-production)
-  │   ├─ Download APK + AAB artifacts
-  │   ├─ Create GitHub Release
+  │   ├─ Download APK + AAB + release notes artifacts
+  │   ├─ Create GitHub Release (body = compiled release notes)
   │   │   Tag: vX.Y.Z
   │   │   Artifacts: app-release.apk, app-release.aab
   │   └─ PATCH Version Manager API with new version
@@ -403,6 +405,32 @@ Until this secret exists, production still deploys web and GitHub Releases; the 
 1. Wait for `deploy-production` to finish.
 2. Testers already opted in get the new version (`X.Y.Z`, version code = GitHub run number) from Play Store without a new opt-in.
 3. New testers still need the Internal testing opt-in URL (email lists cannot be updated via the Play API; add emails in Play Console).
+
+---
+
+## Release notes
+
+Staging and production deploys compile **user-facing release notes** from merged PRs into `staging` using [`.github/scripts/compile_release_notes.py`](.github/scripts/compile_release_notes.py).
+
+| When | PRs included | Used on |
+|------|----------------|---------|
+| Staging deploy | Merged to `staging` since the previous `staging-*` GitHub Release | Staging GitHub Release body |
+| Production deploy | Merged to `staging` since the previous `v*` GitHub Release | Production GitHub Release, Play Internal testing “What’s new”, auto-promote staging→main PR body |
+
+### Writing PR descriptions
+
+Add a **`## Release notes`** section to each staging PR with plain-language bullets for staff and customers. Example:
+
+```markdown
+## Release notes
+- Orders cannot move to Ready until every service has a machine and a pack count.
+- The dashboard highlights orders that still need machines or packs.
+- Mag-style full service pricing now supports a minimum charge per order.
+```
+
+If `## Release notes` is missing, CI falls back to **`## Summary`** (filtered to drop technical lines) and then the PR title.
+
+Avoid putting QA steps, migrations, or CI details in Release notes — those stay under Test plan / QA Notes.
 
 ### Version codes
 

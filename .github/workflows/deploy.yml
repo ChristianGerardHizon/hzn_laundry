@@ -17,6 +17,7 @@ concurrency:
 
 permissions:
   contents: write # REQUIRED for creating GitHub Releases
+  pull-requests: read # Compile release notes from merged staging PRs
 
 jobs:
   # ==========================================
@@ -238,12 +239,23 @@ jobs:
       # --- SSH DEPLOY END ---
 
       # RELEASE
+      - name: Compile release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/compile_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --mode staging \
+            --output-markdown release-notes/release-notes.md \
+            --output-play release-notes/whatsnew/whatsnew-en-US
+
       - name: Create Staging Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.STAGING_TAG }}
           target_commitish: ${{ github.sha }}
           name: ${{ env.STAGING_TAG }}
+          body_path: release-notes/release-notes.md
           prerelease: true
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
@@ -570,6 +582,23 @@ jobs:
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 1
 
+      - name: Compile release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/compile_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --mode production \
+            --output-markdown release-notes/release-notes.md \
+            --output-play release-notes/whatsnew/whatsnew-en-US
+
+      - name: Upload release notes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes/
+          retention-days: 1
+
       - name: Upload to Google Play (internal testing)
         if: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON != '' }}
         uses: r0adkll/upload-google-play@v1
@@ -580,6 +609,7 @@ jobs:
           track: internal
           status: completed
           releaseName: ${{ env.PROD_VER }}
+          whatsNewDirectory: release-notes/whatsnew
           changesNotSentForReview: true
 
   # ==========================================
@@ -688,12 +718,18 @@ jobs:
         with:
           name: app-release-aab
 
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-production.outputs.prod_ver }}
           target_commitish: ${{ needs.deploy-production.outputs.commit_sha }}
           name: "v${{ needs.deploy-production.outputs.prod_ver }}"
+          body_path: release-notes/release-notes.md
           files: |
             app-release.apk
             app-release.aab

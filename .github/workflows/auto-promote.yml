@@ -13,6 +13,8 @@ jobs:
       pull-requests: write
       contents: read
     steps:
+      - uses: actions/checkout@v4
+
       - name: Calculate next version
         id: get_version
         env:
@@ -45,10 +47,27 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Calculated next version: $VERSION"
 
+      - name: Compile release notes
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/compile_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --mode production \
+            --output-markdown release-notes/release-notes.md \
+            --output-play release-notes/whatsnew/whatsnew-en-US
+          {
+            echo "body<<EOF"
+            cat release-notes/release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create PR from staging to main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.version }}
+          RELEASE_NOTES: ${{ steps.release_notes.outputs.body }}
         run: |
           # Check if an open PR from staging to main already exists
           EXISTING=$(gh pr list \
@@ -77,6 +96,8 @@ jobs:
           **Source PR:** ${{ github.event.pull_request.title }}
 
           Merging this PR will build and deploy **v${VERSION}** to production.
+
+          ${RELEASE_NOTES}
           EOF
           )")
 
