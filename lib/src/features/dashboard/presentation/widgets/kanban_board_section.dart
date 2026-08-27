@@ -234,10 +234,9 @@ class KanbanBoardSection extends HookConsumerWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
-                      final targetMode =
-                          filterMode == KanbanFilterMode.today
-                              ? KanbanFilterMode.notPickedUp
-                              : KanbanFilterMode.today;
+                      final targetMode = filterMode == KanbanFilterMode.today
+                          ? KanbanFilterMode.notPickedUp
+                          : KanbanFilterMode.today;
                       ref
                           .read(kanbanFilterProvider.notifier)
                           .setFilter(targetMode);
@@ -320,6 +319,32 @@ class _KanbanFilterChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pendingCount = ref.watch(backlogPendingCountProvider).asData?.value;
+
+    if (Breakpoints.isMobile(context)) {
+      return SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<KanbanFilterMode>(
+          showSelectedIcon: false,
+          segments: [
+            const ButtonSegment(
+              value: KanbanFilterMode.today,
+              label: Text('Today'),
+            ),
+            ButtonSegment(
+              value: KanbanFilterMode.notPickedUp,
+              label: _MobileBacklogsLabel(pendingCount: pendingCount),
+            ),
+          ],
+          selected: {currentFilter},
+          onSelectionChanged: (selected) {
+            if (selected.isEmpty) return;
+            ref.read(kanbanFilterProvider.notifier).setFilter(selected.first);
+          },
+        ),
+      );
+    }
+
     return Row(
       children: [
         _FilterChip(
@@ -340,8 +365,44 @@ class _KanbanFilterChips extends ConsumerWidget {
               .read(kanbanFilterProvider.notifier)
               .setFilter(KanbanFilterMode.notPickedUp),
           count: ref.watch(notPickedUpCountProvider).asData?.value,
-          pendingCount: ref.watch(backlogPendingCountProvider).asData?.value,
+          pendingCount: pendingCount,
         ),
+      ],
+    );
+  }
+}
+
+class _MobileBacklogsLabel extends StatelessWidget {
+  const _MobileBacklogsLabel({this.pendingCount});
+
+  final int? pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final showBadge = pendingCount != null && pendingCount! > 0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Backlogs'),
+        if (showBadge) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$pendingCount',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -385,8 +446,7 @@ class _FilterChip extends StatelessWidget {
               message:
                   '$pendingCount pending ${pendingCount == 1 ? 'order needs' : 'orders need'} to be done',
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: Colors.orange,
                   borderRadius: BorderRadius.circular(10),
@@ -394,8 +454,7 @@ class _FilterChip extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.schedule,
-                        size: 10, color: Colors.white),
+                    const Icon(Icons.schedule, size: 10, color: Colors.white),
                     const SizedBox(width: 3),
                     Text(
                       '$pendingCount pending',
@@ -691,9 +750,10 @@ class _KanbanColumn extends ConsumerWidget {
                           sale: displayedSales[i],
                           serviceItems: kanbanData
                               .serviceItemsForSale(displayedSales[i].id),
-                          saleItems: kanbanData
-                              .saleItemsForSale(displayedSales[i].id),
-                          showOverdue: filterMode == KanbanFilterMode.notPickedUp,
+                          saleItems:
+                              kanbanData.saleItemsForSale(displayedSales[i].id),
+                          showOverdue:
+                              filterMode == KanbanFilterMode.notPickedUp,
                         ),
                       ],
                       if (remainingCount > 0) ...[
@@ -756,6 +816,7 @@ void _showAllCardsSheet(
 
   showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     shape: const RoundedRectangleBorder(
@@ -836,11 +897,9 @@ void _showAllCardsSheet(
                     final sale = sales[index];
                     return _SaleCard(
                       sale: sale,
-                      serviceItems:
-                          kanbanData.serviceItemsForSale(sale.id),
+                      serviceItems: kanbanData.serviceItemsForSale(sale.id),
                       saleItems: kanbanData.saleItemsForSale(sale.id),
-                      showOverdue:
-                          filterMode == KanbanFilterMode.notPickedUp,
+                      showOverdue: filterMode == KanbanFilterMode.notPickedUp,
                     );
                   },
                 ),
@@ -883,9 +942,8 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
     final cardSize = renderBox.size;
     final cardOffset = renderBox.localToGlobal(Offset.zero);
     final screenSize = MediaQuery.sizeOf(context);
-    final targetStatuses = OrderStatus.values
-        .where((s) => s != widget.sale.orderStatus)
-        .toList();
+    final targetStatuses =
+        OrderStatus.values.where((s) => s != widget.sale.orderStatus).toList();
 
     // Capture the card's context and ref so the overlay can use them
     // even after the overlay entry is removed.
@@ -1064,8 +1122,7 @@ class _QuickDropOverlay extends StatelessWidget {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      Colors.black.withValues(alpha: 0.12),
+                                  color: Colors.black.withValues(alpha: 0.12),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1082,8 +1139,7 @@ class _QuickDropOverlay extends StatelessWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   targetStatuses[i].displayName,
-                                  style:
-                                      theme.textTheme.labelSmall?.copyWith(
+                                  style: theme.textTheme.labelSmall?.copyWith(
                                     color: color,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 9,
@@ -1140,7 +1196,8 @@ class _SaleCardContent extends StatelessWidget {
 
     // Show machine names (with load qty) for all statuses when assigned
     final machineInfos = serviceItems
-        .where((item) => item.machineName != null && item.machineName!.isNotEmpty)
+        .where(
+            (item) => item.machineName != null && item.machineName!.isNotEmpty)
         .map((item) {
           final isCompleted = item.status == ServiceItemStatus.completed;
           return isCompleted ? '${item.machineName!} ✓' : item.machineName!;
@@ -1152,7 +1209,8 @@ class _SaleCardContent extends StatelessWidget {
     // Fallback: storage names for ready orders with no machines
     if (sale.orderStatus == OrderStatus.ready) {
       final storageNames = serviceItems
-          .where((item) => item.storageName != null && item.storageName!.isNotEmpty)
+          .where((item) =>
+              item.storageName != null && item.storageName!.isNotEmpty)
           .map((item) => item.storageName!)
           .toSet()
           .toList();
@@ -1165,18 +1223,20 @@ class _SaleCardContent extends StatelessWidget {
 
   /// Checks if all service items with machines are completed.
   bool get _allServicesCompleted {
-    final itemsWithMachines = serviceItems
-        .where((item) => item.machineName != null && item.machineName!.isNotEmpty);
+    final itemsWithMachines = serviceItems.where(
+        (item) => item.machineName != null && item.machineName!.isNotEmpty);
     if (itemsWithMachines.isEmpty) return false;
-    return itemsWithMachines.every((item) => item.status == ServiceItemStatus.completed);
+    return itemsWithMachines
+        .every((item) => item.status == ServiceItemStatus.completed);
   }
 
   /// Checks if some (but not all) service items are completed.
   bool get _someServicesCompleted {
-    final itemsWithMachines = serviceItems
-        .where((item) => item.machineName != null && item.machineName!.isNotEmpty);
+    final itemsWithMachines = serviceItems.where(
+        (item) => item.machineName != null && item.machineName!.isNotEmpty);
     if (itemsWithMachines.isEmpty) return false;
-    final completed = itemsWithMachines.where((item) => item.status == ServiceItemStatus.completed);
+    final completed = itemsWithMachines
+        .where((item) => item.status == ServiceItemStatus.completed);
     return completed.isNotEmpty && completed.length < itemsWithMachines.length;
   }
 
@@ -1217,8 +1277,7 @@ class _SaleCardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final assignmentInfo = _getAssignmentInfo();
     final assignmentIcon = _getAssignmentIcon();
     final assignmentColor = _getAssignmentColor();
@@ -1289,13 +1348,11 @@ class _SaleCardContent extends StatelessWidget {
                 if (serviceItems.isNotEmpty)
                   _ItemSummaryRow(
                     icon: Icons.local_laundry_service,
-                    label: serviceItems
-                        .map((e) {
-                          final qty = e.service?.formatQuantity(e.quantity) ??
-                              '${e.quantity}';
-                          return '${e.serviceName} x$qty';
-                        })
-                        .join(', '),
+                    label: serviceItems.map((e) {
+                      final qty = e.service?.formatQuantity(e.quantity) ??
+                          '${e.quantity}';
+                      return '${e.serviceName} x$qty';
+                    }).join(', '),
                     color: theme.colorScheme.primary,
                   ),
                 if (saleItems.isNotEmpty) ...[
@@ -1314,32 +1371,36 @@ class _SaleCardContent extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: assignmentColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            assignmentIcon,
-                            size: 12,
-                            color: assignmentColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            assignmentInfo,
-                            style: theme.textTheme.labelSmall?.copyWith(
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: assignmentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              assignmentIcon,
+                              size: 12,
                               color: assignmentColor,
-                              fontWeight: FontWeight.w500,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                assignmentInfo,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: assignmentColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     if (sale.packs > 0 &&

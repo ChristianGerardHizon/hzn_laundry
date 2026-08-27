@@ -9,12 +9,11 @@ import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_refresh.dart';
-import '../controllers/incomplete_orders_controller.dart';
 import '../controllers/sales_summary_controller.dart';
+import '../controllers/sales_summary_hidden_date_provider.dart';
 import '../controllers/total_packs_summary_controller.dart';
 import 'add_ons_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
-import 'incomplete_orders_modal.dart';
 import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
 import 'total_packs_modal.dart';
@@ -30,14 +29,66 @@ class SalesSummarySection extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(salesSummaryProvider);
+    final hiddenDateAsync = ref.watch(salesSummaryHiddenDateProvider);
     final theme = Theme.of(context);
-    final isExpanded = useState(true);
     final isRefreshing = useState(false);
+    final refreshOverlay = useRef<OverlayEntry?>(null);
+    final isExpanded = !hiddenDateAsync.maybeWhen(
+      data: (storedDate) => isSalesSummaryHiddenFor(
+        storedDate: storedDate,
+        now: DateTime.now(),
+      ),
+      orElse: () => false,
+    );
+
+    useEffect(() {
+      return () {
+        refreshOverlay.value?.remove();
+        refreshOverlay.value = null;
+      };
+    }, const []);
+
+    void showRefreshCompleteOverlay() {
+      refreshOverlay.value?.remove();
+      late final OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (_) => _RefreshCompleteToast(
+          onFinished: () {
+            entry.remove();
+            if (refreshOverlay.value == entry) {
+              refreshOverlay.value = null;
+            }
+          },
+        ),
+      );
+      refreshOverlay.value = entry;
+      Overlay.of(context).insert(entry);
+    }
 
     Future<void> handleRefresh() async {
+      if (isRefreshing.value) return;
       isRefreshing.value = true;
-      await refreshAllDashboardData(ref);
-      isRefreshing.value = false;
+      try {
+        await Future.wait([
+          refreshAllDashboardData(ref),
+          Future<void>.delayed(const Duration(seconds: 1)),
+        ]);
+        if (!context.mounted) return;
+        showRefreshCompleteOverlay();
+      } finally {
+        if (context.mounted) {
+          isRefreshing.value = false;
+        }
+      }
+    }
+
+    Future<void> toggleExpanded() async {
+      final notifier = ref.read(salesSummaryHiddenDateProvider.notifier);
+      if (isExpanded) {
+        await notifier.hideForToday();
+      } else {
+        await notifier.show();
+      }
     }
 
     return Padding(
@@ -50,7 +101,7 @@ class SalesSummarySection extends HookConsumerWidget {
             children: [
               Expanded(
                 child: InkWell(
-                  onTap: () => isExpanded.value = !isExpanded.value,
+                  onTap: toggleExpanded,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -64,14 +115,21 @@ class SalesSummarySection extends HookConsumerWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "Today's Sales Summary",
+                            "Today's Summary",
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
+                        Text(
+                          isExpanded ? 'Press to hide' : 'Press to show',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         AnimatedRotation(
-                          turns: isExpanded.value ? 0.0 : -0.25,
+                          turns: isExpanded ? 0.0 : -0.25,
                           duration: const Duration(milliseconds: 200),
                           child: Icon(
                             Icons.expand_more,
@@ -85,25 +143,23 @@ class SalesSummarySection extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: isRefreshing.value
-                    ? Padding(
-                        padding: const EdgeInsets.all(6),
+              TextButton.icon(
+                onPressed: isRefreshing.value ? null : handleRefresh,
+                icon: isRefreshing.value
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: theme.colorScheme.outline,
                         ),
                       )
-                    : IconButton(
-                        onPressed: handleRefresh,
-                        icon: const Icon(Icons.refresh),
-                        iconSize: 18,
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Refresh dashboard',
-                        color: theme.colorScheme.outline,
-                      ),
+                    : const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: theme.colorScheme.outline,
+                ),
               ),
             ],
           ),
@@ -117,12 +173,106 @@ class SalesSummarySection extends HookConsumerWidget {
               ),
             ),
             secondChild: const SizedBox.shrink(),
-            crossFadeState: isExpanded.value
+            crossFadeState: isExpanded
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
             duration: const Duration(milliseconds: 200),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RefreshCompleteToast extends StatefulWidget {
+  const _RefreshCompleteToast({required this.onFinished});
+
+  final VoidCallback onFinished;
+
+  @override
+  State<_RefreshCompleteToast> createState() => _RefreshCompleteToastState();
+}
+
+class _RefreshCompleteToastState extends State<_RefreshCompleteToast>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _play();
+  }
+
+  Future<void> _play() async {
+    await _controller.forward();
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+    await _controller.reverse();
+    if (mounted) widget.onFinished();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: FadeTransition(
+                opacity: _opacity,
+                child: ScaleTransition(
+                  scale: _scale,
+                  child: Material(
+                    elevation: 6,
+                    color: theme.colorScheme.inverseSurface,
+                    borderRadius: BorderRadius.circular(24),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_done,
+                            color: theme.colorScheme.onInverseSurface,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Pulled new data complete',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onInverseSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -142,19 +292,8 @@ class _SalesSummaryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final packsAsync = ref.watch(totalPacksSummaryProvider);
-    final incompleteAsync = ref.watch(incompleteOrdersProvider);
     final addOns = AddOnsSummaryData.fromSalesItems(data.salesItems);
     final loads = LoadsSummaryData.fromSalesItems(data.salesItems);
-    final screenWidth = MediaQuery.sizeOf(context).width;
-
-    final int cols;
-    if (screenWidth >= Breakpoints.desktop) {
-      cols = 6;
-    } else if (screenWidth >= Breakpoints.mobile) {
-      cols = 2;
-    } else {
-      cols = 1;
-    }
 
     final salesCards = [
       KpiCard(
@@ -250,48 +389,20 @@ class _SalesSummaryContent extends ConsumerWidget {
         loading: () => const _LoadingCard(),
         error: (_, __) => const _LoadingCard(),
       ),
-      incompleteAsync.when(
-        data: (summary) {
-          final hasIssues = summary.hasIssues;
-          final subtitle = !hasIssues
-              ? 'All orders complete'
-              : [
-                  if (summary.processingCount > 0)
-                    '${summary.processingCount} processing',
-                  if (summary.missingDataCount > 0)
-                    '${summary.missingDataCount} missing data',
-                ].join(' · ');
-          return KpiCard(
-            title: 'Needs Attention',
-            value: '${summary.count}',
-            icon: hasIssues
-                ? Icons.warning_amber_rounded
-                : Icons.check_circle_outline,
-            subtitle: subtitle,
-            compact: true,
-            highlighted: hasIssues,
-            color: hasIssues ? Colors.deepOrange : Colors.green,
-            onTap: () => showIncompleteOrdersModal(context, summary),
-          );
-        },
-        loading: () => const _LoadingCard(),
-        error: (_, __) => const _LoadingCard(),
-      ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 8.0;
-        final rawWidth = (constraints.maxWidth - spacing * (cols - 1)) / cols;
-        // Guard against negative/zero widths on extremely narrow constraints,
-        // which would throw a BoxConstraints assertion.
-        final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
+        final layout = _kpiGridLayout(
+          maxWidth: constraints.maxWidth,
+          itemCount: salesCards.length,
+        );
 
         return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
+          spacing: _kpiSpacing,
+          runSpacing: _kpiSpacing,
           children: salesCards
-              .map((c) => SizedBox(width: cardWidth, child: c))
+              .map((c) => SizedBox(width: layout.cardWidth, child: c))
               .toList(),
         );
       },
@@ -704,35 +815,55 @@ class _PaymentChip extends StatelessWidget {
   }
 }
 
+const _kpiSpacing = 8.0;
+const _kpiMinCardWidth = 168.0;
+const _kpiMaxCardWidth = 220.0;
+
+({int cols, double cardWidth}) _kpiGridLayout({
+  required double maxWidth,
+  required int itemCount,
+}) {
+  if (itemCount <= 0 || !maxWidth.isFinite || maxWidth <= 0) {
+    return (cols: 1, cardWidth: 0);
+  }
+
+  final int cols;
+  final isMobileWidth = maxWidth < Breakpoints.mobile;
+  if (isMobileWidth) {
+    cols = itemCount >= 2 ? 2 : 1;
+  } else {
+    cols = ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
+        .floor()
+        .clamp(1, itemCount);
+  }
+
+  final stretched = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
+  final cardWidth =
+      isMobileWidth ? stretched : stretched.clamp(0.0, _kpiMaxCardWidth);
+  return (cols: cols, cardWidth: cardWidth);
+}
+
 class _LoadingCards extends StatelessWidget {
   const _LoadingCards();
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
     const cardCount = 6;
-
-    final int cols;
-    if (screenWidth >= Breakpoints.desktop) {
-      cols = 6;
-    } else if (screenWidth >= Breakpoints.mobile) {
-      cols = 2;
-    } else {
-      cols = 1;
-    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const spacing = 8.0;
-        final rawWidth = (constraints.maxWidth - spacing * (cols - 1)) / cols;
-        final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;
+        final layout = _kpiGridLayout(
+          maxWidth: constraints.maxWidth,
+          itemCount: cardCount,
+        );
 
         return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
+          spacing: _kpiSpacing,
+          runSpacing: _kpiSpacing,
           children: List.generate(
             cardCount,
-            (_) => SizedBox(width: cardWidth, child: const _LoadingCard()),
+            (_) =>
+                SizedBox(width: layout.cardWidth, child: const _LoadingCard()),
           ),
         );
       },

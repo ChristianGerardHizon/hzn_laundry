@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
@@ -39,6 +40,31 @@ class QuickActionsSection extends ConsumerWidget {
         isAdmin || (role?.hasPermission(Permissions.salesCreate) ?? false);
     final canCreateCustomer =
         isAdmin || (role?.hasPermission(Permissions.customersCreate) ?? false);
+    final isMobile = Breakpoints.isMobile(context);
+
+    void onNewSale() {
+      if (isAllBranches) {
+        showWarningSnackBar(
+          context,
+          message:
+              Translations.of(context).navigation.createUnavailableAllBranches,
+        );
+        return;
+      }
+      showCreateOrderDialog(context);
+    }
+
+    void onNewCustomer() {
+      if (isAllBranches) {
+        showWarningSnackBar(
+          context,
+          message:
+              Translations.of(context).navigation.createUnavailableAllBranches,
+        );
+        return;
+      }
+      showCustomerFormDialog(context);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -52,74 +78,150 @@ class QuickActionsSection extends ConsumerWidget {
                 ),
           ),
           const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              spacing: 12,
-              children: [
-                // Show Dashboard Overview button only on tablet
-                if (onShowOverview != null)
+          if (isMobile)
+            _MobileQuickActionsRow(
+              canCreateSale: canCreateSale,
+              canCreateCustomer: canCreateCustomer,
+              canAttendance: canAttendance,
+              onNewSale: onNewSale,
+              onNewCustomer: onNewCustomer,
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: 12,
+                children: [
+                  if (onShowOverview != null)
+                    _QuickActionButton(
+                      icon: Icons.dashboard,
+                      label: 'Overview',
+                      color: Theme.of(context).colorScheme.primary,
+                      onTap: onShowOverview!,
+                    ),
+                  if (canCreateSale)
+                    _QuickActionButton(
+                      icon: Icons.add_shopping_cart,
+                      label: 'New Sale',
+                      color: Colors.green,
+                      filled: true,
+                      onTap: onNewSale,
+                    ),
+                  if (canCreateCustomer)
+                    _QuickActionButton(
+                      icon: Icons.person_add,
+                      label: 'New Customer',
+                      color: Colors.blue,
+                      onTap: onNewCustomer,
+                    ),
+                  if (canAttendance)
+                    _QuickActionButton(
+                      icon: Icons.how_to_reg,
+                      label: 'Attendance',
+                      color: Colors.orange,
+                      onTap: () => showAttendanceDialog(context),
+                    ),
                   _QuickActionButton(
-                    icon: Icons.dashboard,
-                    label: 'Overview',
-                    color: Theme.of(context).colorScheme.primary,
-                    onTap: onShowOverview!,
+                    icon: Icons.local_laundry_service,
+                    label: 'Machine & Storage',
+                    color: Colors.purple,
+                    onTap: () => showOrdersByResourceDialog(context),
                   ),
-                if (canCreateSale)
-                  _QuickActionButton(
-                    icon: Icons.add_shopping_cart,
-                    label: 'New Sale',
-                    color: Colors.green,
-                    filled: true,
-                    onTap: () {
-                      if (isAllBranches) {
-                        showWarningSnackBar(
-                          context,
-                          message: Translations.of(context)
-                              .navigation
-                              .createUnavailableAllBranches,
-                        );
-                        return;
-                      }
-                      showCreateOrderDialog(context);
-                    },
-                  ),
-                if (canCreateCustomer)
-                  _QuickActionButton(
-                    icon: Icons.person_add,
-                    label: 'New Customer',
-                    color: Colors.blue,
-                    onTap: () {
-                      if (isAllBranches) {
-                        showWarningSnackBar(
-                          context,
-                          message: Translations.of(context)
-                              .navigation
-                              .createUnavailableAllBranches,
-                        );
-                        return;
-                      }
-                      showCustomerFormDialog(context);
-                    },
-                  ),
-                if (canAttendance)
-                  _QuickActionButton(
-                    icon: Icons.how_to_reg,
-                    label: 'Attendance',
-                    color: Colors.orange,
-                    onTap: () => showAttendanceDialog(context),
-                  ),
-                _QuickActionButton(
-                  icon: Icons.local_laundry_service,
-                  label: 'Machine & Storage',
-                  color: Colors.purple,
-                  onTap: () => showOrdersByResourceDialog(context),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _MobileQuickActionsRow extends StatelessWidget {
+  const _MobileQuickActionsRow({
+    required this.canCreateSale,
+    required this.canCreateCustomer,
+    required this.canAttendance,
+    required this.onNewSale,
+    required this.onNewCustomer,
+  });
+
+  final bool canCreateSale;
+  final bool canCreateCustomer;
+  final bool canAttendance;
+  final VoidCallback onNewSale;
+  final VoidCallback onNewCustomer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (canCreateSale)
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.add_shopping_cart,
+              label: 'New Sale',
+              color: Colors.green,
+              filled: true,
+              expand: true,
+              onTap: onNewSale,
+            ),
+          ),
+        if (canCreateSale && canCreateCustomer) const SizedBox(width: 8),
+        if (canCreateCustomer)
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.person_add,
+              label: 'New Customer',
+              color: Colors.blue,
+              expand: true,
+              onTap: onNewCustomer,
+            ),
+          ),
+        if (canCreateSale || canCreateCustomer) const SizedBox(width: 8),
+        _MoreQuickActionsButton(canAttendance: canAttendance),
+      ],
+    );
+  }
+}
+
+class _MoreQuickActionsButton extends StatelessWidget {
+  const _MoreQuickActionsButton({required this.canAttendance});
+
+  final bool canAttendance;
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      builder: (context, controller, child) {
+        return _QuickActionButton(
+          icon: Icons.more_horiz,
+          label: 'More',
+          color: Colors.blueGrey,
+          onTap: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+        );
+      },
+      menuChildren: [
+        if (canAttendance)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.how_to_reg, color: Colors.orange),
+            onPressed: () => showAttendanceDialog(context),
+            child: const Text('Attendance'),
+          ),
+        MenuItemButton(
+          leadingIcon: const Icon(
+            Icons.local_laundry_service,
+            color: Colors.purple,
+          ),
+          onPressed: () => showOrdersByResourceDialog(context),
+          child: const Text('Machine & Storage'),
+        ),
+      ],
     );
   }
 }
@@ -131,6 +233,7 @@ class _QuickActionButton extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.filled = false,
+    this.expand = false,
   });
 
   final IconData icon;
@@ -138,12 +241,23 @@ class _QuickActionButton extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   final bool filled;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bgColor = filled ? color : color.withValues(alpha: 0.1);
     final fgColor = filled ? Colors.white : color;
+
+    final labelWidget = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.labelLarge?.copyWith(
+        color: fgColor,
+        fontWeight: FontWeight.w600,
+      ),
+    );
 
     return Material(
       color: bgColor,
@@ -153,9 +267,13 @@ class _QuickActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          width: expand ? double.infinity : null,
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          alignment: Alignment.center,
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
@@ -163,13 +281,7 @@ class _QuickActionButton extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: fgColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              if (expand) Flexible(child: labelWidget) else labelWidget,
             ],
           ),
         ),
