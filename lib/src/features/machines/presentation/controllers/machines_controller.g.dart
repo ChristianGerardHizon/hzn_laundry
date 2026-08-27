@@ -9,14 +9,23 @@ part of 'machines_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Controller for managing machine list state.
+///
+/// Machines are scoped to the current working branch. Unassigned machines
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 
 @ProviderFor(MachinesController)
 final machinesControllerProvider = MachinesControllerProvider._();
 
 /// Controller for managing machine list state.
+///
+/// Machines are scoped to the current working branch. Unassigned machines
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 final class MachinesControllerProvider
     extends $AsyncNotifierProvider<MachinesController, List<Machine>> {
   /// Controller for managing machine list state.
+  ///
+  /// Machines are scoped to the current working branch. Unassigned machines
+  /// (no branch set) remain visible so existing org-wide records are not hidden.
   MachinesControllerProvider._()
       : super(
           from: null,
@@ -37,9 +46,12 @@ final class MachinesControllerProvider
 }
 
 String _$machinesControllerHash() =>
-    r'3f69c8739edad8ce9c41d6d6d656f38b0fc11cbc';
+    r'fb94e7777a9457de7cce0b5265b4d629b234c61c';
 
 /// Controller for managing machine list state.
+///
+/// Machines are scoped to the current working branch. Unassigned machines
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 
 abstract class _$MachinesController extends $AsyncNotifier<List<Machine>> {
   FutureOr<List<Machine>> build();

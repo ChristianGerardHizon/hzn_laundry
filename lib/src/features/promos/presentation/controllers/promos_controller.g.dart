@@ -36,7 +36,7 @@ final class PromosControllerProvider
   PromosController create() => PromosController();
 }
 
-String _$promosControllerHash() => r'3f484c23142bfe60840490e74816be68b89a5429';
+String _$promosControllerHash() => r'a7955dcacd7c2b369b8e0d0658611a61dcdb8944';
 
 /// Controller for managing the list of promos.
 

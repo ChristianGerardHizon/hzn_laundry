@@ -17,6 +17,7 @@ class Service with ServiceMappable {
     this.categoryName,
     this.branch,
     this.price = 0,
+    this.minimumCharge = 0,
     this.isVariablePrice = false,
     this.estimatedDuration,
     this.weightBased = false,
@@ -51,6 +52,10 @@ class Service with ServiceMappable {
 
   /// Service price.
   final num price;
+
+  /// Minimum total charged for this service, regardless of quantity.
+  /// When 0, there is no floor (total is just price × quantity or tier total).
+  final num minimumCharge;
 
   /// Whether this service has a variable price (entered at POS).
   final bool isVariablePrice;
@@ -90,6 +95,12 @@ class Service with ServiceMappable {
 
   /// Whether this service requires price entry at POS.
   bool get hasVariablePrice => isVariablePrice || price <= 0;
+
+  /// Whether a positive max quantity cap is configured.
+  bool get hasMaxQuantity => maxQuantity != null && maxQuantity! > 0;
+
+  /// Max quantity for POS/cart caps; null means unlimited.
+  int? get effectiveMaxQuantity => hasMaxQuantity ? maxQuantity : null;
 
   /// Whether this service has a category.
   bool get hasCategory => categoryId != null && categoryId!.isNotEmpty;

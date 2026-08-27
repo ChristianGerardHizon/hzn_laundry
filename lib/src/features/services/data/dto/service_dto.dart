@@ -22,6 +22,7 @@ class ServiceDto with ServiceDtoMappable {
   final String? categoryName;
   final String? branch;
   final num price;
+  final num minimumCharge;
   final bool isVariablePrice;
   final num? estimatedDuration;
   final bool weightBased;
@@ -45,6 +46,7 @@ class ServiceDto with ServiceDtoMappable {
     this.categoryName,
     this.branch,
     this.price = 0,
+    this.minimumCharge = 0,
     this.isVariablePrice = false,
     this.estimatedDuration,
     this.weightBased = false,
@@ -86,6 +88,7 @@ class ServiceDto with ServiceDtoMappable {
       categoryName: categoryName,
       branch: json['branch'] as String?,
       price: json['price'] as num? ?? 0,
+      minimumCharge: json['minimumCharge'] as num? ?? 0,
       isVariablePrice: json['isVariablePrice'] as bool? ?? false,
       estimatedDuration: json['estimatedDuration'] as num?,
       weightBased: json['weightBased'] as bool? ?? false,
@@ -111,6 +114,7 @@ class ServiceDto with ServiceDtoMappable {
       categoryName: categoryName,
       branch: branch,
       price: price,
+      minimumCharge: minimumCharge,
       isVariablePrice: isVariablePrice,
       estimatedDuration: estimatedDuration,
       weightBased: weightBased,

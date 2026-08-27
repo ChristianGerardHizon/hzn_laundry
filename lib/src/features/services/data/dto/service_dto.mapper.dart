@@ -67,6 +67,13 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
     opt: true,
     def: 0,
   );
+  static num _$minimumCharge(ServiceDto v) => v.minimumCharge;
+  static const Field<ServiceDto, num> _f$minimumCharge = Field(
+    'minimumCharge',
+    _$minimumCharge,
+    opt: true,
+    def: 0,
+  );
   static bool _$isVariablePrice(ServiceDto v) => v.isVariablePrice;
   static const Field<ServiceDto, bool> _f$isVariablePrice = Field(
     'isVariablePrice',
@@ -158,6 +165,7 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
     #categoryName: _f$categoryName,
     #branch: _f$branch,
     #price: _f$price,
+    #minimumCharge: _f$minimumCharge,
     #isVariablePrice: _f$isVariablePrice,
     #estimatedDuration: _f$estimatedDuration,
     #weightBased: _f$weightBased,
@@ -183,6 +191,7 @@ class ServiceDtoMapper extends ClassMapperBase<ServiceDto> {
       categoryName: data.dec(_f$categoryName),
       branch: data.dec(_f$branch),
       price: data.dec(_f$price),
+      minimumCharge: data.dec(_f$minimumCharge),
       isVariablePrice: data.dec(_f$isVariablePrice),
       estimatedDuration: data.dec(_f$estimatedDuration),
       weightBased: data.dec(_f$weightBased),
@@ -259,7 +268,7 @@ extension ServiceDtoValueCopy<$R, $Out>
 abstract class ServiceDtoCopyWith<$R, $In extends ServiceDto, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   QuantityUnitCopyWith<$R, QuantityUnit, QuantityUnit>?
-  get quantityUnitExpanded;
+      get quantityUnitExpanded;
   $R call({
     String? id,
     String? collectionId,
@@ -270,6 +279,7 @@ abstract class ServiceDtoCopyWith<$R, $In extends ServiceDto, $Out>
     String? categoryName,
     String? branch,
     num? price,
+    num? minimumCharge,
     bool? isVariablePrice,
     num? estimatedDuration,
     bool? weightBased,
@@ -296,9 +306,9 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
       ServiceDtoMapper.ensureInitialized();
   @override
   QuantityUnitCopyWith<$R, QuantityUnit, QuantityUnit>?
-  get quantityUnitExpanded => $value.quantityUnitExpanded?.copyWith.$chain(
-    (v) => call(quantityUnitExpanded: v),
-  );
+      get quantityUnitExpanded => $value.quantityUnitExpanded?.copyWith.$chain(
+            (v) => call(quantityUnitExpanded: v),
+          );
   @override
   $R call({
     String? id,
@@ -310,6 +320,7 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
     Object? categoryName = $none,
     Object? branch = $none,
     num? price,
+    num? minimumCharge,
     bool? isVariablePrice,
     Object? estimatedDuration = $none,
     bool? weightBased,
@@ -322,66 +333,69 @@ class _ServiceDtoCopyWithImpl<$R, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (name != null) #name: name,
-      if (description != $none) #description: description,
-      if (category != $none) #category: category,
-      if (categoryName != $none) #categoryName: categoryName,
-      if (branch != $none) #branch: branch,
-      if (price != null) #price: price,
-      if (isVariablePrice != null) #isVariablePrice: isVariablePrice,
-      if (estimatedDuration != $none) #estimatedDuration: estimatedDuration,
-      if (weightBased != null) #weightBased: weightBased,
-      if (showPrompt != null) #showPrompt: showPrompt,
-      if (maxQuantity != $none) #maxQuantity: maxQuantity,
-      if (allowExcess != null) #allowExcess: allowExcess,
-      if (quantityUnit != $none) #quantityUnit: quantityUnit,
-      if (quantityUnitExpanded != $none)
-        #quantityUnitExpanded: quantityUnitExpanded,
-      if (isDefault != null) #isDefault: isDefault,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (name != null) #name: name,
+          if (description != $none) #description: description,
+          if (category != $none) #category: category,
+          if (categoryName != $none) #categoryName: categoryName,
+          if (branch != $none) #branch: branch,
+          if (price != null) #price: price,
+          if (minimumCharge != null) #minimumCharge: minimumCharge,
+          if (isVariablePrice != null) #isVariablePrice: isVariablePrice,
+          if (estimatedDuration != $none) #estimatedDuration: estimatedDuration,
+          if (weightBased != null) #weightBased: weightBased,
+          if (showPrompt != null) #showPrompt: showPrompt,
+          if (maxQuantity != $none) #maxQuantity: maxQuantity,
+          if (allowExcess != null) #allowExcess: allowExcess,
+          if (quantityUnit != $none) #quantityUnit: quantityUnit,
+          if (quantityUnitExpanded != $none)
+            #quantityUnitExpanded: quantityUnitExpanded,
+          if (isDefault != null) #isDefault: isDefault,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   ServiceDto $make(CopyWithData data) => ServiceDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    name: data.get(#name, or: $value.name),
-    description: data.get(#description, or: $value.description),
-    category: data.get(#category, or: $value.category),
-    categoryName: data.get(#categoryName, or: $value.categoryName),
-    branch: data.get(#branch, or: $value.branch),
-    price: data.get(#price, or: $value.price),
-    isVariablePrice: data.get(#isVariablePrice, or: $value.isVariablePrice),
-    estimatedDuration: data.get(
-      #estimatedDuration,
-      or: $value.estimatedDuration,
-    ),
-    weightBased: data.get(#weightBased, or: $value.weightBased),
-    showPrompt: data.get(#showPrompt, or: $value.showPrompt),
-    maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
-    allowExcess: data.get(#allowExcess, or: $value.allowExcess),
-    quantityUnit: data.get(#quantityUnit, or: $value.quantityUnit),
-    quantityUnitExpanded: data.get(
-      #quantityUnitExpanded,
-      or: $value.quantityUnitExpanded,
-    ),
-    isDefault: data.get(#isDefault, or: $value.isDefault),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        name: data.get(#name, or: $value.name),
+        description: data.get(#description, or: $value.description),
+        category: data.get(#category, or: $value.category),
+        categoryName: data.get(#categoryName, or: $value.categoryName),
+        branch: data.get(#branch, or: $value.branch),
+        price: data.get(#price, or: $value.price),
+        minimumCharge: data.get(#minimumCharge, or: $value.minimumCharge),
+        isVariablePrice: data.get(#isVariablePrice, or: $value.isVariablePrice),
+        estimatedDuration: data.get(
+          #estimatedDuration,
+          or: $value.estimatedDuration,
+        ),
+        weightBased: data.get(#weightBased, or: $value.weightBased),
+        showPrompt: data.get(#showPrompt, or: $value.showPrompt),
+        maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
+        allowExcess: data.get(#allowExcess, or: $value.allowExcess),
+        quantityUnit: data.get(#quantityUnit, or: $value.quantityUnit),
+        quantityUnitExpanded: data.get(
+          #quantityUnitExpanded,
+          or: $value.quantityUnitExpanded,
+        ),
+        isDefault: data.get(#isDefault, or: $value.isDefault),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   ServiceDtoCopyWith<$R2, ServiceDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _ServiceDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _ServiceDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

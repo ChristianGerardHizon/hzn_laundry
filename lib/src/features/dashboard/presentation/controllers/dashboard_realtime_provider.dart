@@ -11,6 +11,7 @@ import 'dashboard_refresh.dart';
 import 'inventory_alerts_controller.dart';
 import 'kanban_sales_controller.dart';
 import 'dashboard_kpi_provider.dart';
+import 'incomplete_orders_controller.dart';
 import 'loads_summary_controller.dart';
 import 'new_customers_controller.dart';
 import 'sales_summary_controller.dart';
@@ -53,6 +54,7 @@ Raw<void> dashboardRealtime(Ref ref) {
       ref.invalidate(todayIncentiveSummaryProvider);
       ref.invalidate(addOnsSummaryProvider);
       ref.invalidate(loadsSummaryProvider);
+      ref.invalidate(incompleteOrdersProvider);
       ref.invalidate(topSellingProductsProvider);
       ref.invalidate(topSellingServicesProvider);
     });

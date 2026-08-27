@@ -186,7 +186,7 @@ class _ServiceCard extends ConsumerWidget {
             showQuantityPromptDialog(
               context,
               serviceName: service.name,
-              maxQuantity: service.maxQuantity,
+              maxQuantity: service.effectiveMaxQuantity,
               allowExcess: service.allowExcess,
               unitLabel: service.quantityUnit?.shortPlural,
             ).then((quantity) {
@@ -208,7 +208,7 @@ class _ServiceCard extends ConsumerWidget {
       showQuantityPromptDialog(
         context,
         serviceName: service.name,
-        maxQuantity: service.maxQuantity,
+        maxQuantity: service.effectiveMaxQuantity,
         allowExcess: service.allowExcess,
         unitLabel: service.quantityUnit?.shortPlural,
       ).then((quantity) {
@@ -239,7 +239,7 @@ class _ServiceCard extends ConsumerWidget {
     int quantity, {
     num? customPrice,
   }) async {
-    final max = service.maxQuantity;
+    final max = service.effectiveMaxQuantity;
 
     // If no max, allowExcess is false, or quantity is within max, add normally
     if (max == null || max <= 0 || !service.allowExcess || quantity <= max) {

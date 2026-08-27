@@ -112,7 +112,7 @@ class SaleServiceItemMapper extends ClassMapperBase<SaleServiceItem> {
   static List<StorageLocation> _$storageLocations(SaleServiceItem v) =>
       v.storageLocations;
   static const Field<SaleServiceItem, List<StorageLocation>>
-  _f$storageLocations = Field(
+      _f$storageLocations = Field(
     'storageLocations',
     _$storageLocations,
     opt: true,
@@ -211,12 +211,12 @@ mixin SaleServiceItemMappable {
   }
 
   SaleServiceItemCopyWith<SaleServiceItem, SaleServiceItem, SaleServiceItem>
-  get copyWith =>
-      _SaleServiceItemCopyWithImpl<SaleServiceItem, SaleServiceItem>(
-        this as SaleServiceItem,
-        $identity,
-        $identity,
-      );
+      get copyWith =>
+          _SaleServiceItemCopyWithImpl<SaleServiceItem, SaleServiceItem>(
+            this as SaleServiceItem,
+            $identity,
+            $identity,
+          );
   @override
   String toString() {
     return SaleServiceItemMapper.ensureInitialized().stringifyValue(
@@ -252,16 +252,13 @@ abstract class SaleServiceItemCopyWith<$R, $In extends SaleServiceItem, $Out>
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machineIds;
   MachineCopyWith<$R, Machine, Machine>? get machine;
   MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>
-  get machineLoadCounts;
+      get machineLoadCounts;
   MapCopyWith<$R, String, double, ObjectCopyWith<$R, double, double>>
-  get machineWeights;
+      get machineWeights;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storageIds;
-  ListCopyWith<
-    $R,
-    StorageLocation,
-    StorageLocationCopyWith<$R, StorageLocation, StorageLocation>
-  >
-  get storageLocations;
+  ListCopyWith<$R, StorageLocation,
+          StorageLocationCopyWith<$R, StorageLocation, StorageLocation>>
+      get storageLocations;
   $R call({
     String? id,
     String? saleId,
@@ -312,18 +309,18 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
       $value.machine?.copyWith.$chain((v) => call(machine: v));
   @override
   MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>
-  get machineLoadCounts => MapCopyWith(
-    $value.machineLoadCounts,
-    (v, t) => ObjectCopyWith(v, $identity, t),
-    (v) => call(machineLoadCounts: v),
-  );
+      get machineLoadCounts => MapCopyWith(
+            $value.machineLoadCounts,
+            (v, t) => ObjectCopyWith(v, $identity, t),
+            (v) => call(machineLoadCounts: v),
+          );
   @override
   MapCopyWith<$R, String, double, ObjectCopyWith<$R, double, double>>
-  get machineWeights => MapCopyWith(
-    $value.machineWeights,
-    (v, t) => ObjectCopyWith(v, $identity, t),
-    (v) => call(machineWeights: v),
-  );
+      get machineWeights => MapCopyWith(
+            $value.machineWeights,
+            (v, t) => ObjectCopyWith(v, $identity, t),
+            (v) => call(machineWeights: v),
+          );
   @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storageIds =>
       ListCopyWith(
@@ -332,16 +329,13 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
         (v) => call(storageIds: v),
       );
   @override
-  ListCopyWith<
-    $R,
-    StorageLocation,
-    StorageLocationCopyWith<$R, StorageLocation, StorageLocation>
-  >
-  get storageLocations => ListCopyWith(
-    $value.storageLocations,
-    (v, t) => v.copyWith.$chain(t),
-    (v) => call(storageLocations: v),
-  );
+  ListCopyWith<$R, StorageLocation,
+          StorageLocationCopyWith<$R, StorageLocation, StorageLocation>>
+      get storageLocations => ListCopyWith(
+            $value.storageLocations,
+            (v, t) => v.copyWith.$chain(t),
+            (v) => call(storageLocations: v),
+          );
   @override
   $R call({
     String? id,
@@ -364,60 +358,62 @@ class _SaleServiceItemCopyWithImpl<$R, $Out>
     Object? status = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (saleId != null) #saleId: saleId,
-      if (serviceId != null) #serviceId: serviceId,
-      if (serviceName != null) #serviceName: serviceName,
-      if (quantity != null) #quantity: quantity,
-      if (unitPrice != null) #unitPrice: unitPrice,
-      if (subtotal != null) #subtotal: subtotal,
-      if (service != $none) #service: service,
-      if (machineIds != null) #machineIds: machineIds,
-      if (machineId != $none) #machineId: machineId,
-      if (machineName != $none) #machineName: machineName,
-      if (machine != $none) #machine: machine,
-      if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
-      if (machineWeights != null) #machineWeights: machineWeights,
-      if (storageIds != null) #storageIds: storageIds,
-      if (storageName != $none) #storageName: storageName,
-      if (storageLocations != null) #storageLocations: storageLocations,
-      if (status != $none) #status: status,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (saleId != null) #saleId: saleId,
+          if (serviceId != null) #serviceId: serviceId,
+          if (serviceName != null) #serviceName: serviceName,
+          if (quantity != null) #quantity: quantity,
+          if (unitPrice != null) #unitPrice: unitPrice,
+          if (subtotal != null) #subtotal: subtotal,
+          if (service != $none) #service: service,
+          if (machineIds != null) #machineIds: machineIds,
+          if (machineId != $none) #machineId: machineId,
+          if (machineName != $none) #machineName: machineName,
+          if (machine != $none) #machine: machine,
+          if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
+          if (machineWeights != null) #machineWeights: machineWeights,
+          if (storageIds != null) #storageIds: storageIds,
+          if (storageName != $none) #storageName: storageName,
+          if (storageLocations != null) #storageLocations: storageLocations,
+          if (status != $none) #status: status,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   SaleServiceItem $make(CopyWithData data) => SaleServiceItem(
-    id: data.get(#id, or: $value.id),
-    saleId: data.get(#saleId, or: $value.saleId),
-    serviceId: data.get(#serviceId, or: $value.serviceId),
-    serviceName: data.get(#serviceName, or: $value.serviceName),
-    quantity: data.get(#quantity, or: $value.quantity),
-    unitPrice: data.get(#unitPrice, or: $value.unitPrice),
-    subtotal: data.get(#subtotal, or: $value.subtotal),
-    service: data.get(#service, or: $value.service),
-    machineIds: data.get(#machineIds, or: $value.machineIds),
-    machineId: data.get(#machineId, or: $value.machineId),
-    machineName: data.get(#machineName, or: $value.machineName),
-    machine: data.get(#machine, or: $value.machine),
-    machineLoadCounts: data.get(
-      #machineLoadCounts,
-      or: $value.machineLoadCounts,
-    ),
-    machineWeights: data.get(#machineWeights, or: $value.machineWeights),
-    storageIds: data.get(#storageIds, or: $value.storageIds),
-    storageName: data.get(#storageName, or: $value.storageName),
-    storageLocations: data.get(#storageLocations, or: $value.storageLocations),
-    status: data.get(#status, or: $value.status),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        saleId: data.get(#saleId, or: $value.saleId),
+        serviceId: data.get(#serviceId, or: $value.serviceId),
+        serviceName: data.get(#serviceName, or: $value.serviceName),
+        quantity: data.get(#quantity, or: $value.quantity),
+        unitPrice: data.get(#unitPrice, or: $value.unitPrice),
+        subtotal: data.get(#subtotal, or: $value.subtotal),
+        service: data.get(#service, or: $value.service),
+        machineIds: data.get(#machineIds, or: $value.machineIds),
+        machineId: data.get(#machineId, or: $value.machineId),
+        machineName: data.get(#machineName, or: $value.machineName),
+        machine: data.get(#machine, or: $value.machine),
+        machineLoadCounts: data.get(
+          #machineLoadCounts,
+          or: $value.machineLoadCounts,
+        ),
+        machineWeights: data.get(#machineWeights, or: $value.machineWeights),
+        storageIds: data.get(#storageIds, or: $value.storageIds),
+        storageName: data.get(#storageName, or: $value.storageName),
+        storageLocations:
+            data.get(#storageLocations, or: $value.storageLocations),
+        status: data.get(#status, or: $value.status),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   SaleServiceItemCopyWith<$R2, SaleServiceItem, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _SaleServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _SaleServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

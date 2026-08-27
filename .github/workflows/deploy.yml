@@ -17,6 +17,7 @@ concurrency:
 
 permissions:
   contents: write # REQUIRED for creating GitHub Releases
+  pull-requests: read # Compile release notes from merged staging PRs
 
 jobs:
   # ==========================================
@@ -238,12 +239,23 @@ jobs:
       # --- SSH DEPLOY END ---
 
       # RELEASE
+      - name: Compile release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/compile_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --mode staging \
+            --output-markdown release-notes/release-notes.md \
+            --output-play release-notes/whatsnew/whatsnew-en-US
+
       - name: Create Staging Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.STAGING_TAG }}
           target_commitish: ${{ github.sha }}
           name: ${{ env.STAGING_TAG }}
+          body_path: release-notes/release-notes.md
           prerelease: true
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
@@ -511,6 +523,15 @@ jobs:
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
 
+      - name: Build App Bundle (Release)
+        env:
+          CI: "true"
+          CM_KEYSTORE_PATH: ${{ github.workspace }}/android/app/upload-keystore.jks
+          CM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: flutter build appbundle --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
+
       # --- SSH DEPLOY START ---
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -553,6 +574,54 @@ jobs:
           name: app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 1
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 1
+
+      - name: Compile release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 .github/scripts/compile_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --mode production \
+            --output-markdown release-notes/release-notes.md \
+            --output-play release-notes/whatsnew/whatsnew-en-US
+
+      - name: Upload release notes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes/
+          retention-days: 1
+
+      - name: Detect Play upload credentials
+        id: play_upload
+        env:
+          PLAYSTORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAYSTORE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload to Google Play (internal testing)
+        if: steps.play_upload.outputs.enabled == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.hznsystems.hizonelaundry
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          releaseName: ${{ env.PROD_VER }}
+          whatsNewDirectory: release-notes/whatsnew
+          changesNotSentForReview: true
 
   # ==========================================
   # JOB 2b: WINDOWS BUILD (PRODUCTION) — opt-in via 'build-windows' label
@@ -655,13 +724,26 @@ jobs:
         with:
           name: app-release-apk
 
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release-aab
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.deploy-production.outputs.prod_ver }}
           target_commitish: ${{ needs.deploy-production.outputs.commit_sha }}
           name: "v${{ needs.deploy-production.outputs.prod_ver }}"
-          files: app-release.apk
+          body_path: release-notes/release-notes.md
+          files: |
+            app-release.apk
+            app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

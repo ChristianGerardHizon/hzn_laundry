@@ -125,16 +125,10 @@ mixin ServicePriceTierDtoMappable {
         .encodeMap<ServicePriceTierDto>(this as ServicePriceTierDto);
   }
 
-  ServicePriceTierDtoCopyWith<
-    ServicePriceTierDto,
-    ServicePriceTierDto,
-    ServicePriceTierDto
-  >
-  get copyWith =>
-      _ServicePriceTierDtoCopyWithImpl<
-        ServicePriceTierDto,
-        ServicePriceTierDto
-      >(this as ServicePriceTierDto, $identity, $identity);
+  ServicePriceTierDtoCopyWith<ServicePriceTierDto, ServicePriceTierDto,
+      ServicePriceTierDto> get copyWith => _ServicePriceTierDtoCopyWithImpl<
+          ServicePriceTierDto, ServicePriceTierDto>(
+      this as ServicePriceTierDto, $identity, $identity);
   @override
   String toString() {
     return ServicePriceTierDtoMapper.ensureInitialized().stringifyValue(
@@ -161,17 +155,13 @@ mixin ServicePriceTierDtoMappable {
 extension ServicePriceTierDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, ServicePriceTierDto, $Out> {
   ServicePriceTierDtoCopyWith<$R, ServicePriceTierDto, $Out>
-  get $asServicePriceTierDto => $base.as(
-    (v, t, t2) => _ServicePriceTierDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asServicePriceTierDto => $base.as(
+            (v, t, t2) => _ServicePriceTierDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
-abstract class ServicePriceTierDtoCopyWith<
-  $R,
-  $In extends ServicePriceTierDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+abstract class ServicePriceTierDtoCopyWith<$R, $In extends ServicePriceTierDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   $R call({
     String? id,
     String? collectionId,
@@ -209,37 +199,37 @@ class _ServicePriceTierDtoCopyWithImpl<$R, $Out>
     Object? flatPrice = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (service != null) #service: service,
-      if (minQuantity != null) #minQuantity: minQuantity,
-      if (maxQuantity != $none) #maxQuantity: maxQuantity,
-      if (pricePerUnit != null) #pricePerUnit: pricePerUnit,
-      if (flatPrice != $none) #flatPrice: flatPrice,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (service != null) #service: service,
+          if (minQuantity != null) #minQuantity: minQuantity,
+          if (maxQuantity != $none) #maxQuantity: maxQuantity,
+          if (pricePerUnit != null) #pricePerUnit: pricePerUnit,
+          if (flatPrice != $none) #flatPrice: flatPrice,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   ServicePriceTierDto $make(CopyWithData data) => ServicePriceTierDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    service: data.get(#service, or: $value.service),
-    minQuantity: data.get(#minQuantity, or: $value.minQuantity),
-    maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
-    pricePerUnit: data.get(#pricePerUnit, or: $value.pricePerUnit),
-    flatPrice: data.get(#flatPrice, or: $value.flatPrice),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        service: data.get(#service, or: $value.service),
+        minQuantity: data.get(#minQuantity, or: $value.minQuantity),
+        maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
+        pricePerUnit: data.get(#pricePerUnit, or: $value.pricePerUnit),
+        flatPrice: data.get(#flatPrice, or: $value.flatPrice),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   ServicePriceTierDtoCopyWith<$R2, ServicePriceTierDto, $Out2>
-  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-      _ServicePriceTierDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+          _ServicePriceTierDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

@@ -104,13 +104,9 @@ mixin ServiceCategoryDtoMappable {
         .encodeMap<ServiceCategoryDto>(this as ServiceCategoryDto);
   }
 
-  ServiceCategoryDtoCopyWith<
-    ServiceCategoryDto,
-    ServiceCategoryDto,
-    ServiceCategoryDto
-  >
-  get copyWith =>
-      _ServiceCategoryDtoCopyWithImpl<ServiceCategoryDto, ServiceCategoryDto>(
+  ServiceCategoryDtoCopyWith<ServiceCategoryDto, ServiceCategoryDto,
+      ServiceCategoryDto> get copyWith => _ServiceCategoryDtoCopyWithImpl<
+          ServiceCategoryDto, ServiceCategoryDto>(
         this as ServiceCategoryDto,
         $identity,
         $identity,
@@ -141,17 +137,13 @@ mixin ServiceCategoryDtoMappable {
 extension ServiceCategoryDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, ServiceCategoryDto, $Out> {
   ServiceCategoryDtoCopyWith<$R, ServiceCategoryDto, $Out>
-  get $asServiceCategoryDto => $base.as(
-    (v, t, t2) => _ServiceCategoryDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asServiceCategoryDto => $base.as(
+            (v, t, t2) => _ServiceCategoryDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
-abstract class ServiceCategoryDtoCopyWith<
-  $R,
-  $In extends ServiceCategoryDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+abstract class ServiceCategoryDtoCopyWith<$R, $In extends ServiceCategoryDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   $R call({
     String? id,
     String? collectionId,
@@ -183,31 +175,32 @@ class _ServiceCategoryDtoCopyWithImpl<$R, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (name != null) #name: name,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (name != null) #name: name,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   ServiceCategoryDto $make(CopyWithData data) => ServiceCategoryDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    name: data.get(#name, or: $value.name),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        name: data.get(#name, or: $value.name),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   ServiceCategoryDtoCopyWith<$R2, ServiceCategoryDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _ServiceCategoryDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _ServiceCategoryDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

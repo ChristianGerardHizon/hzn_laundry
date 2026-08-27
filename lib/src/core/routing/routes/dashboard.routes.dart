@@ -8,7 +8,7 @@ import '../../../features/users/domain/user_role.dart';
 import '../../widgets/nav_permissions.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_realtime_provider.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_refresh.dart';
-import '../../../features/dashboard/presentation/widgets/attendance_alert_section.dart';
+import '../../../features/dashboard/presentation/widgets/dashboard_alerts_row.dart';
 import '../../../features/dashboard/presentation/widgets/date_override_banner.dart';
 import '../../../features/dashboard/presentation/widgets/inventory_alerts_section.dart';
 import '../../../features/dashboard/presentation/widgets/kanban_board_section.dart';
@@ -72,24 +72,16 @@ class DashboardPage extends ConsumerWidget {
               const _MobileDashboardHeader(),
               const SizedBox(height: 8),
 
-              // Warning banner when date is overridden
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: DateOverrideBanner(),
-              ),
-              const SizedBox(height: 8),
-
               // Sales Summary Section (collapsible) — includes incentive KPI
               const SalesSummarySection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+
+              const DashboardAlertsRow(),
+              const SizedBox(height: 12),
 
               // Quick Actions Section
               const QuickActionsSection(),
               const SizedBox(height: 16),
-
-              // Attendance Alert (shown when not all employees are marked)
-              const AttendanceAlertSection(),
-              const SizedBox(height: 24),
 
               // Order Board (Kanban)
               KanbanBoardSection(),
@@ -193,35 +185,44 @@ class _MobileDashboardHeader extends ConsumerWidget {
           if (canOverrideDate || isOverridden)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: InkWell(
-                onTap: canOverrideDate ? pickDate : null,
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: isOverridden
-                            ? overrideColor
-                            : theme.colorScheme.outline,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  InkWell(
+                    onTap: canOverrideDate ? pickDate : null,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: isOverridden
+                                ? overrideColor
+                                : theme.colorScheme.outline,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            DateFormat('EEEE, MMMM d, yyyy')
+                                .format(effectiveDate),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isOverridden
+                                  ? overrideColor
+                                  : theme.colorScheme.outline,
+                              fontWeight:
+                                  isOverridden ? FontWeight.w600 : null,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        DateFormat('EEEE, MMMM d, yyyy').format(effectiveDate),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isOverridden
-                              ? overrideColor
-                              : theme.colorScheme.outline,
-                          fontWeight:
-                              isOverridden ? FontWeight.w600 : null,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  if (isOverridden) const DateOverrideBanner(),
+                ],
               ),
             ),
         ],

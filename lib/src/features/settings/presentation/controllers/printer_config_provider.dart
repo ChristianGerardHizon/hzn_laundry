@@ -1,3 +1,4 @@
+import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/repositories/printer_config_repository.dart';
@@ -36,6 +37,19 @@ Future<PrinterConfig?> defaultPrinter(Ref ref) async {
       (failure) => null,
       (config) => config,
     );
+
+    final isNotFound = result.fold(
+      (f) =>
+          f.message is ClientException &&
+          (f.message as ClientException).statusCode == 404,
+      (_) => false,
+    );
+    if (isNotFound) {
+      await ref
+          .read(localDefaultPrinterIdProvider.notifier)
+          .clearLocalDefault();
+    }
+
     // Only use local default if the printer exists and is enabled
     if (localPrinter != null && localPrinter.isEnabled) {
       return localPrinter;

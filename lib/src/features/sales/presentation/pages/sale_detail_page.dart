@@ -31,6 +31,7 @@ import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart
 import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
+import '../widgets/prepare_order_for_ready.dart';
 import '../../../users/domain/user_role.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
@@ -668,16 +669,13 @@ class _SaleDetailContent extends HookConsumerWidget {
           if (result == null || !context.mounted) return;
         }
       } else if (status == OrderStatus.ready) {
-        final serviceItems =
-            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
-        if (serviceItems.isNotEmpty) {
-          final result = await showAssignStoragesDialog(
-            context,
-            saleId: sale.id,
-            serviceItems: serviceItems,
-          );
-          if (result == null || !context.mounted) return;
-        }
+        final prepared = await prepareOrderForReadyStatus(
+          context: context,
+          ref: ref,
+          saleId: sale.id,
+          sale: sale,
+        );
+        if (!prepared || !context.mounted) return;
       }
 
       // Invalidate and re-fetch service items so assignments saved by dialogs are reflected
@@ -708,9 +706,22 @@ class _SaleDetailContent extends HookConsumerWidget {
       }
 
       if (status == OrderStatus.ready) {
-        final packRequired =
-            ref.read(requirePackEnabledProvider).value ?? false;
-        if (packRequired && sale.packs == 0) {
+        final missingMachines = freshServiceItems.isNotEmpty &&
+            freshServiceItems.any((item) => !serviceItemHasMachine(item));
+        if (missingMachines) {
+          if (context.mounted) {
+            showErrorSnackBar(
+              context,
+              message:
+                  'All services must have a machine assigned before marking as Ready.',
+            );
+          }
+          return;
+        }
+
+        final loadedSale = await ref.read(saleProvider(sale.id).future);
+        final freshSale = loadedSale ?? sale;
+        if (freshSale.packs <= 0) {
           if (context.mounted) {
             showErrorSnackBar(
               context,
@@ -1490,7 +1501,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton.tonalIcon(
+                        child: FilledButton.icon(
                           onPressed: () async {
                             final result = await showRecordPaymentDialog(
                               context,
@@ -1504,7 +1515,18 @@ class _SaleDetailContent extends HookConsumerWidget {
                             }
                           },
                           icon: const Icon(Icons.add),
-                          label: const Text('Record Payment'),
+                          label: const Text(
+                            'Record Payment',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
                         ),
                       ),
                     ],
@@ -1840,9 +1862,7 @@ class _ServiceItemEditTile extends HookConsumerWidget {
           ],
 
           // Assign buttons when no assignment exists
-          if (!hasMachine &&
-              !isCompleted &&
-              sale.orderStatus != OrderStatus.pending) ...[
+          if (!hasMachine && sale.orderStatus != OrderStatus.pending) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
@@ -2010,37 +2030,30 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
           ref.invalidate(saleServiceItemsProvider(saleId));
 
           if (allCompleted) {
-            // All service items completed - auto-advance to ready status
             showSuccessSnackBar(
               context,
-              message: 'All services completed! Assigning storage...',
+              message: 'All services completed! Assign machines and packs...',
             );
 
-            // Show storage assignment dialog
-            final serviceItems =
-                await ref.read(saleServiceItemsProvider(saleId).future);
-            if (serviceItems.isNotEmpty && context.mounted) {
-              final storageResult = await showAssignStoragesDialog(
-                context,
-                saleId: saleId,
-                serviceItems: serviceItems,
+            if (!context.mounted) return;
+            final prepared = await prepareOrderForReadyStatus(
+              context: context,
+              ref: ref,
+              saleId: saleId,
+            );
+            if (prepared && context.mounted) {
+              final statusResult =
+                  await repo.updateOrderStatus(saleId, OrderStatus.ready);
+              statusResult.fold(
+                (failure) {
+                  if (context.mounted) {
+                    showErrorSnackBar(context, message: failure.messageString);
+                  }
+                },
+                (_) {
+                  ref.invalidate(saleProvider(saleId));
+                },
               );
-              if (storageResult != null && context.mounted) {
-                // Update order status to ready
-                final statusResult =
-                    await repo.updateOrderStatus(saleId, OrderStatus.ready);
-                statusResult.fold(
-                  (failure) {
-                    if (context.mounted) {
-                      showErrorSnackBar(context,
-                          message: failure.messageString);
-                    }
-                  },
-                  (_) {
-                    ref.invalidate(saleProvider(saleId));
-                  },
-                );
-              }
             }
           } else {
             showSuccessSnackBar(
@@ -2122,48 +2135,58 @@ class _PrintMenuButton extends HookConsumerWidget {
       );
     }
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
-      if (isPrinting.value) return;
+    Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
+      final printer = defaultPrinterAsync.value;
+      if (printer == null) return Future.value(null);
+
+      final pdfData = buildPdfData(
+        storeCopy: copyType == OrderReceiptCopy.store,
+      );
+      final printService = ref.read(thermalPrintServiceProvider.notifier);
+
+      return printService.printOrderReceipt(
+        printer: printer,
+        customerName: pdfData.customerName,
+        serviceName: pdfData.serviceName,
+        quantity: pdfData.quantity,
+        unitLabel: pdfData.unitLabel,
+        totalAmount: pdfData.totalAmount,
+        claimSheetNumber: pdfData.claimSheetNumber,
+        copyType: copyType,
+        businessName: pdfData.businessName,
+        branchAddress: pdfData.branchAddress,
+        contactNumber: pdfData.contactNumber,
+        cashierName: pdfData.cashierName,
+        specialInstructions: pdfData.specialInstructions,
+        addOnItems: pdfData.addOnItems,
+      );
+    }
+
+    bool ensureCanPrint() {
+      if (isPrinting.value) return false;
 
       if (!isThermalPrintingSupported) {
         showErrorSnackBar(
           context,
           message: kThermalPrintingUnsupportedMessage,
         );
-        return;
+        return false;
       }
 
-      final printer = defaultPrinterAsync.value;
-      if (printer == null) {
+      if (defaultPrinterAsync.value == null) {
         showErrorSnackBar(context, message: 'No default printer configured');
-        return;
+        return false;
       }
 
-      final pdfData = buildPdfData(
-        storeCopy: copyType == OrderReceiptCopy.store,
-      );
+      return true;
+    }
+
+    Future<void> printCopy(OrderReceiptCopy copyType) async {
+      if (!ensureCanPrint()) return;
 
       isPrinting.value = true;
       try {
-        final printService = ref.read(thermalPrintServiceProvider.notifier);
-
-        final result = await printService.printOrderReceipt(
-          printer: printer,
-          customerName: pdfData.customerName,
-          serviceName: pdfData.serviceName,
-          quantity: pdfData.quantity,
-          unitLabel: pdfData.unitLabel,
-          totalAmount: pdfData.totalAmount,
-          claimSheetNumber: pdfData.claimSheetNumber,
-          copyType: copyType,
-          businessName: pdfData.businessName,
-          branchAddress: pdfData.branchAddress,
-          contactNumber: pdfData.contactNumber,
-          cashierName: pdfData.cashierName,
-          specialInstructions: pdfData.specialInstructions,
-          addOnItems: pdfData.addOnItems,
-        );
-
+        final result = await sendPrint(copyType);
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
@@ -2174,6 +2197,40 @@ class _PrintMenuButton extends HookConsumerWidget {
               : 'Claim sheet (store)';
           showSuccessSnackBar(context, message: '$label printed');
         }
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> printBothCopies() async {
+      if (!ensureCanPrint()) return;
+
+      isPrinting.value = true;
+      try {
+        final storeResult = await sendPrint(OrderReceiptCopy.store);
+        if (!context.mounted) return;
+        if (storeResult is PrintFailure) {
+          showErrorSnackBar(context, message: storeResult.message);
+          return;
+        }
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!context.mounted) return;
+
+        final customerResult = await sendPrint(OrderReceiptCopy.customer);
+        if (!context.mounted) return;
+        if (customerResult is PrintFailure) {
+          showErrorSnackBar(
+            context,
+            message: 'Claim sheet printed (customer copy failed)',
+          );
+          return;
+        }
+
+        showSuccessSnackBar(
+          context,
+          message: 'Printed: store + customer claim sheets',
+        );
       } finally {
         if (context.mounted) isPrinting.value = false;
       }
@@ -2206,6 +2263,8 @@ class _PrintMenuButton extends HookConsumerWidget {
           await printCopy(OrderReceiptCopy.customer);
         case 'print_store':
           await printCopy(OrderReceiptCopy.store);
+        case 'print_all':
+          await printBothCopies();
       }
     }
 
@@ -2254,6 +2313,16 @@ class _PrintMenuButton extends HookConsumerWidget {
             enabled: !isPrinting.value,
             onSelected: handlePrintMenuSelection,
             itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'print_all',
+                child: ListTile(
+                  leading: Icon(Icons.print),
+                  title: Text('Print All'),
+                  subtitle: Text('Store + customer'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'print_customer',
                 child: ListTile(

@@ -5,6 +5,7 @@ task.md
 *.keystore
 key.properties
 keystore-secrets.txt
+android/keystore/
 github_secrets.txt
 *.log
 *.pyc

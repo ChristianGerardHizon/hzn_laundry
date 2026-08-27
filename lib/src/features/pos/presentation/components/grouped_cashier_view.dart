@@ -167,8 +167,8 @@ class _ProductGroupCard extends ConsumerWidget {
     final stockStatusAsync = ref.watch(posProductStockProvider(product));
 
     return stockStatusAsync.when(
-      loading: () => _buildCard(context, ref, theme,
-          stockStatus: null, isLoading: true),
+      loading: () =>
+          _buildCard(context, ref, theme, stockStatus: null, isLoading: true),
       error: (_, __) => _buildCard(context, ref, theme,
           stockStatus: ProductStatus.noThreshold),
       data: (stockStatus) =>
@@ -237,10 +237,9 @@ class _ProductGroupCard extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: (isOutOfStock
-                            ? theme.colorScheme.error
-                            : Colors.orange)
-                        .withValues(alpha: 0.9),
+                    color:
+                        (isOutOfStock ? theme.colorScheme.error : Colors.orange)
+                            .withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(
@@ -372,7 +371,7 @@ class _ServiceGroupCard extends ConsumerWidget {
             showQuantityPromptDialog(
               context,
               serviceName: service.name,
-              maxQuantity: service.maxQuantity,
+              maxQuantity: service.effectiveMaxQuantity,
               allowExcess: service.allowExcess,
               unitLabel: service.quantityUnit?.shortPlural,
             ).then((quantity) {
@@ -394,7 +393,7 @@ class _ServiceGroupCard extends ConsumerWidget {
       showQuantityPromptDialog(
         context,
         serviceName: service.name,
-        maxQuantity: service.maxQuantity,
+        maxQuantity: service.effectiveMaxQuantity,
         allowExcess: service.allowExcess,
         unitLabel: service.quantityUnit?.shortPlural,
       ).then((quantity) {
@@ -425,7 +424,7 @@ class _ServiceGroupCard extends ConsumerWidget {
     int quantity, {
     num? customPrice,
   }) async {
-    final max = service.maxQuantity;
+    final max = service.effectiveMaxQuantity;
 
     // If no max, allowExcess is false, or quantity is within max, add normally
     if (max == null || max <= 0 || !service.allowExcess || quantity <= max) {

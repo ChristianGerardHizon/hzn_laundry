@@ -27,6 +27,7 @@ class ServiceListPanel extends HookConsumerWidget {
       void listener() {
         searchQuery.value = searchController.text;
       }
+
       searchController.addListener(listener);
       return () => searchController.removeListener(listener);
     }, [searchController]);
@@ -34,9 +35,8 @@ class ServiceListPanel extends HookConsumerWidget {
     final filteredServices = searchQuery.value.isEmpty
         ? services
         : services
-            .where((s) => s.name
-                .toLowerCase()
-                .contains(searchQuery.value.toLowerCase()))
+            .where((s) =>
+                s.name.toLowerCase().contains(searchQuery.value.toLowerCase()))
             .toList();
 
     return Scaffold(
@@ -147,9 +147,7 @@ class _ServiceListTile extends StatelessWidget {
       subtitle: Row(
         children: [
           Text(
-            service.hasVariablePrice
-                ? 'Variable'
-                : service.price.toCurrency(),
+            service.hasVariablePrice ? 'Variable' : service.price.toCurrency(),
             style: TextStyle(
               color: service.hasVariablePrice
                   ? theme.colorScheme.tertiary
