@@ -12,6 +12,7 @@ class KpiCard extends StatelessWidget {
     this.onTap,
     this.width,
     this.compact = false,
+    this.highlighted = false,
   });
 
   /// The title label for this KPI.
@@ -38,6 +39,9 @@ class KpiCard extends StatelessWidget {
   /// If true, uses a compact horizontal layout (shorter height).
   final bool compact;
 
+  /// Draws a warning border so incomplete counts stand out.
+  final bool highlighted;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -56,6 +60,13 @@ class KpiCard extends StatelessWidget {
   ) {
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: highlighted ? accentColor.withValues(alpha: 0.08) : null,
+      shape: highlighted
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: accentColor, width: 1.5),
+            )
+          : null,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -128,6 +139,13 @@ class KpiCard extends StatelessWidget {
   ) {
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: highlighted ? accentColor.withValues(alpha: 0.08) : null,
+      shape: highlighted
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: accentColor, width: 1.5),
+            )
+          : null,
       child: InkWell(
         onTap: onTap,
         child: Container(

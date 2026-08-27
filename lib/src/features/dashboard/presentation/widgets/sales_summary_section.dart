@@ -9,10 +9,12 @@ import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_refresh.dart';
+import '../controllers/incomplete_orders_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/total_packs_summary_controller.dart';
 import 'add_ons_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
+import 'incomplete_orders_modal.dart';
 import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
 import 'total_packs_modal.dart';
@@ -140,6 +142,7 @@ class _SalesSummaryContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final packsAsync = ref.watch(totalPacksSummaryProvider);
+    final incompleteAsync = ref.watch(incompleteOrdersProvider);
     final addOns = AddOnsSummaryData.fromSalesItems(data.salesItems);
     final loads = LoadsSummaryData.fromSalesItems(data.salesItems);
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -244,6 +247,33 @@ class _SalesSummaryContent extends ConsumerWidget {
           color: Colors.cyan,
           onTap: () => showTotalPacksModal(context, summary),
         ),
+        loading: () => const _LoadingCard(),
+        error: (_, __) => const _LoadingCard(),
+      ),
+      incompleteAsync.when(
+        data: (summary) {
+          final hasIssues = summary.hasIssues;
+          final subtitle = !hasIssues
+              ? 'All orders complete'
+              : [
+                  if (summary.processingCount > 0)
+                    '${summary.processingCount} processing',
+                  if (summary.missingDataCount > 0)
+                    '${summary.missingDataCount} missing data',
+                ].join(' · ');
+          return KpiCard(
+            title: 'Needs Attention',
+            value: '${summary.count}',
+            icon: hasIssues
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_outline,
+            subtitle: subtitle,
+            compact: true,
+            highlighted: hasIssues,
+            color: hasIssues ? Colors.deepOrange : Colors.green,
+            onTap: () => showIncompleteOrdersModal(context, summary),
+          );
+        },
         loading: () => const _LoadingCard(),
         error: (_, __) => const _LoadingCard(),
       ),

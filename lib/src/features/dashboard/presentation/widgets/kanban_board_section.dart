@@ -15,7 +15,7 @@ import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
 import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
-import '../../../sales/presentation/widgets/assign_storages_dialog.dart';
+import '../../../sales/presentation/widgets/prepare_order_for_ready.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
@@ -45,18 +45,15 @@ Future<void> _handleKanbanDrop(
       }
     }
   } else if (targetStatus == OrderStatus.ready) {
-    final serviceItems =
-        await ref.read(saleServiceItemsProvider(sale.id).future);
-    if (context.mounted) {
-      final result = await showAssignStoragesDialog(
-        context,
-        saleId: sale.id,
-        serviceItems: serviceItems,
-      );
-      if (result == null) {
-        ref.invalidate(kanbanSalesProvider);
-        return;
-      }
+    final prepared = await prepareOrderForReadyStatus(
+      context: context,
+      ref: ref,
+      saleId: sale.id,
+      sale: sale,
+    );
+    if (!prepared) {
+      ref.invalidate(kanbanSalesProvider);
+      return;
     }
   }
 

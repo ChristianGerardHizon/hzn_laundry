@@ -31,6 +31,7 @@ import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart
 import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
+import '../widgets/prepare_order_for_ready.dart';
 import '../../../users/domain/user_role.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
@@ -668,16 +669,13 @@ class _SaleDetailContent extends HookConsumerWidget {
           if (result == null || !context.mounted) return;
         }
       } else if (status == OrderStatus.ready) {
-        final serviceItems =
-            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
-        if (serviceItems.isNotEmpty) {
-          final result = await showAssignStoragesDialog(
-            context,
-            saleId: sale.id,
-            serviceItems: serviceItems,
-          );
-          if (result == null || !context.mounted) return;
-        }
+        final prepared = await prepareOrderForReadyStatus(
+          context: context,
+          ref: ref,
+          saleId: sale.id,
+          sale: sale,
+        );
+        if (!prepared || !context.mounted) return;
       }
 
       // Invalidate and re-fetch service items so assignments saved by dialogs are reflected
@@ -708,9 +706,22 @@ class _SaleDetailContent extends HookConsumerWidget {
       }
 
       if (status == OrderStatus.ready) {
-        final packRequired =
-            ref.read(requirePackEnabledProvider).value ?? false;
-        if (packRequired && sale.packs == 0) {
+        final missingMachines = freshServiceItems.isNotEmpty &&
+            freshServiceItems.any((item) => !serviceItemHasMachine(item));
+        if (missingMachines) {
+          if (context.mounted) {
+            showErrorSnackBar(
+              context,
+              message:
+                  'All services must have a machine assigned before marking as Ready.',
+            );
+          }
+          return;
+        }
+
+        final loadedSale = await ref.read(saleProvider(sale.id).future);
+        final freshSale = loadedSale ?? sale;
+        if (freshSale.packs <= 0) {
           if (context.mounted) {
             showErrorSnackBar(
               context,
@@ -2010,37 +2021,31 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
           ref.invalidate(saleServiceItemsProvider(saleId));
 
           if (allCompleted) {
-            // All service items completed - auto-advance to ready status
             showSuccessSnackBar(
               context,
-              message: 'All services completed! Assigning storage...',
+              message: 'All services completed! Assign machines and packs...',
             );
 
-            // Show storage assignment dialog
-            final serviceItems =
-                await ref.read(saleServiceItemsProvider(saleId).future);
-            if (serviceItems.isNotEmpty && context.mounted) {
-              final storageResult = await showAssignStoragesDialog(
-                context,
-                saleId: saleId,
-                serviceItems: serviceItems,
+            if (!context.mounted) return;
+            final prepared = await prepareOrderForReadyStatus(
+              context: context,
+              ref: ref,
+              saleId: saleId,
+            );
+            if (prepared && context.mounted) {
+              final statusResult =
+                  await repo.updateOrderStatus(saleId, OrderStatus.ready);
+              statusResult.fold(
+                (failure) {
+                  if (context.mounted) {
+                    showErrorSnackBar(context,
+                        message: failure.messageString);
+                  }
+                },
+                (_) {
+                  ref.invalidate(saleProvider(saleId));
+                },
               );
-              if (storageResult != null && context.mounted) {
-                // Update order status to ready
-                final statusResult =
-                    await repo.updateOrderStatus(saleId, OrderStatus.ready);
-                statusResult.fold(
-                  (failure) {
-                    if (context.mounted) {
-                      showErrorSnackBar(context,
-                          message: failure.messageString);
-                    }
-                  },
-                  (_) {
-                    ref.invalidate(saleProvider(saleId));
-                  },
-                );
-              }
             }
           } else {
             showSuccessSnackBar(

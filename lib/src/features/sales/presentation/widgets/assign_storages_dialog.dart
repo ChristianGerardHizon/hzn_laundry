@@ -24,6 +24,7 @@ class AssignStoragesDialog extends HookConsumerWidget {
     required this.serviceItems,
     this.initialAssignments,
     this.initialPacks,
+    this.requirePacks = false,
   });
 
   final String saleId;
@@ -35,6 +36,9 @@ class AssignStoragesDialog extends HookConsumerWidget {
 
   /// Pre-populated packs count for editing.
   final int? initialPacks;
+
+  /// When true, Skip is hidden and a pack count greater than 0 is required.
+  final bool requirePacks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,6 +61,16 @@ class AssignStoragesDialog extends HookConsumerWidget {
     final activeItemIndex = useState(0);
 
     Future<void> handleAssign() async {
+      final packs = selectedPacks.value ?? 0;
+      if (requirePacks && packs <= 0) {
+        showErrorSnackBar(
+          context,
+          message: 'Set the number of packs before continuing.',
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       final repo = ref.read(salesRepositoryProvider);
       isSaving.value = true;
 
@@ -300,10 +314,11 @@ class AssignStoragesDialog extends HookConsumerWidget {
               onPressed: isSaving.value ? null : () => context.pop(null),
               child: const Text('Cancel'),
             ),
-            TextButton(
-              onPressed: isSaving.value ? null : () => context.pop(true),
-              child: const Text('Skip'),
-            ),
+            if (!requirePacks)
+              TextButton(
+                onPressed: isSaving.value ? null : () => context.pop(true),
+                child: const Text('Skip'),
+              ),
             FilledButton(
               onPressed: isSaving.value ? null : handleAssign,
               child: isSaving.value
@@ -496,6 +511,7 @@ Future<bool?> showAssignStoragesDialog(
   required List<SaleServiceItem> serviceItems,
   Map<String, List<String>>? initialAssignments,
   int? initialPacks,
+  bool requirePacks = false,
 }) {
   return showDialog<bool>(
     context: context,
@@ -505,6 +521,7 @@ Future<bool?> showAssignStoragesDialog(
       serviceItems: serviceItems,
       initialAssignments: initialAssignments,
       initialPacks: initialPacks,
+      requirePacks: requirePacks,
     ),
   );
 }

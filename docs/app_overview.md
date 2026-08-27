@@ -89,11 +89,11 @@ Customer (member) management with sales history tracking. Customers are scoped t
 - **All Branches**: Admins can view customers across branches; creating a customer requires a specific branch
 
 #### Dashboard (`/`)
-Home screen with quick summary and today's appointments.
+Home screen with today's sales KPIs, kanban board, and operational alerts.
 
 - Responsive layout (single column mobile, two-pane tablet)
-- Quick summary cards
-- Today's appointments section
+- Sales summary KPI cards (including Needs Attention for incomplete order details)
+- Kanban board for order status; Ready-for-pickup requires machines and pack count
 
 ---
 
@@ -570,6 +570,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 28 | Ready pickup completeness | Moving an order to Ready always asks for machines and pack count. Dashboard Needs Attention KPI lists processing orders plus Ready / same-day Picked Up orders missing machines or packs |
 | Aug 26 | Branch-scoped catalogs | Order add-ons, POS product/service grids, cashier search, and POS group pickers now show only the current branch's products and services. New machines and storage locations are stamped with the current branch |
 | Aug 17 | Dashboard Add-ons / Loads KPIs | Add-ons Sold and Loads now aggregate from today's already-fetched sale line items instead of full-history PocketBase views (`vw_add_ons_summary`, `vw_loads_summary` removed) |
 | Aug 17 | Products list across branches | Products list rule now allows any logged-in user to list products; the app still filters by the selected branch, so admins switching branches (e.g. Hi-Zone → Magsaysay) can see that branch's catalog |

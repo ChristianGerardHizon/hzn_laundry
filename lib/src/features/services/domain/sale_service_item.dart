@@ -97,4 +97,10 @@ class SaleServiceItem with SaleServiceItemMappable {
 
   /// Last update timestamp.
   final DateTime? updated;
+
+  /// True when this line has at least one assigned machine.
+  bool get hasMachineAssigned {
+    if (machineIds.any((id) => id.isNotEmpty)) return true;
+    return machineName != null && machineName!.isNotEmpty;
+  }
 }
