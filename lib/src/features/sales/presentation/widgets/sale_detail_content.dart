@@ -511,7 +511,7 @@ class _ServiceItemTile extends HookConsumerWidget {
           ],
 
           // Assign buttons when no assignment exists
-          if (!hasMachine && !isCompleted) ...[
+          if (!hasMachine) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
