@@ -15,6 +15,7 @@ class CartServiceItemMapper extends ClassMapperBase<CartServiceItem> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = CartServiceItemMapper._());
       ServiceMapper.ensureInitialized();
+      ServicePriceTierMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -62,6 +63,9 @@ class CartServiceItemMapper extends ClassMapperBase<CartServiceItem> {
     _$customPrice,
     opt: true,
   );
+  static List<ServicePriceTier> _$priceTiers(CartServiceItem v) => v.priceTiers;
+  static const Field<CartServiceItem, List<ServicePriceTier>> _f$priceTiers =
+      Field('priceTiers', _$priceTiers, opt: true, def: const []);
   static DateTime? _$created(CartServiceItem v) => v.created;
   static const Field<CartServiceItem, DateTime> _f$created = Field(
     'created',
@@ -83,6 +87,7 @@ class CartServiceItemMapper extends ClassMapperBase<CartServiceItem> {
     #service: _f$service,
     #quantity: _f$quantity,
     #customPrice: _f$customPrice,
+    #priceTiers: _f$priceTiers,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -95,6 +100,7 @@ class CartServiceItemMapper extends ClassMapperBase<CartServiceItem> {
       service: data.dec(_f$service),
       quantity: data.dec(_f$quantity),
       customPrice: data.dec(_f$customPrice),
+      priceTiers: data.dec(_f$priceTiers),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -125,12 +131,12 @@ mixin CartServiceItemMappable {
   }
 
   CartServiceItemCopyWith<CartServiceItem, CartServiceItem, CartServiceItem>
-  get copyWith =>
-      _CartServiceItemCopyWithImpl<CartServiceItem, CartServiceItem>(
-        this as CartServiceItem,
-        $identity,
-        $identity,
-      );
+      get copyWith =>
+          _CartServiceItemCopyWithImpl<CartServiceItem, CartServiceItem>(
+            this as CartServiceItem,
+            $identity,
+            $identity,
+          );
   @override
   String toString() {
     return CartServiceItemMapper.ensureInitialized().stringifyValue(
@@ -163,6 +169,9 @@ extension CartServiceItemValueCopy<$R, $Out>
 abstract class CartServiceItemCopyWith<$R, $In extends CartServiceItem, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ServiceCopyWith<$R, Service, Service>? get service;
+  ListCopyWith<$R, ServicePriceTier,
+          ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>>
+      get priceTiers;
   $R call({
     String? id,
     String? cartId,
@@ -170,6 +179,7 @@ abstract class CartServiceItemCopyWith<$R, $In extends CartServiceItem, $Out>
     Service? service,
     num? quantity,
     num? customPrice,
+    List<ServicePriceTier>? priceTiers,
     DateTime? created,
     DateTime? updated,
   });
@@ -190,6 +200,14 @@ class _CartServiceItemCopyWithImpl<$R, $Out>
   ServiceCopyWith<$R, Service, Service>? get service =>
       $value.service?.copyWith.$chain((v) => call(service: v));
   @override
+  ListCopyWith<$R, ServicePriceTier,
+          ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>>
+      get priceTiers => ListCopyWith(
+            $value.priceTiers,
+            (v, t) => v.copyWith.$chain(t),
+            (v) => call(priceTiers: v),
+          );
+  @override
   $R call({
     String? id,
     String? cartId,
@@ -197,35 +215,39 @@ class _CartServiceItemCopyWithImpl<$R, $Out>
     Object? service = $none,
     num? quantity,
     Object? customPrice = $none,
+    List<ServicePriceTier>? priceTiers,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (cartId != null) #cartId: cartId,
-      if (serviceId != null) #serviceId: serviceId,
-      if (service != $none) #service: service,
-      if (quantity != null) #quantity: quantity,
-      if (customPrice != $none) #customPrice: customPrice,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (cartId != null) #cartId: cartId,
+          if (serviceId != null) #serviceId: serviceId,
+          if (service != $none) #service: service,
+          if (quantity != null) #quantity: quantity,
+          if (customPrice != $none) #customPrice: customPrice,
+          if (priceTiers != null) #priceTiers: priceTiers,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   CartServiceItem $make(CopyWithData data) => CartServiceItem(
-    id: data.get(#id, or: $value.id),
-    cartId: data.get(#cartId, or: $value.cartId),
-    serviceId: data.get(#serviceId, or: $value.serviceId),
-    service: data.get(#service, or: $value.service),
-    quantity: data.get(#quantity, or: $value.quantity),
-    customPrice: data.get(#customPrice, or: $value.customPrice),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        cartId: data.get(#cartId, or: $value.cartId),
+        serviceId: data.get(#serviceId, or: $value.serviceId),
+        service: data.get(#service, or: $value.service),
+        quantity: data.get(#quantity, or: $value.quantity),
+        customPrice: data.get(#customPrice, or: $value.customPrice),
+        priceTiers: data.get(#priceTiers, or: $value.priceTiers),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   CartServiceItemCopyWith<$R2, CartServiceItem, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _CartServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _CartServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

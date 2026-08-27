@@ -24,6 +24,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
     required this.serviceItems,
     this.initialAssignments,
     this.initialLoadCounts,
+    this.requireAssignment = false,
   });
 
   final List<SaleServiceItem> serviceItems;
@@ -35,6 +36,9 @@ class AssignMachinesDialog extends HookConsumerWidget {
   /// Pre-populated load counts for editing.
   /// Map of service item ID to (machine ID to load count).
   final Map<String, Map<String, int>>? initialLoadCounts;
+
+  /// When true, Skip is hidden and every service item must have a machine.
+  final bool requireAssignment;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,7 +56,25 @@ class AssignMachinesDialog extends HookConsumerWidget {
     // Currently selected service item index for assignment
     final activeItemIndex = useState(0);
 
+    bool itemHasMachine(SaleServiceItem item) {
+      final ids = (assignments.value[item.id] ?? [])
+          .where((id) => id.isNotEmpty)
+          .toList();
+      if (ids.isNotEmpty) return true;
+      final name = item.machineName;
+      return name != null && name.isNotEmpty;
+    }
+
     Future<void> handleAssign() async {
+      if (requireAssignment && serviceItems.any((item) => !itemHasMachine(item))) {
+        showErrorSnackBar(
+          context,
+          message: 'Assign a machine to every service before continuing.',
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       final repo = ref.read(salesRepositoryProvider);
       isSaving.value = true;
 
@@ -114,10 +136,12 @@ class AssignMachinesDialog extends HookConsumerWidget {
               error: (error, _) => Text('Error loading machines: $error'),
               data: (machines) {
                 if (machines.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      'No machines available. You can skip this step and assign machines later.',
+                      requireAssignment
+                          ? 'No machines available. Add a machine before marking this order ready.'
+                          : 'No machines available. You can skip this step and assign machines later.',
                     ),
                   );
                 }
@@ -333,10 +357,11 @@ class AssignMachinesDialog extends HookConsumerWidget {
               onPressed: isSaving.value ? null : () => context.pop(null),
               child: const Text('Cancel'),
             ),
-            TextButton(
-              onPressed: isSaving.value ? null : () => context.pop(true),
-              child: const Text('Skip'),
-            ),
+            if (!requireAssignment)
+              TextButton(
+                onPressed: isSaving.value ? null : () => context.pop(true),
+                child: const Text('Skip'),
+              ),
             FilledButton(
               onPressed: isSaving.value ? null : handleAssign,
               child: isSaving.value
@@ -755,6 +780,7 @@ Future<bool?> showAssignMachinesDialog(
   required List<SaleServiceItem> serviceItems,
   Map<String, List<String>>? initialAssignments,
   Map<String, Map<String, int>>? initialLoadCounts,
+  bool requireAssignment = false,
 }) {
   return showDialog<bool>(
     context: context,
@@ -763,6 +789,7 @@ Future<bool?> showAssignMachinesDialog(
       serviceItems: serviceItems,
       initialAssignments: initialAssignments,
       initialLoadCounts: initialLoadCounts,
+      requireAssignment: requireAssignment,
     ),
   );
 }

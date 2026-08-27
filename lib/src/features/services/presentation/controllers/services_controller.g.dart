@@ -37,7 +37,7 @@ final class ServicesControllerProvider
 }
 
 String _$servicesControllerHash() =>
-    r'5e3de092a5ae8e6c5be26c44ed884d823a9772da';
+    r'0d4fb7f1c4ee5f307451eb4e012d2c18dd36428d';
 
 /// Controller for managing the list of services.
 

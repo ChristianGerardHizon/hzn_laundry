@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../users/domain/user_role.dart';
 import '../controllers/dashboard_date_override_provider.dart';
-import 'attendance_alert_section.dart';
+import 'dashboard_alerts_row.dart';
 import 'dashboard_footer.dart';
 import 'date_override_banner.dart';
 import 'inventory_alerts_section.dart';
@@ -53,12 +53,13 @@ class TabletDashboardLayout extends HookConsumerWidget {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date header
-          GestureDetector(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GestureDetector(
             onTap: canOverrideDate ? pickDate : null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,33 +87,37 @@ class TabletDashboardLayout extends HookConsumerWidget {
                     ],
                   ],
                 ),
-                Text(
-                  DateFormat('MMMM d, yyyy').format(effectiveDate),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: isOverridden
-                        ? overrideColor
-                        : theme.colorScheme.outline,
-                  ),
+                const SizedBox(height: 2),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('MMMM d, yyyy').format(effectiveDate),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: isOverridden
+                            ? overrideColor
+                            : theme.colorScheme.outline,
+                      ),
+                    ),
+                    if (isOverridden) const DateOverrideBanner(),
+                  ],
                 ),
               ],
             ),
           ),
+          ),
           const SizedBox(height: 16),
-
-          // Warning banner when date is overridden
-          const DateOverrideBanner(),
-
-          // Sales Summary Section (collapsible) — includes incentive KPI
           const SalesSummarySection(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+
+          const DashboardAlertsRow(),
+          const SizedBox(height: 12),
 
           // Quick Actions Section
           const QuickActionsSection(),
           const SizedBox(height: 16),
-
-          // Attendance Alert (shown when not all employees are marked)
-          const AttendanceAlertSection(),
-          const SizedBox(height: 24),
 
           // Order Board (Kanban)
           const KanbanBoardSection(),

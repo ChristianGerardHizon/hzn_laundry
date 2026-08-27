@@ -112,12 +112,12 @@ mixin ServicePriceTierMappable {
   }
 
   ServicePriceTierCopyWith<ServicePriceTier, ServicePriceTier, ServicePriceTier>
-  get copyWith =>
-      _ServicePriceTierCopyWithImpl<ServicePriceTier, ServicePriceTier>(
-        this as ServicePriceTier,
-        $identity,
-        $identity,
-      );
+      get copyWith =>
+          _ServicePriceTierCopyWithImpl<ServicePriceTier, ServicePriceTier>(
+            this as ServicePriceTier,
+            $identity,
+            $identity,
+          );
   @override
   String toString() {
     return ServicePriceTierMapper.ensureInitialized().stringifyValue(
@@ -144,8 +144,8 @@ mixin ServicePriceTierMappable {
 extension ServicePriceTierValueCopy<$R, $Out>
     on ObjectCopyWith<$R, ServicePriceTier, $Out> {
   ServicePriceTierCopyWith<$R, ServicePriceTier, $Out>
-  get $asServicePriceTier =>
-      $base.as((v, t, t2) => _ServicePriceTierCopyWithImpl<$R, $Out>(v, t, t2));
+      get $asServicePriceTier => $base
+          .as((v, t, t2) => _ServicePriceTierCopyWithImpl<$R, $Out>(v, t, t2));
 }
 
 abstract class ServicePriceTierCopyWith<$R, $In extends ServicePriceTier, $Out>
@@ -183,33 +183,34 @@ class _ServicePriceTierCopyWithImpl<$R, $Out>
     Object? flatPrice = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (serviceId != null) #serviceId: serviceId,
-      if (minQuantity != null) #minQuantity: minQuantity,
-      if (pricePerUnit != null) #pricePerUnit: pricePerUnit,
-      if (maxQuantity != $none) #maxQuantity: maxQuantity,
-      if (flatPrice != $none) #flatPrice: flatPrice,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (serviceId != null) #serviceId: serviceId,
+          if (minQuantity != null) #minQuantity: minQuantity,
+          if (pricePerUnit != null) #pricePerUnit: pricePerUnit,
+          if (maxQuantity != $none) #maxQuantity: maxQuantity,
+          if (flatPrice != $none) #flatPrice: flatPrice,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   ServicePriceTier $make(CopyWithData data) => ServicePriceTier(
-    id: data.get(#id, or: $value.id),
-    serviceId: data.get(#serviceId, or: $value.serviceId),
-    minQuantity: data.get(#minQuantity, or: $value.minQuantity),
-    pricePerUnit: data.get(#pricePerUnit, or: $value.pricePerUnit),
-    maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
-    flatPrice: data.get(#flatPrice, or: $value.flatPrice),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        serviceId: data.get(#serviceId, or: $value.serviceId),
+        minQuantity: data.get(#minQuantity, or: $value.minQuantity),
+        pricePerUnit: data.get(#pricePerUnit, or: $value.pricePerUnit),
+        maxQuantity: data.get(#maxQuantity, or: $value.maxQuantity),
+        flatPrice: data.get(#flatPrice, or: $value.flatPrice),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   ServicePriceTierCopyWith<$R2, ServicePriceTier, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _ServicePriceTierCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _ServicePriceTierCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

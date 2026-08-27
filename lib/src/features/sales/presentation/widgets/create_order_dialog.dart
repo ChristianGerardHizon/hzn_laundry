@@ -200,14 +200,21 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
       isSaving.value = true;
 
+      final qty = quantity.value;
       final service = selectedService.value!;
       final customer = selectedCustomer.value!;
-      final qty = quantity.value;
-      final tieredUnitPrice =
-          resolveTieredPrice(tiers, qty, service.price).toDouble();
-      final computedServiceTotal = tiers.isEmpty
-          ? (tieredUnitPrice * qty).toDouble()
-          : resolveTieredTotal(tiers, qty, service.price).toDouble();
+      final tieredUnitPrice = resolveServiceUnitPrice(
+        price: service.price,
+        quantity: qty,
+        minimumCharge: service.minimumCharge,
+        tiers: tiers,
+      ).toDouble();
+      final computedServiceTotal = resolveServiceTotal(
+        price: service.price,
+        quantity: qty,
+        minimumCharge: service.minimumCharge,
+        tiers: tiers,
+      ).toDouble();
       final serviceTotal = customServiceTotal.value ?? computedServiceTotal;
       final effectiveUnitPrice = qty > 0 ? serviceTotal / qty : tieredUnitPrice;
       final productsTotal = productItems.value.fold<double>(
@@ -328,16 +335,20 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
     final displayUnitPrice = selectedService.value == null
         ? 0.0
-        : resolveTieredPrice(
-                tiers, quantity.value, selectedService.value!.price)
-            .toDouble();
+        : resolveServiceUnitPrice(
+            price: selectedService.value!.price,
+            quantity: quantity.value,
+            minimumCharge: selectedService.value!.minimumCharge,
+            tiers: tiers,
+          ).toDouble();
     final computedServiceTotal = selectedService.value == null
         ? 0.0
-        : tiers.isEmpty
-            ? (displayUnitPrice * quantity.value).toDouble()
-            : resolveTieredTotal(
-                    tiers, quantity.value, selectedService.value!.price)
-                .toDouble();
+        : resolveServiceTotal(
+            price: selectedService.value!.price,
+            quantity: quantity.value,
+            minimumCharge: selectedService.value!.minimumCharge,
+            tiers: tiers,
+          ).toDouble();
     final serviceTotal = customServiceTotal.value ?? computedServiceTotal;
     final productsTotal = productItems.value.fold<double>(
       0.0,
@@ -425,10 +436,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
                       },
                       ref: ref,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
                     // Loyalty rewards (only when customer selected)
-                    if (selectedCustomer.value != null)
+                    if (selectedCustomer.value != null) ...[
                       LoyaltyRewardsSection(
                         customerId: selectedCustomer.value!.id,
                         selectedPromo: selectedPromoRedemption.value,
@@ -438,7 +449,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
                         },
                         enabled: !isSaving.value,
                       ),
-                    const SizedBox(height: 8),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Service selection
                     _SectionLabel(label: 'Service Selection'),
@@ -468,10 +480,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
                         customServiceTotal.value = null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     // Service subtotal (editable)
-                    if (selectedService.value != null)
+                    if (selectedService.value != null) ...[
                       _ServiceSubtotal(
                         service: selectedService.value!,
                         quantity: quantity.value,
@@ -483,7 +495,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
                           isDirty.value = true;
                         },
                       ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Products (optional add-ons)
                     _ProductsSection(
@@ -552,7 +565,7 @@ class _DialogHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Fill in the details to initiate a laundry request.',
+                  'Customer, service, and weight.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -594,9 +607,11 @@ class _DialogFooter extends StatelessWidget {
     final theme = Theme.of(context);
     final hasDiscount = loyaltyDiscount > 0;
 
+    final showEmptyTotal = !canCreate && estimatedTotal == 0 && !hasDiscount;
+
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: theme.colorScheme.surfaceContainerLow,
         border: Border(
           top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
@@ -651,16 +666,29 @@ class _DialogFooter extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  estimatedTotal.toCurrency(),
+                  showEmptyTotal ? '—' : estimatedTotal.toCurrency(),
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    color: theme.colorScheme.primary,
+                    color: showEmptyTotal
+                        ? theme.colorScheme.onSurfaceVariant
+                        : theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (showEmptyTotal)
+                  Text(
+                    'Select customer and service',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
               ],
             ),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(148, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
             onPressed: isSaving || !canCreate ? null : onCreateOrder,
             child: isSaving
                 ? const SizedBox(
@@ -768,7 +796,7 @@ class _CustomerSearchField extends HookConsumerWidget {
           enabled: enabled,
           decoration: InputDecoration(
             hintText: 'Search by name, phone or ID...',
-            prefixIcon: const Icon(Icons.manage_search),
+            prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -988,7 +1016,7 @@ class _ServiceSelector extends HookConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const spacing = 8.0;
-        const columns = 3;
+        final columns = activeServices.length <= 4 ? 2 : 3;
         final chipWidth =
             (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -1047,45 +1075,97 @@ class _ServiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = isSelected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
-    final bgColor = isSelected
-        ? theme.colorScheme.primary.withValues(alpha: 0.08)
-        : theme.colorScheme.surfaceContainerHighest;
-    final borderColor = isSelected
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outlineVariant;
+    final onContainer = isSelected
+        ? theme.colorScheme.onPrimaryContainer
+        : theme.colorScheme.onSurface;
+    final muted = isSelected
+        ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.75)
+        : theme.colorScheme.onSurfaceVariant;
+    final unit = service.quantityUnit?.shortSingular ??
+        (service.weightBased == false ? 'pc' : 'kg');
+    final priceLine = service.hasVariablePrice
+        ? 'Variable'
+        : '${service.priceDisplay}/$unit';
 
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outlineVariant,
+          width: isSelected ? 2 : 1,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_iconFor(service.name), size: 28, color: color),
-            const SizedBox(height: 6),
-            Text(
-              service.name,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+            child: Stack(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected
+                            ? theme.colorScheme.primary.withValues(alpha: 0.18)
+                            : theme.colorScheme.surfaceContainerHighest,
+                      ),
+                      child: Icon(
+                        _iconFor(service.name),
+                        size: 22,
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      service.name,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: onContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      priceLine,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: muted,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                if (isSelected)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1145,15 +1225,15 @@ class _QuantityStepper extends HookWidget {
         ),
         const SizedBox(height: 8),
         Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
+            color: theme.colorScheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
-              // Minus
-              IconButton(
+              IconButton.filledTonal(
                 icon: const Icon(Icons.remove),
                 onPressed: enabled && quantity.value > 0.5
                     ? () {
@@ -1163,7 +1243,6 @@ class _QuantityStepper extends HookWidget {
                       }
                     : null,
               ),
-              // Value — tappable to edit
               Expanded(
                 child: GestureDetector(
                   onTap: enabled
@@ -1187,7 +1266,7 @@ class _QuantityStepper extends HookWidget {
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                           decoration: const InputDecoration(
@@ -1201,7 +1280,7 @@ class _QuantityStepper extends HookWidget {
                       else
                         Text(
                           quantity.value.toStringAsFixed(1),
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -1219,8 +1298,7 @@ class _QuantityStepper extends HookWidget {
                   ),
                 ),
               ),
-              // Plus
-              IconButton(
+              IconButton.filledTonal(
                 icon: const Icon(Icons.add),
                 onPressed: enabled
                     ? () {
@@ -1260,11 +1338,18 @@ class _ServiceSubtotal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final unitPrice =
-        resolveTieredPrice(tiers, quantity, service.price).toDouble();
-    final computed = tiers.isEmpty
-        ? (unitPrice * quantity).toDouble()
-        : resolveTieredTotal(tiers, quantity, service.price).toDouble();
+    final computed = resolveServiceTotal(
+      price: service.price,
+      quantity: quantity,
+      minimumCharge: service.minimumCharge,
+      tiers: tiers,
+    ).toDouble();
+    final unitPrice = resolveServiceUnitPrice(
+      price: service.price,
+      quantity: quantity,
+      minimumCharge: service.minimumCharge,
+      tiers: tiers,
+    ).toDouble();
     final displayTotal = customTotal ?? computed;
     final isOverridden = customTotal != null;
     final isTiered = tiers.isNotEmpty;
@@ -1326,7 +1411,12 @@ class _ServiceSubtotal extends StatelessWidget {
                       Text(
                         isTiered
                             ? 'Flat rate for ${quantity.toStringAsFixed(1)} $unitLabel'
-                            : '${unitPrice.toCurrency()} x ${quantity.toStringAsFixed(1)} $unitLabel',
+                            : service.minimumCharge > 0 &&
+                                    computed <= service.minimumCharge &&
+                                    service.price * quantity <
+                                        service.minimumCharge
+                                ? 'Minimum ${service.minimumCharge.toCurrency()} (${quantity.toStringAsFixed(1)} $unitLabel)'
+                                : '${unitPrice.toCurrency()} x ${quantity.toStringAsFixed(1)} $unitLabel',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

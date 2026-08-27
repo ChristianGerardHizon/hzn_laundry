@@ -69,9 +69,10 @@ Service management and POS integration for laundry services.
 - **Sub-features**:
   - Services list with category filtering and search
   - Service categories management
-  - Variable price and weight-based service support
+  - Variable price, weight-based, and **minimum charge** support (e.g. ₱20/kg with a ₱120 floor)
   - Estimated duration tracking
-- **Key Models**: `Service`, `ServiceCategory`, `CartServiceItem`, `SaleServiceItem`
+  - Per-service **price tiers** (flat totals for a kg range, used by Hi-Zone Full Service)
+- **Key Models**: `Service`, `ServiceCategory`, `ServicePriceTier`, `CartServiceItem`, `SaleServiceItem`
 - **POS Integration**: Services appear in a separate tab in the cashier alongside products; both the services list and POS/cashier pickers are limited to the current working branch
 
 #### Customers (`/customers`)
@@ -89,11 +90,11 @@ Customer (member) management with sales history tracking. Customers are scoped t
 - **All Branches**: Admins can view customers across branches; creating a customer requires a specific branch
 
 #### Dashboard (`/`)
-Home screen with quick summary and today's appointments.
+Home screen with today's sales KPIs, kanban board, and operational alerts.
 
 - Responsive layout (single column mobile, two-pane tablet)
-- Quick summary cards
-- Today's appointments section
+- Sales summary KPI cards (including Needs Attention for incomplete order details); collapsing Today's Summary hides it for the rest of the local day on this device. A labeled Refresh control reloads all dashboard data (1s minimum) and shows a brief "Pulled new data complete" toast
+- Kanban board for order status; Ready-for-pickup requires machines and pack count
 
 ---
 
@@ -263,11 +264,12 @@ Located in `/lib/src/core/`
 |------------|-------------|
 | `AppointmentSchedule` | Appointment bookings |
 
-#### Service Domain (2 collections)
+#### Service Domain (3 collections)
 | Collection | Description |
 |------------|-------------|
-| `Service` | Laundry services (wash, dry, fold, etc.) |
+| `Service` | Laundry services (wash, dry, fold, etc.) with optional `minimumCharge` |
 | `ServiceCategory` | Service categories |
+| `ServicePriceTier` | Flat quantity-range totals for a service |
 
 #### POS Domain (2 collections)
 | Collection | Description |
@@ -570,6 +572,14 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 28 | Product Overview stock actions | Tracked products get Add/Remove Stock presets and latest adjustments with Show more (opens Adjustments). Untracked products can enable tracking from Overview. Details hides Adjust Stock when tracking is off or lot-based |
+| Aug 28 | Today's Summary refresh | Dashboard section title is Today's Summary. Refresh is a labeled button with a 1s minimum wait and a "Pulled new data complete" overlay toast |
+| Aug 28 | Record payment CTA + Print All | Unpaid order Record Payment is a high-contrast green button. Print menus include Print All (store then customer claim sheets) |
+| Aug 28 | Magsaysay FULL SERVICE pricing | Services can set a `minimumCharge`. Mag FULL SERVICE is ₱20/kg with a ₱120 floor in Create Order and POS; Hi-Zone flat kg-bucket tiers are unchanged |
+| Aug 28 | Sales summary hide for the day | Collapsing Today's Summary on the dashboard persists on-device for the local calendar day and expands again tomorrow |
+| Aug 28 | Mobile dashboard cleanup | Phone dashboard uses a 2-column sales KPI grid, denser alert banners, full-width Order Board filters, and a More popover for Attendance / Machine & Storage |
+| Aug 28 | Assign machine on completed lines | Assign Machine stays available when a service line is completed but has no machine (legacy Ready orders). Assigning does not reopen a completed line to in progress |
+| Aug 28 | Ready pickup completeness | Moving an order to Ready always asks for machines and pack count. Dashboard Needs Attention KPI lists processing orders plus Ready / same-day Picked Up orders missing machines or packs |
 | Aug 26 | Branch-scoped catalogs | Order add-ons, POS product/service grids, cashier search, and POS group pickers now show only the current branch's products and services. New machines and storage locations are stamped with the current branch |
 | Aug 17 | Dashboard Add-ons / Loads KPIs | Add-ons Sold and Loads now aggregate from today's already-fetched sale line items instead of full-history PocketBase views (`vw_add_ons_summary`, `vw_loads_summary` removed) |
 | Aug 17 | Products list across branches | Products list rule now allows any logged-in user to list products; the app still filters by the selected branch, so admins switching branches (e.g. Hi-Zone → Magsaysay) can see that branch's catalog |

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../core/widgets/form_feedback.dart';
 import '../../../domain/product.dart';
 import '../product_image.dart';
 import '../dialogs/edit_product_dialog.dart';
+import '../dialogs/stock_adjustment_dialog.dart';
 
 /// Details tab content showing comprehensive product information.
 class ProductDetailsTab extends HookConsumerWidget {
@@ -303,13 +303,13 @@ class ProductDetailsTab extends HookConsumerWidget {
               icon: const Icon(Icons.edit),
               label: const Text('Edit Details'),
             ),
-            FilledButton.tonalIcon(
-              onPressed: () {
-                showWarningSnackBar(context, message: 'Stock adjustment coming soon');
-              },
-              icon: const Icon(Icons.inventory),
-              label: const Text('Adjust Stock'),
-            ),
+            if (product.trackStock && !product.trackByLot)
+              FilledButton.tonalIcon(
+                onPressed: () =>
+                    showProductStockAdjustmentDialog(context, product),
+                icon: const Icon(Icons.inventory),
+                label: const Text('Adjust Stock'),
+              ),
           ],
         ),
       ],

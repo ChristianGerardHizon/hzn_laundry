@@ -79,7 +79,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
   static Map<String, dynamic> _$machineLoadCounts(SaleServiceItemDto v) =>
       v.machineLoadCounts;
   static const Field<SaleServiceItemDto, Map<String, dynamic>>
-  _f$machineLoadCounts = Field(
+      _f$machineLoadCounts = Field(
     'machineLoadCounts',
     _$machineLoadCounts,
     opt: true,
@@ -88,7 +88,7 @@ class SaleServiceItemDtoMapper extends ClassMapperBase<SaleServiceItemDto> {
   static Map<String, dynamic> _$machineWeights(SaleServiceItemDto v) =>
       v.machineWeights;
   static const Field<SaleServiceItemDto, Map<String, dynamic>>
-  _f$machineWeights = Field(
+      _f$machineWeights = Field(
     'machineWeights',
     _$machineWeights,
     opt: true,
@@ -194,13 +194,9 @@ mixin SaleServiceItemDtoMappable {
         .encodeMap<SaleServiceItemDto>(this as SaleServiceItemDto);
   }
 
-  SaleServiceItemDtoCopyWith<
-    SaleServiceItemDto,
-    SaleServiceItemDto,
-    SaleServiceItemDto
-  >
-  get copyWith =>
-      _SaleServiceItemDtoCopyWithImpl<SaleServiceItemDto, SaleServiceItemDto>(
+  SaleServiceItemDtoCopyWith<SaleServiceItemDto, SaleServiceItemDto,
+      SaleServiceItemDto> get copyWith => _SaleServiceItemDtoCopyWithImpl<
+          SaleServiceItemDto, SaleServiceItemDto>(
         this as SaleServiceItemDto,
         $identity,
         $identity,
@@ -231,22 +227,18 @@ mixin SaleServiceItemDtoMappable {
 extension SaleServiceItemDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, SaleServiceItemDto, $Out> {
   SaleServiceItemDtoCopyWith<$R, SaleServiceItemDto, $Out>
-  get $asSaleServiceItemDto => $base.as(
-    (v, t, t2) => _SaleServiceItemDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asSaleServiceItemDto => $base.as(
+            (v, t, t2) => _SaleServiceItemDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
-abstract class SaleServiceItemDtoCopyWith<
-  $R,
-  $In extends SaleServiceItemDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+abstract class SaleServiceItemDtoCopyWith<$R, $In extends SaleServiceItemDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get machine;
   MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
-  get machineLoadCounts;
+      get machineLoadCounts;
   MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
-  get machineWeights;
+      get machineWeights;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage;
   $R call({
     String? id,
@@ -290,18 +282,18 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
       );
   @override
   MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
-  get machineLoadCounts => MapCopyWith(
-    $value.machineLoadCounts,
-    (v, t) => ObjectCopyWith(v, $identity, t),
-    (v) => call(machineLoadCounts: v),
-  );
+      get machineLoadCounts => MapCopyWith(
+            $value.machineLoadCounts,
+            (v, t) => ObjectCopyWith(v, $identity, t),
+            (v) => call(machineLoadCounts: v),
+          );
   @override
   MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>
-  get machineWeights => MapCopyWith(
-    $value.machineWeights,
-    (v, t) => ObjectCopyWith(v, $identity, t),
-    (v) => call(machineWeights: v),
-  );
+      get machineWeights => MapCopyWith(
+            $value.machineWeights,
+            (v, t) => ObjectCopyWith(v, $identity, t),
+            (v) => call(machineWeights: v),
+          );
   @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get storage =>
       ListCopyWith(
@@ -329,56 +321,57 @@ class _SaleServiceItemDtoCopyWithImpl<$R, $Out>
     Object? status = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (sale != null) #sale: sale,
-      if (service != null) #service: service,
-      if (serviceName != null) #serviceName: serviceName,
-      if (quantity != null) #quantity: quantity,
-      if (unitPrice != null) #unitPrice: unitPrice,
-      if (subtotal != null) #subtotal: subtotal,
-      if (machine != null) #machine: machine,
-      if (machineName != $none) #machineName: machineName,
-      if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
-      if (machineWeights != null) #machineWeights: machineWeights,
-      if (storage != null) #storage: storage,
-      if (storageName != $none) #storageName: storageName,
-      if (status != $none) #status: status,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (sale != null) #sale: sale,
+          if (service != null) #service: service,
+          if (serviceName != null) #serviceName: serviceName,
+          if (quantity != null) #quantity: quantity,
+          if (unitPrice != null) #unitPrice: unitPrice,
+          if (subtotal != null) #subtotal: subtotal,
+          if (machine != null) #machine: machine,
+          if (machineName != $none) #machineName: machineName,
+          if (machineLoadCounts != null) #machineLoadCounts: machineLoadCounts,
+          if (machineWeights != null) #machineWeights: machineWeights,
+          if (storage != null) #storage: storage,
+          if (storageName != $none) #storageName: storageName,
+          if (status != $none) #status: status,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   SaleServiceItemDto $make(CopyWithData data) => SaleServiceItemDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    sale: data.get(#sale, or: $value.sale),
-    service: data.get(#service, or: $value.service),
-    serviceName: data.get(#serviceName, or: $value.serviceName),
-    quantity: data.get(#quantity, or: $value.quantity),
-    unitPrice: data.get(#unitPrice, or: $value.unitPrice),
-    subtotal: data.get(#subtotal, or: $value.subtotal),
-    machine: data.get(#machine, or: $value.machine),
-    machineName: data.get(#machineName, or: $value.machineName),
-    machineLoadCounts: data.get(
-      #machineLoadCounts,
-      or: $value.machineLoadCounts,
-    ),
-    machineWeights: data.get(#machineWeights, or: $value.machineWeights),
-    storage: data.get(#storage, or: $value.storage),
-    storageName: data.get(#storageName, or: $value.storageName),
-    status: data.get(#status, or: $value.status),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        sale: data.get(#sale, or: $value.sale),
+        service: data.get(#service, or: $value.service),
+        serviceName: data.get(#serviceName, or: $value.serviceName),
+        quantity: data.get(#quantity, or: $value.quantity),
+        unitPrice: data.get(#unitPrice, or: $value.unitPrice),
+        subtotal: data.get(#subtotal, or: $value.subtotal),
+        machine: data.get(#machine, or: $value.machine),
+        machineName: data.get(#machineName, or: $value.machineName),
+        machineLoadCounts: data.get(
+          #machineLoadCounts,
+          or: $value.machineLoadCounts,
+        ),
+        machineWeights: data.get(#machineWeights, or: $value.machineWeights),
+        storage: data.get(#storage, or: $value.storage),
+        storageName: data.get(#storageName, or: $value.storageName),
+        status: data.get(#status, or: $value.status),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   SaleServiceItemDtoCopyWith<$R2, SaleServiceItemDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _SaleServiceItemDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _SaleServiceItemDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

@@ -196,7 +196,15 @@ class _DialogFooter extends ConsumerWidget {
                   }
                 },
                 icon: const Icon(Icons.payment),
-                label: const Text('Record Payment'),
+                label: const Text(
+                  'Record Payment',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -278,48 +286,58 @@ class _DialogPrintMenu extends HookConsumerWidget {
       );
     }
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
-      if (isPrinting.value) return;
+    Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
+      final printer = defaultPrinterAsync.value;
+      if (printer == null) return Future.value(null);
+
+      final pdfData = buildPdfData(
+        storeCopy: copyType == OrderReceiptCopy.store,
+      );
+      final printService = ref.read(thermalPrintServiceProvider.notifier);
+
+      return printService.printOrderReceipt(
+        printer: printer,
+        customerName: pdfData.customerName,
+        serviceName: pdfData.serviceName,
+        quantity: pdfData.quantity,
+        unitLabel: pdfData.unitLabel,
+        totalAmount: pdfData.totalAmount,
+        claimSheetNumber: pdfData.claimSheetNumber,
+        copyType: copyType,
+        businessName: pdfData.businessName,
+        branchAddress: pdfData.branchAddress,
+        contactNumber: pdfData.contactNumber,
+        cashierName: pdfData.cashierName,
+        specialInstructions: pdfData.specialInstructions,
+        addOnItems: pdfData.addOnItems,
+      );
+    }
+
+    bool ensureCanPrint() {
+      if (isPrinting.value) return false;
 
       if (!isThermalPrintingSupported) {
         showErrorSnackBar(
           context,
           message: kThermalPrintingUnsupportedMessage,
         );
-        return;
+        return false;
       }
 
-      final printer = defaultPrinterAsync.value;
-      if (printer == null) {
+      if (defaultPrinterAsync.value == null) {
         showErrorSnackBar(context, message: 'No default printer configured');
-        return;
+        return false;
       }
 
-      final pdfData = buildPdfData(
-        storeCopy: copyType == OrderReceiptCopy.store,
-      );
+      return true;
+    }
+
+    Future<void> printCopy(OrderReceiptCopy copyType) async {
+      if (!ensureCanPrint()) return;
 
       isPrinting.value = true;
       try {
-        final printService = ref.read(thermalPrintServiceProvider.notifier);
-
-        final result = await printService.printOrderReceipt(
-          printer: printer,
-          customerName: pdfData.customerName,
-          serviceName: pdfData.serviceName,
-          quantity: pdfData.quantity,
-          unitLabel: pdfData.unitLabel,
-          totalAmount: pdfData.totalAmount,
-          claimSheetNumber: pdfData.claimSheetNumber,
-          copyType: copyType,
-          businessName: pdfData.businessName,
-          branchAddress: pdfData.branchAddress,
-          contactNumber: pdfData.contactNumber,
-          cashierName: pdfData.cashierName,
-          specialInstructions: pdfData.specialInstructions,
-          addOnItems: pdfData.addOnItems,
-        );
-
+        final result = await sendPrint(copyType);
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
@@ -330,6 +348,40 @@ class _DialogPrintMenu extends HookConsumerWidget {
               : 'Claim sheet (store)';
           showSuccessSnackBar(context, message: '$label printed');
         }
+      } finally {
+        if (context.mounted) isPrinting.value = false;
+      }
+    }
+
+    Future<void> printBothCopies() async {
+      if (!ensureCanPrint()) return;
+
+      isPrinting.value = true;
+      try {
+        final storeResult = await sendPrint(OrderReceiptCopy.store);
+        if (!context.mounted) return;
+        if (storeResult is PrintFailure) {
+          showErrorSnackBar(context, message: storeResult.message);
+          return;
+        }
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!context.mounted) return;
+
+        final customerResult = await sendPrint(OrderReceiptCopy.customer);
+        if (!context.mounted) return;
+        if (customerResult is PrintFailure) {
+          showErrorSnackBar(
+            context,
+            message: 'Claim sheet printed (customer copy failed)',
+          );
+          return;
+        }
+
+        showSuccessSnackBar(
+          context,
+          message: 'Printed: store + customer claim sheets',
+        );
       } finally {
         if (context.mounted) isPrinting.value = false;
       }
@@ -362,6 +414,8 @@ class _DialogPrintMenu extends HookConsumerWidget {
           await printCopy(OrderReceiptCopy.customer);
         case 'print_store':
           await printCopy(OrderReceiptCopy.store);
+        case 'print_all':
+          await printBothCopies();
       }
     }
 
@@ -416,6 +470,16 @@ class _DialogPrintMenu extends HookConsumerWidget {
             constraints: menuConstraints,
             onSelected: handlePrintMenuSelection,
             itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                value: 'print_all',
+                child: ListTile(
+                  leading: Icon(Icons.print),
+                  title: Text('Print All'),
+                  subtitle: Text('Store + customer'),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'print_customer',
                 child: ListTile(

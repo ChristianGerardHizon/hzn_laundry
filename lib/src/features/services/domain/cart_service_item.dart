@@ -1,6 +1,7 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
 import 'service.dart';
+import 'service_price_tier.dart';
 
 part 'cart_service_item.mapper.dart';
 
@@ -16,6 +17,7 @@ class CartServiceItem with CartServiceItemMappable {
     this.service,
     this.quantity = 1,
     this.customPrice,
+    this.priceTiers = const [],
     this.created,
     this.updated,
   });
@@ -38,6 +40,9 @@ class CartServiceItem with CartServiceItemMappable {
   /// Custom price override (for variable-price services).
   final num? customPrice;
 
+  /// In-memory price tiers for this service (not persisted on the cart row).
+  final List<ServicePriceTier> priceTiers;
+
   /// Creation timestamp.
   final DateTime? created;
 
@@ -45,10 +50,22 @@ class CartServiceItem with CartServiceItemMappable {
   final DateTime? updated;
 
   /// The effective unit price for this item.
-  num get effectivePrice => customPrice ?? service?.price ?? 0;
+  num get effectivePrice {
+    if (hasCustomPrice) return customPrice!;
+    if (quantity <= 0) return service?.price ?? 0;
+    return total / quantity;
+  }
 
-  /// Total price of this item (quantity * effective price).
-  num get total => effectivePrice * quantity;
+  /// Total price of this item.
+  num get total {
+    if (hasCustomPrice) return customPrice! * quantity;
+    return resolveServiceTotal(
+      price: service?.price ?? 0,
+      quantity: quantity,
+      minimumCharge: service?.minimumCharge ?? 0,
+      tiers: priceTiers,
+    );
+  }
 
   /// Whether this item uses a custom price.
   bool get hasCustomPrice => customPrice != null;

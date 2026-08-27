@@ -9,15 +9,24 @@ part of 'storage_locations_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Controller for managing storage location list state.
+///
+/// Storages are scoped to the current working branch. Unassigned locations
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 
 @ProviderFor(StorageLocationsController)
 final storageLocationsControllerProvider =
     StorageLocationsControllerProvider._();
 
 /// Controller for managing storage location list state.
+///
+/// Storages are scoped to the current working branch. Unassigned locations
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 final class StorageLocationsControllerProvider extends $AsyncNotifierProvider<
     StorageLocationsController, List<StorageLocation>> {
   /// Controller for managing storage location list state.
+  ///
+  /// Storages are scoped to the current working branch. Unassigned locations
+  /// (no branch set) remain visible so existing org-wide records are not hidden.
   StorageLocationsControllerProvider._()
       : super(
           from: null,
@@ -38,9 +47,12 @@ final class StorageLocationsControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$storageLocationsControllerHash() =>
-    r'9f45ee83e6a8d899a1e67e7bdc105ec6edefb5cf';
+    r'75679593e490a35b100e336ba3dbbfe7821db30a';
 
 /// Controller for managing storage location list state.
+///
+/// Storages are scoped to the current working branch. Unassigned locations
+/// (no branch set) remain visible so existing org-wide records are not hidden.
 
 abstract class _$StorageLocationsController
     extends $AsyncNotifier<List<StorageLocation>> {

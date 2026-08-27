@@ -118,6 +118,11 @@ class ServiceDetailPage extends HookConsumerWidget {
                             ? 'Variable'
                             : service.price.toCurrency(),
                       ),
+                      if (service.minimumCharge > 0)
+                        _InfoRow(
+                          label: 'Minimum Charge',
+                          value: service.minimumCharge.toCurrency(),
+                        ),
                       if (service.estimatedDuration != null)
                         _InfoRow(
                           label: 'Est. Duration',
@@ -137,11 +142,13 @@ class ServiceDetailPage extends HookConsumerWidget {
                       ),
                       _InfoRow(
                         label: 'Max Quantity',
-                        value: (service.maxQuantity != null && service.maxQuantity! > 0)
+                        value: (service.maxQuantity != null &&
+                                service.maxQuantity! > 0)
                             ? service.maxQuantity.toString()
                             : 'N/A',
                       ),
-                      if (service.maxQuantity != null && service.maxQuantity! > 0)
+                      if (service.maxQuantity != null &&
+                          service.maxQuantity! > 0)
                         _InfoRow(
                           label: 'Allow Excess',
                           value: service.allowExcess ? 'Yes' : 'No',
@@ -178,8 +185,7 @@ class ServiceDetailPage extends HookConsumerWidget {
   }
 
   void _showEditSheet(BuildContext context, WidgetRef ref) async {
-    final service =
-        ref.read(serviceProvider(serviceId)).value;
+    final service = ref.read(serviceProvider(serviceId)).value;
     if (service == null) return;
 
     final result = await showServiceFormSheet(
@@ -204,8 +210,7 @@ class ServiceDetailPage extends HookConsumerWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Delete Service'),
-          content:
-              const Text('Are you sure you want to delete this service?'),
+          content: const Text('Are you sure you want to delete this service?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -322,8 +327,7 @@ class _PriceTiersCard extends ConsumerWidget {
                 }
 
                 final sorted = [...tiers]
-                  ..sort(
-                      (a, b) => a.minQuantity.compareTo(b.minQuantity));
+                  ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
 
                 return Column(
                   children: [
@@ -342,8 +346,7 @@ class _PriceTiersCard extends ConsumerWidget {
               },
               loading: () => const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2)),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
               error: (error, _) => Text(
                 'Error loading tiers: $error',
@@ -400,7 +403,7 @@ class _PriceTierRow extends ConsumerWidget {
         ),
       ),
       subtitle: Text(
-        '${tier.pricePerUnit.toCurrency()}/$unitLabel',
+        '${tier.pricePerUnit.toCurrency()} total for this range',
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.primary,
         ),

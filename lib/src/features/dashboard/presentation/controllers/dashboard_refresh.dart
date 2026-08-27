@@ -8,6 +8,7 @@ import 'dashboard_kpi_provider.dart';
 import 'inventory_alerts_controller.dart';
 import 'kanban_sales_controller.dart';
 import 'loads_summary_controller.dart';
+import 'incomplete_orders_controller.dart';
 import 'new_customers_controller.dart';
 import 'orders_by_resource_provider.dart';
 import 'ready_for_pickup_controller.dart';
@@ -29,6 +30,7 @@ void invalidateAllDashboardProviders(
   invalidate(totalPacksSummaryProvider);
   invalidate(addOnsSummaryProvider);
   invalidate(loadsSummaryProvider);
+  invalidate(incompleteOrdersProvider);
   invalidate(todaySalesProvider);
   invalidate(todaySalesSummaryProvider);
   invalidate(todayIncentiveSummaryProvider);

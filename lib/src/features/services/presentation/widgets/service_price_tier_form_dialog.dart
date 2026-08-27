@@ -56,8 +56,9 @@ class _ServicePriceTierFormDialog extends HookConsumerWidget {
 
       final minQty = num.parse(values['minQuantity'].toString());
       final maxQtyStr = values['maxQuantity']?.toString();
-      final maxQty =
-          (maxQtyStr != null && maxQtyStr.isNotEmpty) ? num.parse(maxQtyStr) : null;
+      final maxQty = (maxQtyStr != null && maxQtyStr.isNotEmpty)
+          ? num.parse(maxQtyStr)
+          : null;
       final price = num.parse(values['pricePerUnit'].toString());
 
       // Validate min < max if max is provided

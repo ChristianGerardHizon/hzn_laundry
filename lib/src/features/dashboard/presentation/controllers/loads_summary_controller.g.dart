@@ -65,4 +65,4 @@ final class LoadsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$loadsSummaryHash() => r'2a08c0281dfc7a5adcc9c3ab3a977987145b5694';
+String _$loadsSummaryHash() => r'8584da90f5516c83cd406a3709337e352537e5b4';

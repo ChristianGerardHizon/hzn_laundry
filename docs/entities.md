@@ -515,6 +515,34 @@ Stock adjustment records.
 
 ---
 
+## Service Domain
+
+### Service
+
+Laundry services (wash, dry, fold, etc.), scoped to a branch.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Service name |
+| `price` | num | Yes | Per-unit price |
+| `minimumCharge` | num | No | Floor for the line total (`max(minimumCharge, price × qty)` when no tiers) |
+| `isVariablePrice` | bool | Yes | Price entered at POS |
+| `weightBased` | bool | Yes | Quantity is typically kg |
+| `showPrompt` | bool | Yes | Prompt for quantity when adding to cart |
+| `maxQuantity` | int | No | Cap; 0/empty means unlimited |
+| `branch` | String (FK) | No | FK to Branch |
+
+**Collection:** `services`
+
+### ServicePriceTier
+
+Flat total for a quantity range on a service (Hi-Zone Full Service buckets). `pricePerUnit` is the **range total**, not a per-kg rate.
+
+**Collection:** `servicePriceTiers`
+
+---
+
 ## Customer Domain
 
 ### Customer

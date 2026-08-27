@@ -35,7 +35,9 @@ class CartServiceItemDto with CartServiceItemDtoMappable {
     // Handle customPrice - treat 0 as null (PocketBase default for unset)
     final rawCustomPrice = record.data['customPrice'];
     num? customPrice;
-    if (rawCustomPrice != null && rawCustomPrice is num && rawCustomPrice != 0) {
+    if (rawCustomPrice != null &&
+        rawCustomPrice is num &&
+        rawCustomPrice != 0) {
       customPrice = rawCustomPrice;
     }
 

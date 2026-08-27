@@ -400,13 +400,18 @@ class SalesRepositoryImpl implements SalesRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        await _saleServiceItems.update(itemId, body: {
+        final current = await _saleServiceItems.getOne(itemId);
+        final currentStatus = current.getStringValue('status');
+        final body = <String, dynamic>{
           'machine': machineIds,
           'machineName': machineNames.join(', '),
           'machineLoadCounts': loadCounts,
           'machineWeights': weights,
-          'status': 'in_progress',
-        });
+        };
+        if (currentStatus != 'completed') {
+          body['status'] = 'in_progress';
+        }
+        await _saleServiceItems.update(itemId, body: body);
       },
       Failure.handle,
     ).run();
