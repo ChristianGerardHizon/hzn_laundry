@@ -481,48 +481,60 @@ pocketbase serve --dir .
 
 ## Environment Configuration
 
-The app supports multiple deployment environments via `--dart-define`:
+The app has three flavors. Android and iOS can install them side by side. Web, Windows, and Linux use `--dart-define=ENV` (they do not support `--flavor` at build time).
 
-| Environment | URL | Usage |
-|-------------|-----|-------|
-| `dev` | `http://127.0.0.1:8090` | Local development |
-| `staging` | `https://staging.sannjoseanimalclinic.com` | Staging/QA |
-| `prod` | `https://www.sannjoseanimalclinic.com` | Production |
+| Flavor | URL | Application ID (Android) | Usage |
+|--------|-----|--------------------------|-------|
+| `dev` | `http://127.0.0.1:8090` | `com.hznsystems.hizonelaundry.dev` | Local testing |
+| `staging` | `https://staging.hizonelaundry.hznsystems.com` | `com.hznsystems.hizonelaundry.staging` | Staging/QA |
+| `prod` | `https://hizonelaundry.hznsystems.com` | `com.hznsystems.hizonelaundry` | Production / Play Store |
 
 ### VS Code Launch Configs
 
 Use the VS Code Run and Debug dropdown to select environment:
-- **dev** - Connects to local PocketBase
-- **staging** - Connects to staging server
-- **prod (local test)** - Connects to production server
+- **dev** - Local PocketBase (`--flavor dev`)
+- **staging** - Staging server (`--flavor staging`)
+- **prod (local test)** - Production server (`--flavor prod`)
+
+`--flavor` is required on Android/iOS. On web/Windows Flutter may warn that flavors are unsupported; `--dart-define=ENV` still selects the backend.
 
 ### Build Commands
 
 ```bash
-# Development build
-flutter build web --dart-define=ENV=dev
+# Local testing (Android/iOS)
+flutter run --flavor dev --dart-define=ENV=dev
 
-# Staging build
+# Staging
+flutter run --flavor staging --dart-define=ENV=staging
+flutter build apk --flavor staging --release --dart-define=ENV=staging
+
+# Production (Play Store identity)
+flutter run --flavor prod --dart-define=ENV=prod
+flutter build appbundle --flavor prod --release --dart-define=ENV=prod
+flutter build apk --flavor prod --release --dart-define=ENV=prod
+
+# Web / Windows (no --flavor)
 flutter build web --dart-define=ENV=staging
-
-# Production build
-flutter build web --dart-define=ENV=prod --release
+flutter build web --release --dart-define=ENV=prod
+flutter build windows --release --dart-define=ENV=prod
 ```
 
 ### CI/CD
 
-Pass the `--dart-define=ENV=<env>` flag in your build pipeline:
+Pass both `--flavor` (Android) and `--dart-define=ENV=<env>`:
 
 ```yaml
-# GitHub Actions example
-- run: flutter build web --dart-define=ENV=staging
+- run: flutter build apk --flavor staging --release --dart-define=ENV=staging
+- run: flutter build web --release --dart-define=ENV=staging
 ```
 
 ### Fallback Behavior
 
-If `ENV` is not specified:
+If neither `ENV` nor `--flavor` is specified:
 - **Debug mode** (`flutter run`): Uses `dev` URL
 - **Release mode** (`flutter build --release`): Uses `prod` URL
+
+Android builds still require `--flavor` because Gradle product flavors are defined.
 
 ## License
 

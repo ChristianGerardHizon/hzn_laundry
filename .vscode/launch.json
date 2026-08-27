@@ -10,6 +10,8 @@
             "type": "dart",
             "program": "lib/main.dart",
             "args": [
+                "--flavor",
+                "dev",
                 "--web-port=8000",
                 "--dart-define=ENV=dev",
                 "--dart-define=API_URL=http://127.0.0.1:8090",
@@ -22,6 +24,8 @@
             "type": "dart",
             "program": "lib/main.dart",
             "args": [
+                "--flavor",
+                "staging",
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
                 "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
@@ -35,6 +39,8 @@
             "flutterMode": "release",
             "program": "lib/main.dart",
             "args": [
+                "--flavor",
+                "staging",
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
                 "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
@@ -47,6 +53,8 @@
             "type": "dart",
             "program": "lib/main.dart",
             "args": [
+                "--flavor",
+                "prod",
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
                 "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
@@ -60,6 +68,8 @@
             "flutterMode": "release",
             "program": "lib/main.dart",
             "args": [
+                "--flavor",
+                "prod",
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
                 "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
@@ -71,14 +81,22 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor",
+                "prod"
+            ]
         },
         {
             "name": "release mode",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor",
+                "prod"
+            ]
         },
         {
             "name": "example app",

@@ -1,65 +1,19 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../config/app_environment.dart';
 import '../storage/secure_storage_provider.dart';
 
+export '../../config/app_environment.dart'
+    show
+        PocketBaseUrls,
+        AppEnvironment,
+        pocketbaseUrl,
+        currentEnvironment,
+        appTitle;
+
 part 'pocketbase_provider.g.dart';
-
-/// Environment URLs for PocketBase
-abstract class PocketBaseUrls {
-  static const String dev = 'http://127.0.0.1:8090';
-  static const String staging = 'https://staging.hizonelaundry.hznsystems.com';
-  static const String prod = 'https://hizonelaundry.hznsystems.com';
-}
-
-/// Environment passed via --dart-define=ENV=<value>
-/// Valid values: 'dev', 'staging', 'prod'
-const String _env = String.fromEnvironment('ENV', defaultValue: '');
-
-/// Optional URL override via --dart-define=API_URL=<url>
-/// If set, this takes priority over ENV-based URL resolution.
-const String _apiUrlOverride = String.fromEnvironment('API_URL', defaultValue: '');
-
-/// Resolves the PocketBase URL based on environment configuration.
-/// Priority: API_URL override > ENV-based URL > kDebugMode fallback.
-String get pocketbaseUrl {
-  if (_apiUrlOverride.isNotEmpty) return _apiUrlOverride;
-
-  switch (_env) {
-    case 'prod':
-      return PocketBaseUrls.prod;
-    case 'staging':
-      return PocketBaseUrls.staging;
-    case 'dev':
-      return PocketBaseUrls.dev;
-    default:
-      // Fallback: use kDebugMode for local development
-      return kDebugMode ? PocketBaseUrls.dev : PocketBaseUrls.prod;
-  }
-}
-
-/// Returns the current environment name for display/logging.
-String get currentEnvironment {
-  if (_env.isNotEmpty) return _env;
-  return kDebugMode ? 'dev' : 'prod';
-}
-
-/// Returns the app title based on environment.
-/// - Dev: "Hi-Zone Laundry [Dev]"
-/// - Staging: "Hi-Zone Laundry [Stg]"
-/// - Production: "Hi-Zone Laundry"
-String get appTitle {
-  switch (currentEnvironment) {
-    case 'dev':
-      return 'Hi-Zone Laundry [Dev]';
-    case 'staging':
-      return 'Hi-Zone Laundry [Stg]';
-    default:
-      return 'Hi-Zone Laundry';
-  }
-}
 
 /// Controller for toggling between dev and production PocketBase instances.
 ///
@@ -92,8 +46,7 @@ class PbDebugController extends _$PbDebugController {
 
 /// Provides a singleton PocketBase instance.
 ///
-/// The instance uses the URL resolved from --dart-define=ENV or falls back
-/// to kDebugMode-based selection.
+/// URL comes from `--flavor` / `--dart-define=ENV` (see [AppEnvironment]).
 @Riverpod(keepAlive: true)
 PocketBase pocketbase(Ref ref) {
   return PocketBase(pocketbaseUrl);
