@@ -1,7 +1,7 @@
 package_rename_config:
   android:
     app_name: Hi-Zone Laundry # (String) The display name of the android app
-    package_name: com.it2do.dev # (String) The package name of the android app
+    package_name: com.hznsystems.hizonelaundry # (String) The package name of the android app
 
   ios:
     app_name: Hi-Zone Laundry # (String) The display name of the ios app

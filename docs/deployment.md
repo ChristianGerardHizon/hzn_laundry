@@ -17,6 +17,7 @@ This document describes the GitHub Actions deployment pipeline, branching strate
 9. [Version Management](#version-management)
 10. [Build Artifacts & Caching](#build-artifacts--caching)
 11. [Platform Support](#platform-support)
+12. [Google Play Store](#google-play-store)
 
 ---
 
@@ -78,6 +79,7 @@ PR merged to staging (or manual dispatch)
   └─ Create GitHub Release (prerelease)
       Tag: staging-X.Y.Z[-build.N]
       Artifact: app-release.apk
+      Body: compiled release notes from merged staging PRs
 
   (in parallel, only if the `build-windows` label or workflow_dispatch
    `build_windows` input is set — see "Windows Build (opt-in)" below)
@@ -113,18 +115,24 @@ PR merged to main
   │   │   --dart-define=ENV=prod
   │   │   --dart-define=API_URL=$POCKETBASE_URL_PROD
   │   │
+  │   ├─ Build App Bundle / AAB (--release, signed)
+  │   │   --dart-define=ENV=prod
+  │   │   --dart-define=API_URL=$POCKETBASE_URL_PROD
+  │   │
   │   ├─ Setup SSH agent + known_hosts
   │   ├─ rsync web build → production server pb_public/
   │   ├─ rsync migrations → production server pb_migrations/
   │   ├─ Restart PocketBase production service
   │   │
-  │   └─ Upload APK as GitHub Actions artifact
+  │   ├─ Upload APK + AAB as GitHub Actions artifacts
+  │   ├─ Compile user-facing release notes from merged staging PRs
+  │   └─ Upload AAB to Google Play Internal testing (published, with What's new)
   │
   ├─ [release-and-sync job] (depends on deploy-production)
-  │   ├─ Download APK artifact
-  │   ├─ Create GitHub Release
+  │   ├─ Download APK + AAB + release notes artifacts
+  │   ├─ Create GitHub Release (body = compiled release notes)
   │   │   Tag: vX.Y.Z
-  │   │   Artifact: app-release.apk
+  │   │   Artifacts: app-release.apk, app-release.aab
   │   └─ PATCH Version Manager API with new version
   │
   (in parallel with deploy-production, only if the `build-windows` label is set)
@@ -174,6 +182,7 @@ These must be configured in **Settings → Secrets and variables → Actions**.
 | `KEYSTORE_PASSWORD` | Yes | Staging & Production | Keystore store password |
 | `KEY_ALIAS` | Yes | Staging & Production | Key alias within the keystore |
 | `KEY_PASSWORD` | Yes | Staging & Production | Key password |
+| `PLAYSTORE_SERVICE_ACCOUNT_JSON` | Optional | Production | Play Console service-account JSON. If unset, Play upload is skipped (see [Google Play Store](#google-play-store)). |
 | `SSH_HOST` | Yes | Staging & Production | Server hostname or IP for SSH deployment |
 | `SSH_USER` | Yes | Staging & Production | SSH username (e.g., `deploy`) |
 | `SSH_PRIVATE_KEY` | Yes | Staging & Production | Ed25519 or RSA private key (PEM format) for SSH authentication |
@@ -236,7 +245,7 @@ Injected at compile time via `--dart-define`:
 
 ## Android Signing
 
-The APK build step sets these environment variables, which are read by `android/app/build.gradle.kts`:
+The APK and App Bundle (AAB) build steps set these environment variables, which are read by `android/app/build.gradle.kts`:
 
 | Variable | Source | Purpose |
 |----------|--------|---------|
@@ -299,6 +308,7 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 |-------------|----------|-------------|
 | Staging | APK | GitHub Release (prerelease) |
 | Production | APK | GitHub Actions artifact → GitHub Release (public) |
+| Production | AAB | Google Play Internal testing (published) + GitHub Release |
 | Both | Web build | Auto-deployed to server via SSH (rsync) |
 
 ---
@@ -308,6 +318,7 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 | Platform | CI/CD Status | Notes |
 |----------|-------------|-------|
 | Android (APK) | Fully automated | Signed release builds for both environments |
+| Android (Play Store) | Production only | Signed AAB uploaded and rolled out on **Internal testing** |
 | Web | Fully automated | WASM for staging, standard for production. Auto-deployed via SSH/rsync to PocketBase `pb_public/`. |
 | iOS | Not configured | Would require macOS runner + signing certificates |
 | macOS | Not configured | Would require macOS runner |
@@ -326,4 +337,101 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 | **Version suffix** | `-staging` | None |
 | **Release type** | Prerelease | Public release |
 | **Web build** | `--wasm`, deployed via SSH | Standard, deployed via SSH |
+| **Play Store** | Not uploaded | Signed AAB published to Internal testing |
 | **Version Manager** | Not updated | Updated after release |
+
+---
+
+## Google Play Store
+
+Play Console does **not** accept APKs for new uploads. Production deploys therefore build a signed **Android App Bundle** (`.aab`) and upload it with the Play Developer API.
+
+**Package name:** `com.hznsystems.hizonelaundry` (must match `applicationId` in `android/app/build.gradle.kts` and the Play Console app).
+
+The AAB is uploaded to **Internal testing** with `status: completed` (published to testers). Staging deploys do **not** upload to Play. The public production track is not used. The app does not appear in Play Store search; testers install via the Internal testing opt-in link.
+
+Testers already on the Internal testing email list receive the new build automatically after a successful production deploy.
+
+### One-time setup (Play Console + GitHub)
+
+Do these steps once. After that, every merge to `main` publishes a new Internal testing AAB automatically.
+
+#### 1. Create the app in Play Console
+
+1. Open [Google Play Console](https://play.google.com/console) with your developer account.
+2. **Create app** → name **Hi-Zone Laundry**, default language, app (not game), free or paid.
+3. Complete the required dashboard tasks until the app exists (privacy policy, app access, ads, content rating, target audience, Data safety, store listing). You can finish store listing later, but the **app record must exist** before the API can upload.
+
+#### 2. Enable Play App Signing
+
+On first upload, Play Console will ask you to enroll in **Play App Signing**.
+
+- Use the **same keystore** already stored as `KEYSTORE_BASE64`. That key becomes the **upload key** (and, if this is the first listing, also the signing key you export to Google).
+- Do not create a second keystore. Changing keys later is painful.
+
+#### 3. First AAB (manual, once)
+
+The Play Developer API usually cannot create the very first artifact. Upload the first bundle by hand:
+
+1. On a machine with Flutter and the release keystore:  
+   `flutter build appbundle --release --dart-define=ENV=prod --dart-define=API_URL=<production PocketBase URL>`
+2. Or download `app-release.aab` from a GitHub Release after a production build that got as far as the AAB (if the Play upload step is the only failure).
+3. In Play Console: **Testing** → **Internal testing** → **Create new release** → upload the `.aab`.
+4. Complete and roll out to Internal testing.
+
+After one successful console upload, later production deploys use the API.
+
+#### 4. Google Cloud service account
+
+1. In Play Console go to **Setup** → **API access** (or **Users and permissions** → **Invite new users** / service accounts, depending on the current Console UI).
+2. Link a Google Cloud project if prompted.
+3. In [Google Cloud Console](https://console.cloud.google.com/) create (or pick) a project, enable **Google Play Android Developer API**.
+4. Create a service account (e.g. `hizone-play-upload`) with no GCP roles required.
+5. Create a **JSON key** for that service account. Download it. This file is a secret — never commit it.
+6. Back in Play Console, grant that service account access to **Hi-Zone Laundry** with at least **Release apps to testing tracks**.
+
+#### 5. GitHub secret
+
+1. Open the JSON key in a text editor and copy the **entire** file (including `{` and `}`).
+2. Repo **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+3. Name: `PLAYSTORE_SERVICE_ACCOUNT_JSON`
+4. Value: the full JSON.
+5. Also add it on the **Production** environment if that environment is set to restrict secrets.
+
+Until this secret exists, production still deploys web and GitHub Releases; the Play upload step is skipped.
+
+#### 6. After each production deploy
+
+1. Wait for `deploy-production` to finish.
+2. Testers already opted in get the new version (`X.Y.Z`, version code = GitHub run number) from Play Store without a new opt-in.
+3. New testers still need the Internal testing opt-in URL (email lists cannot be updated via the Play API; add emails in Play Console).
+
+---
+
+## Release notes
+
+Staging and production deploys compile **user-facing release notes** from merged PRs into `staging` using [`.github/scripts/compile_release_notes.py`](.github/scripts/compile_release_notes.py).
+
+| When | PRs included | Used on |
+|------|----------------|---------|
+| Staging deploy | Merged to `staging` since the previous `staging-*` GitHub Release | Staging GitHub Release body |
+| Production deploy | Merged to `staging` since the previous `v*` GitHub Release | Production GitHub Release, Play Internal testing “What’s new”, auto-promote staging→main PR body |
+
+### Writing PR descriptions
+
+Add a **`## Release notes`** section to each staging PR with plain-language bullets for staff and customers. Example:
+
+```markdown
+## Release notes
+- Orders cannot move to Ready until every service has a machine and a pack count.
+- The dashboard highlights orders that still need machines or packs.
+- Mag-style full service pricing now supports a minimum charge per order.
+```
+
+If `## Release notes` is missing, CI falls back to **`## Summary`** (filtered to drop technical lines) and then the PR title.
+
+Avoid putting QA steps, migrations, or CI details in Release notes — those stay under Test plan / QA Notes.
+
+### Version codes
+
+Play requires each upload to have a **higher `versionCode`** than the last. CI uses `--build-number=${{ github.run_number }}`, so codes increase with every workflow run. Do not upload a local AAB with a lower number than the last Play upload.
