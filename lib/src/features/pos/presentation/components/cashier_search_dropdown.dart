@@ -458,7 +458,7 @@ class _SearchResultTile extends StatelessWidget {
               showQuantityPromptDialog(
                 context,
                 serviceName: service.name,
-                maxQuantity: service.maxQuantity,
+                maxQuantity: service.effectiveMaxQuantity,
                 unitLabel: service.quantityUnit?.shortPlural,
               ).then((quantity) {
                 if (quantity != null) {
@@ -479,7 +479,7 @@ class _SearchResultTile extends StatelessWidget {
         showQuantityPromptDialog(
           context,
           serviceName: service.name,
-          maxQuantity: service.maxQuantity,
+          maxQuantity: service.effectiveMaxQuantity,
           unitLabel: service.quantityUnit?.shortPlural,
         ).then((quantity) {
           if (quantity != null) {

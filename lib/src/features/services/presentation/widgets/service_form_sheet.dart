@@ -53,6 +53,8 @@ class _ServiceFormDialog extends HookConsumerWidget {
         categoryId: values['category'] as String?,
         branch: branchId,
         price: num.tryParse(values['price']?.toString() ?? '0') ?? 0,
+        minimumCharge:
+            num.tryParse(values['minimumCharge']?.toString() ?? '0') ?? 0,
         isVariablePrice: values['isVariablePrice'] as bool? ?? false,
         estimatedDuration:
             num.tryParse(values['estimatedDuration']?.toString() ?? ''),
@@ -61,6 +63,7 @@ class _ServiceFormDialog extends HookConsumerWidget {
         maxQuantity: int.tryParse(values['maxQuantity']?.toString() ?? ''),
         allowExcess: values['allowExcess'] as bool? ?? false,
         quantityUnitId: values['quantityUnit'] as String?,
+        isDefault: service?.isDefault ?? false,
       );
 
       final controller = ref.read(servicesControllerProvider.notifier);
@@ -131,6 +134,9 @@ class _ServiceFormDialog extends HookConsumerWidget {
                           'description': service?.description ?? '',
                           // 'category' is set on the dropdown after validating it exists
                           'price': service?.price.toString() ?? '0',
+                          'minimumCharge': (service?.minimumCharge ?? 0) > 0
+                              ? service!.minimumCharge.toString()
+                              : '',
                           'isVariablePrice': service?.isVariablePrice ?? false,
                           'weightBased': service?.weightBased ?? false,
                           'showPrompt': service?.showPrompt ?? false,
@@ -234,6 +240,26 @@ class _ServiceFormDialog extends HookConsumerWidget {
                               validator: FormBuilderValidators.compose([
                                 FormBuilderValidators.numeric(),
                               ]),
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 16),
+                            FormBuilderTextField(
+                              name: 'minimumCharge',
+                              decoration: const InputDecoration(
+                                labelText: 'Minimum Charge (optional)',
+                                prefixText: '₱ ',
+                                hintText: 'e.g. 120 for ₱20/kg with ₱120 min',
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return null;
+                                }
+                                final parsed = num.tryParse(value);
+                                if (parsed == null) return 'Must be a number';
+                                if (parsed < 0) return 'Must be >= 0';
+                                return null;
+                              },
                               textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 16),

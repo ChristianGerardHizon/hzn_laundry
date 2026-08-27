@@ -89,12 +89,12 @@ mixin ServiceCategoryMappable {
   }
 
   ServiceCategoryCopyWith<ServiceCategory, ServiceCategory, ServiceCategory>
-  get copyWith =>
-      _ServiceCategoryCopyWithImpl<ServiceCategory, ServiceCategory>(
-        this as ServiceCategory,
-        $identity,
-        $identity,
-      );
+      get copyWith =>
+          _ServiceCategoryCopyWithImpl<ServiceCategory, ServiceCategory>(
+            this as ServiceCategory,
+            $identity,
+            $identity,
+          );
   @override
   String toString() {
     return ServiceCategoryMapper.ensureInitialized().stringifyValue(
@@ -153,27 +153,28 @@ class _ServiceCategoryCopyWithImpl<$R, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   ServiceCategory $make(CopyWithData data) => ServiceCategory(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   ServiceCategoryCopyWith<$R2, ServiceCategory, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _ServiceCategoryCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _ServiceCategoryCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

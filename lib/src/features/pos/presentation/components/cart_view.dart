@@ -76,15 +76,14 @@ class CartView extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       children: [
                         // Service items
-                        ...serviceItems.map((item) =>
-                          _buildServiceItemCard(
+                        ...serviceItems.map((item) => _buildServiceItemCard(
                             context, ref, theme, item, isSyncing)),
 
                         // Products section
                         if (cartItems.isNotEmpty && serviceItems.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
+                                horizontal: 12, vertical: 4),
                             child: Row(
                               children: [
                                 Icon(
@@ -114,7 +113,7 @@ class CartView extends ConsumerWidget {
                           if (product == null) return const SizedBox.shrink();
 
                           return _buildProductItemCard(
-                            context, ref, theme, item, product, isSyncing);
+                              context, ref, theme, item, product, isSyncing);
                         }),
                       ],
                     ),
@@ -304,7 +303,10 @@ class CartView extends ConsumerWidget {
             const SizedBox(height: 8),
             // Row 2: Unit price, quantity controls, and total
             _buildItemControls(
-              context, ref, theme, isSyncing,
+              context,
+              ref,
+              theme,
+              isSyncing,
               itemId: item.id,
               effectivePrice: item.effectivePrice,
               quantity: item.quantity,
@@ -396,7 +398,10 @@ class CartView extends ConsumerWidget {
             const SizedBox(height: 8),
             // Row 2: Unit price, quantity controls, and total
             _buildItemControls(
-              context, ref, theme, isSyncing,
+              context,
+              ref,
+              theme,
+              isSyncing,
               itemId: item.id,
               effectivePrice: item.effectivePrice,
               quantity: item.quantity,
@@ -404,7 +409,7 @@ class CartView extends ConsumerWidget {
               isVariablePrice: isVariablePrice,
               itemName: serviceName,
               unitLabel: service?.quantityUnit?.shortSingular,
-              maxQuantity: service?.maxQuantity,
+              maxQuantity: service?.effectiveMaxQuantity,
               onUpdateQuantity: (q) => ref
                   .read(cartControllerProvider.notifier)
                   .updateServiceQuantityById(item.id, q),
@@ -602,7 +607,8 @@ Future<int?> _showQuantityDialog(
           decoration: InputDecoration(
             labelText: 'Quantity',
             hintText: 'Enter quantity',
-            suffixText: unitLabel != null && unitLabel.isNotEmpty ? unitLabel : null,
+            suffixText:
+                unitLabel != null && unitLabel.isNotEmpty ? unitLabel : null,
             helperText: maxQuantity != null ? 'Max: $maxQuantity' : null,
           ),
           keyboardType: TextInputType.number,
@@ -611,8 +617,7 @@ Future<int?> _showQuantityDialog(
             FormBuilderValidators.required(),
             FormBuilderValidators.numeric(),
             FormBuilderValidators.min(0),
-            if (maxQuantity != null)
-              FormBuilderValidators.max(maxQuantity),
+            if (maxQuantity != null) FormBuilderValidators.max(maxQuantity),
           ]),
         ),
       ),

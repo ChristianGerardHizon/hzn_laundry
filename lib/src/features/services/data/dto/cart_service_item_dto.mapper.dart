@@ -117,13 +117,9 @@ mixin CartServiceItemDtoMappable {
         .encodeMap<CartServiceItemDto>(this as CartServiceItemDto);
   }
 
-  CartServiceItemDtoCopyWith<
-    CartServiceItemDto,
-    CartServiceItemDto,
-    CartServiceItemDto
-  >
-  get copyWith =>
-      _CartServiceItemDtoCopyWithImpl<CartServiceItemDto, CartServiceItemDto>(
+  CartServiceItemDtoCopyWith<CartServiceItemDto, CartServiceItemDto,
+      CartServiceItemDto> get copyWith => _CartServiceItemDtoCopyWithImpl<
+          CartServiceItemDto, CartServiceItemDto>(
         this as CartServiceItemDto,
         $identity,
         $identity,
@@ -154,17 +150,13 @@ mixin CartServiceItemDtoMappable {
 extension CartServiceItemDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, CartServiceItemDto, $Out> {
   CartServiceItemDtoCopyWith<$R, CartServiceItemDto, $Out>
-  get $asCartServiceItemDto => $base.as(
-    (v, t, t2) => _CartServiceItemDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asCartServiceItemDto => $base.as(
+            (v, t, t2) => _CartServiceItemDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
-abstract class CartServiceItemDtoCopyWith<
-  $R,
-  $In extends CartServiceItemDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+abstract class CartServiceItemDtoCopyWith<$R, $In extends CartServiceItemDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   $R call({
     String? id,
     String? collectionId,
@@ -200,35 +192,36 @@ class _CartServiceItemDtoCopyWithImpl<$R, $Out>
     Object? customPrice = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (cart != null) #cart: cart,
-      if (service != null) #service: service,
-      if (quantity != null) #quantity: quantity,
-      if (customPrice != $none) #customPrice: customPrice,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (cart != null) #cart: cart,
+          if (service != null) #service: service,
+          if (quantity != null) #quantity: quantity,
+          if (customPrice != $none) #customPrice: customPrice,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   CartServiceItemDto $make(CopyWithData data) => CartServiceItemDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    cart: data.get(#cart, or: $value.cart),
-    service: data.get(#service, or: $value.service),
-    quantity: data.get(#quantity, or: $value.quantity),
-    customPrice: data.get(#customPrice, or: $value.customPrice),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        cart: data.get(#cart, or: $value.cart),
+        service: data.get(#service, or: $value.service),
+        quantity: data.get(#quantity, or: $value.quantity),
+        customPrice: data.get(#customPrice, or: $value.customPrice),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   CartServiceItemDtoCopyWith<$R2, CartServiceItemDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _CartServiceItemDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _CartServiceItemDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

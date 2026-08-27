@@ -49,8 +49,7 @@ class ServicePriceTier with ServicePriceTierMappable {
   bool get isFlatPrice => flatPrice != null && flatPrice! > 0;
 
   /// Whether this tier has an upper bound.
-  bool get hasUpperBound =>
-      maxQuantity != null && maxQuantity! > 0;
+  bool get hasUpperBound => maxQuantity != null && maxQuantity! > 0;
 
   /// Display-friendly range text. When [nextTierMin] is provided,
   /// shows `nextTierMin - 0.01` as the upper bound to indicate decimals
@@ -126,7 +125,44 @@ num resolveTieredTotal(
 ServicePriceTier? findMatchingTier(
   List<ServicePriceTier> tiers,
   num quantity,
-) => _findMatchingTier(tiers, quantity);
+) =>
+    _findMatchingTier(tiers, quantity);
+
+/// Resolves the total price for a service line.
+///
+/// When [tiers] are present, uses flat range totals ([resolveTieredTotal]).
+/// Otherwise uses `price * quantity`. A positive [minimumCharge] is then
+/// applied as a floor so Mag-style ₱20/kg with ₱120 min works without
+/// changing Hi-Zone bucket tiers (their [minimumCharge] is 0).
+num resolveServiceTotal({
+  required num price,
+  required num quantity,
+  num minimumCharge = 0,
+  List<ServicePriceTier> tiers = const [],
+}) {
+  final raw = tiers.isEmpty
+      ? price * quantity
+      : resolveTieredTotal(tiers, quantity, price);
+  if (minimumCharge > 0 && raw < minimumCharge) return minimumCharge;
+  return raw;
+}
+
+/// Unit price implied by [resolveServiceTotal] (`total / quantity`).
+num resolveServiceUnitPrice({
+  required num price,
+  required num quantity,
+  num minimumCharge = 0,
+  List<ServicePriceTier> tiers = const [],
+}) {
+  if (quantity <= 0) return price;
+  return resolveServiceTotal(
+        price: price,
+        quantity: quantity,
+        minimumCharge: minimumCharge,
+        tiers: tiers,
+      ) /
+      quantity;
+}
 
 ServicePriceTier? _findMatchingTier(
   List<ServicePriceTier> tiers,
@@ -138,8 +174,7 @@ ServicePriceTier? _findMatchingTier(
     ..sort((a, b) => a.minQuantity.compareTo(b.minQuantity));
 
   for (int i = 0; i < sorted.length; i++) {
-    final nextMin =
-        i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
+    final nextMin = i + 1 < sorted.length ? sorted[i + 1].minQuantity : null;
     if (sorted[i].containsQuantityWithNext(quantity, nextTierMin: nextMin)) {
       return sorted[i];
     }

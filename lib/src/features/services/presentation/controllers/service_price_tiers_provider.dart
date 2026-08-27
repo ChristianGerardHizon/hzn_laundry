@@ -14,12 +14,11 @@ Future<List<ServicePriceTier>> servicePriceTiers(
   String serviceId,
 ) async {
   final pb = ref.watch(pocketbaseProvider);
-  final records = await pb
-      .collection(PocketBaseCollections.servicePriceTiers)
-      .getFullList(
-        filter: 'service = "$serviceId"',
-        sort: 'minQuantity',
-      );
+  final records =
+      await pb.collection(PocketBaseCollections.servicePriceTiers).getFullList(
+            filter: 'service = "$serviceId"',
+            sort: 'minQuantity',
+          );
 
   return records
       .map((r) => ServicePriceTierDto.fromRecord(r).toEntity())

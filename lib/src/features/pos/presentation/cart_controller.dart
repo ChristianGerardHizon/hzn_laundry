@@ -1,13 +1,17 @@
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/packages/pocketbase/pocketbase_collections.dart';
+import '../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../auth/presentation/controllers/auth_controller.dart';
 import '../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../products/domain/product.dart';
 import '../../products/domain/product_lot.dart';
+import '../../services/data/dto/service_price_tier_dto.dart';
 import '../../services/domain/cart_service_item.dart';
 import '../../services/domain/service.dart';
+import '../../services/domain/service_price_tier.dart';
 import '../data/repositories/cart_repository.dart';
 import '../domain/cart.dart';
 import '../domain/cart_item.dart';
@@ -59,6 +63,53 @@ class CartState with CartStateMappable {
 class CartController extends _$CartController {
   CartRepository get _cartRepo => ref.read(cartRepositoryProvider);
 
+  Future<List<ServicePriceTier>> _fetchPriceTiers(String serviceId) async {
+    if (serviceId.isEmpty) return const [];
+    try {
+      final records = await ref
+          .read(pocketbaseProvider)
+          .collection(PocketBaseCollections.servicePriceTiers)
+          .getFullList(
+            filter: 'service = "$serviceId"',
+            sort: 'minQuantity',
+          );
+      return records
+          .map((r) => ServicePriceTierDto.fromRecord(r).toEntity())
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<CartServiceItem>> _attachPriceTiers(
+    List<CartServiceItem> items,
+  ) async {
+    if (items.isEmpty) return items;
+    final uniqueIds = items.map((i) => i.serviceId).toSet();
+    final tiersByService = <String, List<ServicePriceTier>>{};
+    for (final id in uniqueIds) {
+      tiersByService[id] = await _fetchPriceTiers(id);
+    }
+    return [
+      for (final item in items)
+        item.copyWith(priceTiers: tiersByService[item.serviceId] ?? const []),
+    ];
+  }
+
+  CartServiceItem _preserveCartMeta(
+    CartServiceItem synced,
+    CartServiceItem local,
+  ) {
+    var item = synced;
+    if (synced.customPrice == null && local.customPrice != null) {
+      item = item.copyWith(customPrice: local.customPrice);
+    }
+    if (item.priceTiers.isEmpty && local.priceTiers.isNotEmpty) {
+      item = item.copyWith(priceTiers: local.priceTiers);
+    }
+    return item;
+  }
+
   @override
   Future<CartState> build() async {
     // Try to load existing active cart for current working branch
@@ -80,18 +131,21 @@ class CartController extends _$CartController {
         // Load items from the most recent active cart
         final cart = carts.first;
         final itemsResult = await _cartRepo.getCartItems(cart.id);
-        final serviceItemsResult =
-            await _cartRepo.getCartServiceItems(cart.id);
+        final serviceItemsResult = await _cartRepo.getCartServiceItems(cart.id);
         return itemsResult.fold(
-          (failure) => CartState(cartId: cart.id),
-          (items) => CartState(
-            cartId: cart.id,
-            items: items,
-            serviceItems: serviceItemsResult.fold(
-              (failure) => [],
+          (failure) async => CartState(cartId: cart.id),
+          (items) async {
+            final rawServiceItems = serviceItemsResult.fold(
+              (failure) => <CartServiceItem>[],
               (serviceItems) => serviceItems,
-            ),
-          ),
+            );
+            final serviceItems = await _attachPriceTiers(rawServiceItems);
+            return CartState(
+              cartId: cart.id,
+              items: items,
+              serviceItems: serviceItems,
+            );
+          },
         );
       },
     );
@@ -339,7 +393,8 @@ class CartController extends _$CartController {
       },
       (_) {
         final newItems = currentState.items
-            .where((i) => !(i.productId == product.id && i.productLotId == lot.id))
+            .where(
+                (i) => !(i.productId == product.id && i.productLotId == lot.id))
             .toList();
         state = AsyncData(currentState.copyWith(
           items: newItems,
@@ -374,9 +429,8 @@ class CartController extends _$CartController {
         state = AsyncData(currentState.copyWith(isSyncing: false));
       },
       (_) {
-        final newItems = currentState.items
-            .where((i) => i.productId != product.id)
-            .toList();
+        final newItems =
+            currentState.items.where((i) => i.productId != product.id).toList();
         state = AsyncData(currentState.copyWith(
           items: newItems,
           isSyncing: false,
@@ -442,10 +496,10 @@ class CartController extends _$CartController {
       },
       (syncedItem) {
         // Preserve customPrice if the server didn't return it
-        final finalItem = syncedItem.customPrice == null &&
-                item.customPrice != null
-            ? syncedItem.copyWith(customPrice: item.customPrice)
-            : syncedItem;
+        final finalItem =
+            syncedItem.customPrice == null && item.customPrice != null
+                ? syncedItem.copyWith(customPrice: item.customPrice)
+                : syncedItem;
         final newItems = [...currentState.items];
         newItems[index] = finalItem;
         state = AsyncData(currentState.copyWith(
@@ -475,9 +529,8 @@ class CartController extends _$CartController {
         state = AsyncData(currentState.copyWith(isSyncing: false));
       },
       (_) {
-        final newItems = currentState.items
-            .where((i) => i.id != cartItemId)
-            .toList();
+        final newItems =
+            currentState.items.where((i) => i.id != cartItemId).toList();
         state = AsyncData(currentState.copyWith(
           items: newItems,
           isSyncing: false,
@@ -558,7 +611,7 @@ class CartController extends _$CartController {
       // Update quantity of existing item
       final existingItem = currentState.serviceItems[existingIndex];
       final newQuantity = existingItem.quantity + quantity;
-      final maxQty = service.maxQuantity;
+      final maxQty = service.effectiveMaxQuantity;
 
       // Check if the new quantity would exceed the max
       if (maxQty != null && newQuantity > maxQty) {
@@ -594,6 +647,7 @@ class CartController extends _$CartController {
         service: service,
         quantity: quantity,
         customPrice: customPrice,
+        priceTiers: await _fetchPriceTiers(service.id),
       );
 
       final result = await _cartRepo.addCartServiceItem(cartServiceItem);
@@ -602,9 +656,7 @@ class CartController extends _$CartController {
           state = AsyncData(currentState.copyWith(isSyncing: false));
         },
         (createdItem) {
-          final item = createdItem.customPrice == null && customPrice != null
-              ? createdItem.copyWith(customPrice: customPrice)
-              : createdItem;
+          final item = _preserveCartMeta(createdItem, cartServiceItem);
           final newServiceItems = [
             ...currentState.serviceItems,
             item,
@@ -639,7 +691,7 @@ class CartController extends _$CartController {
 
     // Cap quantity at maxQuantity if the service doesn't allow excess.
     // Overflow / splitting is handled upstream by addServiceToCart.
-    final maxQty = item.service?.maxQuantity;
+    final maxQty = item.service?.effectiveMaxQuantity;
     if (maxQty != null && quantity > maxQty) {
       quantity = maxQty;
     }
@@ -653,10 +705,7 @@ class CartController extends _$CartController {
         state = AsyncData(currentState.copyWith(isSyncing: false));
       },
       (syncedItem) {
-        final finalItem =
-            syncedItem.customPrice == null && item.customPrice != null
-                ? syncedItem.copyWith(customPrice: item.customPrice)
-                : syncedItem;
+        final finalItem = _preserveCartMeta(syncedItem, item);
         final newServiceItems = [...currentState.serviceItems];
         newServiceItems[index] = finalItem;
         state = AsyncData(currentState.copyWith(
@@ -718,9 +767,12 @@ class CartController extends _$CartController {
         state = AsyncData(currentState.copyWith(isSyncing: false));
       },
       (syncedItem) {
-        final finalItem = syncedItem.customPrice == null
-            ? syncedItem.copyWith(customPrice: newPrice)
-            : syncedItem;
+        final finalItem = _preserveCartMeta(
+          syncedItem.customPrice == null
+              ? syncedItem.copyWith(customPrice: newPrice)
+              : syncedItem,
+          item,
+        );
         final newServiceItems = [...currentState.serviceItems];
         newServiceItems[index] = finalItem;
         state = AsyncData(currentState.copyWith(

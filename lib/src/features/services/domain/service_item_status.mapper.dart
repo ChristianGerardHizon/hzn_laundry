@@ -56,4 +56,3 @@ extension ServiceItemStatusMapperExtension on ServiceItemStatus {
     return MapperContainer.globals.toValue<ServiceItemStatus>(this) as String;
   }
 }
-
