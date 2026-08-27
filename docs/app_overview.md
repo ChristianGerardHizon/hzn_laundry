@@ -577,6 +577,8 @@ lib/src/
 | Aug 28 | Record payment CTA + Print All | Unpaid order Record Payment is a high-contrast green button. Print menus include Print All (store then customer claim sheets) |
 | Aug 28 | Magsaysay FULL SERVICE pricing | Services can set a `minimumCharge`. Mag FULL SERVICE is ₱20/kg with a ₱120 floor in Create Order and POS; Hi-Zone flat kg-bucket tiers are unchanged |
 | Aug 28 | Sales summary hide for the day | Collapsing Today's Summary on the dashboard persists on-device for the local calendar day and expands again tomorrow |
+| Aug 28 | Privacy policy page | Public web page at `/privacy-policy.html` for Play Console and store compliance |
+| Aug 28 | Web search indexing | `robots.txt` and `noindex` meta tags discourage search indexing of the staff web app |
 | Aug 28 | Play Store Internal testing | Production deploy builds a signed Android App Bundle and publishes it to Google Play Internal testing; APK still goes to GitHub Releases |
 | Aug 28 | Mobile dashboard cleanup | Phone dashboard uses a 2-column sales KPI grid, denser alert banners, full-width Order Board filters, and a More popover for Attendance / Machine & Storage |
 | Aug 28 | Assign machine on completed lines | Assign Machine stays available when a service line is completed but has no machine (legacy Ready orders). Assigning does not reopen a completed line to in progress |
