@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../domain/product.dart';
+import '../../controllers/product_adjustments_controller.dart';
+import '../dialogs/enable_stock_tracking_dialog.dart';
+import '../dialogs/stock_adjustment_dialog.dart';
+import '../product_adjustment_tile.dart';
 import '../product_stock_badge.dart';
 
 /// Overview tab showing key product information at a glance.
@@ -11,9 +15,14 @@ import '../product_stock_badge.dart';
 /// - Stock level and status
 /// - Category
 class ProductOverviewTab extends HookConsumerWidget {
-  const ProductOverviewTab({super.key, required this.product});
+  const ProductOverviewTab({
+    super.key,
+    required this.product,
+    this.onShowAllAdjustments,
+  });
 
   final Product product;
+  final VoidCallback? onShowAllAdjustments;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,18 +31,18 @@ class ProductOverviewTab extends HookConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Price and Sale Status Card
           _buildPriceCard(context),
           const SizedBox(height: 16),
-
-          // Stock Status Card (only when stock tracking is enabled)
           if (product.trackStock) ...[
             _buildStockCard(context),
             const SizedBox(height: 16),
           ],
-
-          // Category Card
           _buildCategoryCard(context),
+          const SizedBox(height: 16),
+          if (product.trackStock)
+            _buildLatestAdjustmentsCard(context, ref)
+          else
+            _buildEnableTrackingCard(context),
         ],
       ),
     );
@@ -149,6 +158,40 @@ class ProductOverviewTab extends HookConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => showProductStockAdjustmentDialog(
+                        context,
+                        product,
+                        initialType: 'add',
+                      ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Stock'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => showProductStockAdjustmentDialog(
+                        context,
+                        product,
+                        initialType: 'remove',
+                      ),
+                      icon: const Icon(Icons.remove),
+                      label: const Text('Remove Stock'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
             if (product.trackByLot) ...[
               const SizedBox(height: 12),
@@ -257,6 +300,132 @@ class ProductOverviewTab extends HookConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnableTrackingCard(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showEnableStockTrackingDialog(context, product),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Stock tracking is off',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tap to enable tracking and set a starting quantity.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.outline,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLatestAdjustmentsCard(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final adjustmentsAsync =
+        ref.watch(productAdjustmentsControllerProvider(product.id));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.history,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Latest stock adjustments',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            adjustmentsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_error, _stackTrace) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Could not load adjustments',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+              data: (adjustments) {
+                if (adjustments.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No adjustments yet',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  );
+                }
+
+                final latest = adjustments.take(3).toList();
+                return Column(
+                  children: [
+                    for (final adjustment in latest)
+                      ProductAdjustmentTile(adjustment: adjustment),
+                  ],
+                );
+              },
+            ),
+            if (onShowAllAdjustments != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: onShowAllAdjustments,
+                  child: const Text('Show more'),
+                ),
               ),
           ],
         ),

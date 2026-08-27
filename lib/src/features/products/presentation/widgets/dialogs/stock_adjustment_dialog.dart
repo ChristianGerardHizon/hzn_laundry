@@ -23,6 +23,7 @@ class StockAdjustmentDialog extends HookConsumerWidget {
     super.key,
     this.product,
     this.lot,
+    this.initialType = 'add',
   }) : assert(product != null || lot != null,
             'Either product or lot must be provided');
 
@@ -31,6 +32,9 @@ class StockAdjustmentDialog extends HookConsumerWidget {
 
   /// The lot to adjust (for lot-tracked products).
   final ProductLot? lot;
+
+  /// Preset adjustment type: `'add'` or `'remove'`.
+  final String initialType;
 
   /// Returns the current quantity being adjusted.
   num get _currentQuantity => lot?.quantity ?? product?.quantity ?? 0;
@@ -49,7 +53,7 @@ class StockAdjustmentDialog extends HookConsumerWidget {
 
     // UI state
     final isSaving = useState(false);
-    final adjustmentType = useState<String>('add'); // 'add' or 'remove'
+    final adjustmentType = useState<String>(initialType);
     final adjustmentAmount = useState<num>(0);
 
     // Calculate new quantity preview
@@ -187,7 +191,7 @@ class StockAdjustmentDialog extends HookConsumerWidget {
               child: FormBuilder(
                 key: formKey,
                 initialValue: {
-                  'adjustmentType': 'add',
+                  'adjustmentType': initialType,
                   'amount': '',
                   'reason': '',
                 },
@@ -437,10 +441,17 @@ class StockAdjustmentDialog extends HookConsumerWidget {
 }
 
 /// Shows the stock adjustment dialog for a product.
-void showProductStockAdjustmentDialog(BuildContext context, Product product) {
+void showProductStockAdjustmentDialog(
+  BuildContext context,
+  Product product, {
+  String initialType = 'add',
+}) {
   showConstrainedDialog(
     context: context,
-    builder: (context) => StockAdjustmentDialog(product: product),
+    builder: (context) => StockAdjustmentDialog(
+      product: product,
+      initialType: initialType,
+    ),
   );
 }
 

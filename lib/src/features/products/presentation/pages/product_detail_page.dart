@@ -99,7 +99,11 @@ class ProductDetailPage extends HookConsumerWidget {
           body: TabBarView(
             controller: tabController,
             children: [
-              ProductOverviewTab(product: product),
+              ProductOverviewTab(
+                product: product,
+                onShowAllAdjustments: () =>
+                    tabController.animateTo(ProductTab.adjustments.index),
+              ),
               ProductDetailsTab(product: product),
               ProductStockTab(product: product),
               ProductAdjustmentsTab(product: product),
