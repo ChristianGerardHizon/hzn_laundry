@@ -64,4 +64,4 @@ final class AddOnsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$addOnsSummaryHash() => r'6b1e3649469d20f53d047ea0a62daae3e0a875ba';
+String _$addOnsSummaryHash() => r'073c1a2131d299acffddf8e1fe878f323042a978';

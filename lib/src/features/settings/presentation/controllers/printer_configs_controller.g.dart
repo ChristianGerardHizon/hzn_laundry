@@ -43,7 +43,7 @@ final class PrinterConfigsControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$printerConfigsControllerHash() =>
-    r'11136f2fbd556517994bc82ac6145207cdd90dbb';
+    r'0912ad20077a30f95c6772700f5846d5f9d7bc62';
 
 /// Controller for managing printer configuration list state.
 ///
