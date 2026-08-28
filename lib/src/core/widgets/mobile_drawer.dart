@@ -32,8 +32,7 @@ class MobileDrawer extends ConsumerWidget {
     final theme = Theme.of(context);
 
     // Split visible items into primary (index <= 5) and secondary (index > 5)
-    final primaryItems =
-        visibleItems.where((item) => item.index <= 5).toList();
+    final primaryItems = visibleItems.where((item) => item.index <= 5).toList();
     final secondaryItems =
         visibleItems.where((item) => item.index > 5).toList();
 
@@ -114,6 +113,7 @@ class MobileDrawer extends ConsumerWidget {
               icon: Icons.logout,
               label: t.auth.logoutButton,
               selected: false,
+              color: Colors.red,
               onTap: () => _confirmLogout(context, ref, t),
             ),
           ],
@@ -158,18 +158,20 @@ class _DrawerItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.color,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon),
-      title: Text(label),
+      leading: Icon(icon, color: color),
+      title: Text(label, style: color != null ? TextStyle(color: color) : null),
       selected: selected,
       onTap: onTap,
     );

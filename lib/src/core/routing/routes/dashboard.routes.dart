@@ -7,7 +7,6 @@ import '../../../features/dashboard/presentation/controllers/dashboard_date_over
 import '../../../features/users/domain/user_role.dart';
 import '../../widgets/nav_permissions.dart';
 import '../../../features/dashboard/presentation/controllers/dashboard_realtime_provider.dart';
-import '../../../features/dashboard/presentation/controllers/dashboard_refresh.dart';
 import '../../../features/dashboard/presentation/widgets/dashboard_alerts_row.dart';
 import '../../../features/dashboard/presentation/widgets/date_override_banner.dart';
 import '../../../features/dashboard/presentation/widgets/inventory_alerts_section.dart';
@@ -61,7 +60,7 @@ class DashboardPage extends ConsumerWidget {
     // Mobile: Single column layout with all sections
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () => refreshAllDashboardData(ref),
+        onRefresh: () => refreshDashboardWithFeedback(context, ref),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -213,8 +212,7 @@ class _MobileDashboardHeader extends ConsumerWidget {
                               color: isOverridden
                                   ? overrideColor
                                   : theme.colorScheme.outline,
-                              fontWeight:
-                                  isOverridden ? FontWeight.w600 : null,
+                              fontWeight: isOverridden ? FontWeight.w600 : null,
                             ),
                           ),
                         ],

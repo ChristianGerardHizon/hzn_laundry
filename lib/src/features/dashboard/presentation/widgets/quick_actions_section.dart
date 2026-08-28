@@ -81,8 +81,8 @@ class QuickActionsSection extends ConsumerWidget {
           if (isMobile)
             _MobileQuickActionsRow(
               canCreateSale: canCreateSale,
-              canCreateCustomer: canCreateCustomer,
               canAttendance: canAttendance,
+              canCreateCustomer: canCreateCustomer,
               onNewSale: onNewSale,
               onNewCustomer: onNewCustomer,
             )
@@ -139,15 +139,15 @@ class QuickActionsSection extends ConsumerWidget {
 class _MobileQuickActionsRow extends StatelessWidget {
   const _MobileQuickActionsRow({
     required this.canCreateSale,
-    required this.canCreateCustomer,
     required this.canAttendance,
+    required this.canCreateCustomer,
     required this.onNewSale,
     required this.onNewCustomer,
   });
 
   final bool canCreateSale;
-  final bool canCreateCustomer;
   final bool canAttendance;
+  final bool canCreateCustomer;
   final VoidCallback onNewSale;
   final VoidCallback onNewCustomer;
 
@@ -166,28 +166,27 @@ class _MobileQuickActionsRow extends StatelessWidget {
               onTap: onNewSale,
             ),
           ),
-        if (canCreateSale && canCreateCustomer) const SizedBox(width: 8),
-        if (canCreateCustomer)
-          Expanded(
-            child: _QuickActionButton(
-              icon: Icons.person_add,
-              label: 'New Customer',
-              color: Colors.blue,
-              expand: true,
-              onTap: onNewCustomer,
-            ),
-          ),
-        if (canCreateSale || canCreateCustomer) const SizedBox(width: 8),
-        _MoreQuickActionsButton(canAttendance: canAttendance),
+        if (canCreateSale) const SizedBox(width: 8),
+        _MoreQuickActionsButton(
+          canAttendance: canAttendance,
+          canCreateCustomer: canCreateCustomer,
+          onNewCustomer: onNewCustomer,
+        ),
       ],
     );
   }
 }
 
 class _MoreQuickActionsButton extends StatelessWidget {
-  const _MoreQuickActionsButton({required this.canAttendance});
+  const _MoreQuickActionsButton({
+    required this.canAttendance,
+    required this.canCreateCustomer,
+    required this.onNewCustomer,
+  });
 
   final bool canAttendance;
+  final bool canCreateCustomer;
+  final VoidCallback onNewCustomer;
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +206,12 @@ class _MoreQuickActionsButton extends StatelessWidget {
         );
       },
       menuChildren: [
+        if (canCreateCustomer)
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.person_add, color: Colors.blue),
+            onPressed: onNewCustomer,
+            child: const Text('New Customer'),
+          ),
         if (canAttendance)
           MenuItemButton(
             leadingIcon: const Icon(Icons.how_to_reg, color: Colors.orange),

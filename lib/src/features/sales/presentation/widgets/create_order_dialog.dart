@@ -1013,32 +1013,31 @@ class _ServiceSelector extends HookConsumerWidget {
       return null;
     }, [activeServices.length]);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = 8.0;
-        final columns = activeServices.length <= 4 ? 2 : 3;
-        final chipWidth =
-            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+    const spacing = 8.0;
+    final columns = activeServices.length <= 4 ? 2 : 3;
 
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: activeServices.map((service) {
-            final isSelected = selectedService.value?.id == service.id;
-            return SizedBox(
-              width: chipWidth,
-              child: _ServiceChip(
-                service: service,
-                isSelected: isSelected,
-                enabled: enabled,
-                onTap: () {
-                  if (!enabled) return;
-                  selectedService.value = isSelected ? null : service;
-                  onChanged();
-                },
-              ),
-            );
-          }).toList(),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
+        mainAxisExtent: 114,
+      ),
+      itemCount: activeServices.length,
+      itemBuilder: (context, index) {
+        final service = activeServices[index];
+        final isSelected = selectedService.value?.id == service.id;
+        return _ServiceChip(
+          service: service,
+          isSelected: isSelected,
+          enabled: enabled,
+          onTap: () {
+            if (!enabled) return;
+            selectedService.value = isSelected ? null : service;
+            onChanged();
+          },
         );
       },
     );
@@ -1083,12 +1082,13 @@ class _ServiceChip extends StatelessWidget {
         : theme.colorScheme.onSurfaceVariant;
     final unit = service.quantityUnit?.shortSingular ??
         (service.weightBased == false ? 'pc' : 'kg');
-    final priceLine = service.hasVariablePrice
-        ? 'Variable'
-        : '${service.priceDisplay}/$unit';
+    final priceLine =
+        service.hasVariablePrice ? 'Variable' : '${service.priceDisplay}/$unit';
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
         color: isSelected
             ? theme.colorScheme.primaryContainer
@@ -1109,49 +1109,55 @@ class _ServiceChip extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
             child: Stack(
+              alignment: Alignment.center,
               children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected
-                            ? theme.colorScheme.primary.withValues(alpha: 0.18)
-                            : theme.colorScheme.surfaceContainerHighest,
+                SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                                  .withValues(alpha: 0.18)
+                              : theme.colorScheme.surfaceContainerHighest,
+                        ),
+                        child: Icon(
+                          _iconFor(service.name),
+                          size: 22,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                      child: Icon(
-                        _iconFor(service.name),
-                        size: 22,
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 8),
+                      Text(
+                        service.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: onContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      service.name,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: onContainer,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Text(
+                        priceLine,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: muted,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      priceLine,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: muted,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (isSelected)
                   Positioned(
