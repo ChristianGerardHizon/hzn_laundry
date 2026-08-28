@@ -385,7 +385,9 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// on Windows.
   Future<PrintResult> _printViaBluetooth(
       PrinterConfig config, List<int> bytes) async {
-    final macAddress = config.address!;
+    // Android BluetoothAdapter.checkBluetoothAddress requires uppercase
+    // hex (AA:BB:CC:DD:EE:FF). Saved configs may store lowercase.
+    final macAddress = config.address!.toUpperCase();
     debugPrint(
       '[ThermalPrint] Bluetooth: starting print to $macAddress '
       '(${bytes.length} bytes, platform=${Platform.operatingSystem})',
