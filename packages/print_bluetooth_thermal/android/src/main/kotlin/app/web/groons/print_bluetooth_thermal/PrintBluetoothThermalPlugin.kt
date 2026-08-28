@@ -126,18 +126,28 @@ class PrintBluetoothThermalPlugin: FlutterPlugin, MethodCallHandler {
         result.success(false)
       }
       GlobalScope.launch(Dispatchers.Main) {
-        if(outputStream == null) {
-          outputStream = connect()?.also {
-            //Log.d(TAG, "connected kt")
-            //result.success("true")
-            //Toast.makeText(this@MainActivity, "Impresora conectada", Toast.LENGTH_SHORT).show()
-          }.apply {
-            result.success(state)
-            //Log.d(TAG, "finalizo tk: conexion state:$state")
+        try {
+          if(outputStream == null) {
+            outputStream = connect()?.also {
+              //Log.d(TAG, "connected kt")
+              //result.success("true")
+              //Toast.makeText(this@MainActivity, "Impresora conectada", Toast.LENGTH_SHORT).show()
+            }.apply {
+              result.success(state)
+              //Log.d(TAG, "finalizo tk: conexion state:$state")
+            }
+          }else{
+            //Log.d(TAG, "stream null kt: ")
+            outputStream == null;
+            result.success(false)
           }
-        }else{
-          //Log.d(TAG, "stream null kt: ")
-          outputStream == null;
+        } catch (e: Exception) {
+          // getRemoteDevice() throws IllegalArgumentException for
+          // lowercase hex MAC addresses (Android requires AA:BB:CC:DD:EE:FF).
+          // Catch here so it surfaces as a failed connect instead of a
+          // fatal uncaught coroutine exception that kills the app.
+          Log.e(TAG, "connect failed: ${e.message}", e)
+          state = false
           result.success(false)
         }
       }
@@ -293,7 +303,15 @@ class PrintBluetoothThermalPlugin: FlutterPlugin, MethodCallHandler {
       var outputStream: OutputStream? = null
       val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
       if (bluetoothAdapter != null && bluetoothAdapter.isEnabled) {
-        val bluetoothAddress = mac//"66:02:BD:06:18:7B" // replace with your device's address
+        // Android BluetoothAdapter.checkBluetoothAddress only accepts
+        // uppercase hex (AA:BB:CC:DD:EE:FF). Lowercase letters throw
+        // IllegalArgumentException and used to crash the app.
+        val bluetoothAddress = mac.uppercase()
+        if (!BluetoothAdapter.checkBluetoothAddress(bluetoothAddress)) {
+          Log.d(TAG, "Invalid Bluetooth address: $bluetoothAddress")
+          state = false
+          return@withContext null
+        }
         val bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothAddress)
         bluetoothAdapter.cancelDiscovery()
 
