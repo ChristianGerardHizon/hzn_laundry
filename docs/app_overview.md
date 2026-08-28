@@ -572,6 +572,8 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 28 | App flavors | `dev`, `staging`, and `prod` flavors. Android can install all three side by side. Dev talks to local PocketBase; staging and prod use their live URLs |
+| Aug 28 | Mobile dashboard and Create Order polish | Phone pull-to-refresh matches Today's Summary (1s wait + complete toast). New Customer is under More. Drawer Logout is red like desktop. Create Order service cards use an even grid |
 | Aug 28 | Product Overview stock actions | Tracked products get Add/Remove Stock presets and latest adjustments with Show more (opens Adjustments). Untracked products can enable tracking from Overview. Details hides Adjust Stock when tracking is off or lot-based |
 | Aug 28 | Today's Summary refresh | Dashboard section title is Today's Summary. Refresh is a labeled button with a 1s minimum wait and a "Pulled new data complete" overlay toast |
 | Aug 28 | Record payment CTA + Print All | Unpaid order Record Payment is a high-contrast green button. Print menus include Print All (store then customer claim sheets) |

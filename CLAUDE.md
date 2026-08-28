@@ -52,7 +52,11 @@ dart run build_runner watch -d --low-resources-mode
 dart run slang
 
 # Run the app
-flutter run
+flutter run --flavor prod
+
+# Flavors: dev (local PocketBase), staging, prod
+flutter run --flavor dev --dart-define=ENV=dev
+flutter run --flavor staging --dart-define=ENV=staging
 
 # Run tests
 flutter test
