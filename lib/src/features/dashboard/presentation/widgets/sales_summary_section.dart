@@ -18,6 +18,39 @@ import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
 import 'total_packs_modal.dart';
 
+OverlayEntry? _refreshCompleteOverlay;
+
+/// Same refresh as the dashboard Refresh button: reload all sections, wait
+/// at least 1s, then show the complete toast.
+Future<void> refreshDashboardWithFeedback(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  await Future.wait([
+    refreshAllDashboardData(ref),
+    Future<void>.delayed(const Duration(seconds: 1)),
+  ]);
+  if (!context.mounted) return;
+  _showRefreshCompleteOverlay(context);
+}
+
+void _showRefreshCompleteOverlay(BuildContext context) {
+  _refreshCompleteOverlay?.remove();
+  late final OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => _RefreshCompleteToast(
+      onFinished: () {
+        entry.remove();
+        if (_refreshCompleteOverlay == entry) {
+          _refreshCompleteOverlay = null;
+        }
+      },
+    ),
+  );
+  _refreshCompleteOverlay = entry;
+  Overlay.of(context).insert(entry);
+}
+
 /// Dashboard section showing today's sales totals.
 ///
 /// Each KPI card (Total Sales, Total Paid, Total Unpaid) is tappable
@@ -32,7 +65,6 @@ class SalesSummarySection extends HookConsumerWidget {
     final hiddenDateAsync = ref.watch(salesSummaryHiddenDateProvider);
     final theme = Theme.of(context);
     final isRefreshing = useState(false);
-    final refreshOverlay = useRef<OverlayEntry?>(null);
     final isExpanded = !hiddenDateAsync.maybeWhen(
       data: (storedDate) => isSalesSummaryHiddenFor(
         storedDate: storedDate,
@@ -41,40 +73,11 @@ class SalesSummarySection extends HookConsumerWidget {
       orElse: () => false,
     );
 
-    useEffect(() {
-      return () {
-        refreshOverlay.value?.remove();
-        refreshOverlay.value = null;
-      };
-    }, const []);
-
-    void showRefreshCompleteOverlay() {
-      refreshOverlay.value?.remove();
-      late final OverlayEntry entry;
-      entry = OverlayEntry(
-        builder: (_) => _RefreshCompleteToast(
-          onFinished: () {
-            entry.remove();
-            if (refreshOverlay.value == entry) {
-              refreshOverlay.value = null;
-            }
-          },
-        ),
-      );
-      refreshOverlay.value = entry;
-      Overlay.of(context).insert(entry);
-    }
-
     Future<void> handleRefresh() async {
       if (isRefreshing.value) return;
       isRefreshing.value = true;
       try {
-        await Future.wait([
-          refreshAllDashboardData(ref),
-          Future<void>.delayed(const Duration(seconds: 1)),
-        ]);
-        if (!context.mounted) return;
-        showRefreshCompleteOverlay();
+        await refreshDashboardWithFeedback(context, ref);
       } finally {
         if (context.mounted) {
           isRefreshing.value = false;

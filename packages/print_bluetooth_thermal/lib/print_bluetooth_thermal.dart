@@ -88,7 +88,8 @@ class PrintBluetoothThermal {
     //conectar impresora bluetooth
     bool result = false;
 
-    String mac = macPrinterAddress; //"66:02:BD:06:18:7B";
+    // Android requires uppercase hex MAC addresses (AA:BB:CC:DD:EE:FF).
+    String mac = macPrinterAddress.toUpperCase();
     if (Platform.isWindows) {
       result = await PrintBluetoothThermalWindows.connect(macAddress: mac);
     } else {
