@@ -201,7 +201,7 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --build-name=${{ env.STAGING_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=staging --dart-define=API_URL=${{ secrets.POCKETBASE_URL_STAGING }}
+        run: flutter build apk --flavor staging --release --build-name=${{ env.STAGING_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=staging --dart-define=API_URL=${{ secrets.POCKETBASE_URL_STAGING }}
 
       # --- SSH DEPLOY START ---
       - name: Setup SSH agent
@@ -257,7 +257,7 @@ jobs:
           name: ${{ env.STAGING_TAG }}
           body_path: release-notes/release-notes.md
           prerelease: true
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/app-staging-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -521,7 +521,7 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
+        run: flutter build apk --flavor prod --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
 
       - name: Build App Bundle (Release)
         env:
@@ -530,7 +530,7 @@ jobs:
           CM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build appbundle --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
+        run: flutter build appbundle --flavor prod --release --build-name=${{ env.PROD_VER }} --build-number=${{ github.run_number }} --dart-define=ENV=prod --dart-define=API_URL=${{ secrets.POCKETBASE_URL_PROD }}
 
       # --- SSH DEPLOY START ---
       - name: Setup SSH agent
@@ -572,14 +572,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-prod-release.apk
           retention-days: 1
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          path: build/app/outputs/bundle/prodRelease/app-prod-release.aab
           retention-days: 1
 
       - name: Compile release notes
@@ -616,7 +616,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
           packageName: com.hznsystems.hizonelaundry
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
           track: internal
           status: completed
           releaseName: ${{ env.PROD_VER }}
@@ -741,8 +741,8 @@ jobs:
           name: "v${{ needs.deploy-production.outputs.prod_ver }}"
           body_path: release-notes/release-notes.md
           files: |
-            app-release.apk
-            app-release.aab
+            app-prod-release.apk
+            app-prod-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

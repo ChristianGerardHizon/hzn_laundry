@@ -67,7 +67,7 @@ PR merged to staging (or manual dispatch)
   │   --dart-define=ENV=staging
   │   --dart-define=API_URL=$POCKETBASE_URL_STAGING
   │
-  ├─ Build APK (--release, signed)
+  ├─ Build APK (--flavor staging, --release, signed)
   │   --dart-define=ENV=staging
   │   --dart-define=API_URL=$POCKETBASE_URL_STAGING
   │
@@ -78,7 +78,7 @@ PR merged to staging (or manual dispatch)
   │
   └─ Create GitHub Release (prerelease)
       Tag: staging-X.Y.Z[-build.N]
-      Artifact: app-release.apk
+      Artifact: app-staging-release.apk
       Body: compiled release notes from merged staging PRs
 
   (in parallel, only if the `build-windows` label or workflow_dispatch
@@ -111,11 +111,11 @@ PR merged to main
   │   │   --dart-define=ENV=prod
   │   │   --dart-define=API_URL=$POCKETBASE_URL_PROD
   │   │
-  │   ├─ Build APK (--release, signed)
+  │   ├─ Build APK (--flavor prod, --release, signed)
   │   │   --dart-define=ENV=prod
   │   │   --dart-define=API_URL=$POCKETBASE_URL_PROD
   │   │
-  │   ├─ Build App Bundle / AAB (--release, signed)
+  │   ├─ Build App Bundle / AAB (--flavor prod, --release, signed)
   │   │   --dart-define=ENV=prod
   │   │   --dart-define=API_URL=$POCKETBASE_URL_PROD
   │   │
@@ -132,7 +132,7 @@ PR merged to main
   │   ├─ Download APK + AAB + release notes artifacts
   │   ├─ Create GitHub Release (body = compiled release notes)
   │   │   Tag: vX.Y.Z
-  │   │   Artifacts: app-release.apk, app-release.aab
+  │   │   Artifacts: app-prod-release.apk, app-prod-release.aab
   │   └─ PATCH Version Manager API with new version
   │
   (in parallel with deploy-production, only if the `build-windows` label is set)
@@ -234,12 +234,20 @@ deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hizonelaundry.s
 
 ## Build-Time Dart Defines
 
-Injected at compile time via `--dart-define`:
+Injected at compile time via `--dart-define`. Android/iOS also select a `--flavor` (`dev`, `staging`, `prod`).
 
 | Define | Staging Value | Production Value | Purpose |
 |--------|--------------|-----------------|---------|
 | `ENV` | `staging` | `prod` | Selects environment configuration |
 | `API_URL` | `$POCKETBASE_URL_STAGING` | `$POCKETBASE_URL_PROD` | Backend API endpoint |
+
+Android flavor IDs:
+
+| Flavor | Application ID | PocketBase |
+|--------|----------------|------------|
+| `dev` | `com.hznsystems.hizonelaundry.dev` | `http://127.0.0.1:8090` |
+| `staging` | `com.hznsystems.hizonelaundry.staging` | staging URL |
+| `prod` | `com.hznsystems.hizonelaundry` | production URL (Play Store) |
 
 ---
 
@@ -374,8 +382,8 @@ On first upload, Play Console will ask you to enroll in **Play App Signing**.
 The Play Developer API usually cannot create the very first artifact. Upload the first bundle by hand:
 
 1. On a machine with Flutter and the release keystore:  
-   `flutter build appbundle --release --dart-define=ENV=prod --dart-define=API_URL=<production PocketBase URL>`
-2. Or download `app-release.aab` from a GitHub Release after a production build that got as far as the AAB (if the Play upload step is the only failure).
+   `flutter build appbundle --flavor prod --release --dart-define=ENV=prod --dart-define=API_URL=<production PocketBase URL>`
+2. Or download `app-prod-release.aab` from a GitHub Release after a production build that got as far as the AAB (if the Play upload step is the only failure).
 3. In Play Console: **Testing** → **Internal testing** → **Create new release** → upload the `.aab`.
 4. Complete and roll out to Internal testing.
 
