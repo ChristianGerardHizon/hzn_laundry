@@ -103,4 +103,16 @@ class SaleServiceItem with SaleServiceItemMappable {
     if (machineIds.any((id) => id.isNotEmpty)) return true;
     return machineName != null && machineName!.isNotEmpty;
   }
+
+  /// Storage label for UI: snapshot name, else expanded location names.
+  String? get displayStorageName {
+    final snapshot = storageName?.trim();
+    if (snapshot != null && snapshot.isNotEmpty) return snapshot;
+    final names = storageLocations
+        .map((location) => location.name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+    if (names.isEmpty) return null;
+    return names.join(', ');
+  }
 }

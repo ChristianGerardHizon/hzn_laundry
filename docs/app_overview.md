@@ -94,7 +94,7 @@ Home screen with today's sales KPIs, kanban board, and operational alerts.
 
 - Responsive layout (single column mobile, two-pane tablet)
 - Sales summary KPI cards (including Needs Attention for incomplete order details); collapsing Today's Summary hides it for the rest of the local day on this device. A labeled Refresh control reloads all dashboard data (1s minimum) and shows a brief "Pulled new data complete" toast
-- Kanban board for order status; Ready-for-pickup requires machines and pack count
+- Kanban board for order status; Ready-for-pickup requires machines and pack count. Order cards show machine (Processing), location + packs (Ready), or machine + location + packs (Picked Up)
 
 ---
 
@@ -572,6 +572,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Aug 30 | Dashboard order tags | Kanban cards show location when assigned: Processing = machine; Ready = location + packs; Picked Up = machine + location + packs |
 | Aug 28 | Mobile dashboard and Create Order polish | Phone pull-to-refresh matches Today's Summary (1s wait + complete toast). New Customer is under More. Drawer Logout is red like desktop. Create Order service cards use an even grid |
 | Aug 28 | Product Overview stock actions | Tracked products get Add/Remove Stock presets and latest adjustments with Show more (opens Adjustments). Untracked products can enable tracking from Overview. Details hides Adjust Stock when tracking is off or lot-based |
 | Aug 28 | Today's Summary refresh | Dashboard section title is Today's Summary. Refresh is a labeled button with a 1s minimum wait and a "Pulled new data complete" overlay toast |
