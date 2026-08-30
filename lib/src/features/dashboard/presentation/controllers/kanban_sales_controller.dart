@@ -211,14 +211,12 @@ Future<int> crossTabSearchCount(Ref ref, String query) async {
       // We're on backlogs — search in today
       final todayEnd = todayStart.add(const Duration(days: 1));
       final endUtc = todayEnd.toPocketBaseUtc();
-      filter =
-          '$filter && postedDate >= "$startUtc" && postedDate < "$endUtc"';
+      filter = '$filter && postedDate >= "$startUtc" && postedDate < "$endUtc"';
   }
 
   // Add search filter
   final q = query.replaceAll("'", "\\'");
-  filter =
-      '$filter && (customerName ~ "$q" || receiptNumber ~ "$q")';
+  filter = '$filter && (customerName ~ "$q" || receiptNumber ~ "$q")';
 
   final result = await pb.collection(PocketBaseCollections.sales).getList(
         page: 1,
@@ -265,11 +263,11 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
 
   final records = branchId == null
       ? (await pb.collection(PocketBaseCollections.sales).getList(
-            page: 1,
-            perPage: 500,
-            filter: filter,
-            sort: '-postedDate',
-          ))
+                page: 1,
+                perPage: 500,
+                filter: filter,
+                sort: '-postedDate',
+              ))
           .items
       : await pb.collection(PocketBaseCollections.sales).getFullList(
             filter: filter,
@@ -294,14 +292,13 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
   final Map<String, List<SaleItem>> saleItemsBySale = {};
 
   if (allSaleIds.isNotEmpty) {
-    final saleIdFilters =
-        allSaleIds.map((id) => 'sale = "$id"').join(' || ');
+    final saleIdFilters = allSaleIds.map((id) => 'sale = "$id"').join(' || ');
 
     // Fetch service items and sale items in parallel
     final results = await Future.wait([
       pb.collection(PocketBaseCollections.saleServiceItems).getFullList(
             filter: '($saleIdFilters)',
-            expand: 'service',
+            expand: 'service,storage',
           ),
       pb
           .collection(PocketBaseCollections.saleItems)
@@ -310,9 +307,11 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
 
     for (final record in results[0]) {
       final serviceExpanded = record.get<RecordModel?>('expand.service');
+      final storageExpanded = record.get<List<RecordModel>?>('expand.storage');
       final item = SaleServiceItemDto.fromRecord(record).toEntity(
-            serviceExpanded: serviceExpanded,
-          );
+        serviceExpanded: serviceExpanded,
+        storageExpanded: storageExpanded,
+      );
       serviceItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
 

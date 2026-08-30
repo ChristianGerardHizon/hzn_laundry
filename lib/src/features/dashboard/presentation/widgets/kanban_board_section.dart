@@ -1190,11 +1190,8 @@ class _SaleCardContent extends StatelessWidget {
     return postedDay.isBefore(today);
   }
 
-  /// Gets the display text for machine or storage based on order status.
-  String? _getAssignmentInfo() {
+  String? _machineLabel() {
     if (serviceItems.isEmpty) return null;
-
-    // Show machine names (with load qty) for all statuses when assigned
     final machineInfos = serviceItems
         .where(
             (item) => item.machineName != null && item.machineName!.isNotEmpty)
@@ -1204,22 +1201,36 @@ class _SaleCardContent extends StatelessWidget {
         })
         .toSet()
         .toList();
-    if (machineInfos.isNotEmpty) return machineInfos.join(', ');
-
-    // Fallback: storage names for ready orders with no machines
-    if (sale.orderStatus == OrderStatus.ready) {
-      final storageNames = serviceItems
-          .where((item) =>
-              item.storageName != null && item.storageName!.isNotEmpty)
-          .map((item) => item.storageName!)
-          .toSet()
-          .toList();
-      if (storageNames.isEmpty) return null;
-      return storageNames.join(', ');
-    }
-
-    return null;
+    if (machineInfos.isEmpty) return null;
+    return machineInfos.join(', ');
   }
+
+  String? _locationLabel() {
+    if (serviceItems.isEmpty) return null;
+    final names = serviceItems
+        .map((item) => item.displayStorageName)
+        .whereType<String>()
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList();
+    if (names.isEmpty) return null;
+    return names.join(', ');
+  }
+
+  bool get _showMachineTag => switch (sale.orderStatus) {
+        OrderStatus.processing || OrderStatus.pickedUp => true,
+        _ => false,
+      };
+
+  bool get _showLocationTag => switch (sale.orderStatus) {
+        OrderStatus.ready || OrderStatus.pickedUp => true,
+        _ => false,
+      };
+
+  bool get _showPacksTag =>
+      sale.packs > 0 &&
+      (sale.orderStatus == OrderStatus.ready ||
+          sale.orderStatus == OrderStatus.pickedUp);
 
   /// Checks if all service items with machines are completed.
   bool get _allServicesCompleted {
@@ -1254,33 +1265,20 @@ class _SaleCardContent extends StatelessWidget {
     return receiptNumber;
   }
 
-  IconData? _getAssignmentIcon() {
-    final hasMachines = serviceItems.any(
-        (item) => item.machineName != null && item.machineName!.isNotEmpty);
-    if (hasMachines) return Icons.local_laundry_service;
-    if (sale.orderStatus == OrderStatus.ready) return Icons.inventory_2;
-    return null;
-  }
-
-  Color _getAssignmentColor() {
-    final hasMachines = serviceItems.any(
-        (item) => item.machineName != null && item.machineName!.isNotEmpty);
-    if (hasMachines) {
-      if (_allServicesCompleted) return Colors.green;
-      if (_someServicesCompleted) return Colors.orange;
-      return Colors.blue;
-    }
-    if (sale.orderStatus == OrderStatus.ready) return Colors.teal;
-    return Colors.grey;
+  Color get _machineTagColor {
+    if (_allServicesCompleted) return Colors.green;
+    if (_someServicesCompleted) return Colors.orange;
+    return Colors.blue;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-    final assignmentInfo = _getAssignmentInfo();
-    final assignmentIcon = _getAssignmentIcon();
-    final assignmentColor = _getAssignmentColor();
+    final machineLabel = _showMachineTag ? _machineLabel() : null;
+    final locationLabel = _showLocationTag ? _locationLabel() : null;
+    final hasTags =
+        machineLabel != null || locationLabel != null || _showPacksTag;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -1366,108 +1364,31 @@ class _SaleCardContent extends StatelessWidget {
                   ),
                 ],
               ],
-              // Machine or Storage assignment info
-              if (assignmentInfo != null && assignmentIcon != null) ...[
+              if (hasTags) ...[
                 const SizedBox(height: 6),
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: assignmentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              assignmentIcon,
-                              size: 12,
-                              color: assignmentColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                assignmentInfo,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: assignmentColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                    if (machineLabel != null)
+                      _AssignmentTag(
+                        icon: Icons.local_laundry_service,
+                        label: machineLabel,
+                        color: _machineTagColor,
                       ),
-                    ),
-                    if (sale.packs > 0 &&
-                        (sale.orderStatus == OrderStatus.ready ||
-                            sale.orderStatus == OrderStatus.pickedUp)) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.shopping_bag_outlined,
-                              size: 12,
-                              color: Colors.purple,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${sale.packs}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.purple,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                    if (locationLabel != null)
+                      _AssignmentTag(
+                        icon: Icons.inventory_2,
+                        label: locationLabel,
+                        color: Colors.teal,
                       ),
-                    ],
-                  ],
-                ),
-              ],
-              // Packs info when no assignment info is present
-              if ((assignmentInfo == null || assignmentIcon == null) &&
-                  sale.packs > 0 &&
-                  (sale.orderStatus == OrderStatus.ready ||
-                      sale.orderStatus == OrderStatus.pickedUp)) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 12,
+                    if (_showPacksTag)
+                      _AssignmentTag(
+                        icon: Icons.shopping_bag_outlined,
+                        label: '${sale.packs}',
                         color: Colors.purple,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${sale.packs} pack${sale.packs > 1 ? 's' : ''}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.purple,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ],
               const SizedBox(height: 6),
@@ -1509,6 +1430,48 @@ class _SaleCardContent extends StatelessWidget {
       return 'Yesterday';
     }
     return DateFormat('MMM d').format(local);
+  }
+}
+
+class _AssignmentTag extends StatelessWidget {
+  const _AssignmentTag({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
