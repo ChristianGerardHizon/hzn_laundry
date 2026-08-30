@@ -37,6 +37,28 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["usesCleartextTraffic"] = "false"
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "Hi-Zone Laundry Dev")
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            resValue("string", "app_name", "Hi-Zone Laundry Stg")
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Hi-Zone Laundry")
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+        }
     }
 
     // ✅ Define the "release" signing config correctly
