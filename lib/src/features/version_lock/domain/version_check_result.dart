@@ -3,10 +3,6 @@ enum VersionCheckStatus {
   /// App is up to date — no action needed.
   upToDate,
 
-  /// A newer version is available but current version is still supported.
-  /// Shows a dismissable dialog.
-  updateAvailable,
-
   /// Current version is below the minimum — user must update.
   /// Shows a blocking full-screen page.
   forceUpdateRequired,
