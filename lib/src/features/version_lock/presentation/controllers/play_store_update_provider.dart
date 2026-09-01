@@ -34,11 +34,24 @@ class PlayStoreUpdate extends _$PlayStoreUpdate {
 
   /// Checks Play for an update and, if a flexible update is allowed, starts
   /// downloading it in the background. Call once on app start.
+  ///
+  /// Also handles the case where a flexible update was already downloaded in
+  /// a previous session (e.g. the app was closed before the user restarted)
+  /// — Play reports that as [UpdateAvailability.developerTriggeredUpdateInProgress]
+  /// rather than [UpdateAvailability.updateAvailable].
   Future<void> startFlexibleUpdateIfAvailable() async {
     if (!_isSupportedPlatform) return;
 
     try {
       final info = await InAppUpdate.checkForUpdate();
+
+      if (info.updateAvailability ==
+              UpdateAvailability.developerTriggeredUpdateInProgress &&
+          info.installStatus == InstallStatus.downloaded) {
+        state = FlexibleUpdateState.readyToInstall;
+        return;
+      }
+
       if (info.updateAvailability != UpdateAvailability.updateAvailable) {
         return;
       }
@@ -77,8 +90,11 @@ class PlayStoreUpdate extends _$PlayStoreUpdate {
         final info = await InAppUpdate.checkForUpdate();
         if (info.updateAvailability == UpdateAvailability.updateAvailable &&
             info.immediateUpdateAllowed) {
-          await InAppUpdate.performImmediateUpdate();
-          return;
+          final result = await InAppUpdate.performImmediateUpdate();
+          // Only success skips the fallback below — userDeniedUpdate and
+          // inAppUpdateFailed are returned (not thrown) by the plugin, and
+          // otherwise leave the user stuck on the blocking force-update page.
+          if (result == AppUpdateResult.success) return;
         }
       } catch (_) {
         // Fall through to opening the store listing below.
