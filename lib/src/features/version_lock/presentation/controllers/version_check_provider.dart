@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -20,10 +22,18 @@ const _skipVersionCheck =
 /// On web, shows a blocking page with a reload button when below minimum version.
 /// The `latestVersion` check is skipped since the deployed build is always
 /// the latest version on web.
+///
+/// The minimum-version lockout only applies on Android and web — Google Play's
+/// native In-App Update API handles Android, while iOS/macOS/Linux/Windows have
+/// no in-app update mechanism and always report up to date.
 @Riverpod(keepAlive: true)
 Future<VersionCheckResult> versionCheck(Ref ref) async {
   // Skip version check in debug/profile modes or when explicitly disabled
   if (kDebugMode || kProfileMode || _skipVersionCheck) {
+    return VersionCheckResult.upToDate;
+  }
+
+  if (!kIsWeb && !Platform.isAndroid) {
     return VersionCheckResult.upToDate;
   }
 
@@ -63,14 +73,6 @@ Future<VersionCheckResult> versionCheck(Ref ref) async {
         if (VersionUtils.isBelow(currentVersion, config.minimumVersion)) {
           return VersionCheckResult(
             status: VersionCheckStatus.forceUpdateRequired,
-            latestVersion: config.latestVersion,
-          );
-        }
-
-        // Below latest but above minimum → optional update
-        if (VersionUtils.isBelow(currentVersion, config.latestVersion)) {
-          return VersionCheckResult(
-            status: VersionCheckStatus.updateAvailable,
             latestVersion: config.latestVersion,
           );
         }

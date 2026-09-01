@@ -16,6 +16,10 @@ part of 'version_check_provider.dart';
 /// On web, shows a blocking page with a reload button when below minimum version.
 /// The `latestVersion` check is skipped since the deployed build is always
 /// the latest version on web.
+///
+/// The minimum-version lockout only applies on Android and web — Google Play's
+/// native In-App Update API handles Android, while iOS/macOS/Linux/Windows have
+/// no in-app update mechanism and always report up to date.
 
 @ProviderFor(versionCheck)
 final versionCheckProvider = VersionCheckProvider._();
@@ -28,6 +32,10 @@ final versionCheckProvider = VersionCheckProvider._();
 /// On web, shows a blocking page with a reload button when below minimum version.
 /// The `latestVersion` check is skipped since the deployed build is always
 /// the latest version on web.
+///
+/// The minimum-version lockout only applies on Android and web — Google Play's
+/// native In-App Update API handles Android, while iOS/macOS/Linux/Windows have
+/// no in-app update mechanism and always report up to date.
 
 final class VersionCheckProvider extends $FunctionalProvider<
         AsyncValue<VersionCheckResult>,
@@ -44,6 +52,10 @@ final class VersionCheckProvider extends $FunctionalProvider<
   /// On web, shows a blocking page with a reload button when below minimum version.
   /// The `latestVersion` check is skipped since the deployed build is always
   /// the latest version on web.
+  ///
+  /// The minimum-version lockout only applies on Android and web — Google Play's
+  /// native In-App Update API handles Android, while iOS/macOS/Linux/Windows have
+  /// no in-app update mechanism and always report up to date.
   VersionCheckProvider._()
       : super(
           from: null,
@@ -70,4 +82,4 @@ final class VersionCheckProvider extends $FunctionalProvider<
   }
 }
 
-String _$versionCheckHash() => r'b6006c7803e9750e10f4e2d24dbe763ceef4dd90';
+String _$versionCheckHash() => r'da45e8d997dd28f0a22f3d6aafa6816e9ec3a8ec';

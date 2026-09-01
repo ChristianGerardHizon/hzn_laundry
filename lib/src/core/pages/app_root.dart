@@ -4,10 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/pos/presentation/cart_controller.dart';
-import '../../features/version_lock/domain/version_check_result.dart';
-import '../../features/version_lock/presentation/controllers/update_dismissed_provider.dart';
-import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
-import '../../features/version_lock/presentation/widgets/optional_update_dialog.dart';
+import '../../features/version_lock/presentation/controllers/play_store_update_provider.dart';
 import '../i18n/strings.g.dart';
 import '../packages/pocketbase/pb_connectivity_provider.dart';
 import '../routing/routes/dashboard.routes.dart';
@@ -52,12 +49,22 @@ class _AppRootState extends ConsumerState<AppRoot> {
   /// Key for the scaffold to control drawer.
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Guards against re-showing the restart SnackBar on every rebuild once
+  /// shown, while still allowing it to reappear if a later update is queued.
+  bool _restartSnackBarShown = false;
+
   @override
   void initState() {
     super.initState();
     // Dismiss keyboard when entering authenticated shell (e.g., after login)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusManager.instance.primaryFocus?.unfocus();
+    });
+    // Kick off Google Play's flexible in-app update check in the background.
+    Future(() {
+      ref
+          .read(playStoreUpdateProvider.notifier)
+          .startFlexibleUpdateIfAvailable();
     });
   }
 
@@ -127,19 +134,33 @@ class _AppRootState extends ConsumerState<AppRoot> {
     // Initialize cart controller early to load any active cart
     ref.watch(cartControllerProvider);
 
-    // Listen for optional update availability
-    ref.listen(versionCheckProvider, (previous, next) {
-      final result = next.value;
-      if (result == null) return;
-      if (result.status != VersionCheckStatus.updateAvailable) return;
-      if (ref.read(updateDismissedProvider)) return;
-
-      ref.read(updateDismissedProvider.notifier).dismiss();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        showOptionalUpdateDialog(context, result);
-      });
-    });
+    // Prompt to restart once a flexible background update is ready.
+    // Uses ref.watch (not ref.listen) so this also fires when the state is
+    // already readyToInstall at build time — e.g. a remount after
+    // logout/login within the same process — not just on future transitions.
+    final playStoreUpdateState = ref.watch(playStoreUpdateProvider);
+    if (playStoreUpdateState == FlexibleUpdateState.readyToInstall) {
+      if (!_restartSnackBarShown) {
+        _restartSnackBarShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Update downloaded'),
+              action: SnackBarAction(
+                label: 'Restart',
+                onPressed: () => ref
+                    .read(playStoreUpdateProvider.notifier)
+                    .completeFlexibleUpdate(),
+              ),
+              duration: const Duration(days: 1),
+            ),
+          );
+        });
+      }
+    } else {
+      _restartSnackBarShown = false;
+    }
 
     final isMobile = Breakpoints.isMobile(context);
 
