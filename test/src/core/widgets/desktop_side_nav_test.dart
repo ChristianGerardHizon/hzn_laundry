@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/config/app_environment.dart';
 import 'package:hzn_laundry/src/core/i18n/strings.g.dart';
 import 'package:hzn_laundry/src/core/packages/pocketbase/pb_connectivity_provider.dart';
 import 'package:hzn_laundry/src/core/widgets/desktop_side_nav.dart';
@@ -61,6 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text(pocketbaseUrl), findsOneWidget);
     expect(find.text('Shortcuts'), findsOneWidget);
     expect(find.text('Categories'), findsOneWidget);
     expect(find.text('Orders'), findsOneWidget);
@@ -120,11 +122,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Shortcuts'), findsOneWidget);
+    expect(find.text(pocketbaseUrl), findsOneWidget);
 
     await tester.tap(find.byTooltip('Collapse navigation'));
     await tester.pumpAndSettle();
 
     expect(find.text('Shortcuts'), findsNothing);
+    expect(find.text(pocketbaseUrl), findsNothing);
     expect(find.text('Categories'), findsNothing);
     expect(find.byTooltip('Dashboard'), findsOneWidget);
   });

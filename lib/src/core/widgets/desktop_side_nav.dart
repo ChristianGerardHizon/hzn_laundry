@@ -110,17 +110,37 @@ class DesktopSideNav extends HookConsumerWidget {
                       const NetworkHealthLogo(size: 32),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          appTitle,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: theme.colorScheme.onSurface,
-                            letterSpacing: -0.15,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              appTitle,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurface,
+                                letterSpacing: -0.15,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Tooltip(
+                              message: pocketbaseUrl,
+                              child: Text(
+                                pocketbaseUrl,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                  height: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
