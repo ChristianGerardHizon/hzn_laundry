@@ -2,27 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../features/products/domain/product_category.dart';
-import '../../../features/settings/presentation/controllers/product_categories_controller.dart';
 import '../../../features/settings/presentation/pages/system_shell.dart';
-import '../../../features/settings/presentation/widgets/dialogs/product_category_form_dialog.dart';
-import '../../../features/settings/presentation/widgets/product_category_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/printer_config_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/theme_settings_panel.dart';
 import '../../../features/settings/presentation/controllers/printer_configs_controller.dart';
+import '../../../features/settings/presentation/controllers/selected_printer_id_provider.dart';
 import '../../../features/settings/presentation/widgets/dialogs/printer_config_form_dialog.dart';
-import '../../../features/pos/presentation/pages/cashier_groups_settings_page.dart';
-import '../../../features/pos/presentation/widgets/cashier_group_detail_panel.dart';
-import '../../../features/settings/presentation/widgets/import_landing_panel.dart';
-import '../../../features/settings/presentation/widgets/quantity_unit_detail_panel.dart';
-import '../../../features/settings/presentation/controllers/quantity_units_controller.dart';
-import '../../../features/settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
-import '../../../features/quantity_units/domain/quantity_unit.dart';
-import '../../../features/machines/domain/machine.dart';
-import '../../../features/machines/presentation/controllers/machines_controller.dart';
-import '../../../features/machines/presentation/widgets/machine_detail_panel.dart';
-import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
-import '../../../features/settings/presentation/widgets/email_settings_panel.dart';
 import '../../utils/breakpoints.dart';
 
 part 'system.routes.g.dart';
@@ -92,8 +77,8 @@ class SystemShellRoute extends ShellRouteData {
 
 /// System root route.
 ///
-/// On tablet: Redirects to /system/product-categories (3-panel layout)
-/// On mobile: Shows landing page with Categories/Printers/Appearance/Import options
+/// On tablet: Redirects to /system/printers (3-panel layout)
+/// On mobile: Shows landing page with Printers and Appearance options
 class SystemRoute extends GoRouteData with $SystemRoute {
   const SystemRoute();
 
@@ -103,7 +88,7 @@ class SystemRoute extends GoRouteData with $SystemRoute {
   String? redirect(BuildContext context, GoRouterState state) {
     // Only redirect on tablet - mobile shows landing page
     if (Breakpoints.isTabletOrLarger(context) && state.uri.path == path) {
-      return '$path/product-categories';
+      return '$path/printers';
     }
     return null;
   }
@@ -115,22 +100,17 @@ class SystemRoute extends GoRouteData with $SystemRoute {
   }
 }
 
-/// Product categories management route.
+/// Product categories — redirected to Management.
 class ProductCategoriesRoute extends GoRouteData with $ProductCategoriesRoute {
   const ProductCategoriesRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show categories list
-    return const _MobileProductCategoriesListPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/product-categories';
   }
 }
 
-/// Product category detail route.
+/// Product category detail — redirected to Management.
 class ProductCategoryDetailRoute extends GoRouteData
     with $ProductCategoryDetailRoute {
   const ProductCategoryDetailRoute({required this.id});
@@ -138,27 +118,22 @@ class ProductCategoryDetailRoute extends GoRouteData
   final String id;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return ProductCategoryDetailPanel(categoryId: id);
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/product-categories/${Uri.encodeComponent(id)}';
   }
 }
 
-/// Quantity units management route.
+/// Quantity units — redirected to Management.
 class QuantityUnitsRoute extends GoRouteData with $QuantityUnitsRoute {
   const QuantityUnitsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show quantity units list
-    return const _MobileQuantityUnitsListPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/quantity-units';
   }
 }
 
-/// Quantity unit detail route.
+/// Quantity unit detail — redirected to Management.
 class QuantityUnitDetailRoute extends GoRouteData
     with $QuantityUnitDetailRoute {
   const QuantityUnitDetailRoute({required this.id});
@@ -166,35 +141,30 @@ class QuantityUnitDetailRoute extends GoRouteData
   final String id;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return QuantityUnitDetailPanel(unitId: id);
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/quantity-units/${Uri.encodeComponent(id)}';
   }
 }
 
-/// Machines management route.
+/// Machines — redirected to Management.
 class MachinesRoute extends GoRouteData with $MachinesRoute {
   const MachinesRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show machines list
-    return const _MobileMachinesListPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/machines';
   }
 }
 
-/// Machine detail route (machine info + load rules).
+/// Machine detail — redirected to Management.
 class MachineDetailRoute extends GoRouteData with $MachineDetailRoute {
   const MachineDetailRoute({required this.id});
 
   final String id;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return MachineDetailPanel(machineId: id);
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/machines/${Uri.encodeComponent(id)}';
   }
 }
 
@@ -235,47 +205,37 @@ class AppearanceRoute extends GoRouteData with $AppearanceRoute {
   }
 }
 
-/// Import products from CSV route.
+/// Import products — redirected to Management.
 class ImportRoute extends GoRouteData with $ImportRoute {
   const ImportRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show import landing page
-    return const _MobileImportPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/import';
   }
 }
 
-/// Feature flags / workflow settings route.
+/// Feature flags / workflow settings — redirected to Management.
 class FeatureFlagsRoute extends GoRouteData with $FeatureFlagsRoute {
   const FeatureFlagsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return const EmailSettingsPanel();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/settings';
   }
 }
 
-/// Cashier groups management route.
+/// Cashier groups — redirected to Management.
 class CashierGroupsRoute extends GoRouteData with $CashierGroupsRoute {
   const CashierGroupsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    // Mobile: Show cashier groups list
-    return const CashierGroupsSettingsPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/cashier-groups';
   }
 }
 
-/// Cashier group detail route.
+/// Cashier group detail — redirected to Management.
 class CashierGroupDetailRoute extends GoRouteData
     with $CashierGroupDetailRoute {
   const CashierGroupDetailRoute({required this.id});
@@ -283,8 +243,8 @@ class CashierGroupDetailRoute extends GoRouteData
   final String id;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return CashierGroupDetailPanel(groupId: id);
+  String? redirect(BuildContext context, GoRouterState state) {
+    return '/management/cashier-groups/${Uri.encodeComponent(id)}';
   }
 }
 
@@ -298,8 +258,6 @@ class _MobileSystemLandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('System Settings'),
@@ -308,43 +266,11 @@ class _MobileSystemLandingPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _SystemOptionCard(
-            icon: Icons.inventory_2,
-            title: 'Product Categories',
-            description: 'Manage product category hierarchy',
-            color: theme.colorScheme.secondary,
-            onTap: () => const ProductCategoriesRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
-            icon: Icons.straighten,
-            title: 'Quantity Units',
-            description: 'Manage units of measurement',
-            color: Colors.cyan,
-            onTap: () => const QuantityUnitsRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
-            icon: Icons.local_laundry_service,
-            title: 'Machines',
-            description: 'Manage machines and weight-based load rules',
-            color: Colors.blue,
-            onTap: () => const MachinesRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
             icon: Icons.print,
             title: 'Printers',
-            description: 'Configure thermal receipt printers',
+            description: 'Configure thermal receipt printers on this device',
             color: Colors.orange,
             onTap: () => const PrinterSettingsRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
-            icon: Icons.point_of_sale,
-            title: 'Cashier Layout',
-            description: 'Customize cashier page groups',
-            color: Colors.teal,
-            onTap: () => const CashierGroupsRoute().go(context),
           ),
           const SizedBox(height: 16),
           _SystemOptionCard(
@@ -353,14 +279,6 @@ class _MobileSystemLandingPage extends StatelessWidget {
             description: 'Customize app theme and colors',
             color: Colors.purple,
             onTap: () => const AppearanceRoute().go(context),
-          ),
-          const SizedBox(height: 16),
-          _SystemOptionCard(
-            icon: Icons.file_upload,
-            title: 'Import',
-            description: 'Import products from CSV file',
-            color: Colors.indigo,
-            onTap: () => const ImportRoute().go(context),
           ),
         ],
       ),
@@ -438,155 +356,6 @@ class _SystemOptionCard extends StatelessWidget {
   }
 }
 
-/// Mobile product categories list page.
-class _MobileProductCategoriesListPage extends ConsumerWidget {
-  const _MobileProductCategoriesListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final categoriesAsync = ref.watch(productCategoriesControllerProvider);
-    final controller = ref.read(productCategoriesControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Product Categories'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'product_category_fab',
-        onPressed: () => showProductCategoryFormDialog(context),
-        tooltip: 'Add Category',
-        child: const Icon(Icons.add),
-      ),
-      body: categoriesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (categories) {
-          if (categories.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No categories yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a category',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Build hierarchical display
-          final rootCategories =
-              categories.where((c) => !c.hasParent).toList();
-          final childCategories = categories.where((c) => c.hasParent).toList();
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: rootCategories.length,
-              itemBuilder: (context, index) {
-                final category = rootCategories[index];
-                final children = childCategories
-                    .where((c) => c.parentId == category.id)
-                    .toList();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MobileCategoryListTile(
-                      category: category,
-                      isChild: false,
-                      onTap: () => ProductCategoryDetailRoute(id: category.id)
-                          .push(context),
-                    ),
-                    ...children.map((child) => Padding(
-                          padding: const EdgeInsets.only(left: 24),
-                          child: _MobileCategoryListTile(
-                            category: child,
-                            isChild: true,
-                            onTap: () =>
-                                ProductCategoryDetailRoute(id: child.id)
-                                    .push(context),
-                          ),
-                        )),
-                  ],
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MobileCategoryListTile extends StatelessWidget {
-  const _MobileCategoryListTile({
-    required this.category,
-    required this.isChild,
-    required this.onTap,
-  });
-
-  final ProductCategory category;
-  final bool isChild;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isChild
-            ? theme.colorScheme.secondaryContainer
-            : theme.colorScheme.primaryContainer,
-        child: Icon(
-          isChild ? Icons.subdirectory_arrow_right : Icons.inventory_2_outlined,
-          color: isChild
-              ? theme.colorScheme.onSecondaryContainer
-              : theme.colorScheme.onPrimaryContainer,
-        ),
-      ),
-      title: Text(category.name),
-      subtitle: category.hasParent && category.parentName != null
-          ? Text('Parent: ${category.parentName}')
-          : null,
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
-  }
-}
-
 /// Mobile printer list page.
 class _MobilePrinterListPage extends ConsumerWidget {
   const _MobilePrinterListPage();
@@ -596,6 +365,7 @@ class _MobilePrinterListPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final printersAsync = ref.watch(printerConfigsControllerProvider);
     final controller = ref.read(printerConfigsControllerProvider.notifier);
+    final selectedPrinterId = ref.watch(selectedPrinterIdProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -670,7 +440,7 @@ class _MobilePrinterListPage extends ConsumerWidget {
                   title: Row(
                     children: [
                       Expanded(child: Text(printer.name)),
-                      if (printer.isDefault)
+                      if (selectedPrinterId == printer.id)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -681,7 +451,7 @@ class _MobilePrinterListPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Default',
+                            'Selected',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onPrimary,
                             ),
@@ -707,257 +477,5 @@ class _MobilePrinterListPage extends ConsumerWidget {
 
   void _showCreateSheet(BuildContext context) {
     showPrinterConfigFormDialog(context);
-  }
-}
-
-/// Mobile import page.
-class _MobileImportPage extends StatelessWidget {
-  const _MobileImportPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Import Products'),
-      ),
-      body: const ImportLandingPanel(),
-    );
-  }
-}
-
-/// Mobile quantity units list page.
-class _MobileQuantityUnitsListPage extends ConsumerWidget {
-  const _MobileQuantityUnitsListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final unitsAsync = ref.watch(quantityUnitsControllerProvider);
-    final controller = ref.read(quantityUnitsControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quantity Units'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'quantity_unit_fab',
-        onPressed: () => showQuantityUnitFormDialog(context),
-        tooltip: 'Add Unit',
-        child: const Icon(Icons.add),
-      ),
-      body: unitsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (units) {
-          if (units.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.straighten_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No quantity units yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a unit',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: units.length,
-              itemBuilder: (context, index) {
-                final unit = units[index];
-                return _MobileQuantityUnitListTile(
-                  unit: unit,
-                  onTap: () =>
-                      QuantityUnitDetailRoute(id: unit.id).push(context),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MobileQuantityUnitListTile extends StatelessWidget {
-  const _MobileQuantityUnitListTile({
-    required this.unit,
-    required this.onTap,
-  });
-
-  final QuantityUnit unit;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(
-          Icons.straighten,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-      ),
-      title: Text(unit.name),
-      subtitle: Text(unit.shortPlural),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
-  }
-}
-
-/// Mobile machines list page.
-class _MobileMachinesListPage extends ConsumerWidget {
-  const _MobileMachinesListPage();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final machinesAsync = ref.watch(machinesControllerProvider);
-    final controller = ref.read(machinesControllerProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Machines'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'machine_fab',
-        onPressed: () => showMachineFormDialog(context),
-        tooltip: 'Add Machine',
-        child: const Icon(Icons.add),
-      ),
-      body: machinesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (machines) {
-          if (machines.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.local_laundry_service_outlined,
-                    size: 64,
-                    color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No machines yet',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap + to add a machine',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => controller.refresh(),
-            child: ListView.builder(
-              itemCount: machines.length,
-              itemBuilder: (context, index) {
-                final machine = machines[index];
-                return _MobileMachineListTile(
-                  machine: machine,
-                  onTap: () =>
-                      MachineDetailRoute(id: machine.id).push(context),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MobileMachineListTile extends StatelessWidget {
-  const _MobileMachineListTile({
-    required this.machine,
-    required this.onTap,
-  });
-
-  final Machine machine;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final sizeLabel = machine.size?.displayName;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(
-          Icons.local_laundry_service,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-      ),
-      title: Text(machine.name),
-      subtitle: Text(
-        sizeLabel == null
-            ? machine.type.displayName
-            : '${machine.type.displayName} • $sizeLabel',
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:hizonelaundry/src/features/services/domain/service_price_tier.dart';
+import 'package:hzn_laundry/src/features/services/domain/service_price_tier.dart';
 
 void main() {
   group('resolveServiceTotal', () {

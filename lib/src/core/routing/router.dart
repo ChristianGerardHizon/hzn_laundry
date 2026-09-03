@@ -10,7 +10,8 @@ import 'dialog_dismissing_observer.dart';
 import 'router_utils.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
-import 'routes/organization.routes.dart';
+import 'routes/management.routes.dart';
+import 'routes/organizations.routes.dart';
 import 'routes/products.routes.dart';
 import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
@@ -71,7 +72,8 @@ GoRouter router(Ref ref) {
           $salesShellRoute,
           $reportsRoute,
           $activitiesRoute,
-          $organizationShellRoute,
+          $managementShellRoute,
+          $organizationsRoute,
           $promosShellRoute,
           $systemShellRoute,
         ],

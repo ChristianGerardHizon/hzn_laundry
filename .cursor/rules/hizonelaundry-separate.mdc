@@ -1,0 +1,29 @@
+---
+description: Hi-Zone Laundry (hizonelaundry) is a separate system — never touch it from this repo
+alwaysApply: true
+---
+
+# Hizonelaundry is not this project
+
+This repo is **HZN Laundry** (`hzn_laundry`). **Hi-Zone Laundry** (`hizonelaundry`) is a different product on the same CI/CD host. Never treat them as the same app.
+
+## Never touch
+
+- Hosts: `hizonelaundry.hznsystems.com`, `staging.hizonelaundry.hznsystems.com`, `*.hizonelaundry.sannjoseanimalclinic.com`
+- Server dirs: `/opt/pocketbase/hizonelaundry/`, `/opt/pocketbase/hizonelaundry-staging/`
+- Services: `pocketbase_hizonelaundry.service`, `pocketbase_hizonelaundry-staging.service`
+- Caddy/DNS/email for those hostnames; do not redirect them to `hznlaundry`
+
+## This project's hosts
+
+- Production: `https://hznlaundry.hznsystems.com`
+- Staging: `https://staging.hznlaundry.hznsystems.com`
+
+Do not rsync hooks/migrations, restart PocketBase, or edit Caddy for `hizonelaundry*` when deploying this repo. If a path or hostname contains `hizonelaundry`, stop and confirm with the user.
+
+```text
+# BAD — Hi-Zone production (separate system)
+rsync server/pb_hooks/ root@host:/opt/pocketbase/hizonelaundry/pb_hooks/
+
+# GOOD — only this project's own PocketBase dirs/hosts (hznlaundry, not hizonelaundry)
+```

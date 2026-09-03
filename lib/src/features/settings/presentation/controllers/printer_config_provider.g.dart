@@ -91,39 +91,30 @@ final class PrinterConfigFamily extends $Family
   String toString() => r'printerConfigProvider';
 }
 
-/// Provider to fetch the effective default printer configuration.
-///
-/// Priority: local default (device-specific) > server default.
-/// If no local default is set, falls back to the server-configured default.
+/// The printer selected on this device, if it exists and is enabled.
 
-@ProviderFor(defaultPrinter)
-final defaultPrinterProvider = DefaultPrinterProvider._();
+@ProviderFor(selectedPrinter)
+final selectedPrinterProvider = SelectedPrinterProvider._();
 
-/// Provider to fetch the effective default printer configuration.
-///
-/// Priority: local default (device-specific) > server default.
-/// If no local default is set, falls back to the server-configured default.
+/// The printer selected on this device, if it exists and is enabled.
 
-final class DefaultPrinterProvider extends $FunctionalProvider<
+final class SelectedPrinterProvider extends $FunctionalProvider<
         AsyncValue<PrinterConfig?>, PrinterConfig?, FutureOr<PrinterConfig?>>
     with $FutureModifier<PrinterConfig?>, $FutureProvider<PrinterConfig?> {
-  /// Provider to fetch the effective default printer configuration.
-  ///
-  /// Priority: local default (device-specific) > server default.
-  /// If no local default is set, falls back to the server-configured default.
-  DefaultPrinterProvider._()
+  /// The printer selected on this device, if it exists and is enabled.
+  SelectedPrinterProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
-          name: r'defaultPrinterProvider',
+          name: r'selectedPrinterProvider',
           isAutoDispose: true,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
 
   @override
-  String debugGetCreateSourceHash() => _$defaultPrinterHash();
+  String debugGetCreateSourceHash() => _$selectedPrinterHash();
 
   @$internal
   @override
@@ -133,8 +124,8 @@ final class DefaultPrinterProvider extends $FunctionalProvider<
 
   @override
   FutureOr<PrinterConfig?> create(Ref ref) {
-    return defaultPrinter(ref);
+    return selectedPrinter(ref);
   }
 }
 
-String _$defaultPrinterHash() => r'93d4db920e52d04aa094d434cc0b9d147f36922e';
+String _$selectedPrinterHash() => r'0f2361cae31961b30b9e1d827e6a6fa9cb2c2cce';

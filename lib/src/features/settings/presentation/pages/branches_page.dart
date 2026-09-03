@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/routing/routes/organization.routes.dart';
+import '../../../../core/routing/routes/management.routes.dart';
 import '../../domain/branch.dart';
 import '../controllers/branches_controller.dart';
 import '../widgets/dialogs/branch_form_dialog.dart';
@@ -114,8 +114,8 @@ class BranchesPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  onTap: () => OrganizationBranchDetailRoute(id: branch.id)
-                      .push(context),
+                  onTap: () =>
+                      ManagementBranchDetailRoute(id: branch.id).push(context),
                 );
               },
             ),

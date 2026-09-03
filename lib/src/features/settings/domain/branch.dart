@@ -12,6 +12,7 @@ class Branch with BranchMappable {
     required this.name,
     required this.address,
     required this.contactNumber,
+    this.organizationId,
     this.operatingHours,
     this.cutOffTime,
     this.incentiveAmount = 5,
@@ -23,6 +24,9 @@ class Branch with BranchMappable {
 
   /// PocketBase record ID.
   final String id;
+
+  /// Parent organization ID (tenant).
+  final String? organizationId;
 
   /// Branch name (short internal identifier, e.g., "Main Branch").
   final String name;

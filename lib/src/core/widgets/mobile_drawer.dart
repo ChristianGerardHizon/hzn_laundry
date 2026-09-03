@@ -53,7 +53,7 @@ class MobileDrawer extends ConsumerWidget {
                   const NetworkHealthLogo(size: 48),
                   const SizedBox(height: 8),
                   Text(
-                    'Hi-Zone Laundry',
+                    'HZN Laundry',
                     style: theme.textTheme.titleLarge,
                   ),
                   Text(

@@ -1,4 +1,4 @@
-# Hi-Zone Laundry — staff business app (not for public search indexing).
+# HZN Laundry — staff business app (not for public search indexing).
 # Privacy policy remains fetchable for store compliance links.
 
 User-agent: *

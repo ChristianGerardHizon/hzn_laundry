@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../i18n/strings.g.dart';
+import '../utils/window_utils.dart';
 
 /// Toggles true fullscreen (hides the title bar and fills the screen),
 /// similar to pressing F11 in a browser.
@@ -13,17 +13,10 @@ import '../i18n/strings.g.dart';
 class FullscreenToggleButton extends StatefulWidget {
   const FullscreenToggleButton({super.key});
 
-  static bool get isSupportedPlatform =>
-      !kIsWeb &&
-      [
-        TargetPlatform.linux,
-        TargetPlatform.macOS,
-        TargetPlatform.windows,
-      ].contains(defaultTargetPlatform);
+  static bool get isSupportedPlatform => WindowUtils.isDesktopPlatform;
 
   @override
-  State<FullscreenToggleButton> createState() =>
-      _FullscreenToggleButtonState();
+  State<FullscreenToggleButton> createState() => _FullscreenToggleButtonState();
 }
 
 class _FullscreenToggleButtonState extends State<FullscreenToggleButton>
@@ -36,7 +29,7 @@ class _FullscreenToggleButtonState extends State<FullscreenToggleButton>
     if (!FullscreenToggleButton.isSupportedPlatform) return;
 
     windowManager.addListener(this);
-    windowManager.isFullScreen().then((value) {
+    WindowUtils.isFullScreen().then((value) {
       if (mounted) setState(() => _isFullScreen = value);
     });
   }
@@ -60,7 +53,18 @@ class _FullscreenToggleButtonState extends State<FullscreenToggleButton>
   }
 
   Future<void> _toggle() async {
-    await windowManager.setFullScreen(!_isFullScreen);
+    final currentlyFull = await WindowUtils.isFullScreen();
+    final next = !currentlyFull;
+    if (mounted) setState(() => _isFullScreen = next);
+
+    try {
+      final actual = await WindowUtils.setFullScreen(next);
+      if (mounted && actual != _isFullScreen) {
+        setState(() => _isFullScreen = actual);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isFullScreen = currentlyFull);
+    }
   }
 
   @override

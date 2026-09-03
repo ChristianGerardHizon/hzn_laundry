@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hizonelaundry/src/core/config/app_environment.dart';
+import 'package:hzn_laundry/src/core/config/app_environment.dart';
 
 void main() {
   group('AppEnvironment.resolve', () {
@@ -20,7 +20,7 @@ void main() {
         isDebug: true,
       );
       expect(env, AppEnvironment.staging);
-      expect(env.appTitle, 'Hi-Zone Laundry [Stg]');
+      expect(env.appTitle, 'HZN Laundry [Stg]');
     });
 
     test('dev flavor uses local PocketBase', () {
@@ -31,7 +31,7 @@ void main() {
       );
       expect(env, AppEnvironment.dev);
       expect(env.pocketBaseUrl, PocketBaseUrls.dev);
-      expect(env.appTitle, 'Hi-Zone Laundry [Dev]');
+      expect(env.appTitle, 'HZN Laundry [Dev]');
     });
 
     test('prod flavor uses production URL and unadorned title', () {
@@ -42,7 +42,7 @@ void main() {
       );
       expect(env, AppEnvironment.prod);
       expect(env.pocketBaseUrl, PocketBaseUrls.prod);
-      expect(env.appTitle, 'Hi-Zone Laundry');
+      expect(env.appTitle, 'HZN Laundry');
     });
 
     test('debug fallback is dev when ENV and flavor are empty', () {

@@ -5,14 +5,13 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
 import '../../../domain/printer_config.dart';
 import '../../../domain/printer_connection_type.dart';
 import '../../../domain/printer_paper_width.dart';
-import '../../controllers/current_branch_controller.dart';
 import '../../controllers/printer_configs_controller.dart';
+import '../../controllers/selected_printer_id_provider.dart';
 import '../../../../pos/presentation/services/thermal_print_service.dart';
 import 'printer_discovery_dialog.dart';
 
@@ -32,14 +31,13 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
     final theme = Theme.of(context);
     final size = MediaQuery.sizeOf(context);
 
-    // Form key
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
-
-    // UI state
     final isSaving = useState(false);
     final selectedConnectionType = useState<PrinterConnectionType>(
       config?.connectionType ?? PrinterConnectionType.bluetooth,
     );
+    final selectedId = ref.watch(selectedPrinterIdProvider).value;
+    final isCurrentlySelected = config != null && config!.id == selectedId;
 
     Future<void> handleSave() async {
       final isValid = formKey.currentState!.saveAndValidate();
@@ -52,54 +50,35 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
 
       isSaving.value = true;
 
-      final t = Translations.of(context);
-
-      if (!isEditing && ref.read(isAllBranchesProvider)) {
-        isSaving.value = false;
-        showFormErrorDialog(
-          context,
-          errors: [t.navigation.createUnavailableAllBranches],
-        );
-        return;
-      }
-
-      final branchId = isEditing
-          ? config?.branchId
-          : ref.read(currentBranchIdProvider);
-
-      if (!isEditing && (branchId == null || branchId.isEmpty)) {
-        isSaving.value = false;
-        showFormErrorDialog(
-          context,
-          errors: [t.navigation.createUnavailableAllBranches],
-        );
-        return;
-      }
-
       final configData = PrinterConfig(
         id: config?.id ?? '',
         name: (values['name'] as String).trim(),
-        connectionType:
-            values['connectionType'] as PrinterConnectionType? ??
-                PrinterConnectionType.bluetooth,
+        connectionType: values['connectionType'] as PrinterConnectionType? ??
+            PrinterConnectionType.bluetooth,
         address: _nullIfEmpty(values['address'] as String?),
         port: int.tryParse(values['port'] as String? ?? '9100') ?? 9100,
-        paperWidth:
-            values['paperWidth'] as PrinterPaperWidth? ?? PrinterPaperWidth.mm80,
-        isDefault: values['isDefault'] as bool? ?? false,
+        paperWidth: values['paperWidth'] as PrinterPaperWidth? ??
+            PrinterPaperWidth.mm80,
         isEnabled: values['isEnabled'] as bool? ?? true,
-        branchId: branchId,
+        created: config?.created,
       );
+
+      final select = values['select'] as bool? ?? false;
 
       bool success;
       if (isEditing) {
         success = await ref
             .read(printerConfigsControllerProvider.notifier)
             .updateConfig(configData);
+        if (success && select && configData.isEnabled) {
+          await ref
+              .read(selectedPrinterIdProvider.notifier)
+              .setSelected(configData.id);
+        }
       } else {
         success = await ref
             .read(printerConfigsControllerProvider.notifier)
-            .createConfig(configData);
+            .createConfig(configData, select: select);
       }
 
       if (!success) {
@@ -143,7 +122,6 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
         height: size.height,
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
@@ -156,193 +134,178 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
                     child: Text(
                       isEditing ? 'Edit Printer' : 'New Printer',
                       style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: TextButton(
-                    onPressed: isSaving.value ? null : () => context.pop(),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                FilledButton(
-                  onPressed: isSaving.value ? null : handleSave,
-                  child: isSaving.value
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Content
-          Expanded(
-            child: FormBuilder(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
-
-                    // Name field
-                    FormBuilderTextField(
-                      name: 'name',
-                      initialValue: config?.name,
-                      decoration: const InputDecoration(
-                        labelText: 'Printer Name *',
-                        hintText: 'Enter a name for this printer',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: FormBuilderValidators.required(),
-                      textInputAction: TextInputAction.next,
                     ),
-                    const SizedBox(height: 16),
-
-                    // Connection Type
-                    FormBuilderChoiceChips<PrinterConnectionType>(
-                      name: 'connectionType',
-                      initialValue:
-                          config?.connectionType ?? PrinterConnectionType.bluetooth,
-                      decoration: const InputDecoration(
-                        labelText: 'Connection Type *',
-                        border: InputBorder.none,
-                      ),
-                      options: PrinterConnectionType.values
-                          .map(
-                            (type) => FormBuilderChipOption<PrinterConnectionType>(
-                              value: type,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(type.icon, size: 18),
-                                  const SizedBox(width: 4),
-                                  Text(type.displayName),
-                                ],
-                              ),
-                            ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: TextButton(
+                      onPressed: isSaving.value ? null : () => context.pop(),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: isSaving.value ? null : handleSave,
+                    child: isSaving.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          selectedConnectionType.value = value;
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Address field with discovery button
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: FormBuilderTextField(
-                            name: 'address',
-                            initialValue: config?.address,
-                            decoration: InputDecoration(
-                              labelText: selectedConnectionType.value ==
-                                      PrinterConnectionType.bluetooth
-                                  ? 'MAC Address *'
-                                  : 'IP Address *',
-                              hintText: selectedConnectionType.value ==
-                                      PrinterConnectionType.bluetooth
-                                  ? 'e.g., 00:11:22:33:44:55'
-                                  : 'e.g., 192.168.1.100',
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: FormBuilderValidators.required(),
-                            textInputAction: TextInputAction.next,
-                          ),
-                        ),
-                        if (isThermalPrintingSupported &&
-                            selectedConnectionType.value ==
-                                PrinterConnectionType.bluetooth) ...[
-                          const SizedBox(width: 8),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: IconButton.outlined(
-                              onPressed: showDiscovery,
-                              icon: const Icon(Icons.search),
-                              tooltip: 'Discover Printers',
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Port field (only for network)
-                    if (selectedConnectionType.value ==
-                        PrinterConnectionType.network)
+                        : const Text('Save'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: FormBuilder(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
                       FormBuilderTextField(
-                        name: 'port',
-                        initialValue: (config?.port ?? 9100).toString(),
+                        name: 'name',
+                        initialValue: config?.name,
                         decoration: const InputDecoration(
-                          labelText: 'Port',
-                          hintText: '9100 (default)',
+                          labelText: 'Printer Name *',
+                          hintText: 'Enter a name for this printer',
                           border: OutlineInputBorder(),
                         ),
-                        keyboardType: TextInputType.number,
+                        validator: FormBuilderValidators.required(),
                         textInputAction: TextInputAction.next,
                       ),
-                    if (selectedConnectionType.value ==
-                        PrinterConnectionType.network)
                       const SizedBox(height: 16),
-
-                    // Paper Width
-                    FormBuilderDropdown<PrinterPaperWidth>(
-                      name: 'paperWidth',
-                      initialValue: config?.paperWidth ?? PrinterPaperWidth.mm80,
-                      decoration: const InputDecoration(
-                        labelText: 'Paper Width',
-                        border: OutlineInputBorder(),
+                      FormBuilderChoiceChips<PrinterConnectionType>(
+                        name: 'connectionType',
+                        initialValue: config?.connectionType ??
+                            PrinterConnectionType.bluetooth,
+                        decoration: const InputDecoration(
+                          labelText: 'Connection Type *',
+                          border: InputBorder.none,
+                        ),
+                        options: PrinterConnectionType.values
+                            .map(
+                              (type) =>
+                                  FormBuilderChipOption<PrinterConnectionType>(
+                                value: type,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(type.icon, size: 18),
+                                    const SizedBox(width: 4),
+                                    Text(type.displayName),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            selectedConnectionType.value = value;
+                          }
+                        },
                       ),
-                      items: PrinterPaperWidth.values
-                          .map(
-                            (width) => DropdownMenuItem(
-                              value: width,
-                              child: Text(width.displayName),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: FormBuilderTextField(
+                              name: 'address',
+                              initialValue: config?.address,
+                              decoration: InputDecoration(
+                                labelText: selectedConnectionType.value ==
+                                        PrinterConnectionType.bluetooth
+                                    ? 'MAC Address *'
+                                    : 'IP Address *',
+                                hintText: selectedConnectionType.value ==
+                                        PrinterConnectionType.bluetooth
+                                    ? 'e.g., 00:11:22:33:44:55'
+                                    : 'e.g., 192.168.1.100',
+                                border: const OutlineInputBorder(),
+                              ),
+                              validator: FormBuilderValidators.required(),
+                              textInputAction: TextInputAction.next,
                             ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Default printer toggle
-                    FormBuilderSwitch(
-                      name: 'isDefault',
-                      initialValue: config?.isDefault ?? false,
-                      title: const Text('Set as default printer'),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
+                          ),
+                          if (isThermalPrintingSupported &&
+                              selectedConnectionType.value ==
+                                  PrinterConnectionType.bluetooth) ...[
+                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: IconButton.outlined(
+                                onPressed: showDiscovery,
+                                icon: const Icon(Icons.search),
+                                tooltip: 'Discover Printers',
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-
-                    // Enabled toggle
-                    FormBuilderSwitch(
-                      name: 'isEnabled',
-                      initialValue: config?.isEnabled ?? true,
-                      title: const Text('Printer enabled'),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
+                      const SizedBox(height: 16),
+                      if (selectedConnectionType.value ==
+                          PrinterConnectionType.network)
+                        FormBuilderTextField(
+                          name: 'port',
+                          initialValue: (config?.port ?? 9100).toString(),
+                          decoration: const InputDecoration(
+                            labelText: 'Port',
+                            hintText: '9100 (default)',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
+                        ),
+                      if (selectedConnectionType.value ==
+                          PrinterConnectionType.network)
+                        const SizedBox(height: 16),
+                      FormBuilderDropdown<PrinterPaperWidth>(
+                        name: 'paperWidth',
+                        initialValue:
+                            config?.paperWidth ?? PrinterPaperWidth.mm80,
+                        decoration: const InputDecoration(
+                          labelText: 'Paper Width',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: PrinterPaperWidth.values
+                            .map(
+                              (width) => DropdownMenuItem(
+                                value: width,
+                                child: Text(width.displayName),
+                              ),
+                            )
+                            .toList(),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      const SizedBox(height: 16),
+                      FormBuilderSwitch(
+                        name: 'select',
+                        initialValue: isCurrentlySelected,
+                        title: const Text('Use this printer'),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
+                      ),
+                      FormBuilderSwitch(
+                        name: 'isEnabled',
+                        initialValue: config?.isEnabled ?? true,
+                        title: const Text('Printer enabled'),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -354,7 +317,8 @@ class PrinterConfigFormDialog extends HookConsumerWidget {
 }
 
 /// Shows the printer config form dialog.
-void showPrinterConfigFormDialog(BuildContext context, {PrinterConfig? config}) {
+void showPrinterConfigFormDialog(BuildContext context,
+    {PrinterConfig? config}) {
   showDialog(
     context: context,
     useRootNavigator: true,

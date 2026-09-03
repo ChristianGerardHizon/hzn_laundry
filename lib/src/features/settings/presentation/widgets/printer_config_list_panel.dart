@@ -4,8 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
 import '../../domain/printer_config.dart';
-import '../controllers/local_default_printer_provider.dart';
 import '../controllers/printer_configs_controller.dart';
+import '../controllers/selected_printer_id_provider.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 
 /// List panel for printer configurations (tablet master-detail layout).
@@ -23,8 +23,7 @@ class PrinterConfigListPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final printersAsync = ref.watch(printerConfigsControllerProvider);
-    final localDefaultId =
-        ref.watch(localDefaultPrinterIdProvider).value;
+    final selectedPrinterId = ref.watch(selectedPrinterIdProvider).value;
 
     return Column(
       children: [
@@ -138,23 +137,22 @@ class PrinterConfigListPanel extends ConsumerWidget {
                   itemCount: printers.length,
                   itemBuilder: (context, index) {
                     final printer = printers[index];
-                    final isSelected = printer.id == selectedId;
-                    final isLocalDefault =
-                        localDefaultId == printer.id;
+                    final isRowSelected = printer.id == selectedId;
+                    final isDeviceSelected = selectedPrinterId == printer.id;
 
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: isSelected
+                      color: isRowSelected
                           ? theme.colorScheme.primaryContainer
                           : null,
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: isSelected
+                          backgroundColor: isRowSelected
                               ? theme.colorScheme.primary
                               : theme.colorScheme.surfaceContainerHighest,
                           child: Icon(
                             printer.connectionType.icon,
-                            color: isSelected
+                            color: isRowSelected
                                 ? theme.colorScheme.onPrimary
                                 : theme.colorScheme.onSurfaceVariant,
                           ),
@@ -166,30 +164,11 @@ class PrinterConfigListPanel extends ConsumerWidget {
                                 printer.name,
                                 style: TextStyle(
                                   fontWeight:
-                                      isSelected ? FontWeight.w600 : null,
+                                      isRowSelected ? FontWeight.w600 : null,
                                 ),
                               ),
                             ),
-                            if (isLocalDefault)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.tertiary,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  'Local',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onTertiary,
-                                  ),
-                                ),
-                              ),
-                            if (isLocalDefault && printer.isDefault)
-                              const SizedBox(width: 4),
-                            if (printer.isDefault)
+                            if (isDeviceSelected)
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -200,7 +179,7 @@ class PrinterConfigListPanel extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  'Default',
+                                  'Selected',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: theme.colorScheme.onPrimary,
                                   ),

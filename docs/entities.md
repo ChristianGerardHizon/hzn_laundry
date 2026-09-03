@@ -8,91 +8,87 @@ This document contains all entities (domain models) in the project with their fi
 
 | Domain | Entity | Collection | Description |
 |--------|--------|------------|-------------|
-| Organization | User | `users` | System users (all types) |
-| Organization | UserRole | `user_roles` | Role definitions and permissions |
-| Organization | Branch | `branches` | Business branches/locations |
-| Patient | Patient | `patients` | Animal patients |
-| Patient | PatientSpecies | `patient_species` | Species catalog (Dog, Cat, etc.) |
-| Patient | PatientBreed | `patient_breeds` | Breed catalog |
-| Patient | PatientRecord | `patient_records` | Medical visit records |
-| Patient | PatientFile | `patient_files` | Patient documents/images |
-| Patient | PatientTreatment | `patient_treatments` | Treatment type catalog |
-| Patient | PatientTreatmentRecord | `patient_treatment_records` | Treatment tracking |
-| Patient | PatientPrescriptionItem | `patient_prescription_items` | Prescription medications |
+| Organizations | Organization | `organizations` | Multi-tenant laundry business |
+| Organizations | OrganizationMembership | `organizationMemberships` | User membership in an organization |
+| Organizations | OrganizationInvite | `organizationInvites` | Email invite to join an organization |
+| Management | User | `users` | System users (all types) |
+| Management | UserRole | `userRoles` | Role definitions and permissions |
+| Management | Branch | `branches` | Business branches/locations |
 | Product | Product | `products` | Products/inventory items |
-| Product | ProductCategory | `product_categories` | Product categories (hierarchical) |
-| Product | ProductStock | `product_stocks` | Stock lots with expiration |
-| Product | ProductInventory | `product_inventories` | Inventory status view |
-| Product | ProductAdjustment | `product_adjustments` | Stock adjustments |
+| Product | ProductCategory | `productCategories` | Product categories (hierarchical) |
+| Product | ProductLot | `productLots` | Lot/batch tracking for lot-tracked products |
+| Product | ProductAdjustment | `productAdjustments` | Stock adjustment audit trail |
 | Service | Service | `services` | Laundry services (wash, dry, fold, iron) |
-| Service | ServiceCategory | `service_categories` | Service categories |
-| Service | CartServiceItem | `cart_service_items` | Service items in shopping cart |
-| Service | SaleServiceItem | `sale_service_items` | Service items in completed sale |
+| Service | ServiceCategory | `serviceCategories` | Service categories |
+| Service | ServicePriceTier | `servicePriceTiers` | Quantity-based pricing tiers for a service |
+| Quantity Units | QuantityUnit | `quantityUnits` | Units of measurement (kg, pcs, etc.) for products/services |
 | Customer | Customer | `customers` | Branch-scoped laundry customers |
+| Cart | Cart | `carts` | An in-progress POS shopping session |
+| Cart | CartItem | `cartItems` | Product line item in a cart |
+| Cart | CartServiceItem | `cartServiceItems` | Service line item in a cart |
+| Sales | Sale | `sales` | A finalized transaction/receipt |
+| Sales | SaleItem | `saleItems` | Product line item in a finalized sale |
+| Sales | SaleServiceItem | `saleServiceItems` | Service line item in a finalized sale |
 | Sales | OrderStatusHistory | `orderStatusHistory` | Status change audit trail for sales |
+| Sales | Payment | `payments` | A payment transaction against a sale |
 | Machine | Machine | `machines` | Laundry machines (washer, dryer, etc.) |
+| Machine | LoadRule | `machineLoadRules` | Weight-to-load-count tiers for a machine |
 | Storage | StorageLocation | `storages` | Storage locations for laundry items |
-| Appointment | AppointmentSchedule | `appointment_schedules` | Appointment bookings |
-| System | ChangeLog | `change_logs` | Audit trail |
-| System | SystemVersion | `system_versions` | App version tracking |
+| Employee | Employee | `employees` | Laundry business staff |
+| Employee | EmployeeAttendance | `employeeAttendances` | Daily attendance record |
+| Employee | EmployeeDeduction | `employeeDeductions` | Recurring salary deduction |
+| Promo | Promo | `promos` | Loyalty promotion (free reward after N orders) |
+| Promo | CustomerPromo | `customerPromos` | A customer's progress in a loyalty promo |
+| Activity | ActivityLog | `activityLogs` | CRUD audit trail across collections |
+| Settings | PrinterConfig | *(device storage)* | Configured thermal printer on this device (Bluetooth/network) |
+| Settings | PosGroup | `posGroups` | Named product/service group shown on the cashier page |
+| Settings | PosGroupItem | `posGroupItems` | Product or service assigned to a PosGroup |
+| Settings | IncentiveTier | `incentiveTiers` | Branch incentive-per-service-price tiers |
+| Settings | FeatureFlag | `featureFlags` | Organization workflow toggles (Management → Settings) |
+| Public | CustomerHistory | *(derived, no collection)* | Read-only customer + sales summary for the public order-status page |
+| Version | AppConfig | *(external `versions` service)* | App update/minimum-version gate |
+
+Several read-optimized **SQL view collections** back reports/dashboards without their own domain models: `vw_inventory_status`, `vw_sales_daily_summary`, `vw_top_selling_products`, `vw_top_selling_services`, `vw_todays_sales`, `vw_lot_quantity_totals`, `vw_low_stock_products`, `vw_low_stock_lot_products`, `vw_expired_lots`, `vw_near_expiration_lots`, `vw_pos_search_items`, `vw_customer_order_stats`, `vw_sales_by_customer`, `vw_payments_daily_summary`, `vw_sale_service_totals`. See `lib/src/core/packages/pocketbase/pocketbase_collections.dart` for the authoritative list of collection name constants.
 
 ---
 
 ## Entity Relationship Diagram
 
 ```
-                          ┌────────────┐
-                          │  UserRole  │
-                          └─────┬──────┘
-                                │
-                                ▼
-                          ┌────────────┐
-                          │    User    │
-                          └─────┬──────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              │                 │                 │
-              ▼                 ▼                 ▼
-        ┌───────────┐    ┌───────────┐    ┌───────────┐
-        │  Branch   │    │ ChangeLog │    │  Patient  │
-        └─────┬─────┘    └───────────┘    └─────┬─────┘
-              │                                 │
-              │         ┌───────────────────────┼───────────────────────┐
-              │         │                       │                       │
-              ▼         ▼                       ▼                       ▼
-        ┌───────────────────┐           ┌─────────────┐         ┌───────────────────┐
-        │ Patient, Product, │           │PatientRecord│         │ PatientTreatment  │
-        │ AppointmentSchedule│          └──────┬──────┘         │     Record        │
-        │ PatientRecord     │                  │                └─────────┬─────────┘
-        └───────────────────┘                  │                          │
-                                               ▼                          ▼
-                                        ┌──────────────┐         ┌─────────────────┐
-                                        │ Prescription │         │PatientTreatment │
-                                        │    Item      │         │   (catalog)     │
-                                        └──────────────┘         └─────────────────┘
-
-
-        ┌──────────────────┐                  ┌─────────────────┐
-        │ PatientSpecies   │◄─────────────────│  PatientBreed   │
-        └────────┬─────────┘                  └─────────────────┘
-                 │
-                 ▼
-           ┌─────────┐
-           │ Patient │
-           └─────────┘
-
-
-        ┌─────────────────┐          ┌─────────────┐          ┌─────────────────┐
-        │ ProductCategory │◄─────────│   Product   │─────────►│  ProductStock   │
-        │   (hierarchy)   │          └──────┬──────┘          └────────┬────────┘
-        └─────────────────┘                 │                          │
-                                            │                          │
-                                            ▼                          ▼
-                                   ┌────────────────┐         ┌────────────────┐
-                                   │ProductInventory│         │ ProductAdjust  │
-                                   └────────────────┘         │    (stock)     │
-                                                              └────────────────┘
+                    ┌───────────┐
+                    │ UserRole  │
+                    └─────┬─────┘
+                          │
+                          ▼
+   ┌───────────┐    ┌───────────┐
+   │  Branch   │◄───│   User    │
+   └─────┬─────┘    └───────────┘
+         │
+         │  (branch-scoped; branch optional on most)
+         ├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┐
+         ▼             ▼             ▼             ▼             ▼             ▼
+   ┌──────────┐  ┌───────────┐ ┌──────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐
+   │ Product  │  │  Service  │ │ Customer │ │  Machine  │ │  Storage  │ │   Promo   │
+   └────┬─────┘  └─────┬─────┘ └────┬─────┘ └─────┬─────┘ │ Location  │ └─────┬─────┘
+        │              │            │             │        └───────────┘       │
+        ▼              ▼            │             ▼                            ▼
+  ┌───────────┐  ┌─────────────┐    │       ┌───────────┐              ┌──────────────┐
+  │ProductLot │  │ServicePrice │    │       │ LoadRule  │              │CustomerPromo │
+  │ /Category │  │Tier/Category│    │       └───────────┘              └──────────────┘
+  └───────────┘  └─────────────┘    │
+                                     │
+   ┌────────────────────────────────┴───────────────────────┐
+   ▼                                                          ▼
+┌───────┐   checkout    ┌───────┐                       ┌──────────┐
+│ Cart  │──────────────►│ Sale  │◄──────────────────────│ Customer │
+└───┬───┘                └───┬───┘
+    │                        │
+    ▼                        ▼
+CartItem/            SaleItem/SaleServiceItem,
+CartServiceItem      OrderStatusHistory, Payment
 ```
+
+`Employee`, `ActivityLog`, `PrinterConfig`, `PosGroup`/`PosGroupItem`, `IncentiveTier`, and `FeatureFlag` are omitted from the diagram for clarity — see their sections below for relationships.
 
 ---
 
@@ -105,12 +101,14 @@ All system users with role-based access.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | User name |
-| `username` | String | Yes | Username for authentication |
+| `name` | String | Yes | User's display name |
+| `email` | String | Yes | Email for authentication |
 | `avatar` | String | No | Avatar filename |
-| `verified` | bool | Yes | Email verification status |
-| `role` | String (FK) | Yes | FK to UserRole |
-| `branch` | String (FK) | No | FK to Branch |
+| `verified` | bool | Yes | Account verification status |
+| `roleId` | String (FK) | No | FK to UserRole |
+| `roleName` | String | No | Role name (expanded from FK) |
+| `branchId` | String (FK) | No | FK to Branch |
+| `branchName` | String | No | Branch name (expanded from FK) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
@@ -118,12 +116,12 @@ All system users with role-based access.
 **Collection:** `users`
 
 **Relationships:**
-- `role` -> UserRole
-- `branch` -> Branch (optional)
+- `roleId` -> UserRole (optional)
+- `branchId` -> Branch (optional)
 
-**Computed Properties:**
-- `hasAvatar` - Checks if avatar exists
-- `avatarUri(domain)` - Builds full avatar URI
+**Computed Properties:** `hasAvatar`, `displayRole`, `displayBranch`, `initials`, `verificationStatus`.
+
+**Note:** a lighter-weight `User` model also exists at `lib/src/features/auth/domain/user.dart` for authentication state (`id`, `name`, `email`, `avatarUrl`, `verified`, `branch`) — this table describes the fuller one used by the Users management feature.
 
 ---
 
@@ -142,32 +140,13 @@ Role definitions with permissions.
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `user_roles`
+**Collection:** `userRoles`
 
 **Referenced by:** User
 
-**Default Roles:**
-- `admin` - Full system access
-- `manager` - Full operational access (no user/role/branch management)
-- `cashier` - POS operations, customer management, view inventory
-- `attendant` - Floor operations, order status updates, view-only access
+**Seeded Roles:** `Admin` (full access, `system.admin`), `Manager`, `Cashier`, `Attendant` — see `server/pb_migrations/1774000001_seed_user_roles.js`.
 
-**Permission Keys:**
-```
-customers.view, customers.create, customers.edit, customers.delete
-products.view, products.create, products.edit, products.delete
-services.view, services.create, services.edit, services.delete
-inventory.view, inventory.adjust
-sales.view, sales.create
-machines.view, machines.create, machines.edit, machines.delete
-storages.view, storages.create, storages.edit, storages.delete
-reports.view
-users.view, users.create, users.edit, users.delete
-roles.view, roles.create, roles.edit, roles.delete
-branches.view, branches.create, branches.edit, branches.delete
-settings.view, settings.edit
-system.admin
-```
+**Permission categories** (`lib/src/features/users/domain/user_role.dart`): Customers, Products, Services, Inventory, Sales, Payments, Machines, Storages, Employees, Attendance, Reports, Users, Roles, Branches, Settings, Incentive, Dashboard, Organizations (`organizations.create`), Organization Members (`members.manage`), System — each with `.view`/`.create`/`.edit`/`.delete` keys as applicable, plus the blanket `system.admin` key.
 
 ---
 
@@ -178,209 +157,85 @@ Business branches or locations.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Branch name |
+| `name` | String | Yes | Branch name (short internal identifier) |
+| `address` | String | Yes | Branch address |
+| `contactNumber` | String | Yes | Branch contact number |
+| `organizationId` | String (FK) | Yes | FK to Organization |
+| `operatingHours` | String | No | e.g. "Mon-Sat 8:00 AM - 5:00 PM" |
+| `cutOffTime` | String | No | Cut-off time for accepting new orders |
+| `incentiveAmount` | num | No | Incentive amount earned per threshold, in pesos (default 5) |
+| `incentivePerServiceItems` | num | No | Service price threshold to earn the incentive (default 200) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `branches`
 
-**Referenced by:** User, Patient, Product, Customer, PatientRecord, AppointmentSchedule
+**Relationships:** `organizationId` -> Organization (required after backfill).
+
+**Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup, IncentiveTier (most of these treat `branch` as optional — unassigned records remain visible to all branches).
 
 ---
 
-## Patient Domain
+### Organization
 
-### Patient
-
-Animal patients/clients.
+Multi-tenant laundry business. Collection writes go through custom hooks (`POST /api/organizations`, `PATCH /api/organizations/{id}`), not raw collection REST. `POST /api/organizations` requires a first branch (and optional invites) and creates the org, Admin membership, branch, incentive tiers, and queued invites in one transaction.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Patient name |
-| `images` | List\<String> | Yes | List of image filenames |
-| `avatar` | String | No | Main avatar filename |
-| `species` | String (FK) | No | FK to PatientSpecies |
-| `breed` | String (FK) | No | FK to PatientBreed |
-| `owner` | String | No | Owner name |
-| `contactNumber` | String | No | Contact phone number |
-| `email` | String | No | Email address |
-| `address` | String | No | Physical address |
-| `color` | String | No | Animal color/markings |
-| `sex` | PatientSex | No | Animal sex (male/female) |
-| `branch` | String (FK) | No | FK to Branch |
-| `dateOfBirth` | DateTime | No | Date of birth |
+| `name` | String | Yes | Organization name |
+| `contactNumber` | String | No | Contact number |
+| `address` | String | No | Address |
+| `onboardingCompletedAt` | DateTime | No | Set when the create-organization setup dialog finishes (org + first branch created together) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `patients`
+**Collection:** `organizations`
 
-**Relationships:**
-- `species` -> PatientSpecies (optional)
-- `breed` -> PatientBreed (optional)
-- `branch` -> Branch (optional)
-
-**Enum:** `PatientSex { male, female }`
+**Relationships:** has many Branches, OrganizationMemberships, OrganizationInvites.
 
 ---
 
-### PatientSpecies
+### OrganizationMembership
 
-Species catalog (Dog, Cat, Bird, etc.).
+Join between a user and an organization, with an org-scoped role.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Species name |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
+| `userId` | String (FK) | Yes | FK to User |
+| `organizationId` | String (FK) | Yes | FK to Organization |
+| `role` | UserRole | Yes | Role for this organization |
+| `status` | String | Yes | `active` or `suspended` |
+| `joinedAt` | DateTime | Yes | When membership started |
+| `invitedBy` | String (FK) | No | FK to User |
 
-**Collection:** `patient_species`
+**Collection:** `organizationMemberships`
 
-**Referenced by:** Patient, PatientBreed
+**Relationships:** `userId` -> User; `organizationId` -> Organization; `role` -> UserRole. Unique on `(user, organization)`.
 
 ---
 
-### PatientBreed
+### OrganizationInvite
 
-Breed catalog linked to species.
+Email invite to join an organization. Token is server-hidden; clients accept/revoke by invite id.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Breed name |
-| `species` | String (FK) | Yes | FK to PatientSpecies |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
+| `email` | String | Yes | Invitee email |
+| `organizationId` | String (FK) | Yes | FK to Organization |
+| `role` | UserRole | Yes | Role granted on accept |
+| `status` | String | Yes | `pending`, `accepted`, `expired`, or `revoked` |
+| `expiresAt` | DateTime | Yes | Expiry (7 days from create) |
+| `invitedBy` | String (FK) | Yes | FK to User |
+| `acceptedBy` | String (FK) | No | FK to User |
 
-**Collection:** `patient_breeds`
+**Collection:** `organizationInvites`
 
-**Relationships:**
-- `species` -> PatientSpecies
-
----
-
-### PatientRecord
-
-Medical visit records for patients.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `patient` | String (FK) | Yes | FK to Patient |
-| `visitDate` | DateTime | Yes | Date of visit |
-| `diagnosis` | String | No | Diagnosis text |
-| `treatment` | String | No | Treatment applied |
-| `notes` | String | No | Additional notes |
-| `branch` | String (FK) | No | FK to Branch |
-| `weightInKg` | num | No | Animal weight in kg |
-| `tests` | String | No | Tests performed |
-| `temperature` | String | No | Temperature reading |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `patient_records`
-
-**Relationships:**
-- `patient` -> Patient
-- `branch` -> Branch (optional)
-
-**Computed Properties:**
-- `displayWeightInKg` - Formats weight with "kg" unit
-
----
-
-### PatientFile
-
-Patient documents and images.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `patient` | String (FK) | Yes | FK to Patient |
-| `file` | String | Yes | Filename/path |
-| `notes` | String | No | File description |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `patient_files`
-
-**Relationships:**
-- `patient` -> Patient
-
-**Computed Properties:**
-- `isImage` - Checks if file is image format (.png, .jpg, .jpeg, .gif, .webp, .bmp, .ico, .tiff, .avif, .svg)
-
----
-
-### PatientTreatment
-
-Treatment type catalog.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `name` | String | Yes | Treatment name |
-| `icon` | String | No | Icon filename/identifier |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `patient_treatments`
-
-**Referenced by:** PatientTreatmentRecord
-
----
-
-### PatientTreatmentRecord
-
-Treatment tracking for patients.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `treatment` | String (FK) | Yes | FK to PatientTreatment |
-| `patient` | String (FK) | Yes | FK to Patient |
-| `date` | DateTime | No | Treatment date |
-| `notes` | String | No | Treatment notes |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `patient_treatment_records`
-
-**Relationships:**
-- `treatment` -> PatientTreatment
-- `patient` -> Patient
-
----
-
-### PatientPrescriptionItem
-
-Prescription medications for patient records.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | Record ID |
-| `patientRecord` | String (FK) | Yes | FK to PatientRecord |
-| `date` | DateTime | Yes | Prescription date |
-| `medication` | String | Yes | Medication name |
-| `instructions` | String | No | Usage instructions |
-| `dosage` | String | No | Dosage information |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `patient_prescription_items`
-
-**Relationships:**
-- `patientRecord` -> PatientRecord
+Writes go through `POST /api/organization-invites`, `.../{id}/accept`, `.../{id}/revoke`, `.../{id}/decline`.
 
 ---
 
@@ -395,27 +250,30 @@ Products and inventory items.
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | Product name |
 | `description` | String | No | Product description |
-| `category` | String (FK) | No | FK to ProductCategory |
-| `image` | String | No | Product image filename |
+| `categoryId` | String (FK) | No | FK to ProductCategory |
+| `categoryName` | String | No | Category name (expanded from FK) |
+| `image` | String | No | Product image URL |
 | `branch` | String (FK) | No | FK to Branch |
 | `stockThreshold` | num | No | Low stock warning threshold |
-| `price` | num | Yes | Product price |
-| `forSale` | bool | Yes | Whether product is for sale |
-| `quantity` | num | No | Current quantity |
-| `expiration` | DateTime | No | Expiration date |
-| `trackByLot` | bool | Yes | Track inventory by lot numbers |
+| `price` | num | No | Product price (default 0; `isVariablePrice` is true when `price <= 0`) |
+| `unitCost` | num | No | Unit cost/acquisition cost (default 0) |
+| `forSale` | bool | Yes | Whether product is for sale (default true) |
+| `trackStock` | bool | Yes | Whether stock tracking is enabled (default false) |
+| `requireStock` | bool | Yes | Whether stock must be available to add to cart (default false) |
+| `quantity` | num | No | Current quantity (for non-lot tracking) |
+| `expiration` | DateTime | No | Expiration date (for non-lot tracking) |
+| `trackByLot` | bool | Yes | Whether to track inventory by lot (default false) |
+| `quantityUnitId` | String (FK) | No | FK to QuantityUnit |
+| `quantityUnit` | QuantityUnit | No | Quantity unit (expanded from FK) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `products`
 
-**Relationships:**
-- `category` -> ProductCategory (optional)
-- `branch` -> Branch (optional)
+**Relationships:** `categoryId` -> ProductCategory (optional); `branch` -> Branch (optional); `quantityUnitId` -> QuantityUnit (optional).
 
-**Computed Properties:**
-- `hasImage` - Checks if image exists
+**Enum:** `ProductStatus { inStock, outOfStock, lowStock, noThreshold }` (computed via `stockStatus`, not a stored field).
 
 ---
 
@@ -427,91 +285,65 @@ Product categories with hierarchy support.
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | Category name |
-| `parent` | String (FK) | No | FK to ProductCategory (for hierarchy) |
+| `parentId` | String (FK) | No | FK to ProductCategory (for hierarchy) |
+| `parentName` | String | No | Parent category name (expanded from FK) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `product_categories`
+**Collection:** `productCategories`
 
-**Relationships:**
-- `parent` -> ProductCategory (self-referencing, optional)
+**Relationships:** `parentId` -> ProductCategory (self-referencing, optional).
 
 ---
 
-### ProductStock
+### ProductLot
 
-Stock lots with expiration tracking.
+Batch/lot tracking for a product with `trackByLot` enabled.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `product` | String (FK) | Yes | FK to Product |
-| `lotNo` | String | No | Lot/batch number |
-| `expiration` | DateTime | No | Expiration date |
-| `notes` | String | No | Stock notes |
-| `quantity` | int | No | Quantity in stock |
-| `isDisposed` | bool | Yes | Whether stock has been disposed |
+| `productId` | String (FK) | Yes | FK to Product |
+| `lotNumber` | String | Yes | Lot/batch identifier |
+| `quantity` | num | No | Quantity in this lot (default 0) |
+| `expiration` | DateTime | No | Expiration date of this lot |
+| `notes` | String | No | Notes |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `product_stocks`
+**Collection:** `productLots`
 
-**Relationships:**
-- `product` -> Product
+**Relationships:** `productId` -> Product.
 
----
-
-### ProductInventory
-
-Aggregated inventory status view.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `product` | String (FK) | Yes | FK to Product |
-| `status` | ProductStatus | Yes | Inventory status |
-| `totalQuantity` | num | Yes | Total quantity available |
-| `totalExpired` | num | Yes | Total expired quantity |
-| `forSale` | bool | Yes | Whether available for sale |
-| `isDeleted` | bool | Yes | Soft delete flag |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `product_inventories`
-
-**Relationships:**
-- `product` -> Product
-
-**Enum:** `ProductStatus { inStock, outOfStock, lowStock, noThreshold }`
+**Computed Properties:** `isExpired`, `isNearExpiration` (within 30 days), `daysUntilExpiration`, `isOutOfStock`, `hasStock`.
 
 ---
 
 ### ProductAdjustment
 
-Stock adjustment records.
+Stock adjustment audit trail.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `reason` | String | No | Reason for adjustment |
-| `type` | ProductAdjustmentType | Yes | Type of adjustment |
-| `oldValue` | num | Yes | Previous value |
-| `newValue` | num | Yes | New value |
-| `product` | String (FK) | Conditional | FK to Product (if type=product) |
-| `productStock` | String (FK) | Conditional | FK to ProductStock (if type=productStock) |
+| `type` | ProductAdjustmentType | Yes | `product` or `productStock` (lot) |
+| `oldValue` | num | Yes | Previous quantity |
+| `newValue` | num | Yes | New quantity |
+| `reason` | String | No | Reason for the adjustment |
+| `productId` | String (FK) | Conditional | FK to Product (when type = product) |
+| `productStockId` | String (FK) | Conditional | FK to ProductStock (when type = productStock) |
+| `productLotId` | String (FK) | Conditional | FK to ProductLot (for lot adjustments) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `product_adjustments`
+**Collection:** `productAdjustments`
 
 **Enum:** `ProductAdjustmentType { product, productStock }`
 
-**Subtypes:**
-- `ProductAdjustmentSimple` - Adjusts Product quantity directly
-- `ProductAdjustmentStock` - Adjusts ProductStock quantity
+**Computed Properties:** `delta`, `isIncrease`, `isDecrease`.
 
 ---
 
@@ -519,27 +351,97 @@ Stock adjustment records.
 
 ### Service
 
-Laundry services (wash, dry, fold, etc.), scoped to a branch.
+Laundry services (wash, dry, fold, iron, etc.), scoped to a branch.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | Service name |
-| `price` | num | Yes | Per-unit price |
-| `minimumCharge` | num | No | Floor for the line total (`max(minimumCharge, price × qty)` when no tiers) |
-| `isVariablePrice` | bool | Yes | Price entered at POS |
-| `weightBased` | bool | Yes | Quantity is typically kg |
-| `showPrompt` | bool | Yes | Prompt for quantity when adding to cart |
-| `maxQuantity` | int | No | Cap; 0/empty means unlimited |
+| `description` | String | No | Service description |
+| `categoryId` | String (FK) | No | FK to ServiceCategory |
+| `categoryName` | String | No | Category name (expanded from FK) |
 | `branch` | String (FK) | No | FK to Branch |
+| `price` | num | No | Per-unit price (default 0) |
+| `minimumCharge` | num | No | Floor for the line total (`max(minimumCharge, price × qty)` when no tiers apply); 0 = no floor |
+| `isVariablePrice` | bool | Yes | Price entered at POS (default false) |
+| `estimatedDuration` | num | No | Estimated duration in minutes |
+| `weightBased` | bool | Yes | Quantity is typically kg (default false) |
+| `showPrompt` | bool | Yes | Prompt for quantity when adding to cart (default false) |
+| `maxQuantity` | int | No | Cap; null/0 means unlimited |
+| `allowExcess` | bool | Yes | Split quantities exceeding `maxQuantity` into multiple cart items (default false) |
+| `quantityUnitId` | String (FK) | No | FK to QuantityUnit |
+| `quantityUnit` | QuantityUnit | No | Quantity unit (expanded from FK) |
+| `isDefault` | bool | Yes | Auto-selected in Create Order (default false) |
+| `isDeleted` | bool | Yes | Soft delete flag |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `services`
 
+**Relationships:** `categoryId` -> ServiceCategory (optional); `branch` -> Branch (optional); `quantityUnitId` -> QuantityUnit (optional).
+
+---
+
+### ServiceCategory
+
+Service categories (e.g., Wash, Dry, Iron).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Category name |
+| `isDeleted` | bool | Yes | Soft delete flag |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `serviceCategories`
+
+---
+
 ### ServicePriceTier
 
-Flat total for a quantity range on a service (Hi-Zone Full Service buckets). `pricePerUnit` is the **range total**, not a per-kg rate.
+Flat total or per-unit rate for a quantity range on a service (e.g. 1-3 kg at ₱90/kg, or a flat bucket total).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `serviceId` | String (FK) | Yes | FK to Service |
+| `minQuantity` | num | Yes | Minimum quantity (inclusive) for this tier |
+| `maxQuantity` | num | No | Maximum quantity (inclusive); null/0 = no upper limit |
+| `pricePerUnit` | num | Yes | Range total when `flatPrice` unset — despite the name, this is the **range total**, not always a per-unit rate |
+| `flatPrice` | num | No | When set (>0), the total is this flat amount regardless of quantity |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `servicePriceTiers`
+
+**Relationships:** `serviceId` -> Service.
+
+**Notes:** `resolveServiceTotal()`/`resolveServiceUnitPrice()` in `service_price_tier.dart` are the shared pricing functions used by both cart and sale line items.
+
+---
+
+## Quantity Units Domain
+
+### QuantityUnit
+
+Unit of measurement used by Products and Services (e.g., kilograms, pieces).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Full name (e.g., "kilograms") |
+| `shortSingular` | String | Yes | Short singular form (e.g., "kg") |
+| `shortPlural` | String | Yes | Short plural form (e.g., "kg") |
+| `longSingular` | String | Yes | Long singular form (e.g., "kilogram") |
+| `longPlural` | String | Yes | Long plural form (e.g., "kilograms") |
+| `isDeleted` | bool | Yes | Soft delete flag |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `quantityUnits`
+
+**Referenced by:** Product, Service
 
 ---
 
@@ -563,18 +465,148 @@ Laundry customers (members), scoped to the branch they were created on.
 
 **Collection:** `customers`
 
-**Relationships:**
-- `branch` -> Branch (optional in schema; always set by the app on create)
+**Relationships:** `branchId` -> Branch (optional in schema; always set by the app on create).
 
 **Notes:**
-- List, search, and create are filtered by the current working branch
-- Admins in All Branches mode can view all customers but cannot create until a specific branch is selected
-- Existing customers were backfilled to the branch of their most recent sale (or the first branch if they have no sales)
-- A customer can be transferred to another branch from the customer detail page; historical sales stay on the branch where they were created
+- List, search, and create are filtered by the current working branch.
+- Admins in All Branches mode can view all customers but cannot create until a specific branch is selected.
+- A customer can be transferred to another branch from the customer detail page; historical sales stay on the branch where they were created.
+
+---
+
+## Cart Domain
+
+Carts represent an in-progress POS shopping session, converted into a Sale at checkout.
+
+### Cart
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `branchId` | String (FK) | Yes | Branch where this cart is active |
+| `status` | String | Yes | Cart status (active, converted, abandoned) |
+| `userId` | String (FK) | No | User owning the cart |
+| `totalAmount` | num | No | Cached total amount |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `carts`
+
+### CartItem
+
+Product line item in a cart.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `cartId` | String (FK) | Yes | Parent Cart |
+| `productId` | String (FK) | Yes | Product |
+| `quantity` | num | Yes | Quantity (default 1) |
+| `customPrice` | num | No | Custom price override (for variable-price products) |
+| `productLotId` | String (FK) | No | FK to ProductLot (for lot-tracked products) |
+| `lotNumber` | String | No | Lot number snapshot for display |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `cartItems`
+
+### CartServiceItem
+
+Service line item in a cart.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `cartId` | String (FK) | Yes | Parent Cart |
+| `serviceId` | String (FK) | Yes | Service |
+| `quantity` | num | Yes | Quantity (default 1) |
+| `customPrice` | num | No | Custom price override (for variable-price services) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `cartServiceItems`
+
+**Note:** `priceTiers` (the service's `ServicePriceTier` list) is held in memory on this model for pricing math — not a persisted field.
 
 ---
 
 ## Sales Domain
+
+### Sale
+
+A finalized transaction/receipt.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `receiptNumber` | String | Yes | Human-readable receipt number |
+| `branchId` | String (FK) | Yes | Branch where the sale occurred |
+| `cashierId` | String (FK) | Yes | User who processed the sale |
+| `totalAmount` | num | Yes | Total amount charged |
+| `status` | String | Yes | Transaction status (completed, refunded, voided) |
+| `orderStatus` | OrderStatus | No | Fulfillment status (default `pending`) |
+| `isPaid` | bool | No | Auto-calculated from payments (default false) |
+| `paymentStatus` | PaymentStatus | No | `unpaid`/`partial`/`paid`, auto-calculated (default `unpaid`) |
+| `packs` | int | No | Number of laundry bags/packs (default 0) |
+| `pickedUpAt` | DateTime | No | Timestamp the order was picked up |
+| `customerId` | String (FK) | No | FK to Customer |
+| `customerName` | String | No | Customer name snapshot |
+| `notes` | String | No | Internal notes |
+| `postedDate` | DateTime | No | Editable business/transaction date |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `sales`
+
+**Enums:** `OrderStatus { pending, processing, ready, pickedUp }`, `PaymentStatus { unpaid, partial, paid }`.
+
+**Relationships:** `customerId` -> Customer (optional); `branchId` -> Branch; `cashierId` -> User.
+
+### SaleItem
+
+Product line item in a finalized sale.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `saleId` | String (FK) | Yes | Parent Sale |
+| `productId` | String (FK) | Yes | Product |
+| `productName` | String | Yes | Product name snapshot |
+| `quantity` | num | Yes | Quantity sold |
+| `unitPrice` | num | Yes | Price per unit at time of sale |
+| `subtotal` | num | Yes | Line total |
+| `productLotId` | String (FK) | No | FK to ProductLot |
+| `lotNumber` | String | No | Lot number snapshot |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `saleItems`
+
+### SaleServiceItem
+
+Service line item in a finalized sale, including machine/storage assignment.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `saleId` | String (FK) | Yes | Parent Sale |
+| `serviceId` | String (FK) | Yes | Service |
+| `serviceName` | String | Yes | Service name snapshot |
+| `quantity` | num | Yes | Quantity |
+| `unitPrice` | num | Yes | Price per unit at time of sale |
+| `subtotal` | num | Yes | Line total |
+| `machineIds` | List\<String> (FK) | No | Assigned machines (multi-relation) |
+| `machineLoadCounts` | Map\<String, int> | No | Load count per machine ID |
+| `machineWeights` | Map\<String, double> | No | Entered weight (kg) per machine ID |
+| `storageIds` | List\<String> (FK) | No | Assigned storage locations (multi-relation) |
+| `storageName` | String | No | Storage name snapshot |
+| `status` | ServiceItemStatus | No | Completion status |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `saleServiceItems`
+
+**Relationships:** `machineIds` -> Machine (multi, optional); `storageIds` -> StorageLocation (multi, optional).
 
 ### OrderStatusHistory
 
@@ -593,10 +625,32 @@ Audit trail for status changes on sales (both sale status and order status).
 
 **Collection:** `orderStatusHistory`
 
-**Relationships:**
-- `sale` -> Sale (cascade delete)
-
 **Enum:** `StatusType { saleStatus, orderStatus }`
+
+### Payment
+
+A payment transaction against a sale.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `saleId` | String (FK) | Yes | FK to Sale |
+| `amount` | num | Yes | Payment amount |
+| `paymentMethod` | PaymentMethod | Yes | Cash, card, etc. |
+| `type` | PaymentType | Yes | payment, deposit, or refund |
+| `isVoided` | bool | No | Whether voided by an admin (default false) |
+| `paymentRef` | String | No | External payment reference |
+| `paymentProofUrl` | String | No | URL of payment proof image |
+| `notes` | String | No | Notes |
+| `postedDate` | DateTime | No | Editable business/transaction date |
+| `voidedAt` | DateTime | No | Timestamp voided |
+| `voidReason` | String | No | Admin note for the void |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `payments`
+
+**Relationships:** `saleId` -> Sale.
 
 ---
 
@@ -606,162 +660,293 @@ Audit trail for status changes on sales (both sale status and order status).
 
 Laundry machines (washers, dryers, etc.) assigned to branches.
 
-**Collection:** `machines`
-**File:** `lib/src/features/machines/domain/machine.dart`
+**Collection:** `machines` · **File:** `lib/src/features/machines/domain/machine.dart`
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `id` | String | Yes | auto | PocketBase record ID |
 | `name` | String | Yes | - | Machine name (e.g., "Washer #1") |
-| `type` | MachineType | Yes | - | Machine type (washer, dryer, other) |
-| `branchId` | String? | No | - | Relation to Branch |
+| `type` | MachineType | Yes | - | washer, dryer, or other |
+| `branchId` | String? (FK) | No | - | Relation to Branch |
 | `isAvailable` | bool | No | true | Whether machine is currently available |
 | `isDeleted` | bool | No | false | Soft delete flag |
 | `created` | DateTime? | No | auto | Creation timestamp |
 | `updated` | DateTime? | No | auto | Last update timestamp |
 
-**Enum: MachineType** (`machine_type.dart`)
-- `washer` - Washing machine
-- `dryer` - Dryer machine
-- `other` - Other machine type
+**Enum: MachineType** — `washer`, `dryer`, `other`. See also `MachineSize` (`machine_size.dart`) for capacity classification.
+
+### LoadRule
+
+Weight-to-load-count tiers for a machine (e.g. 0–8 kg = 1 load, 8.1–12 kg = 2 loads). Tiers are non-linear/customizable per machine.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `machineId` | String (FK) | Yes | FK to Machine |
+| `loadCount` | int | Yes | Number of loads this tier represents |
+| `minWeight` | double | No | Inclusive lower weight bound in kg (null = 0) |
+| `maxWeight` | double | No | Inclusive upper weight bound in kg (null = unbounded) |
+| `isDeleted` | bool | Yes | Soft delete flag |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `machineLoadRules`
 
 ### StorageLocation
 
 Storage locations (shelves, racks) for laundry items.
 
-**Collection:** `storages`
-**File:** `lib/src/features/storages/domain/storage_location.dart`
+**Collection:** `storages` · **File:** `lib/src/features/storages/domain/storage_location.dart`
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `id` | String | Yes | auto | PocketBase record ID |
 | `name` | String | Yes | - | Location name (e.g., "Shelf A-1") |
-| `branchId` | String? | No | - | Relation to Branch |
+| `branchId` | String? (FK) | No | - | Relation to Branch |
 | `isAvailable` | bool | No | true | Whether location is available |
 | `isDeleted` | bool | No | false | Soft delete flag |
 | `created` | DateTime? | No | auto | Creation timestamp |
 | `updated` | DateTime? | No | auto | Last update timestamp |
 
-**SaleServiceItem Machine/Storage Fields:**
-- `machineId` (String?) - Assigned machine relation
-- `machineName` (String?) - Snapshot of machine name at assignment
-- `storageId` (String?) - Assigned storage relation
-- `storageName` (String?) - Snapshot of storage name at assignment
-
 ---
 
-## Appointment Domain
+## Employee Domain
 
-### AppointmentSchedule
+### Employee
 
-Appointment bookings.
+A staff member of the laundry business (distinct from `User` — an Employee is a payroll/attendance subject, not necessarily an app login).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `date` | DateTime | Yes | Appointment date/time |
-| `hasTime` | bool | Yes | Whether time is included |
-| `notes` | String | No | Appointment notes |
-| `purpose` | String | No | Appointment purpose |
-| `status` | AppointmentScheduleStatus | Yes | Appointment status |
-| `patientRecord` | String (FK) | No | FK to PatientRecord |
-| `patient` | String (FK) | No | FK to Patient |
-| `patientName` | String | No | Cached patient name |
-| `ownerName` | String | No | Cached owner name |
-| `ownerContact` | String | No | Cached contact info |
-| `branch` | String (FK) | No | FK to Branch |
+| `name` | String | Yes | Employee name |
+| `baseSalary` | num | No | Base salary amount (default 0) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `appointment_schedules`
+**Collection:** `employees`
 
-**Relationships:**
-- `patientRecord` -> PatientRecord (optional)
-- `patient` -> Patient (optional)
-- `branch` -> Branch (optional)
+### EmployeeAttendance
 
-**Enum:** `AppointmentScheduleStatus { scheduled, completed, missed, cancelled }`
-
-**Computed Properties:**
-- `displayDate` - Formats date with/without time
-- `patientDisplayName` - Returns expanded or cached patient name
-- `ownerDisplayName` - Returns expanded or cached owner name
-
----
-
-## System Domain
-
-### ChangeLog
-
-Audit trail for system changes.
+Daily attendance record for an employee.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `collection` | String | Yes | Name of changed collection |
-| `reference` | String | Yes | ID of changed record |
-| `message` | String | No | Change description |
-| `user` | String (FK) | No | FK to User who made the change |
-| `change` | dynamic | Yes | Actual change data/payload |
-| `type` | ChangeLogType | Yes | Type of change |
-| `isDeleted` | bool | Yes | Soft delete flag |
+| `employee` | String (FK) | Yes | FK to Employee |
+| `date` | DateTime | Yes | Attendance date |
+| `isPresent` | bool | No | Whether present (default true) |
+| `notes` | String | No | Optional notes |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `change_logs`
+**Collection:** `employeeAttendances`
 
-**Relationships:**
-- `user` -> User (optional)
+### EmployeeDeduction
 
-**Enum:** `ChangeLogType { create, update, delete }`
-
----
-
-### SystemVersion
-
-Application version tracking.
+A recurring deduction applied to an employee's salary — fixed amount or percentage, optionally time-bounded.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
-| `buildNumber` | num | Yes | Build/version number |
-| `artifacts` | List\<SystemArtifact> | Yes | List of system artifacts |
+| `employee` | String (FK) | Yes | FK to Employee |
+| `type` | DeductionType | Yes | Deduction type |
+| `valueType` | DeductionValueType | Yes | Fixed amount or percentage |
+| `value` | num | Yes | Amount in pesos, or percentage |
+| `name` | String | No | Custom name (used when type is "other") |
+| `startMonth` | DateTime | No | Start month (inclusive); null = from the beginning |
+| `endMonth` | DateTime | No | End month (inclusive); null = lifetime/ongoing |
+| `isActive` | bool | No | Whether currently active (default true) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `employeeDeductions`
+
+---
+
+## Promo Domain
+
+### Promo
+
+A loyalty promotion: a free-weight reward earned after completing a set number of orders.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Promo display name |
+| `description` | String | No | Description |
+| `startDate` | DateTime | Yes | Start date |
+| `endDate` | DateTime | Yes | Expiration date |
+| `requiredOrders` | int | Yes | Orders required to earn the reward |
+| `rewardFreeWeight` | num | Yes | Free weight reward amount in kg |
+| `isActive` | bool | No | Whether enabled by admin (default true) |
+| `branch` | String (FK) | No | FK to Branch (null = all branches) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `system_versions`
+**Collection:** `promos`
 
----
+### CustomerPromo
 
-### SystemArtifact
-
-Embedded artifact information (not a separate collection).
+Tracks one customer's progress in one loyalty promo.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | String | Yes | Artifact name |
-| `url` | String | Yes | Download URL |
-| `type` | String | Yes | Artifact type |
-| `version` | String | No | Semantic version |
-| `versionCode` | String | No | Build/version code |
+| `id` | String | Yes | PocketBase record ID |
+| `customerId` | String (FK) | Yes | FK to Customer |
+| `promoId` | String (FK) | Yes | FK to Promo |
+| `completedOrders` | int | No | Qualifying orders completed (default 0) |
+| `isRewardEarned` | bool | No | Whether the reward threshold has been reached (default false) |
+| `isRewardRedeemed` | bool | No | Whether the reward has been applied to an order (default false) |
+| `redeemedOnSaleId` | String (FK) | No | Sale ID where the reward was redeemed |
+| `isDeleted` | bool | Yes | Soft delete flag |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
 
-**Computed Properties:**
-- `display` - Formatted display string "name - version+versionCode"
+**Collection:** `customerPromos`
+
+**Relationships:** `customerId` -> Customer; `promoId` -> Promo; `redeemedOnSaleId` -> Sale (optional).
+
+---
+
+## Activity Domain
+
+### ActivityLog
+
+A single audit-trail entry recording a create/update/delete on any tracked collection.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `collection` | String | Yes | Name of the changed collection |
+| `recordId` | String | Yes | ID of the changed record |
+| `action` | ActivityAction | Yes | `create`, `update`, or `delete` |
+| `description` | String | No | Human-readable description |
+| `changes` | Map\<String, dynamic> | No | Change payload/diff |
+| `userId` | String (FK) | No | User who made the change |
+| `userName` | String | No | User name snapshot |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `activityLogs`
+
+**Enum:** `ActivityAction { create, update, delete }`
+
+---
+
+## Settings Domain
+
+### PrinterConfig
+
+A configured thermal printer (Bluetooth or network) for receipt printing. Stored on **this device** (secure storage), not PocketBase. One printer can be selected for printing.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | Local record ID |
+| `name` | String | Yes | Printer name |
+| `connectionType` | PrinterConnectionType | Yes | `bluetooth` or `network` |
+| `address` | String | No | MAC address (Bluetooth) or IP address (network) |
+| `port` | int | No | Network port (default 9100) |
+| `paperWidth` | PrinterPaperWidth | No | `mm58` or `mm80` (default `mm80`) |
+| `isEnabled` | bool | No | Whether enabled (default true) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+The selected printer ID is stored separately on the device (`selected_printer_id`). Existing PocketBase `printerConfigs` rows are imported once onto each device, then unused.
+
+**Storage:** device secure storage (not a PocketBase collection)
+
+### PosGroup
+
+A named group of products/services shown as a section on the cashier page. Per-branch, ordered by `sortOrder`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Group display name |
+| `branchId` | String (FK) | Yes | FK to Branch |
+| `sortOrder` | int | No | Display order, lower first (default 0) |
+| `isDeleted` | bool | No | Soft delete flag (default false) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `posGroups`
+
+### PosGroupItem
+
+A product or service assigned to a PosGroup — a many-to-many junction.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `groupId` | String (FK) | Yes | FK to PosGroup |
+| `productId` | String (FK) | No | FK to Product (one of product/service must be set) |
+| `serviceId` | String (FK) | No | FK to Service (one of product/service must be set) |
+| `sortOrder` | int | No | Display order within the group (default 0) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `posGroupItems`
+
+### IncentiveTier
+
+Defines the incentive earned for a service price falling within a range, per branch.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `branch` | String (FK) | Yes | FK to Branch |
+| `minAmount` | num | Yes | Minimum service price for this tier (inclusive) |
+| `maxAmount` | num | No | Maximum service price (inclusive); null = no upper limit |
+| `incentiveAmount` | num | Yes | Incentive earned when price falls in this tier |
+| `sortOrder` | int | No | Display order (default 0) |
+| `created` | DateTime | No | Creation timestamp |
+| `updated` | DateTime | No | Last update timestamp |
+
+**Collection:** `incentiveTiers`
+
+### FeatureFlag
+
+Remote feature toggle for organization workflow (email updates, require machine/pack/storage). Edited under Management → Settings.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `key` | String | Yes | Flag key |
+| `enabled` | bool | Yes | Whether the flag is on |
+| `description` | String | No | Description |
+
+**Collection:** `featureFlags`
+
+---
+
+## Public / Derived Models
+
+### CustomerHistory
+
+Not a PocketBase collection — a read-only aggregate assembled server-side (`server/pb_hooks/send_history_link_config.js` + related hooks) for the public customer order-status page (`docs/deployment.md` links this under the reset-password/privacy-policy static pages pattern). Composed of `CustomerHistoryCustomer`, `CustomerHistorySale` (with `OrderStatus`/`PaymentStatus`), `CustomerHistoryItem` (product lines), and `CustomerHistoryServiceItem` (service lines, including machine/storage name snapshots). See `lib/src/features/customer_history/domain/customer_history.dart`.
+
+### AppConfig
+
+Not a PocketBase collection in this app's own database — fetched from an external version-manager service's `versions` collection to drive the in-app update/minimum-version gate (`lib/src/features/version_lock/`). Fields: `major`/`minor`/`patch`, `minimumMajor`/`minimumMinor`/`minimumPatch`, `buildNumber`.
 
 ---
 
 ## Summary
 
-**Total Collections:** 19
-**Total Enums:** 6
+**Total PocketBase collections (excluding SQL views):** 37 named constants in `pocketbase_collections.dart`, plus `orderStatusHistory` (referenced by literal string, not centralized as a constant) ≈ 38
+**Total enums:** 15+ (one or more per feature — see each domain section above; not exhaustively cross-referenced here since several enums like `PrinterConnectionType`, `DeductionType`, `PaymentMethod` are UI/settings-only and don't warrant a dedicated table row)
 
 | Enum | Values |
 |------|--------|
-| PatientSex | male, female |
 | ProductStatus | inStock, outOfStock, lowStock, noThreshold |
 | ProductAdjustmentType | product, productStock |
-| AppointmentScheduleStatus | scheduled, completed, missed, cancelled |
-| ChangeLogType | create, update, delete |
+| OrderStatus | pending, processing, ready, pickedUp |
+| PaymentStatus | unpaid, partial, paid |
 | StatusType | saleStatus, orderStatus |
+| ActivityAction | create, update, delete |
+| MachineType | washer, dryer, other |
+
+> **Note:** an earlier version of this document described a `Patient`/`AppointmentSchedule` domain family (patients, species, breeds, treatments, prescriptions) inherited from the veterinary-clinic template this project was originally forked from. None of that ever shipped for HZN Laundry — it has been removed as of the 2026-09-03 docs cleanup.

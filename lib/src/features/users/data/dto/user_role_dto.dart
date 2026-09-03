@@ -70,8 +70,10 @@ class UserRoleDto with UserRoleDtoMappable {
 
   /// Creates a DTO from a PocketBase RecordModel.
   factory UserRoleDto.fromRecord(RecordModel record) {
-    final json = record.toJson();
+    return UserRoleDto.fromJson(record.toJson());
+  }
 
+  factory UserRoleDto.fromJson(Map<String, dynamic> json) {
     return UserRoleDto(
       id: json['id'] as String? ?? '',
       collectionId: json['collectionId'] as String? ?? '',

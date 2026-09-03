@@ -45,6 +45,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsFailuresEn failures = TranslationsFailuresEn._(_root);
 	late final TranslationsFieldsEn fields = TranslationsFieldsEn._(_root);
 	late final TranslationsNavigationEn navigation = TranslationsNavigationEn._(_root);
+	late final TranslationsOrganizationsEn organizations = TranslationsOrganizationsEn._(_root);
 	late final TranslationsSortEn sort = TranslationsSortEn._(_root);
 	late final TranslationsValidationEn validation = TranslationsValidationEn._(_root);
 }
@@ -120,8 +121,8 @@ class TranslationsCommonEn {
 
 	// Translations
 
-	/// en: 'Hi-Zone Laundry'
-	String get appName => 'Hi-Zone Laundry';
+	/// en: 'HZN Laundry'
+	String get appName => 'HZN Laundry';
 
 	/// en: 'N/A'
 	String get placeholderText => 'N/A';
@@ -261,8 +262,8 @@ class TranslationsFailuresEn {
 	/// en: 'No internet connection.'
 	String get noInternet => 'No internet connection.';
 
-	/// en: 'Invalid username or password.'
-	String get invalidCredentials => 'Invalid username or password.';
+	/// en: 'Invalid email or password.'
+	String get invalidCredentials => 'Invalid email or password.';
 
 	/// en: 'Your account has been disabled.'
 	String get accountDisabled => 'Your account has been disabled.';
@@ -281,9 +282,6 @@ class TranslationsFieldsEn {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-
-	/// en: 'Username'
-	String get userName => 'Username';
 
 	/// en: 'Email'
 	String get email => 'Email';
@@ -342,6 +340,36 @@ class TranslationsNavigationEn {
 
 	// Translations
 
+	/// en: 'Shortcuts'
+	String get shortcuts => 'Shortcuts';
+
+	/// en: 'Categories'
+	String get categories => 'Categories';
+
+	/// en: 'Show more'
+	String get showMore => 'Show more';
+
+	/// en: 'Show less'
+	String get showLess => 'Show less';
+
+	/// en: 'Operations'
+	String get operations => 'Operations';
+
+	/// en: 'People'
+	String get people => 'People';
+
+	/// en: 'Insights'
+	String get insights => 'Insights';
+
+	/// en: 'Administration'
+	String get administration => 'Administration';
+
+	/// en: 'Collapse navigation'
+	String get collapseNav => 'Collapse navigation';
+
+	/// en: 'Expand navigation'
+	String get expandNav => 'Expand navigation';
+
 	/// en: 'Dashboard'
 	String get dashboard => 'Dashboard';
 
@@ -378,8 +406,11 @@ class TranslationsNavigationEn {
 	/// en: 'Orders'
 	String get salesHistory => 'Orders';
 
-	/// en: 'Organization'
-	String get organization => 'Organization';
+	/// en: 'Management'
+	String get management => 'Management';
+
+	/// en: 'Organizations'
+	String get organizations => 'Organizations';
 
 	/// en: 'Services'
 	String get services => 'Services';
@@ -410,6 +441,210 @@ class TranslationsNavigationEn {
 
 	/// en: 'Activities'
 	String get activities => 'Activities';
+}
+
+// Path: organizations
+class TranslationsOrganizationsEn {
+	TranslationsOrganizationsEn._(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Organizations'
+	String get title => 'Organizations';
+
+	/// en: 'Create Organization'
+	String get create => 'Create Organization';
+
+	/// en: 'Organizations you're in'
+	String get yourOrganizations => 'Organizations you\'re in';
+
+	/// en: 'Your role'
+	String get yourRole => 'Your role';
+
+	/// en: 'Switch to this organization'
+	String get switchToThis => 'Switch to this organization';
+
+	/// en: 'Current'
+	String get current => 'Current';
+
+	/// en: 'Details'
+	String get details => 'Details';
+
+	/// en: 'Save details'
+	String get saveDetails => 'Save details';
+
+	/// en: 'Invite people'
+	String get invitePeople => 'Invite people';
+
+	/// en: 'Email'
+	String get inviteEmail => 'Email';
+
+	/// en: 'Role'
+	String get inviteRole => 'Role';
+
+	/// en: 'Send invite'
+	String get sendInvite => 'Send invite';
+
+	/// en: 'Pending invites for you'
+	String get pendingInvites => 'Pending invites for you';
+
+	/// en: 'Pending invites'
+	String get pendingOrgInvites => 'Pending invites';
+
+	/// en: 'Accept'
+	String get accept => 'Accept';
+
+	/// en: 'Decline'
+	String get decline => 'Decline';
+
+	/// en: 'Revoke'
+	String get revoke => 'Revoke';
+
+	/// en: 'You don't belong to any organizations yet.'
+	String get noOrganizations => 'You don\'t belong to any organizations yet.';
+
+	/// en: 'Contact your administrator to be invited to an organization.'
+	String get contactAdmin => 'Contact your administrator to be invited to an organization.';
+
+	/// en: 'Invite sent'
+	String get inviteSent => 'Invite sent';
+
+	/// en: 'Invite accepted'
+	String get inviteAccepted => 'Invite accepted';
+
+	/// en: 'Invite declined'
+	String get inviteDeclined => 'Invite declined';
+
+	/// en: 'Invite revoked'
+	String get inviteRevoked => 'Invite revoked';
+
+	/// en: 'Organization updated'
+	String get saveSuccess => 'Organization updated';
+
+	/// en: 'Organization'
+	String get switchOrganization => 'Organization';
+
+	/// en: 'Switching organization…'
+	String get switchingOrganization => 'Switching organization…';
+
+	/// en: 'Switching to $name…'
+	String switchingToOrganization({required Object name}) => 'Switching to ${name}…';
+
+	/// en: 'Set up your organization'
+	String get setupTitle => 'Set up your organization';
+
+	/// en: 'Organization details'
+	String get stepDetails => 'Organization details';
+
+	/// en: 'Create your first branch'
+	String get stepBranch => 'Create your first branch';
+
+	/// en: 'Invite your team'
+	String get stepInvite => 'Invite your team';
+
+	/// en: 'Review & create'
+	String get stepReview => 'Review & create';
+
+	/// en: 'Details'
+	String get stepDetailsShort => 'Details';
+
+	/// en: 'Branch'
+	String get stepBranchShort => 'Branch';
+
+	/// en: 'Team'
+	String get stepInviteShort => 'Team';
+
+	/// en: 'Review'
+	String get stepReviewShort => 'Review';
+
+	/// en: 'Next'
+	String get next => 'Next';
+
+	/// en: 'Back'
+	String get back => 'Back';
+
+	/// en: 'Skip'
+	String get skip => 'Skip';
+
+	/// en: 'Create organization'
+	String get finish => 'Create organization';
+
+	/// en: 'Add branch'
+	String get addBranch => 'Add branch';
+
+	/// en: 'Enter the first branch details to continue.'
+	String get branchRequired => 'Enter the first branch details to continue.';
+
+	/// en: 'No branch yet'
+	String get noBranchYet => 'No branch yet';
+
+	/// en: 'Organization is ready'
+	String get onboardingComplete => 'Organization is ready';
+
+	/// en: 'Operating Hours'
+	String get operatingHours => 'Operating Hours';
+
+	/// en: 'Cut-off Time'
+	String get cutOffTime => 'Cut-off Time';
+
+	/// en: 'Incentive Tiers'
+	String get incentiveTiers => 'Incentive Tiers';
+
+	/// en: 'Add Tier'
+	String get addTier => 'Add Tier';
+
+	/// en: 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier's incentive is used.'
+	String get incentiveTiersHint => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.';
+
+	/// en: 'At least one incentive tier is required.'
+	String get atLeastOneTier => 'At least one incentive tier is required.';
+
+	/// en: 'Tier $n'
+	String tierLabel({required Object n}) => 'Tier ${n}';
+
+	/// en: 'Min'
+	String get tierMin => 'Min';
+
+	/// en: 'Max'
+	String get tierMax => 'Max';
+
+	/// en: 'Incentive'
+	String get tierIncentive => 'Incentive';
+
+	/// en: 'No limit'
+	String get tierNoLimit => 'No limit';
+
+	/// en: 'Remove tier'
+	String get removeTier => 'Remove tier';
+
+	/// en: 'Add invite'
+	String get addInvite => 'Add invite';
+
+	/// en: 'No invites queued. You can skip this step.'
+	String get noInvitesQueued => 'No invites queued. You can skip this step.';
+
+	/// en: 'Queued invites'
+	String get queuedInvites => 'Queued invites';
+
+	/// en: 'Invite added'
+	String get inviteQueued => 'Invite added';
+
+	/// en: 'That email is already queued.'
+	String get inviteAlreadyQueued => 'That email is already queued.';
+
+	/// en: 'Remove'
+	String get removeInvite => 'Remove';
+
+	/// en: '(one) {1 queued invite} (other) {$n queued invites}'
+	String reviewInviteCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 queued invite',
+		other: '${n} queued invites',
+	);
+
+	/// en: '—'
+	String get reviewNone => '—';
 }
 
 // Path: sort
@@ -529,7 +764,7 @@ extension on Translations {
 			'auth.signInToContinue' => 'Sign in to continue',
 			'auth.signingIn' => 'Signing in...',
 			'auth.verificationEmailSent' => 'A verification email has been sent to your email address',
-			'common.appName' => 'Hi-Zone Laundry',
+			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'Save',
 			'common.cancel' => 'Cancel',
@@ -573,11 +808,10 @@ extension on Translations {
 			'failures.conflict' => 'A conflict occurred. The resource may already exist.',
 			'failures.timeout' => 'Request timed out. Please try again.',
 			'failures.noInternet' => 'No internet connection.',
-			'failures.invalidCredentials' => 'Invalid username or password.',
+			'failures.invalidCredentials' => 'Invalid email or password.',
 			'failures.accountDisabled' => 'Your account has been disabled.',
 			'failures.emailNotVerified' => 'Please verify your email address.',
 			'failures.tooManyRequests' => 'Too many requests. Please wait a moment.',
-			'fields.userName' => 'Username',
 			'fields.email' => 'Email',
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
@@ -594,6 +828,16 @@ extension on Translations {
 			'fields.notes' => 'Notes',
 			'fields.description' => 'Description',
 			'fields.category' => 'Category',
+			'navigation.shortcuts' => 'Shortcuts',
+			'navigation.categories' => 'Categories',
+			'navigation.showMore' => 'Show more',
+			'navigation.showLess' => 'Show less',
+			'navigation.operations' => 'Operations',
+			'navigation.people' => 'People',
+			'navigation.insights' => 'Insights',
+			'navigation.administration' => 'Administration',
+			'navigation.collapseNav' => 'Collapse navigation',
+			'navigation.expandNav' => 'Expand navigation',
 			'navigation.dashboard' => 'Dashboard',
 			'navigation.products' => 'Products',
 			'navigation.inventory' => 'Inventory',
@@ -606,7 +850,8 @@ extension on Translations {
 			'navigation.more' => 'More',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Orders',
-			'navigation.organization' => 'Organization',
+			'navigation.management' => 'Management',
+			'navigation.organizations' => 'Organizations',
 			'navigation.services' => 'Services',
 			'navigation.customers' => 'Customers',
 			'navigation.employees' => 'Employees',
@@ -617,6 +862,70 @@ extension on Translations {
 			'navigation.posUnavailableAllBranches' => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.',
 			'navigation.createUnavailableAllBranches' => 'This action requires a specific branch. Choose a branch before continuing.',
 			'navigation.activities' => 'Activities',
+			'organizations.title' => 'Organizations',
+			'organizations.create' => 'Create Organization',
+			'organizations.yourOrganizations' => 'Organizations you\'re in',
+			'organizations.yourRole' => 'Your role',
+			'organizations.switchToThis' => 'Switch to this organization',
+			'organizations.current' => 'Current',
+			'organizations.details' => 'Details',
+			'organizations.saveDetails' => 'Save details',
+			'organizations.invitePeople' => 'Invite people',
+			'organizations.inviteEmail' => 'Email',
+			'organizations.inviteRole' => 'Role',
+			'organizations.sendInvite' => 'Send invite',
+			'organizations.pendingInvites' => 'Pending invites for you',
+			'organizations.pendingOrgInvites' => 'Pending invites',
+			'organizations.accept' => 'Accept',
+			'organizations.decline' => 'Decline',
+			'organizations.revoke' => 'Revoke',
+			'organizations.noOrganizations' => 'You don\'t belong to any organizations yet.',
+			'organizations.contactAdmin' => 'Contact your administrator to be invited to an organization.',
+			'organizations.inviteSent' => 'Invite sent',
+			'organizations.inviteAccepted' => 'Invite accepted',
+			'organizations.inviteDeclined' => 'Invite declined',
+			'organizations.inviteRevoked' => 'Invite revoked',
+			'organizations.saveSuccess' => 'Organization updated',
+			'organizations.switchOrganization' => 'Organization',
+			'organizations.switchingOrganization' => 'Switching organization…',
+			'organizations.switchingToOrganization' => ({required Object name}) => 'Switching to ${name}…',
+			'organizations.setupTitle' => 'Set up your organization',
+			'organizations.stepDetails' => 'Organization details',
+			'organizations.stepBranch' => 'Create your first branch',
+			'organizations.stepInvite' => 'Invite your team',
+			'organizations.stepReview' => 'Review & create',
+			'organizations.stepDetailsShort' => 'Details',
+			'organizations.stepBranchShort' => 'Branch',
+			'organizations.stepInviteShort' => 'Team',
+			'organizations.stepReviewShort' => 'Review',
+			'organizations.next' => 'Next',
+			'organizations.back' => 'Back',
+			'organizations.skip' => 'Skip',
+			'organizations.finish' => 'Create organization',
+			'organizations.addBranch' => 'Add branch',
+			'organizations.branchRequired' => 'Enter the first branch details to continue.',
+			'organizations.noBranchYet' => 'No branch yet',
+			'organizations.onboardingComplete' => 'Organization is ready',
+			'organizations.operatingHours' => 'Operating Hours',
+			'organizations.cutOffTime' => 'Cut-off Time',
+			'organizations.incentiveTiers' => 'Incentive Tiers',
+			'organizations.addTier' => 'Add Tier',
+			'organizations.incentiveTiersHint' => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.',
+			'organizations.atLeastOneTier' => 'At least one incentive tier is required.',
+			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
+			'organizations.tierMin' => 'Min',
+			'organizations.tierMax' => 'Max',
+			'organizations.tierIncentive' => 'Incentive',
+			'organizations.tierNoLimit' => 'No limit',
+			'organizations.removeTier' => 'Remove tier',
+			'organizations.addInvite' => 'Add invite',
+			'organizations.noInvitesQueued' => 'No invites queued. You can skip this step.',
+			'organizations.queuedInvites' => 'Queued invites',
+			'organizations.inviteQueued' => 'Invite added',
+			'organizations.inviteAlreadyQueued' => 'That email is already queued.',
+			'organizations.removeInvite' => 'Remove',
+			'organizations.reviewInviteCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 queued invite', other: '${n} queued invites', ), 
+			'organizations.reviewNone' => '—',
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',

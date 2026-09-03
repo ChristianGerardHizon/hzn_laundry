@@ -44,9 +44,7 @@ const _tabs = <_ActivityTab>[
   _ActivityTab(
       label: 'Payments', icon: Icons.payment, collectionFilter: 'payments'),
   _ActivityTab(
-      label: 'Organization',
-      icon: Icons.business,
-      collectionFilter: 'branches'),
+      label: 'Management', icon: Icons.business, collectionFilter: 'branches'),
   _ActivityTab(
       label: 'Promos', icon: Icons.loyalty, collectionFilter: 'promos'),
 ];
@@ -61,8 +59,7 @@ class ActivitiesPage extends HookConsumerWidget {
 
     void refreshCurrentTab() {
       final tab = _tabs[tabController.index];
-      ref.invalidate(
-          activitiesControllerProvider(tab.collectionFilter));
+      ref.invalidate(activitiesControllerProvider(tab.collectionFilter));
     }
 
     return Scaffold(
@@ -79,15 +76,13 @@ class ActivitiesPage extends HookConsumerWidget {
           controller: tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: _tabs
-              .map((t) => Tab(icon: Icon(t.icon), text: t.label))
-              .toList(),
+          tabs:
+              _tabs.map((t) => Tab(icon: Icon(t.icon), text: t.label)).toList(),
         ),
       ),
       body: TabBarView(
         controller: tabController,
-        children:
-            _tabs.map((t) => _ActivityTabView(tab: t)).toList(),
+        children: _tabs.map((t) => _ActivityTabView(tab: t)).toList(),
       ),
     );
   }
@@ -148,8 +143,7 @@ class _ActivityTabView extends HookConsumerWidget {
                               .read(activitiesControllerProvider(
                                       tab.collectionFilter)
                                   .notifier)
-                              .filterByAction(
-                                  selected ? action.name : null);
+                              .filterByAction(selected ? action.name : null);
                         },
                       ),
                     ))
@@ -409,8 +403,7 @@ class _ActivityTile extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
@@ -440,9 +433,7 @@ class _ActivityTile extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  log.created != null
-                      ? timeFormat.format(log.created!)
-                      : '',
+                  log.created != null ? timeFormat.format(log.created!) : '',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

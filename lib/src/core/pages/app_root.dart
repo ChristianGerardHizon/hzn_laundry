@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/pos/presentation/cart_controller.dart';
 import '../../features/version_lock/presentation/controllers/play_store_update_provider.dart';
 import '../i18n/strings.g.dart';
 import '../packages/pocketbase/pb_connectivity_provider.dart';
 import '../routing/routes/dashboard.routes.dart';
-import '../routing/routes/organization.routes.dart';
+import '../routing/routes/management.routes.dart';
+import '../routing/routes/organizations.routes.dart';
 import '../routing/routes/products.routes.dart';
 import '../routing/routes/customers.routes.dart';
 import '../routing/routes/employees.routes.dart';
@@ -20,18 +22,21 @@ import '../routing/routes/promos.routes.dart';
 import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
 import '../widgets/branch_switcher.dart';
+import '../widgets/organization_switch_overlay.dart';
+import '../widgets/organization_switcher.dart';
 import '../widgets/fullscreen_toggle_button.dart';
 import '../widgets/mobile_bottom_nav.dart';
 import '../widgets/mobile_drawer.dart';
 import '../widgets/nav_permissions.dart';
+import '../widgets/desktop_side_nav.dart';
 import '../widgets/tablet_nav_rail.dart';
 
 /// Main adaptive shell widget that wraps authenticated app content.
 ///
 /// Provides responsive navigation:
 /// - Mobile (< 600px): Bottom navigation + drawer
-/// - Tablet (600-1200px): Navigation rail
-/// - Desktop (>= 1200px): Expanded navigation rail
+/// - Tablet (600-899px): Navigation rail
+/// - Tablet large / Desktop (>= 900px): Firebase-style [DesktopSideNav]
 class AppRoot extends ConsumerStatefulWidget {
   const AppRoot({
     super.key,
@@ -78,9 +83,10 @@ class _AppRootState extends ConsumerState<AppRoot> {
     EmployeesRoute.path, // 5: /employees
     ReportsRoute.path, // 6: /reports
     ActivitiesRoute.path, // 7: /activities
-    OrganizationRoute.path, // 8: /organization
-    PromosRoute.path, // 9: /promos
-    SystemRoute.path, // 10: /system
+    ManagementRoute.path, // 8: /management
+    OrganizationsRoute.path, // 9: /organizations
+    PromosRoute.path, // 10: /promos
+    SystemRoute.path, // 11: /system
   ];
 
   /// Routes in order of navigation index.
@@ -93,9 +99,10 @@ class _AppRootState extends ConsumerState<AppRoot> {
     EmployeesRoute(), // 5
     ReportsRoute(), // 6
     ActivitiesRoute(), // 7
-    OrganizationRoute(), // 8
-    PromosRoute(), // 9
-    SystemRoute(), // 10
+    ManagementRoute(), // 8
+    OrganizationsRoute(), // 9
+    PromosRoute(), // 10
+    SystemRoute(), // 11
   ];
 
   /// Gets the selected index within the visible items based on current route.
@@ -175,7 +182,8 @@ class _AppRootState extends ConsumerState<AppRoot> {
           'employees' => t.navigation.employees,
           'reports' => t.navigation.reports,
           'activities' => t.navigation.activities,
-          'organization' => t.navigation.organization,
+          'management' => t.navigation.management,
+          'organizations' => t.navigation.organizations,
           'system' => t.navigation.system,
           _ => key,
         });
@@ -183,44 +191,52 @@ class _AppRootState extends ConsumerState<AppRoot> {
     final role = roleAsync.value;
     final visibleItems = filterNavItems(allNavItems, role);
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
+    final switchingOrg = ref.watch(organizationSwitchOverlayProvider).active;
 
-        // Check if the router can pop (i.e. we're on a nested page)
-        if (GoRouter.of(context).canPop()) {
-          GoRouter.of(context).pop();
-          return;
-        }
+    return Stack(
+      children: [
+        PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            if (ref.read(organizationSwitchOverlayProvider).active) return;
 
-        // We're at a root page — confirm exit
-        final shouldExit = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Exit App'),
-            content: const Text(
-              'Are you sure you want to close the app?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
+            // Check if the router can pop (i.e. we're on a nested page)
+            if (GoRouter.of(context).canPop()) {
+              GoRouter.of(context).pop();
+              return;
+            }
+
+            // We're at a root page — confirm exit
+            final shouldExit = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Exit App'),
+                content: const Text(
+                  'Are you sure you want to close the app?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Exit'),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Exit'),
-              ),
-            ],
-          ),
-        );
-        if (shouldExit ?? false) {
-          SystemNavigator.pop();
-        }
-      },
-      child: isMobile
-          ? _buildMobileLayout(context, visibleItems)
-          : _buildTabletLayout(context, visibleItems),
+            );
+            if (shouldExit ?? false) {
+              SystemNavigator.pop();
+            }
+          },
+          child: isMobile
+              ? _buildMobileLayout(context, visibleItems)
+              : _buildTabletLayout(context, visibleItems),
+        ),
+        if (switchingOrg) const OrganizationSwitchLoadingOverlay(),
+      ],
     );
   }
 
@@ -241,6 +257,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
             children: [
               Row(
                 children: [
+                  const OrganizationSwitcher(compact: true),
                   const Expanded(child: BranchSwitcher(compact: true)),
                   const FullscreenToggleButton(),
                 ],
@@ -261,18 +278,26 @@ class _AppRootState extends ConsumerState<AppRoot> {
 
   Widget _buildTabletLayout(BuildContext context, List<NavItem> visibleItems) {
     final selectedIndex = _getSelectedIndex(context, visibleItems);
+    final useDesktopNav = Breakpoints.isTabletLargeOrLarger(context);
 
     return Scaffold(
       body: SafeArea(
         child: Row(
           children: [
-            // Navigation Rail
-            TabletNavRail(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (i) =>
-                  _onDestinationSelected(i, visibleItems),
-              visibleItems: visibleItems,
-            ),
+            if (useDesktopNav)
+              DesktopSideNav(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (i) =>
+                    _onDestinationSelected(i, visibleItems),
+                visibleItems: visibleItems,
+              )
+            else
+              TabletNavRail(
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (i) =>
+                    _onDestinationSelected(i, visibleItems),
+                visibleItems: visibleItems,
+              ),
 
             const VerticalDivider(width: 1),
 
@@ -286,6 +311,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
                     children: [
                       Row(
                         children: [
+                          const OrganizationSwitcher(compact: true),
                           const Expanded(child: BranchSwitcher(compact: true)),
                           const FullscreenToggleButton(),
                         ],

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../i18n/strings.g.dart';
-import '../routing/routes/organization.routes.dart';
+import '../routing/routes/management.routes.dart';
+import '../routing/routes/organizations.routes.dart';
 import '../routing/routes/products.routes.dart';
 import '../routing/routes/sales.routes.dart';
 import '../routing/routes/system.routes.dart';
@@ -164,11 +165,18 @@ class BreadcrumbNav extends StatelessWidget {
           onTap: () => const SalesRoute().go(context),
         );
 
-      case 'organization':
+      case 'management':
         return BreadcrumbItem(
-          label: t.navigation.organization,
-          path: OrganizationRoute.path,
-          onTap: () => const OrganizationRoute().go(context),
+          label: t.navigation.management,
+          path: ManagementRoute.path,
+          onTap: () => const ManagementRoute().go(context),
+        );
+
+      case 'organizations':
+        return BreadcrumbItem(
+          label: t.navigation.organizations,
+          path: OrganizationsRoute.path,
+          onTap: () => const OrganizationsRoute().go(context),
         );
 
       case 'system':

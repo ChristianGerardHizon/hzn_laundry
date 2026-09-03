@@ -13,15 +13,18 @@ import '../../../../../core/widgets/form_feedback.dart';
 import '../../../data/repositories/incentive_tier_repository.dart';
 import '../../../domain/branch.dart';
 import '../../controllers/branches_controller.dart';
+import '../../../../organizations/presentation/controllers/current_organization_controller.dart';
 
 /// Dialog for creating or editing a branch.
 class BranchFormDialog extends HookConsumerWidget {
   const BranchFormDialog({
     super.key,
     this.branch,
+    this.organizationId,
   });
 
   final Branch? branch;
+  final String? organizationId;
 
   bool get isEditing => branch != null;
 
@@ -125,6 +128,9 @@ class BranchFormDialog extends HookConsumerWidget {
 
       final branchData = Branch(
         id: branch?.id ?? '',
+        organizationId: branch?.organizationId ??
+            organizationId ??
+            ref.read(currentOrganizationIdProvider),
         name: (values['name'] as String).trim(),
         address: (values['address'] as String).trim(),
         contactNumber: (values['contactNumber'] as String).trim(),
@@ -454,10 +460,17 @@ class BranchFormDialog extends HookConsumerWidget {
 }
 
 /// Shows the branch form dialog.
-void showBranchFormDialog(BuildContext context, {Branch? branch}) {
+void showBranchFormDialog(
+  BuildContext context, {
+  Branch? branch,
+  String? organizationId,
+}) {
   showConstrainedDialog(
     context: context,
-    builder: (context) => BranchFormDialog(branch: branch),
+    builder: (context) => BranchFormDialog(
+      branch: branch,
+      organizationId: organizationId,
+    ),
   );
 }
 

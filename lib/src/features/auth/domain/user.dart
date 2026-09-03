@@ -15,8 +15,8 @@ class User with UserMappable {
   /// The user's display name.
   final String name;
 
-  /// The user's username for authentication.
-  final String username;
+  /// The user's email for authentication.
+  final String email;
 
   /// The user's avatar URL (pre-computed).
   final String? avatarUrl;
@@ -30,7 +30,7 @@ class User with UserMappable {
   const User({
     required this.id,
     required this.name,
-    required this.username,
+    required this.email,
     this.avatarUrl,
     this.verified = false,
     this.branch,

@@ -1,4 +1,4 @@
-# Hi-Zone Laundry - Application Overview
+# HZN Laundry - Application Overview
 
 A comprehensive Flutter multi-platform laundry management system supporting Android, iOS, macOS, Linux, Windows, and Web.
 
@@ -22,35 +22,21 @@ A comprehensive Flutter multi-platform laundry management system supporting Andr
 
 ### Primary Features (Main Navigation)
 
-#### Appointments (`/appointments`)
-Schedule and manage veterinary appointments.
-
-- **Screens**: Appointments list, detail page, daily view, calendar integration
-- **Statuses**: Scheduled, Completed, Missed, Cancelled
-- **Controllers**:
-  - `appointmentsController` - Main list
-  - `paginatedAppointmentsController` - Filtered/paginated
-  - `dailyAppointmentsController` - Today's appointments
-  - `patientAppointmentsController` - Patient-specific
-
-#### Patients (`/patients`)
-Core feature for managing animal patients and medical records.
+#### Employees (`/employees`)
+Staff records, attendance, and payroll deductions.
 
 - **Sub-features**:
-  - Patient List & Detail
-  - Medical Records (diagnosis, treatment, tests)
-  - Treatments tracking
-  - Prescriptions per visit
-  - Patient Files (documents, images, videos)
-- **UI**: 6-tab interface (Overview, Details, Records, Treatments, Appointments, Files)
-- **Key Models**: `Patient`, `PatientRecord`, `PatientTreatment`, `PatientPrescriptionItem`, `PatientFile`
-- **Patient Files**:
-  - Upload images (JPG, PNG, GIF, WEBP, HEIC), videos (MP4, MOV, AVI, WEBM), and PDFs
-  - 10MB file size limit with client-side validation
-  - Full-screen image viewer with zoom/pan (PhotoView)
-  - Video player with playback controls
-  - PDF viewer with external app launch
-  - File management: upload, view, edit notes, delete
+  - Employees list & detail
+  - Attendance tracking (clock in/out records)
+  - Deductions (fixed or percentage-based, per employee)
+- **Key Models**: `Employee`, `EmployeeAttendance`, `EmployeeDeduction`
+
+#### Reports (`/reports`)
+Sales and payroll reporting.
+
+- Sales summaries by period (daily/weekly/monthly, via `ReportPeriod`)
+- Salary/payroll reports by pay period (via `SalaryPeriod`), incorporating employee deductions
+- Backed by PocketBase SQL view collections (e.g. `vw_sales_daily_summary`, `vw_sales_by_customer`) for aggregate queries
 
 #### Products (`/products`)
 Inventory and product management with lot tracking.
@@ -132,61 +118,76 @@ View and manage completed transactions.
 - Detailed sale view with items and payment info
 - Create-order add-ons picker shows only products for the current branch
 
-#### Messages (`/messages`)
-Communication system for appointments and follow-ups.
+#### Activities (`/activities`)
+Audit log of changes made across the system (Admin-only, `system.admin` permission).
 
-- Send appointment reminders
-- Message templates for quick messaging
-- Template selector in appointment sheets
+- Chronological feed of create/update/delete actions (`ChangeLogType`), who made them, and on what record
+- Backed by the `activityLogs` collection, written by the `activity_logger_config.js` PocketBase hook
 
-#### Treatment Plans (`/treatment-plans`)
-Plan and track multi-visit treatment courses.
+#### Promos (`/promos`)
+Loyalty/promo campaign management (Admin-only, `system.admin` permission).
 
-- Create treatment plans with scheduled items
-- Track treatment progress per patient
-- Reschedule treatment items
-- Treatment templates for quick creation
+- Promos list & detail
+- Customer-promo redemption tracking (`customerPromos`)
+
+#### Customer History (`/history/:token`)
+Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt link) to view their own order history and status — no login required, scoped to their token.
 
 ---
 
 ### Organization/Admin Features
 
-#### Organization (`/organization`)
-3-panel tablet layout for managing organizational settings.
+#### Organizations (`/organizations`)
+Every signed-in user can see this tab (no permission gate) so pending invites are visible.
+
+- List of organizations you belong to, with your role and a switch action
+- Org details editable with `members.manage`
+- Invite people by email + role; accept/decline pending invites
+- Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), optional team invites; the organization is created only when required setup is submitted
+- Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs
+
+#### Management (`/management`)
+3-panel tablet layout for org-wide people, assets, and catalog. The nav rail scrolls when needed.
 
 **Layout** (tablet):
 - Panel 1 (80px): Navigation rail with icon + text labels
-- Panel 2 (320px): List panel (users, roles, or branches)
+- Panel 2 (320px): List panel
 - Panel 3 (expanded): Detail panel or empty state
 
 **Modes:**
-- **Users** (`/organization/users`) - User CRUD, role assignment, branch association
-- **Roles** (`/organization/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
-- **Branches** (`/organization/branches`) - Multi-location support with address and contact info
-- **Machines** (`/organization/machines`) - Laundry machine management (washer, dryer, other) scoped to the current branch; unassigned machines remain visible
-- **Storages** (`/organization/storages`) - Storage location management for ready laundry items, scoped to the current branch; unassigned locations remain visible
+- **Users** (`/management/users`) - User CRUD, role assignment, branch association
+- **Roles** (`/management/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
+- **Branches** (`/management/branches`) - Multi-location support with address and contact info
+- **Machines** (`/management/machines`) - Laundry machine management including size and per-machine weight→load rules; scoped to the current branch; unassigned machines remain visible
+- **Storages** (`/management/storages`) - Storage location management for ready laundry items, scoped to the current branch; unassigned locations remain visible
+- **Product Categories** (`/management/product-categories`) - Hierarchical product categories
+- **Quantity Units** (`/management/quantity-units`) - Units of measure used by products/services (e.g. kg, pc)
+- **Cashier Layout** (`/management/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
+- **Import** (`/management/import`) - CSV product import
+- **Settings** (`/management/settings`) - Organization workflow toggles (email updates, require machine/pack/storage)
+
+Old `/system/...` URLs for the moved items redirect here.
 
 #### System Settings (`/system`)
-3-panel tablet layout for system configuration.
+Device-specific settings only (this tablet/phone/desktop).
 
 **Layout** (tablet):
 - Panel 1 (80px): Navigation rail with icon + text labels
-- Panel 2 (320px): List panel (species, categories, or templates)
-- Panel 3 (expanded): Detail panel or empty state
+- Panel 2 (320px): Printer list (or full panel for Appearance)
+- Panel 3 (expanded): Printer detail or empty state
 
 **Modes:**
-- **Species & Breeds** (`/system/species`) - Pet species catalog with breeds linked to species
-- **Product Categories** (`/system/product-categories`) - Hierarchical product categories
-- **Message Templates** (`/system/message-templates`) - Pre-defined messages for appointments
-- **Cashier Layout** (`/system/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
+- **Printers** (`/system/printers`) - Thermal/receipt printers stored on this device; one selected printer for printing
+- **Appearance** (`/system/appearance`) - Theme settings (local)
 
 ---
 
-### Authentication (`/auth`)
+### Authentication (`/login`)
 
-- Splash screen
-- Login page
-- Password recovery
+- Splash screen (`/splash`)
+- Login page (`/login`)
+- Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
+- Auth loading (`/auth-loading`)
 - Session management
 
 ---
@@ -199,6 +200,9 @@ Located in `/lib/src/core/`
 - GoRouter configuration with auth redirects
 - Route files organized by domain
 - Shell-based routing with nested subroutes
+
+### Navigation (`/core/navigation/`)
+- `desktop_nav_presentation.dart` - Shortcut/category grouping for the desktop sidebar
 
 ### PocketBase Integration (`/core/packages/pocketbase/`)
 - `pocketbase_provider.dart` - Singleton instance
@@ -214,7 +218,8 @@ Located in `/lib/src/core/`
 ### Shared Widgets (`/core/widgets/`)
 - `mobile_bottom_nav.dart` - Bottom navigation
 - `mobile_drawer.dart` - Mobile drawer
-- `tablet_nav_rail.dart` - Tablet navigation rail
+- `tablet_nav_rail.dart` - Tablet navigation rail (600–899px)
+- `desktop_side_nav.dart` - Expandable desktop sidebar (≥900px)
 - `breadcrumb_nav.dart` - Breadcrumb navigation
 - `cached_avatar.dart` - Avatar caching
 
@@ -227,122 +232,143 @@ Located in `/lib/src/core/`
 
 ## Domain Models
 
-### 18+ Collections across 6 Domains
+### ~28 collections across 9 domains
 
-#### Organization Domain (5 collections)
+See [`docs/entities.md`](entities.md) for full field-level detail; this is a summary. `docs/pb_schema.json` / `docs/updated_pb_schema.json` are the authoritative raw PocketBase schema exports.
+
+#### Organizations Domain (3 collections)
 | Collection | Description |
 |------------|-------------|
-| `User` | System users (all types) |
-| `UserRole` | Role definitions with permissions |
-| `Branch` | Business branches/locations |
-| `Machine` | Laundry machines (washer, dryer, other) |
-| `StorageLocation` | Storage locations for laundry items |
+| `organizations` | Multi-tenant laundry business |
+| `organizationMemberships` | User membership in an organization (role + status) |
+| `organizationInvites` | Email invite to join an organization |
 
-#### Patient Domain (8 collections)
+#### Management Domain (6 collections)
 | Collection | Description |
 |------------|-------------|
-| `Patient` | Animal patients with owner info |
-| `PatientSpecies` | Pet species catalog |
-| `PatientBreed` | Breed catalog |
-| `PatientRecord` | Medical visit records |
-| `PatientFile` | Patient documents/images |
-| `PatientTreatment` | Treatment type catalog |
-| `PatientTreatmentRecord` | Treatment tracking |
-| `PatientPrescriptionItem` | Medication prescriptions |
+| `users` | System users (all types) |
+| `userRoles` | Role definitions with permissions |
+| `branches` | Business branches/locations |
+| `machines` | Laundry machines (washer, dryer, other), with size and load rules |
+| `machineLoadRules` | Per-machine weight→load count rules |
+| `storages` | Storage locations for ready laundry items |
+
+Printers are stored on the device (secure storage), not in PocketBase. The leftover `printerConfigs` collection is only read once to import existing printers onto a device.
 
 #### Product Domain (5 collections)
 | Collection | Description |
 |------------|-------------|
-| `Product` | Products/inventory items |
-| `ProductCategory` | Hierarchical categories |
-| `ProductStock` | Stock lots with expiration |
-| `ProductLot` | Batch/lot numbers (FEFO tracking) |
-| `ProductAdjustment` | Stock change audit trail |
-
-#### Appointment Domain (1 collection)
-| Collection | Description |
-|------------|-------------|
-| `AppointmentSchedule` | Appointment bookings |
+| `products` | Products/inventory items |
+| `productCategories` | Hierarchical categories |
+| `productStocks` | Stock lots with expiration |
+| `productLots` | Batch/lot numbers (FEFO tracking) |
+| `productAdjustments` | Stock change audit trail |
 
 #### Service Domain (3 collections)
 | Collection | Description |
 |------------|-------------|
-| `Service` | Laundry services (wash, dry, fold, etc.) with optional `minimumCharge` |
-| `ServiceCategory` | Service categories |
-| `ServicePriceTier` | Flat quantity-range totals for a service |
+| `services` | Laundry services (wash, dry, fold, etc.) with optional `minimumCharge` |
+| `serviceCategories` | Service categories |
+| `servicePriceTiers` | Flat quantity-range totals for a service |
 
-#### POS Domain (2 collections)
+#### POS Domain (5 collections)
 | Collection | Description |
 |------------|-------------|
-| `PosGroup` | Named groups for cashier layout (per-branch) |
-| `PosGroupItem` | Many-to-many link between groups and products/services |
+| `posGroups` | Named groups for cashier layout (per-branch) |
+| `posGroupItems` | Many-to-many link between groups and products/services |
+| `carts` / `cartItems` | Shopping cart (temporary, products) |
+| `cartServiceItems` | Shopping cart (temporary, services) |
 
-#### Sales Domain (6 collections)
+#### Sales Domain (4 collections)
 | Collection | Description |
 |------------|-------------|
-| `Customer` | Branch-scoped laundry customers (members) |
-| `Sale` | Transaction records |
-| `SaleItem` | Product items in transaction |
-| `SaleServiceItem` | Service items in transaction |
-| `Cart` / `CartItem` | Shopping cart (temporary, products) |
-| `CartServiceItem` | Shopping cart (temporary, services) |
+| `customers` | Branch-scoped laundry customers (members) |
+| `sales` | Transaction/order records |
+| `saleItems` | Product items in a transaction |
+| `saleServiceItems` | Service items in a transaction |
+| `payments` | Payment records for a sale (supports multiple payments per sale) |
 
-#### Treatment Plans Domain (3 collections)
+#### Employees Domain (3 collections)
 | Collection | Description |
 |------------|-------------|
-| `TreatmentTemplate` | Pre-defined treatment plans |
-| `TreatmentPlan` | Multi-visit treatment course |
-| `TreatmentPlanItem` | Individual treatment sessions |
+| `employees` | Staff records |
+| `employeeAttendances` | Clock in/out records |
+| `employeeDeductions` | Payroll deductions per employee |
+
+#### Promos & Misc (5 collections)
+| Collection | Description |
+|------------|-------------|
+| `promos` | Loyalty/promo campaigns |
+| `customerPromos` | Customer promo redemptions |
+| `quantityUnits` | Units of measure (e.g. kg, pc) |
+| `activityLogs` | Audit log of create/update/delete actions |
+| `incentiveTiers` | Employee incentive tier definitions |
+
+#### Workflow settings (1 collection)
+| Collection | Description |
+|------------|-------------|
+| `featureFlags` | Organization workflow toggles (UI under Management → Settings) |
+
+Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_summary`, `vw_sales_by_customer`, `vw_top_selling_products`, `vw_top_selling_services`, `vw_inventory_status`, `vw_low_stock_products`, `vw_expired_lots`, `vw_near_expiration_lots`, `vw_pos_search_items`, `vw_customer_order_stats`, `vw_payments_daily_summary`, `vw_sale_service_totals`, and others).
 
 ### Enums
-- `PatientSex` - male, female
-- `PatientFileType` - image, video, document, unknown
 - `ProductStatus` - inStock, outOfStock, lowStock, noThreshold
 - `ProductAdjustmentType` - product, productStock
-- `AppointmentScheduleStatus` - scheduled, completed, missed, cancelled
-- `SaleStatus` - pending, completed, refunded, cancelled
-- `PaymentMethod` - cash, card, check, etc.
-- `ChangeLogType` - create, update, delete
+- `OrderStatus` / `SaleStatus` - order/transaction lifecycle status
+- `PaymentMethod` / `PaymentStatus` / `PaymentType` - payment handling
+- `ServiceItemStatus` - per-line service item status
+- `MachineType` / `MachineSize` - washer/dryer/other; small/large
+- `DeductionType` / `DeductionValueType` - payroll deduction kind and fixed-vs-percentage
+- `ActivityAction` - audit log action kind
 
 ---
 
 ## Key Screens
 
 ### Authentication
-- Splash Screen (`/`)
-- Login Screen (`/login/user`)
-- Password Recovery (`/recovery`)
+- Splash Screen (`/splash`)
+- Login Screen (`/login`)
+- Forgot Password (`/forgot-password`)
 
 ### Main Navigation
-- **Dashboard**: Home with today's appointments
-- **Patients List**: Browse all patients
-- **Patient Detail**: 5-tab interface
-- **Patient Record Detail**: Medical visit with prescriptions
-- **Products List**: Browse products
-- **Product Detail**: Stock and adjustments
-- **Appointments List**: Filtered appointments
-- **Appointment Detail**: Full appointment info
-- **Cashier/POS**: Product grid and checkout
-- **Sales List**: Transaction history
-- **Sale Detail**: Receipt view with status history timeline
+- **Dashboard**: Home with today's sales KPIs, kanban order board, alerts
+- **Sales History**: Paginated transaction list and detail
+- **Products List / Detail**: Catalog, stock, lot tracking, adjustments
+- **Services List / Detail**: Catalog with pricing and price tiers
+- **Customers List / Detail**: Member profiles with sales history
+- **Employees List / Detail**: Staff records, attendance, deductions
+- **Reports**: Sales and payroll reports by period
+- **Activities**: Audit log feed (Admin-only)
+- **Promos List / Detail**: Loyalty/promo campaigns (Admin-only)
+- **Cashier/POS**: Product/service grid and checkout
+- **Customer History**: Public tokenized order-history page
 
-### Organization (3-panel layout)
+### Management (3-panel layout)
 - Users Management (list/detail)
 - Roles Management (list/detail)
 - Branches Management (list/detail)
-
-### System Settings (3-panel layout)
-- Species/Breeds Management (list/detail)
+- Machines Management (list/detail, including load rules)
+- Storages Management (list/detail)
 - Product Categories (list/detail)
-- Message Templates (list/detail)
+- Quantity Units (list/detail)
+- Cashier Layout / POS Groups (list/detail)
+- Import, Settings / feature flags (single panels)
+
+### Organizations
+- Memberships, invites, create-org setup dialog (`/organizations`)
+- Header org switcher (2+ memberships) shows a full-screen, non-dismissible loader for at least 3 seconds while the new org loads
+
+### System Settings (this device)
+- Printers (list/detail; local storage, one selected printer)
+- Appearance (theme)
 
 ### Responsive Behavior
 | Breakpoint | Layout |
 |------------|--------|
 | Mobile (< 600px) | Single-column, bottom nav, drawer |
-| Tablet (600-900px) | Master-detail, navigation rail |
-| Tablet Large (900-1200px) | Expanded rail, permanent side-by-side |
-| Desktop (> 1200px) | Multi-panel, collapsible side menu |
+| Tablet (600-900px) | Master-detail, `TabletNavRail` |
+| Tablet Large (900-1200px) | `DesktopSideNav` (expandable grouped sidebar) |
+| Desktop (> 1200px) | `DesktopSideNav` + multi-panel pages |
 
 ---
 
@@ -352,7 +378,8 @@ Located in `/lib/src/core/`
 - **Type**: Open-source backend-as-a-service
 - **Features**: Real-time database, authentication, file storage
 - **Dev URL**: `http://127.0.0.1:8090`
-- **Production**: `https://staging.sannjoseanimalclinic.com`
+- **Staging**: `https://staging.hznlaundry.hznsystems.com`
+- **Production**: `https://hznlaundry.hznsystems.com`
 
 ### State Management: Hooks Riverpod
 - `@riverpod` annotation for providers
@@ -390,62 +417,67 @@ Located in `/lib/src/core/`
 App Root (Shell)
 ├── Auth (non-shell)
 │   ├── /splash
-│   ├── /login/user
-│   └── /recovery
+│   ├── /login
+│   ├── /forgot-password
+│   └── /auth-loading
+│
+├── Public (non-shell, tokenized)
+│   └── /history/:token (Customer History)
 │
 └── Main Shell (with navigation)
     ├── / (Dashboard)
-    ├── /patients
-    │   ├── /patients (List)
-    │   ├── /patients/:id (Detail)
-    │   └── /patients/records/:id (Record Detail)
-    ├── /appointments
-    │   ├── /appointments (List)
-    │   ├── /appointments/:id (Detail)
-    │   └── /appointments/calendar
-    ├── /products
-    │   ├── /products (List)
-    │   ├── /products/:id (Detail)
-    │   ├── /products/categories
-    │   └── /products/adjustments
-    ├── /services
-    │   ├── /services (List)
-    │   └── /services/:id (Detail)
-    ├── /cashier (POS)
-    ├── /sales
-    │   ├── /sales (List)
+    ├── /sales (Sales History)
     │   └── /sales/:id (Detail)
-    ├── /messages
-    ├── /organization (3-panel layout)
-    │   ├── /organization/users
-    │   │   └── /organization/users/:id
-    │   ├── /organization/roles
-    │   │   └── /organization/roles/:id
-    │   └── /organization/branches
-    │       └── /organization/branches/:id
-    └── /system (3-panel layout)
-        ├── /system/species
-        │   └── /system/species/:id
-        ├── /system/product-categories
-        │   └── /system/product-categories/:id
-        ├── /system/message-templates
-        │   └── /system/message-templates/:id
-        └── /system/cashier-groups
-            └── /system/cashier-groups/:id
+    ├── /cashier (Cashier/POS)
+    ├── /products
+    │   └── /products/:id (Detail)
+    ├── /services
+    │   └── /services/:id (Detail)
+    ├── /customers
+    │   └── /customers/:id (Detail)
+    ├── /employees
+    │   └── /employees/:id (Detail)
+    ├── /reports
+    ├── /activities (Admin-only)
+    ├── /management (3-panel layout)
+    │   ├── /management/users
+    │   │   └── /management/users/:id
+    │   ├── /management/roles
+    │   │   └── /management/roles/:id
+    │   ├── /management/branches
+    │   │   └── /management/branches/:id
+    │   ├── /management/machines
+    │   │   └── /management/machines/:id
+    │   ├── /management/storages
+    │   │   └── /management/storages/:id
+    │   ├── /management/product-categories
+    │   │   └── /management/product-categories/:id
+    │   ├── /management/quantity-units
+    │   │   └── /management/quantity-units/:id
+    │   ├── /management/cashier-groups
+    │   │   └── /management/cashier-groups/:id
+    │   ├── /management/import
+    │   └── /management/settings
+    ├── /organizations
+    ├── /promos (Admin-only)
+    │   └── /promos/:id (Detail)
+    └── /system (this device)
+        ├── /system/printers
+        │   └── /system/printers/:id
+        └── /system/appearance
 ```
 
 ### Navigation Components
 
 | Platform | Component | Description |
 |----------|-----------|-------------|
-| Mobile | Bottom Nav | 5 primary items |
-| Mobile | Drawer | Full menu (7+ sections) |
-| Tablet | Navigation Rail | Icons only (72px) |
-| Tablet Large | Expanded Rail | Icons + labels (160px) |
-| Desktop | Side Menu | Full collapsible menu |
+| Mobile | Bottom Nav | First 3 visible items + More |
+| Mobile | Drawer | Full permission-filtered menu |
+| Tablet (600–899px) | `TabletNavRail` | Icons + selected label |
+| Tablet large / Desktop (≥900px) | `DesktopSideNav` | Expandable grouped sidebar (shortcuts + category flyouts) |
 
 #### 3-Panel Master-Detail Layouts (Tablet)
-Organization and System sections use a 3-panel layout:
+Management and System sections use a 3-panel layout:
 
 | Panel | Width | Content |
 |-------|-------|---------|
@@ -453,19 +485,24 @@ Organization and System sections use a 3-panel layout:
 | Panel 2 | 320px | List panel with AppBar title and FAB |
 | Panel 3 | Expanded | Detail panel or empty state |
 
-- **Organization modes**: Users, Roles, Branches, Machines, Storages
-- **System modes**: Species & Breeds, Product Categories, Message Templates, Cashier Layout (POS Groups)
+- **Management modes**: Users, Roles, Branches, Machines, Storages, Product Categories, Quantity Units, Cashier Layout, plus single-panel Import/Settings
+- **System modes**: Printers, Appearance (this device only)
 
-### Primary Navigation
-1. 🏠 Dashboard - `/`
-2. 👤 Patients - `/patients`
-3. 📅 Appointments - `/appointments`
-4. 📦 Products - `/products`
+### Navigation (permission-filtered, `nav_permissions.dart`)
+1. 🏠 Dashboard - `/` (always visible)
+2. 🧾 Sales History - `/sales`
+3. 📦 Products - `/products`
+4. 🧺 Services - `/services`
+5. 👥 Customers - `/customers`
+6. 🪪 Employees - `/employees`
+7. 📊 Reports - `/reports`
+8. 🕓 Activities - `/activities` (Admin-only)
+9. 🏢 Management - `/management`
+10. 🏬 Organizations - `/organizations` (always visible)
+11. 🎁 Promos - `/promos` (Admin-only)
+12. ⚙️ System - `/system`
 
-### Secondary Navigation
-5. 💰 Sales - `/sales`
-6. 🏢 Organization - `/organization`
-7. ⚙️ System - `/system`
+Users with the `Admin` system role (or the `system.admin` permission) see every item; other roles see only items whose required permission they hold. Cashier/POS is reached from the Dashboard rather than as its own nav item.
 
 ---
 
@@ -526,17 +563,24 @@ lib/src/
 └── features/
     ├── auth/              # Authentication
     ├── dashboard/         # Home/dashboard
-    ├── patients/          # Patient management
     ├── products/          # Inventory
-    ├── appointments/      # Scheduling
-    ├── pos/               # Point of sale
-    ├── sales/             # Sales history
-    ├── messages/          # Messaging
-    ├── treatment_plans/   # Treatment planning
-    ├── settings/          # System settings (species, categories, templates)
-    ├── organization/      # Organization settings (3-panel layout)
-    ├── users/             # User management
-    └── user_roles/        # Roles/permissions
+    ├── services/          # Laundry services catalog
+    ├── customers/         # Customer (member) management
+    ├── pos/               # Point of sale (cashier, cart, receipts)
+    ├── sales/              # Sales history
+    ├── employees/         # Staff, attendance, deductions
+    ├── machines/          # Laundry machines
+    ├── storages/          # Storage locations
+    ├── promos/            # Loyalty/promo campaigns
+    ├── quantity_units/    # Units of measure
+    ├── reports/           # Sales/payroll reports
+    ├── activities/        # Audit log
+    ├── customer_history/  # Public tokenized order-history page
+    ├── settings/          # Device printers, appearance; shared catalog controllers
+    ├── management/        # Users/roles/branches/machines/storages (3-panel layout)
+    ├── organizations/     # Multi-tenant orgs, memberships, invites
+    ├── users/             # User & role management
+    └── version_lock/      # Minimum-version / update enforcement
         │
         └── [feature]/
             ├── data/
@@ -570,8 +614,16 @@ lib/src/
 
 ## Recent Updates
 
-| Date | Feature | Description |
-|------|---------|-------------|
+| Sep 04 | Feedback popup colors | Error, success, warning, and info snackbars (and dashboard attendance / needs-attention alerts) use theme-aware container colors with contrasting text in dark and light mode |
+| Sep 04 | Windows Alt key assert | Debug no longer dumps Flutter's empty-`keysPressed` assert when Windows sends Alt Left with no modifier flags |
+| Sep 04 | Desktop side nav server URL | Expanded desktop sidebar shows the PocketBase server URL under the app title |
+| Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)
+| Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |
+| Sep 03 | Org create setup dialog | Create Organization is a stepper dialog (details, first branch, optional invites, review). The org is created only when required setup is submitted, in one server transaction with the first branch. |
+| Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 3 seconds when switching organizations |
+| Sep 03 | Desktop side nav | Firebase-style expandable sidebar at ≥900px (`DesktopSideNav`): Dashboard, Shortcuts, hover/tap category flyouts, System/Logout, session collapse. Tablet 600–899px still uses `TabletNavRail` |
+| Sep 03 | Multi-tenant organizations | Organizations, memberships, and invites; Management rename of the old admin section; org switcher for multi-org users; email+password auth with `reset-password.html` |
+| Sep 03 | Docs Cleanup | Removed leftover vet-clinic template content (Patients/Appointments/Treatments/Messages) from app_overview.md, replaced with accurate feature/navigation/domain-model docs matching the current laundry app |
 | Sep 02 | Google Play In-App Updates | Replaced the custom PocketBase APK-download updater with Play's native In-App Update API (flexible nudge + immediate force-update, Play Store listing fallback). Minimum-version lockout is now Android+web only; iOS/macOS/Linux/Windows skip auto-update entirely |
 | Aug 30 | Dashboard order tags | Kanban cards show location when assigned: Processing = machine; Ready = location + packs; Picked Up = machine + location + packs |
 | Aug 28 | App flavors | `dev`, `staging`, and `prod` flavors. Android can install all three side by side. Dev talks to local PocketBase; staging and prod use their live URLs |

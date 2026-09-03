@@ -72,8 +72,7 @@ class UserRepositoryImpl implements UserRepository {
 
   UserRepositoryImpl(this._pb);
 
-  RecordService get _collection =>
-      _pb.collection(PocketBaseCollections.users);
+  RecordService get _collection => _pb.collection(PocketBaseCollections.users);
   String get _expand => 'role,branch';
 
   // Cache for user list
@@ -196,7 +195,7 @@ class UserRepositoryImpl implements UserRepository {
       () async {
         final body = <String, dynamic>{
           'name': user.name,
-          'username': user.username,
+          'email': user.email,
           'password': password,
           'passwordConfirm': password,
           'role': user.roleId,
@@ -219,7 +218,7 @@ class UserRepositoryImpl implements UserRepository {
       () async {
         final body = <String, dynamic>{
           'name': user.name,
-          'username': user.username,
+          'email': user.email,
           'role': user.roleId,
           'branch': user.branchId,
           'verified': user.verified,
@@ -252,11 +251,9 @@ class UserRepositoryImpl implements UserRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final searchFields = fields ?? ['name', 'username'];
-        final filter = PBFilter()
-            .notDeleted()
-            .searchFields(query, searchFields)
-            .build();
+        final searchFields = fields ?? ['name', 'email'];
+        final filter =
+            PBFilter().notDeleted().searchFields(query, searchFields).build();
 
         final records = await _collection.getFullList(
           expand: _expand,
@@ -279,11 +276,9 @@ class UserRepositoryImpl implements UserRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final searchFields = fields ?? ['name', 'username'];
-        final filter = PBFilter()
-            .notDeleted()
-            .searchFields(query, searchFields)
-            .build();
+        final searchFields = fields ?? ['name', 'email'];
+        final filter =
+            PBFilter().notDeleted().searchFields(query, searchFields).build();
 
         final result = await _collection.getList(
           page: page,

@@ -7,6 +7,7 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../pos/presentation/cart_controller.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../domain/branch.dart';
 import 'branches_controller.dart';
 
@@ -31,6 +32,7 @@ class CurrentBranchController extends _$CurrentBranchController {
 
   @override
   Future<Branch?> build() async {
+    ref.watch(currentOrganizationIdProvider);
     final auth = ref.watch(currentAuthProvider);
     if (auth == null) {
       _isAllBranchesMode = false;
@@ -50,10 +52,18 @@ class CurrentBranchController extends _$CurrentBranchController {
 
       _isAllBranchesMode = false;
       final branchId = persistedBranchId ?? userBranchId;
-      return branchId != null ? await _fetchBranch(branchId) : null;
+      final matched = branchId != null ? await _fetchBranch(branchId) : null;
+      if (matched != null) return matched;
+      final branches = await ref.read(branchesControllerProvider.future);
+      return branches.isNotEmpty ? branches.first : null;
     } else {
       _isAllBranchesMode = false;
-      return userBranchId != null ? await _fetchBranch(userBranchId) : null;
+      if (userBranchId != null) {
+        final matched = await _fetchBranch(userBranchId);
+        if (matched != null) return matched;
+      }
+      final branches = await ref.read(branchesControllerProvider.future);
+      return branches.isNotEmpty ? branches.first : null;
     }
   }
 
@@ -91,7 +101,9 @@ class CurrentBranchController extends _$CurrentBranchController {
     if (auth == null) return false;
 
     final fullUser = await ref.read(userProvider(auth.user.id).future);
-    if (fullUser == null || fullUser.roleId == null || fullUser.roleId!.isEmpty) {
+    if (fullUser == null ||
+        fullUser.roleId == null ||
+        fullUser.roleId!.isEmpty) {
       return false;
     }
 

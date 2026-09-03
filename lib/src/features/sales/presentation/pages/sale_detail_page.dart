@@ -2102,7 +2102,7 @@ class _PrintMenuButton extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPrinting = useState(false);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
@@ -2136,7 +2136,7 @@ class _PrintMenuButton extends HookConsumerWidget {
     }
 
     Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
       final pdfData = buildPdfData(
@@ -2173,8 +2173,8 @@ class _PrintMenuButton extends HookConsumerWidget {
         return false;
       }
 
-      if (defaultPrinterAsync.value == null) {
-        showErrorSnackBar(context, message: 'No default printer configured');
+      if (selectedPrinterAsync.value == null) {
+        showErrorSnackBar(context, message: 'No printer selected');
         return false;
       }
 

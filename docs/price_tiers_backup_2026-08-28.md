@@ -6,8 +6,8 @@ Snapshot of PocketBase `services` + `servicePriceTiers` **before** Hi-Zone Full 
 
 `pricePerUnit` is the **flat line total** for the quantity range (not ₱/kg), unless noted.
 
-- Prod: `https://hizonelaundry.hznsystems.com`
-- Staging: `https://staging.hizonelaundry.hznsystems.com`
+- Prod: `https://hznlaundry.hznsystems.com`
+- Staging: `https://staging.hznlaundry.hznsystems.com`
 - Collection: `servicePriceTiers`
 - `maxQuantity` `0` means no upper bound (open-ended tier)
 

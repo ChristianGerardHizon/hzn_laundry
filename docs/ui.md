@@ -7,11 +7,13 @@ This document outlines the responsive UI structure for tablet and mobile devices
 ## Table of Contents
 - [Responsive Breakpoints](#responsive-breakpoints)
 - [Mobile Layout](#mobile-layout)
-- [Tablet Layout](#tablet-layout)
+- [Tablet & Desktop Layout](#tablet--desktop-layout)
 - [Navigation Hierarchy](#navigation-hierarchy)
 - [Routing Structure](#routing-structure)
 - [Component Architecture](#component-architecture)
 - [Navigation Configuration](#navigation-configuration)
+- [Tabbed Detail Pages](#tabbed-detail-pages)
+- [Implementation Notes](#implementation-notes)
 
 ---
 
@@ -22,26 +24,25 @@ This document outlines the responsive UI structure for tablet and mobile devices
 │                        BREAKPOINTS                              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  0px          600px         900px        1200px       1600px    │
-│  │             │             │             │             │      │
-│  │   MOBILE    │   TABLET    │   TABLET    │  DESKTOP    │      │
-│  │  (compact)  │  (medium)   │   (large)   │  (expanded) │      │
-│  │             │             │             │             │      │
-│  │ Bottom Nav  │   Nav Rail  │ Expanded    │ Full Side   │      │
-│  │ + Drawer    │   (icons)   │ Rail+labels │ Menu        │      │
-│  │             │             │             │             │      │
-│  │ Single Col  │ Master-Det  │ Master-Det  │ Multi-panel │      │
-│  │ Layout      │ Optional    │ Always      │ Layout      │      │
-│  │             │             │             │             │      │
+│  0px          600px         900px        1200px                 │
+│  │             │             │             │                    │
+│  │   MOBILE    │   TABLET    │  TABLET LARGE / DESKTOP           │
+│  │             │  (icons)    │   expandable sidebar              │
+│  │ Bottom Nav  │             │                                   │
+│  │ + Drawer    │  TabletNavRail       DesktopSideNav             │
+│  │             │                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-| Breakpoint | Range | Layout Type | Navigation |
-|------------|-------|-------------|------------|
-| Mobile     | 0-599px | Single column | Bottom Nav + Drawer |
-| Tablet Medium | 600-899px | Master-detail (optional) | Navigation Rail (icons) |
-| Tablet Large | 900-1199px | Master-detail (always) | Expanded Rail (icons + labels) |
-| Desktop | 1200px+ | Multi-panel | Collapsible Side Menu |
+Defined in `lib/src/core/utils/breakpoints.dart` (`Breakpoints`):
+
+| Breakpoint | Range | Layout |
+|------------|-------|--------|
+| Mobile     | 0-599px | Bottom nav + drawer (`MobileBottomNav` / `MobileDrawer`) |
+| Tablet     | 600-899px | `TabletNavRail`, icons only (selected label) |
+| Tablet large / Desktop | 900px+ | `DesktopSideNav` — expandable grouped sidebar |
+
+`AppRoot` still has one non-mobile shell (`_buildTabletLayout`). Inside that row it switches at `Breakpoints.isTabletLargeOrLarger` (900px): `TabletNavRail` below the threshold, `DesktopSideNav` at and above it.
 
 ---
 
@@ -51,146 +52,112 @@ This document outlines the responsive UI structure for tablet and mobile devices
 
 ```
 ┌─────────────────────────────────────┐
-│ ☰  Page Title              [Actions]│  <- App Bar with hamburger menu
+│ [Branch Switcher]      [Fullscreen] │  <- Top row (BranchSwitcher + toggle)
 ├─────────────────────────────────────┤
-│                                     │
 │                                     │
 │                                     │
 │           CONTENT AREA              │
 │                                     │
 │                                     │
-│                                     │
-│                                     │
 ├─────────────────────────────────────┤
-│  🏠    👤    📅    📦    ⋯         │  <- Bottom Navigation (5 items)
-│ Home Patient Appts Prods More       │
+│  🏠      🧾      📦      •••       │  <- NavigationBar: first 3 items + More
+│ Dash   Sales   Products  More       │
 └─────────────────────────────────────┘
 ```
 
-### Mobile Drawer (accessed via hamburger or "More")
+`MobileBottomNav` (`lib/src/core/widgets/mobile_bottom_nav.dart`) shows only the **first 3 permission-visible nav items** plus a "More" destination that opens the drawer — not a fixed 5-item set. Which 3 items appear depends on the signed-in user's role permissions (see [Navigation Configuration](#navigation-configuration)).
+
+### Mobile Drawer (`MobileDrawer`, accessed via hamburger or "More")
 
 ```
 ┌───────────────────────┐
 │  ╭─────╮              │
-│  │ LOGO│   App Name   │
-│  ╰─────╯              │
+│  │ LOGO│  HZN Laundry  │
+│  ╰─────╯  Laundry Management System │
+│           <pocketbase url>          │
 ├───────────────────────┤
-│ 🏠 Dashboard          │
+│  [Branch Switcher]     │
 ├───────────────────────┤
-│ 👤 Patients        ▶  │
-│   ├─ All Patients     │
-│   ├─ Records          │
-│   └─ Treatments       │
+│ 🏠 Dashboard           │
+│ 🧾 Sales History       │
+│ 📦 Products            │
+│ 🩺 Services            │
+│ 👤 Customers           │
+│ 🪪 Employees            │
+├───────────────────────┤   <- Divider after index 5
+│ 📊 Reports             │
+│ 🕓 Activities           │
+│ 🏢 Organization        │
+│ 🎟️ Promos              │
+│ ⚙️ System              │
 ├───────────────────────┤
-│ ⚙️ Patient Config  ▶  │
-│   ├─ Species          │
-│   └─ Treatments       │
-├───────────────────────┤
-│ 📅 Appointments    ▶  │
-│   ├─ All              │
-│   └─ Calendar         │
-├───────────────────────┤
-│ 📦 Products        ▶  │
-│   ├─ All Products     │
-│   ├─ Inventories      │
-│   ├─ Categories       │
-│   └─ Adjustments      │
-├───────────────────────┤
-│ 💰 Sales              │
-│   └─ Cashier          │
-├───────────────────────┤
-│ 🏢 Organization    ▶  │
-│   ├─ Admins           │
-│   ├─ Users            │
-│   └─ Branches         │
-├───────────────────────┤
-│ ⚙️ System          ▶  │
-│   ├─ Settings         │
-│   ├─ Change Logs      │
-│   └─ Your Account     │
-├───────────────────────┤
-│ 🚪 Logout             │
+│ 🚪 Logout              │
 └───────────────────────┘
 ```
 
+Items are permission-filtered (`filterNavItems`) before this split — a role without `system.admin` only sees the items its permissions unlock, in this same relative order. `MobileDrawer` splits the *visible* list into a "primary" group (original index ≤ 5: Dashboard, Sales History, Products, Services, Customers, Employees) above a divider, and a "secondary" group (index > 5: Reports, Activities, Organization, Promos, System) below it.
+
 ---
 
-## Tablet Layout
+## Tablet & Desktop Layout
 
-### Portrait Mode - Navigation Rail + Content (600px - 900px)
+Both tablet and desktop widths (≥ 600px) use `AppRoot._buildTabletLayout`: nav on the left, a vertical divider, and the page content (with the same branch-switcher/fullscreen-toggle header row as mobile) filling the rest. The left chrome changes at 900px.
+
+### Tablet (600–899px) — `TabletNavRail`
 
 ```
 ┌────┬──────────────────────────────────────────┐
-│    │  Page Title                    [Actions] │
+│    │ [Branch Switcher]           [Fullscreen] │
 │ 🏠 ├──────────────────────────────────────────┤
-│    │                                          │
-│ 👤 │                                          │
-│    │                                          │
-│ 📅 │              CONTENT AREA                │
-│    │                                          │
-│ 📦 │                                          │
-│    │                                          │
-│ 💰 │                                          │
-│    │                                          │
-│ 🏢 │                                          │
-│    │                                          │
-│ ⚙️ │                                          │
-│    │                                          │
-│────│                                          │
-│ 👤 │                                          │  <- User avatar at bottom
+│ 🧾 │                                          │
+│ 📦 │              CONTENT AREA                │
+│ …  │                                          │
+│ 🚪 │  <- Logout icon button, bottom of rail    │
 └────┴──────────────────────────────────────────┘
-  ↑
-Navigation Rail (72px width, icons only)
 ```
 
-### Landscape Mode - Expanded Rail + Content (900px - 1200px)
+`TabletNavRail` renders a Material `NavigationRail` over the same permission-filtered item list used by mobile (no primary/secondary split — every visible item is a rail destination). `labelType` is `NavigationRailLabelType.selected` (icons only, except the selected item's label).
+
+### Tablet large / Desktop (900px+) — `DesktopSideNav`
+
+Firebase-style expandable sidebar (`lib/src/core/widgets/desktop_side_nav.dart`): 260px expanded / 72px collapsed. Grouping lives in `lib/src/core/navigation/desktop_nav_presentation.dart` and still uses the same permission-filtered `NavItem` list.
 
 ```
-┌──────────┬────────────────────────────────────────────────────┐
-│          │  Page Title                              [Actions] │
-│ 🏠 Home  ├────────────────────────────────────────────────────┤
-│          │                                                    │
-│ 👤 Patie │                                                    │
-│          │                                                    │
-│ 📅 Appts │                                                    │
-│          │                 CONTENT AREA                       │
-│ 📦 Prods │                                                    │
-│          │                                                    │
-│ 💰 Sales │                                                    │
-│          │                                                    │
-│ 🏢 Org   │                                                    │
-│          │                                                    │
-│ ⚙️ Syst  │                                                    │
-│──────────│                                                    │
-│ 👤 User  │                                                    │
-└──────────┴────────────────────────────────────────────────────┘
-     ↑
-Navigation Rail Expanded (160px width, icons + labels)
+┌────────────────┬──────────────────────────────────┐
+│ LOGO  HZN …    │ [Branch Switcher]   [Fullscreen] │
+│ Dashboard      ├──────────────────────────────────┤
+│ Shortcuts      │                                  │
+│  Orders        │                                  │
+│  Products      │          CONTENT AREA            │
+│  Services      │                                  │
+│  Customers     │                                  │
+│  Show more     │                                  │
+│ Categories     │                                  │
+│  Operations ▸  │  <- hover/tap flyout             │
+│  People ▸      │                                  │
+│  Insights ▸    │                                  │
+│  Administration▸                                  │
+│ System      ▸  │                                  │
+│ Logout         │                                  │
+│ < collapse     │                                  │
+└────────────────┴──────────────────────────────────┘
 ```
 
-### Tablet Master-Detail Layout (List Views)
+| Slot | Items |
+|------|--------|
+| Pinned top | Dashboard |
+| Default shortcuts | Orders, Products, Services, Customers |
+| Show more extras | Employees, Reports, Activities, Management, Organizations, Promos |
+| Operations flyout | Promos (when not expanded via Show more) |
+| People flyout | Employees |
+| Insights flyout | Reports, Activities |
+| Administration flyout | Management, Organizations |
+| Pinned above footer | System |
+| Footer | Logout + collapse/expand |
 
-```
-┌────┬─────────────────┬────────────────────────────────────┐
-│    │ Patients        │  Patient Detail                    │
-│ 🏠 ├─────────────────┤────────────────────────────────────┤
-│    │ 🔍 Search...    │  Name: Max                         │
-│ 👤 ├─────────────────┤  Species: Dog                      │
-│    │ ┌─────────────┐ │  Breed: Golden Retriever           │
-│ 📅 │ │ Max       ▶ │ │                                    │
-│    │ │ Dog         │ │  ┌────────────────────────────┐    │
-│ 📦 │ └─────────────┘ │  │ Records  Appts  Files      │    │
-│    │ ┌─────────────┐ │  └────────────────────────────┘    │
-│ 💰 │ │ Luna        │ │                                    │
-│    │ │ Cat         │ │  Recent Records:                   │
-│ 🏢 │ └─────────────┘ │  ┌──────────────────────────────┐  │
-│    │ ┌─────────────┐ │  │ Vaccination - 2024-01-15     │  │
-│ ⚙️ │ │ Rocky       │ │  │ Checkup - 2024-01-10         │  │
-│    │ │ Dog         │ │  └──────────────────────────────┘  │
-└────┴─────────────────┴────────────────────────────────────┘
- Rail    List Panel          Detail Panel
-(72px)    (280px)            (Remaining)
-```
+Shown shortcuts are excluded from category flyouts. Empty groups (after permission filtering) are omitted. Collapse is session-only. Category rows open a flyout on hover when expanded, and on tap when collapsed.
+
+List/detail master-detail layouts (e.g. a list panel beside a detail panel) are implemented per-page where the page needs one, not by the shell itself — check individual feature pages (e.g. `lib/src/features/products/presentation/pages/`) for whether a given screen adopts that pattern at these widths.
 
 ---
 
@@ -198,423 +165,202 @@ Navigation Rail Expanded (160px width, icons + labels)
 
 ```
                               ┌─────────────────┐
-                              │   App Shell     │
-                              │  (StatefulShell)│
+                              │    AppRoot      │
+                              │ (mobile/tablet   │
+                              │  layout switch)  │
                               └────────┬────────┘
                                        │
-        ┌──────────────────────────────┼──────────────────────────────┐
-        │                              │                              │
-        ▼                              ▼                              ▼
-┌───────────────┐          ┌───────────────────┐          ┌───────────────┐
-│   Primary     │          │    Secondary      │          │    System     │
-│  Navigation   │          │   Navigation      │          │   Navigation  │
-└───────┬───────┘          └─────────┬─────────┘          └───────┬───────┘
-        │                            │                            │
-   ┌────┴────┐                  ┌────┴────┐                  ┌────┴────┐
-   │         │                  │         │                  │         │
-   ▼         ▼                  ▼         ▼                  ▼         ▼
-┌──────┐ ┌────────┐      ┌──────────┐ ┌────────┐      ┌────────┐ ┌──────────┐
-│ Home │ │Patients│      │ Products │ │  Appts │      │ Org    │ │ System   │
-└──────┘ └────┬───┘      └────┬─────┘ └────┬───┘      └────┬───┘ └────┬─────┘
-              │               │            │               │          │
-         ┌────┴────┐     ┌────┴────┐   ┌───┴───┐      ┌────┴────┐  ┌──┴───┐
-         │         │     │         │   │       │      │         │  │      │
-         ▼         ▼     ▼         ▼   ▼       ▼      ▼         ▼  ▼      ▼
-      ┌─────┐ ┌───────┐ ┌────┐ ┌─────┐ List Calendar  Admins  Users Settings
-      │List │ │Config │ │Inv │ │Cats │                Branches     Account
-      └─────┘ └───────┘ └────┘ └─────┘
+        ┌───────────────┬─────────────┼─────────────┬───────────────┐
+        ▼               ▼             ▼             ▼               ▼
+   ┌─────────┐    ┌───────────┐  ┌──────────┐  ┌──────────┐   ┌───────────┐
+   │Dashboard│    │  Sales    │  │ Products │  │ Services │   │ Customers │
+   └─────────┘    │  History  │  └────┬─────┘  └────┬─────┘   └─────┬─────┘
+                   └─────┬─────┘      │             │               │
+                         ▼            ▼             ▼               ▼
+                    Sale Detail  Product Detail Service Detail Customer Detail
+
+   ┌───────────┐   ┌─────────┐   ┌───────────────┐   ┌────────┐   ┌────────┐
+   │ Employees │   │ Reports │   │  Activities   │   │ Promos │   │ System │
+   └─────┬─────┘   └─────────┘   └───────────────┘   └───┬────┘   └───┬────┘
+         ▼                                                ▼            ▼
+   Employee Detail                                   Promo Detail  Printers,
+                                                                    Appearance
+
+                              ┌───────────────┐
+                              │ Management    │
+                              └───────┬───────┘
+         ┌───────┬──────┬──────┼──────┬────────┬─────────┬────────┐
+         ▼       ▼      ▼      ▼      ▼        ▼         ▼        ▼
+       Users   Roles Branches Machines Storages Categories Units  Cashier,
+                                                                  Import,
+                                                                  Settings
+
+                              ┌───────────────┐
+                              │ Organizations │
+                              └───────────────┘
+                                Switch / invites / setup
 ```
+
+Sales History (`/sales`, list + report view) and the Cashier/POS screen (`/cashier`) are distinct routes — the nav item labelled "Sales History" points at `/sales`; the point-of-sale checkout flow lives at `/cashier` and is reached from within the app rather than as its own top-level nav destination.
 
 ---
 
 ## Routing Structure
 
-### Complete Route Tree
+### Route Tree (per `lib/src/core/routing/routes/*.routes.dart`)
 
 ```
 /                                    -> Dashboard
 │
-├── /patients                        -> Patients List
-│   ├── /patients/:id                -> Patient Detail
-│   ├── /patients/form               -> Patient Form
-│   ├── /patients/records/:id        -> Record Detail
-│   ├── /patients/records/form       -> Record Form
-│   ├── /patients/treatment-records  -> Treatment Records List
-│   ├── /patients/treatment-records/:id -> Treatment Record Detail
-│   ├── /patients/treatment-records/form -> Treatment Record Form
-│   ├── /patients/prescriptions/form -> Prescription Form
-│   ├── /patients/files/form         -> File Form
-│   └── /patients/appointments       -> Patient Appointments
+├── /sales                           -> Sales History List
+│   └── /sales/:id                   -> Sale Detail
 │
-├── /patient-config                  -> Patient Config Landing
-│   ├── /patient-config/species      -> Species List
-│   ├── /patient-config/species/:id  -> Species Detail
-│   ├── /patient-config/species/form -> Species Form
-│   ├── /patient-config/breeds/form  -> Breed Form
-│   ├── /patient-config/treatments   -> Treatments List
-│   └── /patient-config/treatments/form -> Treatment Form
+├── /cashier                         -> Cashier / POS
 │
 ├── /products                        -> Products List
-│   ├── /products/:id                -> Product Detail
-│   ├── /products/form               -> Product Form
-│   ├── /products/inventories        -> Inventories List
-│   ├── /products/stocks/:id         -> Stock Detail
-│   ├── /products/stocks/form        -> Stock Form
-│   ├── /products/categories         -> Categories List
-│   ├── /products/categories/:id     -> Category Detail
-│   ├── /products/categories/form    -> Category Form
-│   ├── /products/adjustments        -> Adjustments List
-│   └── /products/adjustments/form   -> Adjustment Form
+│   └── /products/:id                -> Product Detail
 │
-├── /appointments                    -> Appointments List
-│   ├── /appointments/:id            -> Appointment Detail
-│   ├── /appointments/form           -> Appointment Form
-│   ├── /appointments/by-date        -> By Date View
-│   └── /appointments/calendar       -> Calendar View
+├── /services                        -> Services List
+│   └── /services/:id                -> Service Detail
 │
-├── /organization                    -> Organization Landing
-│   ├── /organization/admins         -> Admins List
-│   ├── /organization/admins/:id     -> Admin Detail
-│   ├── /organization/admins/form    -> Admin Form
-│   ├── /organization/users          -> Users List
-│   ├── /organization/users/:id      -> User Detail
-│   ├── /organization/users/form     -> User Form
-│   ├── /organization/branches       -> Branches List
-│   ├── /organization/branches/:id   -> Branch Detail
-│   └── /organization/branches/form  -> Branch Form
+├── /customers                       -> Customers List
+│   └── /customers/:id               -> Customer Detail
 │
-├── /system                          -> System Landing
-│   ├── /system/settings             -> Settings
-│   ├── /system/domain               -> Domain Config
-│   ├── /system/change-logs          -> Change Logs List
-│   ├── /system/change-logs/:id      -> Change Log Detail
-│   ├── /system/change-logs/form     -> Change Log Form
-│   └── /system/account              -> Your Account
+├── /employees                       -> Employees List
+│   └── /employees/:id               -> Employee Detail
 │
-├── /cashier                         -> Cashier/POS
+├── /reports                         -> Reports
 │
-└── /auth (non-shell routes)
-    ├── /login/user                  -> User Login
-    ├── /login/admin                 -> Admin Login
-    ├── /email/validation            -> Email Validation
-    ├── /recovery                    -> Account Recovery
-    └── /account                     -> Account Page
+├── /activities                      -> Activities (audit log; requires system.admin)
+│
+├── /management                    -> Management Landing
+│   ├── /management/users          -> Users List
+│   │   └── /management/users/:id  -> User Detail
+│   ├── /management/roles          -> Roles List
+│   │   └── /management/roles/:id  -> Role Detail
+│   ├── /management/branches       -> Branches List
+│   │   └── /management/branches/:id -> Branch Detail
+│   ├── /management/machines       -> Machines List
+│   │   └── /management/machines/:id -> Machine Detail
+│   ├── /management/storages       -> Storages List
+│   │   └── /management/storages/:id -> Storage Detail
+│   ├── /management/product-categories -> Product Categories List
+│   │   └── /management/product-categories/:id -> Category Detail
+│   ├── /management/quantity-units -> Quantity Units List
+│   │   └── /management/quantity-units/:id -> Quantity Unit Detail
+│   ├── /management/cashier-groups -> POS Groups List
+│   │   └── /management/cashier-groups/:id -> Cashier Group Detail
+│   ├── /management/import         -> Data Import
+│   └── /management/settings       -> Workflow Settings
+│
+├── /organizations                 -> Organizations
+│
+├── /promos                          -> Promos List
+│   └── /promos/:id                  -> Promo Detail
+│
+├── /system                          -> System Landing (this device)
+│   ├── /system/printers             -> Printer Configs List
+│   │   └── /system/printers/:id     -> Printer Config Detail
+│   └── /system/appearance           -> Appearance Settings
+│
+│   (legacy `/system/product-categories`, `/system/quantity-units`,
+│    `/system/machines`, `/system/cashier-groups`, `/system/import`,
+│    `/system/feature-flags` redirect to the matching `/management/...` paths)
+│
+├── /history/:token                  -> Customer History (shared link, outside the shell)
+│
+└── auth (non-shell routes)
+    ├── /splash                      -> Splash
+    ├── /login                       -> Login
+    ├── /forgot-password             -> Forgot Password
+    └── /auth-loading                -> Auth Loading
 ```
 
-### Shell Branches (8 Total)
+`/users` and `/roles` also exist as separate top-level route files (`users.routes.dart`, `roles.routes.dart`) alongside the `/management/users` and `/management/roles` nested routes above — both are present in the codebase; which one a given entry point (e.g. a dashboard quick action vs. the Management nav item) links to depends on the calling widget, not audited exhaustively here.
 
-| Branch | Base Route | Description |
-|--------|------------|-------------|
-| Dashboard | `/` | Home/entry point |
-| Patients | `/patients` | Patient management |
-| Patient Config | `/patient-config` | Species, breeds, treatments catalog |
-| Products | `/products` | Inventory management |
-| Appointments | `/appointments` | Scheduling |
-| Organization | `/organization` | Admin, users, branches |
-| System | `/system` | Settings, change logs, account |
-| Sales | `/cashier` | Cashier/POS operations |
+### Shell Branches (12 nav-visible + Cashier)
+
+| # | Branch | Base Route | Permission gate |
+|---|--------|------------|------------------|
+| 0 | Dashboard | `/` | always visible |
+| 1 | Sales History | `/sales` | `sales.view` |
+| 2 | Products | `/products` | `products.view` |
+| 3 | Services | `/services` | `services.view` |
+| 4 | Customers | `/customers` | `customers.view` |
+| 5 | Employees | `/employees` | `employees.view` |
+| 6 | Reports | `/reports` | `reports.view` |
+| 7 | Activities | `/activities` | `system.admin` |
+| 8 | Management | `/management` | `branches.view` |
+| 9 | Organizations | `/organizations` | always visible |
+| 10 | Promos | `/promos` | `system.admin` |
+| 11 | System | `/system` | `settings.view` |
+| — | Cashier / POS | `/cashier` | reached in-app, not a nav-bar destination |
+
+A role with `isAdmin` (`system.admin` permission) sees every item regardless of the individual gates above (`filterNavItems`).
 
 ---
 
 ## Component Architecture
 
-### Shell Widget Structure
+### Shell Widget Structure (`AppRoot`)
 
 ```
-AdaptiveShell
-├── MobileShell (< 600px)
-│   ├── Scaffold
-│   │   ├── AppBar (with drawer toggle)
-│   │   ├── Body (content)
-│   │   ├── BottomNavigationBar (5 items)
-│   │   └── Drawer (MobileDrawer)
+AppRoot (ConsumerStatefulWidget)
+├── Mobile layout (< 600px)
+│   └── Scaffold
+│       ├── drawer: MobileDrawer
+│       ├── body: [OrganizationSwitcher + BranchSwitcher + FullscreenToggleButton] row, then page content
+│       └── bottomNavigationBar: MobileBottomNav (first 3 items + More)
 │
-├── TabletShell (600px - 1200px)
-│   ├── Row
-│   │   ├── NavigationRail
-│   │   │   ├── Leading (Logo)
-│   │   │   ├── Destinations (7 items)
-│   │   │   └── Trailing (User Avatar)
-│   │   └── Expanded
-│   │       └── Scaffold
-│   │           ├── AppBar
-│   │           └── Body (content or Master-Detail)
-│
-└── DesktopShell (> 1200px)
+└── Tablet/Desktop layout (>= 600px)
     └── Row
-        ├── SideMenu (collapsible, 80-200px)
+        ├── TabletNavRail (600-899px) or DesktopSideNav (900px+)
+        ├── VerticalDivider
         └── Expanded
             └── Scaffold
-                ├── AppBar
-                └── Body (content)
+                └── body: [OrganizationSwitcher + BranchSwitcher + FullscreenToggleButton] row, then page content
 ```
 
-### Adaptive List-Detail Layout
-
-```
-AdaptiveListDetail
-├── Mobile: Stack-based navigation (push detail)
-│   ┌─────────────────┐     ┌─────────────────┐
-│   │     List        │ --> │     Detail      │
-│   │                 │     │                 │
-│   └─────────────────┘     └─────────────────┘
-│
-├── Tablet: Side-by-side (permanent)
-│   ┌─────────┬───────────────┐
-│   │  List   │    Detail     │
-│   │         │               │
-│   └─────────┴───────────────┘
-│
-└── Desktop: Multi-panel
-    ┌─────────┬───────────────┬──────────┐
-    │  List   │    Detail     │  Actions │
-    │         │               │  Panel   │
-    └─────────┴───────────────┴──────────┘
-```
+There is no separate `AdaptiveShell`/`MobileShell`/`TabletShell`/`DesktopShell` class hierarchy — `AppRoot` itself branches on `Breakpoints.isMobile(context)` and calls `_buildMobileLayout` or `_buildTabletLayout` directly. `_buildTabletLayout` then picks `TabletNavRail` vs `DesktopSideNav` at 900px.
 
 ---
 
 ## Navigation Configuration
 
-### Primary Navigation (always visible in bottom nav/rail)
+Source of truth: `buildAllNavItems()` in `lib/src/core/widgets/nav_permissions.dart`.
 
-| Icon | Label | Route | Priority |
-|------|-------|-------|----------|
-| 🏠 | Dashboard | `/` | 1 |
-| 👤 | Patients | `/patients` | 2 |
-| 📅 | Appointments | `/appointments` | 3 |
-| 📦 | Products | `/products` | 4 |
+| Index | Icon | Label | Route | Required permission |
+|---|---|---|---|---|
+| 0 | `dashboard_outlined` | Dashboard | `/` | none (always visible) |
+| 1 | `receipt_long_outlined` | Sales History | `/sales` | `sales.view` |
+| 2 | `inventory_2_outlined` | Products | `/products` | `products.view` |
+| 3 | `miscellaneous_services_outlined` | Services | `/services` | `services.view` |
+| 4 | `people_outlined` | Customers | `/customers` | `customers.view` |
+| 5 | `badge_outlined` | Employees | `/employees` | `employees.view` |
+| 6 | `analytics_outlined` | Reports | `/reports` | `reports.view` |
+| 7 | `history_outlined` | Activities | `/activities` | `system.admin` |
+| 8 | `business_outlined` | Management | `/management` | `branches.view` |
+| 9 | `apartment_outlined` | Organizations | `/organizations` | none (always visible) |
+| 10 | `loyalty_outlined` | Promos | `/promos` | `system.admin` |
+| 11 | `settings_outlined` | System | `/system` | `settings.view` |
 
-### Secondary Navigation (rail/drawer only)
-
-| Icon | Label | Route | Priority |
-|------|-------|-------|----------|
-| 💰 | Sales | `/cashier` | 5 |
-| 🏢 | Organization | `/organization` | 6 |
-| ⚙️ | System | `/system` | 7 |
-
-### Mobile "More" Menu Items
-
-| Icon | Label | Route |
-|------|-------|-------|
-| ⚙️ | Patient Config | `/patient-config` |
-| 💰 | Cashier | `/cashier` |
-| 🏢 | Organization | `/organization` |
-| ⚙️ | Settings | `/system/settings` |
-| 👤 | Your Account | `/system/account` |
-| 🚪 | Logout | (action) |
+Mobile bottom nav uses `visibleItems.take(3)` from this same permission-filtered list (so its contents shift per role, not a fixed "primary 4" set); the drawer shows the full filtered list split around original index 5.
 
 ---
 
-## Patient Detail - Records, Treatments & Files
+## Tabbed Detail Pages
 
-The Patient Detail page (`/patients/:id`) uses a **5-tab interface** with adaptive handling for mobile vs tablet.
-
-### Tab Structure
+Several detail pages across the app use a `TabBar`/`TabBarView` pattern rather than a single scroll view — e.g. `lib/src/features/products/presentation/pages/product_detail_page.dart`, plus `sale_detail_page.dart`, `user_detail_page.dart`, and `employee_detail_page.dart`. Product Detail is representative:
 
 ```
-Patient Detail Page
-├── Tab 0: Details       -> PatientDetailsView (patient info, owner, actions)
-├── Tab 1: Records       -> PatientRecordsPage (medical visit records)
-├── Tab 2: Treatments    -> PatientTreatmentRecordsPage (treatment tracking)
-├── Tab 3: Appointments  -> AppointmentSchedulesPage (patient appointments)
-└── Tab 4: Files         -> PatientFilesPage (documents, images)
+Product Detail Page (/products/:id)
+├── Tab 0: Overview     -> ProductOverviewTab
+├── Tab 1: Details      -> ProductDetailsTab
+├── Tab 2: Stock        -> ProductStockTab
+└── Tab 3: Adjustments  -> ProductAdjustmentsTab
 ```
 
-### Data Relationships
-
-```
-Patient (master)
-│
-├── PatientRecord (medical visits)
-│   ├── visitDate, diagnosis, treatment, tests
-│   ├── temperature, weightInKg, notes
-│   └── PatientPrescriptionItem[] (medications)
-│       └── date, medication, dosage, instructions
-│
-├── PatientTreatmentRecord (treatment tracking)
-│   ├── treatment (FK -> PatientTreatment catalog)
-│   ├── date, notes
-│   └── expand: { treatment.name, treatment.icon }
-│
-├── PatientFile (attachments)
-│   ├── file (filename), notes
-│   └── isImage (computed)
-│
-└── AppointmentSchedule[] (via patient FK)
-```
-
-### Mobile - Patient Detail (< 600px)
-
-```
-┌─────────────────────────────────────┐
-│ <-  Patient: Max             [Edit] │  <- AppBar with back + actions
-├─────────────────────────────────────┤
-│ Details│Records│Treat│Appts│Files  │  <- Scrollable TabBar
-├─────────────────────────────────────┤
-│                                     │
-│  ╭───────────╮                      │
-│  │   Avatar  │  Max                 │
-│  │           │  Golden Retriever    │
-│  ╰───────────╯  Dog                 │
-│                                     │
-│  ┌─────────────────────────────────┐│
-│  │ Owner Information            v ││  <- Expandable sections
-│  │ Name: John Doe                 ││
-│  │ Phone: +1234567890             ││
-│  └─────────────────────────────────┘│
-│                                     │
-│  [Edit Details]  [Delete]           │
-│                                     │
-├─────────────────────────────────────┤
-│  🏠    👤    📅    📦    ...       │
-└─────────────────────────────────────┘
-```
-
-### Mobile - Records Tab
-
-```
-┌─────────────────────────────────────┐
-│ <-  Patient: Max             [+ Add]│
-├─────────────────────────────────────┤
-│ Details│Records│Treat│Appts│Files  │
-├─────────────────────────────────────┤
-│ ┌─────────────────────────────────┐ │
-│ │ 🩺  Jan 15, 2024 10:30 AM      │ │  <- PatientRecordCard
-│ │    Diagnosis: Annual checkup   │ │
-│ │    Weight: 25kg                │ │
-│ │                            [...│ │  <- Actions menu
-│ └─────────────────────────────────┘ │
-│ ┌─────────────────────────────────┐ │
-│ │ 🩺  Jan 10, 2024 2:00 PM       │ │
-│ │    Diagnosis: Vaccination      │ │
-│ │    Weight: 24.5kg              │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ [+ Create New Record]               │  <- FAB or button
-└─────────────────────────────────────┘
-```
-
-### Tablet - Patient Detail (Tabbed Detail Panel)
-
-```
-┌────┬─────────────────┬────────────────────────────────────┐
-│    │ Patients        │  ┌──────────────────────────────┐  │
-│ 🏠 ├─────────────────┤  │ Max - Golden Retriever  [...│  │
-│    │ 🔍 Search...    │  ├──────────────────────────────┤  │
-│ 👤 ├─────────────────┤  │ Details│Records│Treat│Files │  │  <- Tabs in detail panel
-│    │ ┌─────────────┐ │  ├──────────────────────────────┤  │
-│ 📅 │ │ Max       > │ │  │                              │  │
-│    │ │ Dog         │ │  │  ╭─────╮  Name: Max          │  │
-│ 📦 │ └─────────────┘ │  │  │ Img │  Species: Dog       │  │
-│    │ ┌─────────────┐ │  │  ╰─────╯  Breed: G.Retriever │  │
-│ 💰 │ │ Luna        │ │  │                              │  │
-│    │ │ Cat         │ │  │  Owner: John Doe             │  │
-│ 🏢 │ └─────────────┘ │  │  Phone: +1234567890          │  │
-│    │ ┌─────────────┐ │  │                              │  │
-│ ⚙️ │ │ Rocky       │ │  │  [Edit]  [Delete]            │  │
-│    │ │ Dog         │ │  │                              │  │
-└────┴─────────────────┴──┴──────────────────────────────┴──┘
- Rail    List Panel              Detail with Tabs
-(72px)    (280px)                (Remaining)
-```
-
-### Navigation Flow
-
-**Mobile (stack-based):**
-```
-Patients List -> Patient Detail (tabs) -> Record Detail -> Prescription Form
-      |              |                        |                |
-   /patients    /patients/:id         /patients/records/:id   /patients/prescriptions/form
-```
-
-**Tablet (panel-based with full-screen forms):**
-- Selecting patient updates detail panel (no navigation)
-- Forms (edit patient, add record, etc.) push as full-screen routes
-- Back navigation returns to master-detail view
-
-### Record Detail Layout
-
-**Mobile:**
-```
-┌─────────────────────────────────────┐
-│ <-  Record: Jan 15, 2024     [Save] │
-├─────────────────────────────────────┤
-│                                     │
-│  Visit Date                         │
-│  ┌─────────────────────────────────┐│
-│  │ 📅 January 15, 2024 10:30 AM   ││
-│  └─────────────────────────────────┘│
-│                                     │
-│  Temperature        Weight (kg)     │
-│  ┌──────────────┐  ┌──────────────┐ │
-│  │ 38.5 C       │  │ 25           │ │
-│  └──────────────┘  └──────────────┘ │
-│                                     │
-│  Diagnosis                          │
-│  ┌─────────────────────────────────┐│
-│  │ Annual health checkup...       ││
-│  └─────────────────────────────────┘│
-│                                     │
-│  -- Prescriptions -----------------│
-│  ┌─────────────────────────────────┐│
-│  │ Medication A - 2x daily        ││
-│  │ Medication B - 1x daily        ││
-│  │                       [+ Add]  ││
-│  └─────────────────────────────────┘│
-│                                     │
-│  [Delete Record]                    │
-└─────────────────────────────────────┘
-```
-
-**Tablet (full-screen form):**
-```
-┌────────────────────────────────────────────────────┐
-│ Record: Jan 15, 2024                    [X] [Save] │
-├────────────────────────────────────────────────────┤
-│  ┌────────────────────┬───────────────────────┐   │
-│  │ Visit Date         │ Temperature           │   │
-│  │ 📅 Jan 15, 10:30   │ 38.5 C               │   │
-│  ├────────────────────┼───────────────────────┤   │
-│  │ Weight (kg)        │ Tests Done            │   │
-│  │ 25                 │ Blood panel, X-ray    │   │
-│  └────────────────────┴───────────────────────┘   │
-│                                                    │
-│  Diagnosis                                         │
-│  ┌────────────────────────────────────────────┐   │
-│  │ Annual health checkup completed...         │   │
-│  └────────────────────────────────────────────┘   │
-│                                                    │
-│  Prescriptions                          [+ Add]   │
-│  ┌────────────────────────────────────────────┐   │
-│  │ Medication A  │ 10mg  │ 2x daily   │ [...│   │
-│  │ Medication B  │ 5mg   │ 1x daily   │ [...│   │
-│  └────────────────────────────────────────────┘   │
-│                                                    │
-│  [Print Prescription]  [Delete]                   │
-└────────────────────────────────────────────────────┘
-```
-
-### Design Decisions
-
-**Layout: Tabbed Detail Panel**
-- Patient list on left panel
-- Detail panel with tabs (Details/Records/Treatments/Appointments/Files) on right
-- Simpler implementation, matches current PatientPage structure
-- Tabs stay within the detail panel, not as nested columns
-
-**Forms: Full-screen Push Navigation**
-- All forms (edit patient, add record, add prescription) navigate to full-screen pages
-- Consistent behavior across mobile and tablet
-- Simpler back navigation handling
-
-### Implementation Considerations
-
-1. **Tab State Preservation**: Use `AutomaticKeepAliveClientMixin` to preserve tab content
-2. **Master-Detail Sync**: Selecting a patient updates detail panel without navigation
-3. **Form Navigation**: Forms push as full-screen routes on all device sizes
-4. **Responsive Tables**: `SliverDynamicTableView` already handles mobile card vs desktop table
-5. **Deep Linking**: Support `/patients/:id?page=1` to open specific tab directly
+Each such page keeps its tab widgets in `presentation/widgets/tabs/` (or similar) alongside the page, named `*_tab.dart`. Check the specific feature's `presentation/pages/*_detail_page.dart` for its exact tab set — they aren't identical across features (e.g. Employee Detail's tabs differ from Product Detail's).
 
 ---
 
@@ -624,17 +370,12 @@ Patients List -> Patient Detail (tabs) -> Record Detail -> Prescription Form
 
 | File | Purpose |
 |------|---------|
-| `lib/src/core/pages/app_root.dart` | Main shell widget |
-| `lib/src/core/widgets/mobile_bottom_nav.dart` | Bottom navigation |
+| `lib/src/core/pages/app_root.dart` | Main shell widget — mobile/tablet layout switch, nav item wiring |
+| `lib/src/core/widgets/mobile_bottom_nav.dart` | Mobile bottom navigation bar |
 | `lib/src/core/widgets/mobile_drawer.dart` | Mobile drawer |
-| `lib/src/core/controllers/nav_items_controller.dart` | Navigation items |
-| `lib/src/core/routing/routes/_root.routes.dart` | Shell routes |
-
-### Recommended New Files
-
-| File | Purpose |
-|------|---------|
-| `lib/src/core/widgets/adaptive_shell.dart` | Unified adaptive shell |
-| `lib/src/core/widgets/tablet_nav_rail.dart` | Navigation rail for tablet |
-| `lib/src/core/widgets/adaptive_list_detail.dart` | Master-detail layout |
+| `lib/src/core/widgets/tablet_nav_rail.dart` | Navigation rail for tablet widths (600–899px) |
+| `lib/src/core/widgets/desktop_side_nav.dart` | Expandable grouped sidebar for tablet-large / desktop (≥900px) |
+| `lib/src/core/navigation/desktop_nav_presentation.dart` | Shortcut/category grouping for `DesktopSideNav` |
+| `lib/src/core/widgets/nav_permissions.dart` | `NavId` / `NavItem` list, permission filtering, `currentUserRoleProvider` |
 | `lib/src/core/utils/breakpoints.dart` | Centralized breakpoint definitions |
+| `lib/src/core/routing/routes/*.routes.dart` | Per-feature route definitions (`@TypedGoRoute`) |

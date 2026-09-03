@@ -94,6 +94,7 @@ class BranchRepositoryImpl implements BranchRepository {
           'name': branch.name,
           'address': branch.address,
           'contactNumber': branch.contactNumber,
+          'organization': branch.organizationId,
           'operatingHours': branch.operatingHours,
           'cutOffTime': branch.cutOffTime,
           'incentiveAmount': branch.incentiveAmount,

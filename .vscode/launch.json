@@ -28,7 +28,7 @@
                 "staging",
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
+                "--dart-define=API_URL=https://staging.hznlaundry.hznsystems.com",
                 "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
@@ -43,7 +43,7 @@
                 "staging",
                 "--web-port=8000",
                 "--dart-define=ENV=staging",
-                "--dart-define=API_URL=https://staging.hizonelaundry.hznsystems.com",
+                "--dart-define=API_URL=https://staging.hznlaundry.hznsystems.com",
                 "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
@@ -57,7 +57,7 @@
                 "prod",
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
+                "--dart-define=API_URL=https://hznlaundry.hznsystems.com",
                 "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },
@@ -72,7 +72,7 @@
                 "prod",
                 "--web-port=8000",
                 "--dart-define=ENV=prod",
-                "--dart-define=API_URL=https://hizonelaundry.hznsystems.com",
+                "--dart-define=API_URL=https://hznlaundry.hznsystems.com",
                 "--dart-define=SKIP_VERSION_CHECK=true"
             ]
         },

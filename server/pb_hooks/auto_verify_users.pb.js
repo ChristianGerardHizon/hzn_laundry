@@ -16,7 +16,7 @@
 onRecordCreate(function(e) {
   try {
     e.record.setVerified(true);
-    console.log("[AUTO_VERIFY] Verifying new user " + e.record.getString("username"));
+    console.log("[AUTO_VERIFY] Verifying new user " + e.record.getString("email"));
   } catch (err) {
     console.error("[AUTO_VERIFY] Failed to set verified on create:", err);
   }
@@ -49,7 +49,7 @@ onBootstrap(function(e) {
         $app.save(unverified[i]);
         console.log(
           "[AUTO_VERIFY] Verified existing user " +
-            unverified[i].getString("username")
+            unverified[i].getString("email")
         );
       } catch (err) {
         console.error(
