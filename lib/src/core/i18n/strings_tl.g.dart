@@ -251,15 +251,42 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get stepDetails => 'Mga detalye ng organisasyon';
 	@override String get stepBranch => 'Gumawa ng unang sangay';
 	@override String get stepInvite => 'Imbitahan ang iyong team';
-	@override String get stepReview => 'Suriin at tapusin';
+	@override String get stepReview => 'Suriin at gawin';
+	@override String get stepDetailsShort => 'Detalye';
+	@override String get stepBranchShort => 'Sangay';
+	@override String get stepInviteShort => 'Team';
+	@override String get stepReviewShort => 'Suriin';
 	@override String get next => 'Susunod';
 	@override String get back => 'Bumalik';
 	@override String get skip => 'Laktawan';
-	@override String get finish => 'Tapusin ang setup';
+	@override String get finish => 'Gumawa ng organisasyon';
 	@override String get addBranch => 'Magdagdag ng sangay';
-	@override String get branchRequired => 'Gumawa muna ng kahit isang sangay para magpatuloy.';
+	@override String get branchRequired => 'Ilagay muna ang detalye ng unang sangay para magpatuloy.';
 	@override String get noBranchYet => 'Wala pang sangay';
 	@override String get onboardingComplete => 'Handa na ang organisasyon';
+	@override String get operatingHours => 'Mga oras ng operasyon';
+	@override String get cutOffTime => 'Cut-off time';
+	@override String get incentiveTiers => 'Mga incentive tier';
+	@override String get addTier => 'Magdagdag ng tier';
+	@override String get incentiveTiersHint => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.';
+	@override String get atLeastOneTier => 'Kailangan ng kahit isang incentive tier.';
+	@override String tierLabel({required Object n}) => 'Tier ${n}';
+	@override String get tierMin => 'Min';
+	@override String get tierMax => 'Max';
+	@override String get tierIncentive => 'Incentive';
+	@override String get tierNoLimit => 'Walang limit';
+	@override String get removeTier => 'Alisin ang tier';
+	@override String get addInvite => 'Idagdag ang imbitasyon';
+	@override String get noInvitesQueued => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.';
+	@override String get queuedInvites => 'Mga naka-queue na imbitasyon';
+	@override String get inviteQueued => 'Naidagdag ang imbitasyon';
+	@override String get inviteAlreadyQueued => 'Naka-queue na ang email na iyon.';
+	@override String get removeInvite => 'Alisin';
+	@override String reviewInviteCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: '1 naka-queue na imbitasyon',
+		other: '${n} naka-queue na imbitasyon',
+	);
+	@override String get reviewNone => '—';
 }
 
 // Path: sort
@@ -460,15 +487,39 @@ extension on TranslationsTl {
 			'organizations.stepDetails' => 'Mga detalye ng organisasyon',
 			'organizations.stepBranch' => 'Gumawa ng unang sangay',
 			'organizations.stepInvite' => 'Imbitahan ang iyong team',
-			'organizations.stepReview' => 'Suriin at tapusin',
+			'organizations.stepReview' => 'Suriin at gawin',
+			'organizations.stepDetailsShort' => 'Detalye',
+			'organizations.stepBranchShort' => 'Sangay',
+			'organizations.stepInviteShort' => 'Team',
+			'organizations.stepReviewShort' => 'Suriin',
 			'organizations.next' => 'Susunod',
 			'organizations.back' => 'Bumalik',
 			'organizations.skip' => 'Laktawan',
-			'organizations.finish' => 'Tapusin ang setup',
+			'organizations.finish' => 'Gumawa ng organisasyon',
 			'organizations.addBranch' => 'Magdagdag ng sangay',
-			'organizations.branchRequired' => 'Gumawa muna ng kahit isang sangay para magpatuloy.',
+			'organizations.branchRequired' => 'Ilagay muna ang detalye ng unang sangay para magpatuloy.',
 			'organizations.noBranchYet' => 'Wala pang sangay',
 			'organizations.onboardingComplete' => 'Handa na ang organisasyon',
+			'organizations.operatingHours' => 'Mga oras ng operasyon',
+			'organizations.cutOffTime' => 'Cut-off time',
+			'organizations.incentiveTiers' => 'Mga incentive tier',
+			'organizations.addTier' => 'Magdagdag ng tier',
+			'organizations.incentiveTiersHint' => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.',
+			'organizations.atLeastOneTier' => 'Kailangan ng kahit isang incentive tier.',
+			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
+			'organizations.tierMin' => 'Min',
+			'organizations.tierMax' => 'Max',
+			'organizations.tierIncentive' => 'Incentive',
+			'organizations.tierNoLimit' => 'Walang limit',
+			'organizations.removeTier' => 'Alisin ang tier',
+			'organizations.addInvite' => 'Idagdag ang imbitasyon',
+			'organizations.noInvitesQueued' => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.',
+			'organizations.queuedInvites' => 'Mga naka-queue na imbitasyon',
+			'organizations.inviteQueued' => 'Naidagdag ang imbitasyon',
+			'organizations.inviteAlreadyQueued' => 'Naka-queue na ang email na iyon.',
+			'organizations.removeInvite' => 'Alisin',
+			'organizations.reviewInviteCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 naka-queue na imbitasyon', other: '${n} naka-queue na imbitasyon', ), 
+			'organizations.reviewNone' => '—',
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',

@@ -103,13 +103,9 @@ mixin OrganizationInviteMappable {
         .encodeMap<OrganizationInvite>(this as OrganizationInvite);
   }
 
-  OrganizationInviteCopyWith<
-    OrganizationInvite,
-    OrganizationInvite,
-    OrganizationInvite
-  >
-  get copyWith =>
-      _OrganizationInviteCopyWithImpl<OrganizationInvite, OrganizationInvite>(
+  OrganizationInviteCopyWith<OrganizationInvite, OrganizationInvite,
+      OrganizationInvite> get copyWith => _OrganizationInviteCopyWithImpl<
+          OrganizationInvite, OrganizationInvite>(
         this as OrganizationInvite,
         $identity,
         $identity,
@@ -140,17 +136,13 @@ mixin OrganizationInviteMappable {
 extension OrganizationInviteValueCopy<$R, $Out>
     on ObjectCopyWith<$R, OrganizationInvite, $Out> {
   OrganizationInviteCopyWith<$R, OrganizationInvite, $Out>
-  get $asOrganizationInvite => $base.as(
-    (v, t, t2) => _OrganizationInviteCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asOrganizationInvite => $base.as(
+            (v, t, t2) => _OrganizationInviteCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
-abstract class OrganizationInviteCopyWith<
-  $R,
-  $In extends OrganizationInvite,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+abstract class OrganizationInviteCopyWith<$R, $In extends OrganizationInvite,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   UserRoleCopyWith<$R, UserRole, UserRole>? get role;
   $R call({
     String? id,
@@ -186,31 +178,33 @@ class _OrganizationInviteCopyWithImpl<$R, $Out>
     DateTime? expiresAt,
     Object? organizationName = $none,
     Object? role = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (organizationId != null) #organizationId: organizationId,
-      if (email != null) #email: email,
-      if (status != null) #status: status,
-      if (expiresAt != null) #expiresAt: expiresAt,
-      if (organizationName != $none) #organizationName: organizationName,
-      if (role != $none) #role: role,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (organizationId != null) #organizationId: organizationId,
+          if (email != null) #email: email,
+          if (status != null) #status: status,
+          if (expiresAt != null) #expiresAt: expiresAt,
+          if (organizationName != $none) #organizationName: organizationName,
+          if (role != $none) #role: role,
+        }),
+      );
   @override
   OrganizationInvite $make(CopyWithData data) => OrganizationInvite(
-    id: data.get(#id, or: $value.id),
-    organizationId: data.get(#organizationId, or: $value.organizationId),
-    email: data.get(#email, or: $value.email),
-    status: data.get(#status, or: $value.status),
-    expiresAt: data.get(#expiresAt, or: $value.expiresAt),
-    organizationName: data.get(#organizationName, or: $value.organizationName),
-    role: data.get(#role, or: $value.role),
-  );
+        id: data.get(#id, or: $value.id),
+        organizationId: data.get(#organizationId, or: $value.organizationId),
+        email: data.get(#email, or: $value.email),
+        status: data.get(#status, or: $value.status),
+        expiresAt: data.get(#expiresAt, or: $value.expiresAt),
+        organizationName:
+            data.get(#organizationName, or: $value.organizationName),
+        role: data.get(#role, or: $value.role),
+      );
 
   @override
   OrganizationInviteCopyWith<$R2, OrganizationInvite, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _OrganizationInviteCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _OrganizationInviteCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

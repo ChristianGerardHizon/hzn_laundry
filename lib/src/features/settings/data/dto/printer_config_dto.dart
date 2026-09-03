@@ -7,9 +7,7 @@ import '../../domain/printer_paper_width.dart';
 
 part 'printer_config_dto.mapper.dart';
 
-/// Data Transfer Object for PrinterConfig from PocketBase.
-///
-/// Handles conversion between PocketBase RecordModel and domain PrinterConfig.
+/// Data Transfer Object for one-time import of printer configs from PocketBase.
 @MappableClass()
 class PrinterConfigDto with PrinterConfigDtoMappable {
   final String id;
@@ -66,7 +64,7 @@ class PrinterConfigDto with PrinterConfigDtoMappable {
     );
   }
 
-  /// Converts the DTO to a domain PrinterConfig entity.
+  /// Converts the DTO to a local domain PrinterConfig entity.
   PrinterConfig toEntity() {
     return PrinterConfig(
       id: id,
@@ -75,10 +73,7 @@ class PrinterConfigDto with PrinterConfigDtoMappable {
       address: address,
       port: port,
       paperWidth: _parsePaperWidth(paperWidth),
-      isDefault: isDefault,
       isEnabled: isEnabled,
-      branchId: branch,
-      isDeleted: isDeleted,
       created: created != null ? DateTime.tryParse(created!)?.toLocal() : null,
       updated: updated != null ? DateTime.tryParse(updated!)?.toLocal() : null,
     );

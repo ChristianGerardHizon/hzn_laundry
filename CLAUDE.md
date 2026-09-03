@@ -376,6 +376,8 @@ Example update for Recent Updates table:
 
 ## PocketBase API Access
 
+**Hi-Zone Laundry (`hizonelaundry`) is a different system.** Never SSH-deploy, rsync, restart, migrate, or change Caddy/DNS for `hizonelaundry.hznsystems.com`, `staging.hizonelaundry.hznsystems.com`, `/opt/pocketbase/hizonelaundry*`, or `pocketbase_hizonelaundry*`. This repo only owns **HZN Laundry**: `https://hznlaundry.hznsystems.com` and `https://staging.hznlaundry.hznsystems.com`.
+
 **IMPORTANT:** When any PocketBase schema or data change is needed (creating collections, modifying fields, seeding data, etc.), **always use the PocketBase API directly** — never modify the database through migrations alone without verifying via the API first.
 
 ### Test Superuser Credentials

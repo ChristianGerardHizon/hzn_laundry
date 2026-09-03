@@ -55,4 +55,4 @@ final class PrinterConfigRepositoryProvider extends $FunctionalProvider<
 }
 
 String _$printerConfigRepositoryHash() =>
-    r'a909fc4c7d364ba15d485ea768cf7318803d6722';
+    r'e69ef3c72cc5fae85c802291bf9ff33af2652108';

@@ -6,9 +6,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
-import '../../../../core/routing/routes/organizations.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
+import '../widgets/dialogs/create_organization_setup_dialog.dart';
 import '../../../users/domain/user_role.dart';
 import '../../../users/presentation/controllers/user_roles_controller.dart';
 import '../../data/repositories/organization_invite_repository.dart';
@@ -32,6 +32,16 @@ class OrganizationsPage extends HookConsumerWidget {
     final canCreate =
         role?.hasPermission(Permissions.organizationsCreate) == true ||
             (role?.isAdmin ?? false);
+
+    Future<void> openCreateDialog() async {
+      final created = await showCreateOrganizationSetupDialog(context);
+      if (created == true && context.mounted) {
+        showSuccessSnackBar(
+          context,
+          message: t.organizations.onboardingComplete,
+        );
+      }
+    }
 
     final pb = ref.watch(pocketbaseProvider);
     final email =
@@ -74,7 +84,7 @@ class OrganizationsPage extends HookConsumerWidget {
             IconButton(
               icon: const Icon(Icons.add_business),
               tooltip: t.organizations.create,
-              onPressed: () => const CreateOrganizationRoute().go(context),
+              onPressed: openCreateDialog,
             ),
         ],
       ),
@@ -98,8 +108,7 @@ class OrganizationsPage extends HookConsumerWidget {
                     if (canCreate) ...[
                       const SizedBox(height: 16),
                       FilledButton(
-                        onPressed: () =>
-                            const CreateOrganizationRoute().go(context),
+                        onPressed: openCreateDialog,
                         child: Text(t.organizations.create),
                       ),
                     ],

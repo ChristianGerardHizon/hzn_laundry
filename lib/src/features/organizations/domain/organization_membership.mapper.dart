@@ -103,16 +103,11 @@ mixin OrganizationMembershipMappable {
         .encodeMap<OrganizationMembership>(this as OrganizationMembership);
   }
 
-  OrganizationMembershipCopyWith<
-    OrganizationMembership,
-    OrganizationMembership,
-    OrganizationMembership
-  >
-  get copyWith =>
-      _OrganizationMembershipCopyWithImpl<
-        OrganizationMembership,
-        OrganizationMembership
-      >(this as OrganizationMembership, $identity, $identity);
+  OrganizationMembershipCopyWith<OrganizationMembership, OrganizationMembership,
+          OrganizationMembership>
+      get copyWith => _OrganizationMembershipCopyWithImpl<
+              OrganizationMembership, OrganizationMembership>(
+          this as OrganizationMembership, $identity, $identity);
   @override
   String toString() {
     return OrganizationMembershipMapper.ensureInitialized().stringifyValue(
@@ -139,17 +134,16 @@ mixin OrganizationMembershipMappable {
 extension OrganizationMembershipValueCopy<$R, $Out>
     on ObjectCopyWith<$R, OrganizationMembership, $Out> {
   OrganizationMembershipCopyWith<$R, OrganizationMembership, $Out>
-  get $asOrganizationMembership => $base.as(
-    (v, t, t2) => _OrganizationMembershipCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asOrganizationMembership => $base.as(
+            (v, t, t2) =>
+                _OrganizationMembershipCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
 abstract class OrganizationMembershipCopyWith<
-  $R,
-  $In extends OrganizationMembership,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+    $R,
+    $In extends OrganizationMembership,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   UserRoleCopyWith<$R, UserRole, UserRole>? get role;
   OrganizationCopyWith<$R, Organization, Organization>? get organization;
   $R call({
@@ -190,31 +184,31 @@ class _OrganizationMembershipCopyWithImpl<$R, $Out>
     DateTime? joinedAt,
     Object? role = $none,
     Object? organization = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (organizationId != null) #organizationId: organizationId,
-      if (userId != null) #userId: userId,
-      if (status != null) #status: status,
-      if (joinedAt != null) #joinedAt: joinedAt,
-      if (role != $none) #role: role,
-      if (organization != $none) #organization: organization,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (organizationId != null) #organizationId: organizationId,
+          if (userId != null) #userId: userId,
+          if (status != null) #status: status,
+          if (joinedAt != null) #joinedAt: joinedAt,
+          if (role != $none) #role: role,
+          if (organization != $none) #organization: organization,
+        }),
+      );
   @override
   OrganizationMembership $make(CopyWithData data) => OrganizationMembership(
-    id: data.get(#id, or: $value.id),
-    organizationId: data.get(#organizationId, or: $value.organizationId),
-    userId: data.get(#userId, or: $value.userId),
-    status: data.get(#status, or: $value.status),
-    joinedAt: data.get(#joinedAt, or: $value.joinedAt),
-    role: data.get(#role, or: $value.role),
-    organization: data.get(#organization, or: $value.organization),
-  );
+        id: data.get(#id, or: $value.id),
+        organizationId: data.get(#organizationId, or: $value.organizationId),
+        userId: data.get(#userId, or: $value.userId),
+        status: data.get(#status, or: $value.status),
+        joinedAt: data.get(#joinedAt, or: $value.joinedAt),
+        role: data.get(#role, or: $value.role),
+        organization: data.get(#organization, or: $value.organization),
+      );
 
   @override
   OrganizationMembershipCopyWith<$R2, OrganizationMembership, $Out2>
-  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-      _OrganizationMembershipCopyWithImpl<$R2, $Out2>($value, $cast, t);
+      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+          _OrganizationMembershipCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

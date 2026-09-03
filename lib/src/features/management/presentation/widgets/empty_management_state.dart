@@ -35,12 +35,37 @@ class EmptyManagementState extends StatelessWidget {
       ManagementMode.machines => (
           Icons.local_laundry_service_outlined,
           'Select a machine',
-          'Choose a machine from the list to view details',
+          'Choose a machine from the list to view and manage load rules',
         ),
       ManagementMode.storages => (
           Icons.inventory_2_outlined,
           'Select a storage location',
           'Choose a storage location from the list to view details',
+        ),
+      ManagementMode.productCategories => (
+          Icons.category_outlined,
+          'Select a category',
+          'Choose a category from the list to view details',
+        ),
+      ManagementMode.quantityUnits => (
+          Icons.straighten_outlined,
+          'Select a unit',
+          'Choose a quantity unit from the list to view details',
+        ),
+      ManagementMode.cashierGroups => (
+          Icons.point_of_sale_outlined,
+          'Select a group',
+          'Choose a cashier group from the list to view and manage items',
+        ),
+      ManagementMode.import => (
+          Icons.file_upload_outlined,
+          'Import Products',
+          'Import products and categories from a CSV file',
+        ),
+      ManagementMode.settings => (
+          Icons.tune_outlined,
+          'Settings',
+          'Configure organization workflow options',
         ),
     };
 

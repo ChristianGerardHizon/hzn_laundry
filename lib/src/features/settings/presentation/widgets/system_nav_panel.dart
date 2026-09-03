@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// System management modes.
+/// Device-specific system settings modes.
 enum SystemMode {
-  productCategories,
-  quantityUnits,
-  machines,
   printers,
-  cashierGroups,
   appearance,
-  import,
-  featureFlags,
 }
 
 /// Vertical navigation panel for selecting system mode.
-///
-/// Displays icons for Product Categories, Printers, Appearance, and Import
-/// in a NavigationRail-style layout.
 class SystemNavPanel extends StatelessWidget {
   const SystemNavPanel({
     super.key,
@@ -38,7 +29,6 @@ class SystemNavPanel extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          // Header icon
           Padding(
             padding: const EdgeInsets.all(8),
             child: Icon(
@@ -49,34 +39,6 @@ class SystemNavPanel extends StatelessWidget {
           ),
           const Divider(),
           const SizedBox(height: 8),
-          // Product Categories button
-          _NavButton(
-            icon: Icons.inventory_2_outlined,
-            selectedIcon: Icons.inventory_2,
-            label: 'Categories',
-            isSelected: currentMode == SystemMode.productCategories,
-            onTap: () => onModeChanged(SystemMode.productCategories),
-          ),
-          const SizedBox(height: 4),
-          // Quantity Units button
-          _NavButton(
-            icon: Icons.straighten_outlined,
-            selectedIcon: Icons.straighten,
-            label: 'Units',
-            isSelected: currentMode == SystemMode.quantityUnits,
-            onTap: () => onModeChanged(SystemMode.quantityUnits),
-          ),
-          const SizedBox(height: 4),
-          // Machines button
-          _NavButton(
-            icon: Icons.local_laundry_service_outlined,
-            selectedIcon: Icons.local_laundry_service,
-            label: 'Machines',
-            isSelected: currentMode == SystemMode.machines,
-            onTap: () => onModeChanged(SystemMode.machines),
-          ),
-          const SizedBox(height: 4),
-          // Printers button
           _NavButton(
             icon: Icons.print_outlined,
             selectedIcon: Icons.print,
@@ -85,40 +47,12 @@ class SystemNavPanel extends StatelessWidget {
             onTap: () => onModeChanged(SystemMode.printers),
           ),
           const SizedBox(height: 4),
-          // Cashier Groups button
-          _NavButton(
-            icon: Icons.point_of_sale_outlined,
-            selectedIcon: Icons.point_of_sale,
-            label: 'Cashier',
-            isSelected: currentMode == SystemMode.cashierGroups,
-            onTap: () => onModeChanged(SystemMode.cashierGroups),
-          ),
-          const SizedBox(height: 4),
-          // Appearance button
           _NavButton(
             icon: Icons.palette_outlined,
             selectedIcon: Icons.palette,
             label: 'Appearance',
             isSelected: currentMode == SystemMode.appearance,
             onTap: () => onModeChanged(SystemMode.appearance),
-          ),
-          const SizedBox(height: 4),
-          // Import button
-          _NavButton(
-            icon: Icons.file_upload_outlined,
-            selectedIcon: Icons.file_upload,
-            label: 'Import',
-            isSelected: currentMode == SystemMode.import,
-            onTap: () => onModeChanged(SystemMode.import),
-          ),
-          const SizedBox(height: 4),
-          // Feature Flags / workflow settings button
-          _NavButton(
-            icon: Icons.tune_outlined,
-            selectedIcon: Icons.tune,
-            label: 'Settings',
-            isSelected: currentMode == SystemMode.featureFlags,
-            onTap: () => onModeChanged(SystemMode.featureFlags),
           ),
           const Spacer(),
         ],

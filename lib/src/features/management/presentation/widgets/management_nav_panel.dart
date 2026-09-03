@@ -3,11 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../../core/i18n/strings.g.dart';
 
 /// Organization management modes.
-enum ManagementMode { users, roles, branches, machines, storages }
+enum ManagementMode {
+  users,
+  roles,
+  branches,
+  machines,
+  storages,
+  productCategories,
+  quantityUnits,
+  cashierGroups,
+  import,
+  settings,
+}
 
 /// Vertical navigation panel for selecting organization mode.
-///
-/// Displays icons for Users and Roles in a NavigationRail-style layout.
 class ManagementNavPanel extends StatelessWidget {
   const ManagementNavPanel({
     super.key,
@@ -31,7 +40,6 @@ class ManagementNavPanel extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          // Header icon
           Padding(
             padding: const EdgeInsets.all(8),
             child: Icon(
@@ -41,52 +49,92 @@ class ManagementNavPanel extends StatelessWidget {
             ),
           ),
           const Divider(),
-          const SizedBox(height: 8),
-          // Users button
-          _NavButton(
-            icon: Icons.people_outlined,
-            selectedIcon: Icons.people,
-            label: t.navigation.users,
-            isSelected: currentMode == ManagementMode.users,
-            onTap: () => onModeChanged(ManagementMode.users),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 8),
+              children: [
+                _NavButton(
+                  icon: Icons.people_outlined,
+                  selectedIcon: Icons.people,
+                  label: t.navigation.users,
+                  isSelected: currentMode == ManagementMode.users,
+                  onTap: () => onModeChanged(ManagementMode.users),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.admin_panel_settings_outlined,
+                  selectedIcon: Icons.admin_panel_settings,
+                  label: t.navigation.roles,
+                  isSelected: currentMode == ManagementMode.roles,
+                  onTap: () => onModeChanged(ManagementMode.roles),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.store_outlined,
+                  selectedIcon: Icons.store,
+                  label: t.navigation.branches,
+                  isSelected: currentMode == ManagementMode.branches,
+                  onTap: () => onModeChanged(ManagementMode.branches),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.local_laundry_service_outlined,
+                  selectedIcon: Icons.local_laundry_service,
+                  label: 'Machines',
+                  isSelected: currentMode == ManagementMode.machines,
+                  onTap: () => onModeChanged(ManagementMode.machines),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.inventory_2_outlined,
+                  selectedIcon: Icons.inventory_2,
+                  label: 'Storages',
+                  isSelected: currentMode == ManagementMode.storages,
+                  onTap: () => onModeChanged(ManagementMode.storages),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.category_outlined,
+                  selectedIcon: Icons.category,
+                  label: 'Categories',
+                  isSelected: currentMode == ManagementMode.productCategories,
+                  onTap: () => onModeChanged(ManagementMode.productCategories),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.straighten_outlined,
+                  selectedIcon: Icons.straighten,
+                  label: 'Units',
+                  isSelected: currentMode == ManagementMode.quantityUnits,
+                  onTap: () => onModeChanged(ManagementMode.quantityUnits),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.point_of_sale_outlined,
+                  selectedIcon: Icons.point_of_sale,
+                  label: 'Cashier',
+                  isSelected: currentMode == ManagementMode.cashierGroups,
+                  onTap: () => onModeChanged(ManagementMode.cashierGroups),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.file_upload_outlined,
+                  selectedIcon: Icons.file_upload,
+                  label: 'Import',
+                  isSelected: currentMode == ManagementMode.import,
+                  onTap: () => onModeChanged(ManagementMode.import),
+                ),
+                const SizedBox(height: 4),
+                _NavButton(
+                  icon: Icons.tune_outlined,
+                  selectedIcon: Icons.tune,
+                  label: 'Settings',
+                  isSelected: currentMode == ManagementMode.settings,
+                  onTap: () => onModeChanged(ManagementMode.settings),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          // Roles button
-          _NavButton(
-            icon: Icons.admin_panel_settings_outlined,
-            selectedIcon: Icons.admin_panel_settings,
-            label: t.navigation.roles,
-            isSelected: currentMode == ManagementMode.roles,
-            onTap: () => onModeChanged(ManagementMode.roles),
-          ),
-          const SizedBox(height: 4),
-          // Branches button
-          _NavButton(
-            icon: Icons.store_outlined,
-            selectedIcon: Icons.store,
-            label: t.navigation.branches,
-            isSelected: currentMode == ManagementMode.branches,
-            onTap: () => onModeChanged(ManagementMode.branches),
-          ),
-          const SizedBox(height: 4),
-          // Machines button
-          _NavButton(
-            icon: Icons.local_laundry_service_outlined,
-            selectedIcon: Icons.local_laundry_service,
-            label: 'Machines',
-            isSelected: currentMode == ManagementMode.machines,
-            onTap: () => onModeChanged(ManagementMode.machines),
-          ),
-          const SizedBox(height: 4),
-          // Storages button
-          _NavButton(
-            icon: Icons.inventory_2_outlined,
-            selectedIcon: Icons.inventory_2,
-            label: 'Storages',
-            isSelected: currentMode == ManagementMode.storages,
-            onTap: () => onModeChanged(ManagementMode.storages),
-          ),
-          const Spacer(),
         ],
       ),
     );

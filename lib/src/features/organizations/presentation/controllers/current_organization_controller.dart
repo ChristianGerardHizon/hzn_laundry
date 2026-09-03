@@ -113,9 +113,9 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
         );
   }
 
-  /// Persist [id] and reload memberships. Used after creating an org (when
-  /// `canSwitchOrganization` is still false) so the walkthrough stamps the
-  /// new org, not the previous one.
+  /// Persist [id] and reload memberships. Used after creating an org so the
+  /// new tenant is selected even when the user did not previously belong to
+  /// more than one organization.
   Future<void> selectOrganization(String id) async {
     await _persistOrganization(id);
     ref.invalidateSelf();

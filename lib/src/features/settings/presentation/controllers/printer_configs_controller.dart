@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/repositories/printer_config_repository.dart';
 import '../../domain/printer_config.dart';
-import 'current_branch_controller.dart';
+import 'selected_printer_id_provider.dart';
 
 part 'printer_configs_controller.g.dart';
 
@@ -16,8 +16,7 @@ class PrinterConfigsController extends _$PrinterConfigsController {
 
   @override
   Future<List<PrinterConfig>> build() async {
-    final branchFilter = ref.watch(currentBranchFilterProvider);
-    final result = await _repository.fetchAll(filter: branchFilter);
+    final result = await _repository.fetchAll();
     return result.fold(
       (failure) => throw failure,
       (configs) => configs,
@@ -28,8 +27,7 @@ class PrinterConfigsController extends _$PrinterConfigsController {
   Future<void> refresh() async {
     state = const AsyncLoading();
 
-    final branchFilter = ref.read(currentBranchFilterProvider);
-    final result = await _repository.fetchAll(filter: branchFilter);
+    final result = await _repository.fetchAll();
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),
@@ -38,94 +36,70 @@ class PrinterConfigsController extends _$PrinterConfigsController {
   }
 
   /// Creates a new printer configuration.
-  Future<bool> createConfig(PrinterConfig config) async {
+  Future<bool> createConfig(PrinterConfig config, {bool select = false}) async {
     final result = await _repository.create(config);
-
-    return result.fold(
-      (failure) => false,
-      (newConfig) {
-        final currentList = state.value ?? [];
-        List<PrinterConfig> updatedList;
-
-        if (newConfig.isDefault) {
-          updatedList = currentList.map((c) {
-            return c.copyWith(isDefault: false);
-          }).toList();
-        } else {
-          updatedList = List.from(currentList);
-        }
-
-        updatedList.insert(0, newConfig);
-        state = AsyncData(updatedList);
-        return true;
-      },
+    final newConfig = result.fold<PrinterConfig?>(
+      (failure) => null,
+      (config) => config,
     );
+    if (newConfig == null) return false;
+
+    final currentList = state.value ?? [];
+    final updatedList = [newConfig, ...currentList];
+    state = AsyncData(updatedList);
+
+    final shouldSelect = select || updatedList.length == 1;
+    if (shouldSelect && newConfig.isEnabled) {
+      await ref
+          .read(selectedPrinterIdProvider.notifier)
+          .setSelected(newConfig.id);
+    }
+    return true;
   }
 
   /// Updates an existing printer configuration.
   Future<bool> updateConfig(PrinterConfig config) async {
     final result = await _repository.update(config);
-
-    return result.fold(
-      (failure) => false,
-      (updatedConfig) {
-        final currentList = state.value ?? [];
-
-        final updatedList = currentList.map((c) {
-          if (c.id == updatedConfig.id) {
-            return updatedConfig;
-          }
-          if (updatedConfig.isDefault && c.isDefault) {
-            return c.copyWith(isDefault: false);
-          }
-          return c;
-        }).toList();
-
-        state = AsyncData(updatedList);
-        return true;
-      },
+    final updatedConfig = result.fold<PrinterConfig?>(
+      (failure) => null,
+      (config) => config,
     );
+    if (updatedConfig == null) return false;
+
+    final currentList = state.value ?? [];
+    final updatedList = currentList.map((c) {
+      if (c.id == updatedConfig.id) return updatedConfig;
+      return c;
+    }).toList();
+    state = AsyncData(updatedList);
+    return true;
   }
 
-  /// Deletes a printer configuration (soft delete).
+  /// Deletes a printer configuration.
   Future<bool> deleteConfig(String id) async {
     final result = await _repository.delete(id);
+    final failed = result.fold((failure) => true, (_) => false);
+    if (failed) return false;
 
-    return result.fold(
-      (failure) => false,
-      (_) {
-        final currentList = state.value ?? [];
-        final updatedList = currentList.where((c) => c.id != id).toList();
-        state = AsyncData(updatedList);
-        return true;
-      },
-    );
-  }
+    final currentList = state.value ?? [];
+    final updatedList = currentList.where((c) => c.id != id).toList();
+    state = AsyncData(updatedList);
 
-  /// Sets a printer as the default.
-  Future<bool> setAsDefault(String id) async {
-    final result = await _repository.setAsDefault(id);
-
-    return result.fold(
-      (failure) => false,
-      (_) {
-        final currentList = state.value ?? [];
-        final updatedList = currentList.map((c) {
-          return c.copyWith(isDefault: c.id == id);
-        }).toList();
-        state = AsyncData(updatedList);
-        return true;
-      },
-    );
-  }
-
-  /// Gets the default printer from the current list.
-  PrinterConfig? get defaultPrinter {
-    final list = state.value ?? [];
-    try {
-      return list.firstWhere((c) => c.isDefault && c.isEnabled);
-    } catch (_) {
-      return null;
+    final selectedId = ref.read(selectedPrinterIdProvider).value;
+    if (selectedId == id) {
+      PrinterConfig? next;
+      for (final printer in updatedList) {
+        if (printer.isEnabled) {
+          next = printer;
+          break;
+        }
+      }
+      if (next != null) {
+        await ref.read(selectedPrinterIdProvider.notifier).setSelected(next.id);
+      } else {
+        await ref.read(selectedPrinterIdProvider.notifier).clearSelected();
+      }
     }
+    return true;
   }
 }

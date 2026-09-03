@@ -60,7 +60,7 @@ class OrganizationMembershipDtoMapper
   static OrganizationDto? _$expandedOrganization(OrganizationMembershipDto v) =>
       v.expandedOrganization;
   static const Field<OrganizationMembershipDto, OrganizationDto>
-  _f$expandedOrganization = Field(
+      _f$expandedOrganization = Field(
     'expandedOrganization',
     _$expandedOrganization,
     opt: true,
@@ -111,27 +111,22 @@ mixin OrganizationMembershipDtoMappable {
   String toJson() {
     return OrganizationMembershipDtoMapper.ensureInitialized()
         .encodeJson<OrganizationMembershipDto>(
-          this as OrganizationMembershipDto,
-        );
+      this as OrganizationMembershipDto,
+    );
   }
 
   Map<String, dynamic> toMap() {
     return OrganizationMembershipDtoMapper.ensureInitialized()
         .encodeMap<OrganizationMembershipDto>(
-          this as OrganizationMembershipDto,
-        );
+      this as OrganizationMembershipDto,
+    );
   }
 
-  OrganizationMembershipDtoCopyWith<
-    OrganizationMembershipDto,
-    OrganizationMembershipDto,
-    OrganizationMembershipDto
-  >
-  get copyWith =>
-      _OrganizationMembershipDtoCopyWithImpl<
-        OrganizationMembershipDto,
-        OrganizationMembershipDto
-      >(this as OrganizationMembershipDto, $identity, $identity);
+  OrganizationMembershipDtoCopyWith<OrganizationMembershipDto,
+          OrganizationMembershipDto, OrganizationMembershipDto>
+      get copyWith => _OrganizationMembershipDtoCopyWithImpl<
+              OrganizationMembershipDto, OrganizationMembershipDto>(
+          this as OrganizationMembershipDto, $identity, $identity);
   @override
   String toString() {
     return OrganizationMembershipDtoMapper.ensureInitialized().stringifyValue(
@@ -158,19 +153,18 @@ mixin OrganizationMembershipDtoMappable {
 extension OrganizationMembershipDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, OrganizationMembershipDto, $Out> {
   OrganizationMembershipDtoCopyWith<$R, OrganizationMembershipDto, $Out>
-  get $asOrganizationMembershipDto => $base.as(
-    (v, t, t2) => _OrganizationMembershipDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asOrganizationMembershipDto => $base.as(
+            (v, t, t2) =>
+                _OrganizationMembershipDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
 abstract class OrganizationMembershipDtoCopyWith<
-  $R,
-  $In extends OrganizationMembershipDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+    $R,
+    $In extends OrganizationMembershipDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   OrganizationDtoCopyWith<$R, OrganizationDto, OrganizationDto>?
-  get expandedOrganization;
+      get expandedOrganization;
   UserRoleDtoCopyWith<$R, UserRoleDto, UserRoleDto>? get expandedRole;
   $R call({
     String? id,
@@ -198,9 +192,9 @@ class _OrganizationMembershipDtoCopyWithImpl<$R, $Out>
       OrganizationMembershipDtoMapper.ensureInitialized();
   @override
   OrganizationDtoCopyWith<$R, OrganizationDto, OrganizationDto>?
-  get expandedOrganization => $value.expandedOrganization?.copyWith.$chain(
-    (v) => call(expandedOrganization: v),
-  );
+      get expandedOrganization => $value.expandedOrganization?.copyWith.$chain(
+            (v) => call(expandedOrganization: v),
+          );
   @override
   UserRoleDtoCopyWith<$R, UserRoleDto, UserRoleDto>? get expandedRole =>
       $value.expandedRole?.copyWith.$chain((v) => call(expandedRole: v));
@@ -214,19 +208,20 @@ class _OrganizationMembershipDtoCopyWithImpl<$R, $Out>
     Object? role = $none,
     Object? expandedOrganization = $none,
     Object? expandedRole = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (organization != null) #organization: organization,
-      if (user != null) #user: user,
-      if (status != null) #status: status,
-      if (joinedAt != null) #joinedAt: joinedAt,
-      if (role != $none) #role: role,
-      if (expandedOrganization != $none)
-        #expandedOrganization: expandedOrganization,
-      if (expandedRole != $none) #expandedRole: expandedRole,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (organization != null) #organization: organization,
+          if (user != null) #user: user,
+          if (status != null) #status: status,
+          if (joinedAt != null) #joinedAt: joinedAt,
+          if (role != $none) #role: role,
+          if (expandedOrganization != $none)
+            #expandedOrganization: expandedOrganization,
+          if (expandedRole != $none) #expandedRole: expandedRole,
+        }),
+      );
   @override
   OrganizationMembershipDto $make(CopyWithData data) =>
       OrganizationMembershipDto(
@@ -245,7 +240,6 @@ class _OrganizationMembershipDtoCopyWithImpl<$R, $Out>
 
   @override
   OrganizationMembershipDtoCopyWith<$R2, OrganizationMembershipDto, $Out2>
-  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-      _OrganizationMembershipDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+          _OrganizationMembershipDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

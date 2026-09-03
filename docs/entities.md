@@ -40,11 +40,11 @@ This document contains all entities (domain models) in the project with their fi
 | Promo | Promo | `promos` | Loyalty promotion (free reward after N orders) |
 | Promo | CustomerPromo | `customerPromos` | A customer's progress in a loyalty promo |
 | Activity | ActivityLog | `activityLogs` | CRUD audit trail across collections |
-| Settings | PrinterConfig | `printerConfigs` | Configured thermal printer (Bluetooth/network) |
+| Settings | PrinterConfig | *(device storage)* | Configured thermal printer on this device (Bluetooth/network) |
 | Settings | PosGroup | `posGroups` | Named product/service group shown on the cashier page |
 | Settings | PosGroupItem | `posGroupItems` | Product or service assigned to a PosGroup |
 | Settings | IncentiveTier | `incentiveTiers` | Branch incentive-per-service-price tiers |
-| Settings | FeatureFlag | `featureFlags` | Remote feature toggles |
+| Settings | FeatureFlag | `featureFlags` | Organization workflow toggles (Management → Settings) |
 | Public | CustomerHistory | *(derived, no collection)* | Read-only customer + sales summary for the public order-status page |
 | Version | AppConfig | *(external `versions` service)* | App update/minimum-version gate |
 
@@ -173,13 +173,13 @@ Business branches or locations.
 
 **Relationships:** `organizationId` -> Organization (required after backfill).
 
-**Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PrinterConfig, PosGroup, IncentiveTier (most of these treat `branch` as optional — unassigned records remain visible to all branches).
+**Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup, IncentiveTier (most of these treat `branch` as optional — unassigned records remain visible to all branches).
 
 ---
 
 ### Organization
 
-Multi-tenant laundry business. Collection writes go through custom hooks (`POST /api/organizations`, `PATCH /api/organizations/{id}`), not raw collection REST.
+Multi-tenant laundry business. Collection writes go through custom hooks (`POST /api/organizations`, `PATCH /api/organizations/{id}`), not raw collection REST. `POST /api/organizations` requires a first branch (and optional invites) and creates the org, Admin membership, branch, incentive tiers, and queued invites in one transaction.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -187,7 +187,7 @@ Multi-tenant laundry business. Collection writes go through custom hooks (`POST 
 | `name` | String | Yes | Organization name |
 | `contactNumber` | String | No | Contact number |
 | `address` | String | No | Address |
-| `onboardingCompletedAt` | DateTime | No | Set when the create walkthrough finishes |
+| `onboardingCompletedAt` | DateTime | No | Set when the create-organization setup dialog finishes (org + first branch created together) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
@@ -840,24 +840,23 @@ A single audit-trail entry recording a create/update/delete on any tracked colle
 
 ### PrinterConfig
 
-A configured thermal printer (Bluetooth or network) for receipt printing.
+A configured thermal printer (Bluetooth or network) for receipt printing. Stored on **this device** (secure storage), not PocketBase. One printer can be selected for printing.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
+| `id` | String | Yes | Local record ID |
 | `name` | String | Yes | Printer name |
 | `connectionType` | PrinterConnectionType | Yes | `bluetooth` or `network` |
 | `address` | String | No | MAC address (Bluetooth) or IP address (network) |
 | `port` | int | No | Network port (default 9100) |
 | `paperWidth` | PrinterPaperWidth | No | `mm58` or `mm80` (default `mm80`) |
-| `isDefault` | bool | No | Whether this is the default printer (default false) |
 | `isEnabled` | bool | No | Whether enabled (default true) |
-| `branchId` | String (FK) | No | Associated branch |
-| `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-**Collection:** `printerConfigs`
+The selected printer ID is stored separately on the device (`selected_printer_id`). Existing PocketBase `printerConfigs` rows are imported once onto each device, then unused.
+
+**Storage:** device secure storage (not a PocketBase collection)
 
 ### PosGroup
 
@@ -910,7 +909,7 @@ Defines the incentive earned for a service price falling within a range, per bra
 
 ### FeatureFlag
 
-Remote feature toggle.
+Remote feature toggle for organization workflow (email updates, require machine/pack/storage). Edited under Management → Settings.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|

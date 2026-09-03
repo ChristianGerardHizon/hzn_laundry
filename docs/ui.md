@@ -183,19 +183,22 @@ List/detail master-detail layouts (e.g. a list panel beside a detail panel) are 
    │ Employees │   │ Reports │   │  Activities   │   │ Promos │   │ System │
    └─────┬─────┘   └─────────┘   └───────────────┘   └───┬────┘   └───┬────┘
          ▼                                                ▼            ▼
-   Employee Detail                                   Promo Detail  Categories,
-                                                                    Quantity Units,
-                                                                    Machines, Printers,
-                                                                    Cashier Groups,
-                                                                    Appearance, Import,
-                                                                    Feature Flags
+   Employee Detail                                   Promo Detail  Printers,
+                                                                    Appearance
 
                               ┌───────────────┐
-                              │ Organization  │
+                              │ Management    │
                               └───────┬───────┘
-                       ┌───────┬──────┼──────┬────────┐
-                       ▼       ▼      ▼      ▼        ▼
-                     Users   Roles Branches Machines Storages
+         ┌───────┬──────┬──────┼──────┬────────┬─────────┬────────┐
+         ▼       ▼      ▼      ▼      ▼        ▼         ▼        ▼
+       Users   Roles Branches Machines Storages Categories Units  Cashier,
+                                                                  Import,
+                                                                  Settings
+
+                              ┌───────────────┐
+                              │ Organizations │
+                              └───────────────┘
+                                Switch / invites / setup
 ```
 
 Sales History (`/sales`, list + report view) and the Cashier/POS screen (`/cashier`) are distinct routes — the nav item labelled "Sales History" points at `/sales`; the point-of-sale checkout flow lives at `/cashier` and is reached from within the app rather than as its own top-level nav destination.
@@ -239,30 +242,30 @@ Sales History (`/sales`, list + report view) and the Cashier/POS screen (`/cashi
 │   │   └── /management/branches/:id -> Branch Detail
 │   ├── /management/machines       -> Machines List
 │   │   └── /management/machines/:id -> Machine Detail
-│   └── /management/storages       -> Storages List
-│       └── /management/storages/:id -> Storage Detail
+│   ├── /management/storages       -> Storages List
+│   │   └── /management/storages/:id -> Storage Detail
+│   ├── /management/product-categories -> Product Categories List
+│   │   └── /management/product-categories/:id -> Category Detail
+│   ├── /management/quantity-units -> Quantity Units List
+│   │   └── /management/quantity-units/:id -> Quantity Unit Detail
+│   ├── /management/cashier-groups -> POS Groups List
+│   │   └── /management/cashier-groups/:id -> Cashier Group Detail
+│   ├── /management/import         -> Data Import
+│   └── /management/settings       -> Workflow Settings
 │
 ├── /organizations                 -> Organizations
-│   ├── /organizations/create      -> Create Organization
-│   └── /organizations/setup/:id   -> Organization Setup Walkthrough
 │
 ├── /promos                          -> Promos List
 │   └── /promos/:id                  -> Promo Detail
 │
-├── /system                          -> System Landing
-│   ├── /system/product-categories   -> Product Categories List
-│   │   └── /system/product-categories/:id -> Category Detail
-│   ├── /system/quantity-units       -> Quantity Units List
-│   │   └── /system/quantity-units/:id -> Quantity Unit Detail
-│   ├── /system/machines             -> Machines List
-│   │   └── /system/machines/:id     -> Machine Detail
+├── /system                          -> System Landing (this device)
 │   ├── /system/printers             -> Printer Configs List
 │   │   └── /system/printers/:id     -> Printer Config Detail
-│   ├── /system/cashier-groups       -> POS Groups List
-│   │   └── /system/cashier-groups/:id -> Cashier Group Detail
-│   ├── /system/appearance           -> Appearance Settings
-│   ├── /system/import               -> Data Import
-│   └── /system/feature-flags        -> Feature Flags
+│   └── /system/appearance           -> Appearance Settings
+│
+│   (legacy `/system/product-categories`, `/system/quantity-units`,
+│    `/system/machines`, `/system/cashier-groups`, `/system/import`,
+│    `/system/feature-flags` redirect to the matching `/management/...` paths)
 │
 ├── /history/:token                  -> Customer History (shared link, outside the shell)
 │

@@ -110,16 +110,10 @@ mixin OrganizationInviteDtoMappable {
         .encodeMap<OrganizationInviteDto>(this as OrganizationInviteDto);
   }
 
-  OrganizationInviteDtoCopyWith<
-    OrganizationInviteDto,
-    OrganizationInviteDto,
-    OrganizationInviteDto
-  >
-  get copyWith =>
-      _OrganizationInviteDtoCopyWithImpl<
-        OrganizationInviteDto,
-        OrganizationInviteDto
-      >(this as OrganizationInviteDto, $identity, $identity);
+  OrganizationInviteDtoCopyWith<OrganizationInviteDto, OrganizationInviteDto,
+      OrganizationInviteDto> get copyWith => _OrganizationInviteDtoCopyWithImpl<
+          OrganizationInviteDto, OrganizationInviteDto>(
+      this as OrganizationInviteDto, $identity, $identity);
   @override
   String toString() {
     return OrganizationInviteDtoMapper.ensureInitialized().stringifyValue(
@@ -146,17 +140,16 @@ mixin OrganizationInviteDtoMappable {
 extension OrganizationInviteDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, OrganizationInviteDto, $Out> {
   OrganizationInviteDtoCopyWith<$R, OrganizationInviteDto, $Out>
-  get $asOrganizationInviteDto => $base.as(
-    (v, t, t2) => _OrganizationInviteDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asOrganizationInviteDto => $base.as(
+            (v, t, t2) =>
+                _OrganizationInviteDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
 abstract class OrganizationInviteDtoCopyWith<
-  $R,
-  $In extends OrganizationInviteDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+    $R,
+    $In extends OrganizationInviteDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
   UserRoleDtoCopyWith<$R, UserRoleDto, UserRoleDto>? get expandedRole;
   $R call({
     String? id,
@@ -194,33 +187,34 @@ class _OrganizationInviteDtoCopyWithImpl<$R, $Out>
     Object? role = $none,
     Object? organizationName = $none,
     Object? expandedRole = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (organization != null) #organization: organization,
-      if (email != null) #email: email,
-      if (status != null) #status: status,
-      if (expiresAt != null) #expiresAt: expiresAt,
-      if (role != $none) #role: role,
-      if (organizationName != $none) #organizationName: organizationName,
-      if (expandedRole != $none) #expandedRole: expandedRole,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (organization != null) #organization: organization,
+          if (email != null) #email: email,
+          if (status != null) #status: status,
+          if (expiresAt != null) #expiresAt: expiresAt,
+          if (role != $none) #role: role,
+          if (organizationName != $none) #organizationName: organizationName,
+          if (expandedRole != $none) #expandedRole: expandedRole,
+        }),
+      );
   @override
   OrganizationInviteDto $make(CopyWithData data) => OrganizationInviteDto(
-    id: data.get(#id, or: $value.id),
-    organization: data.get(#organization, or: $value.organization),
-    email: data.get(#email, or: $value.email),
-    status: data.get(#status, or: $value.status),
-    expiresAt: data.get(#expiresAt, or: $value.expiresAt),
-    role: data.get(#role, or: $value.role),
-    organizationName: data.get(#organizationName, or: $value.organizationName),
-    expandedRole: data.get(#expandedRole, or: $value.expandedRole),
-  );
+        id: data.get(#id, or: $value.id),
+        organization: data.get(#organization, or: $value.organization),
+        email: data.get(#email, or: $value.email),
+        status: data.get(#status, or: $value.status),
+        expiresAt: data.get(#expiresAt, or: $value.expiresAt),
+        role: data.get(#role, or: $value.role),
+        organizationName:
+            data.get(#organizationName, or: $value.organizationName),
+        expandedRole: data.get(#expandedRole, or: $value.expandedRole),
+      );
 
   @override
   OrganizationInviteDtoCopyWith<$R2, OrganizationInviteDto, $Out2>
-  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-      _OrganizationInviteDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+          _OrganizationInviteDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

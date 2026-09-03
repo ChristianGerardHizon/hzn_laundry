@@ -12,17 +12,20 @@ class WindowUtils {
   /// Minimum window size.
   static const _minimumSize = Size(380, 700);
 
+  static bool get isDesktopPlatform =>
+      !kIsWeb &&
+      [
+        TargetPlatform.linux,
+        TargetPlatform.macOS,
+        TargetPlatform.windows,
+      ].contains(defaultTargetPlatform);
+
   /// Register the WindowManager for desktop platforms.
   ///
   /// Sets window title and size, restoring last used size if available.
   static Future<void> register() async {
     // Skip on web and non-desktop platforms
-    if (kIsWeb ||
-        ![
-          TargetPlatform.linux,
-          TargetPlatform.macOS,
-          TargetPlatform.windows,
-        ].contains(defaultTargetPlatform)) return;
+    if (!isDesktopPlatform) return;
 
     await windowManager.ensureInitialized();
 
@@ -45,5 +48,38 @@ class WindowUtils {
       await windowManager.show();
       await windowManager.focus();
     });
+  }
+
+  /// Whether the window is currently in true fullscreen (no title bar).
+  static Future<bool> isFullScreen() async {
+    if (!isDesktopPlatform) return false;
+    return windowManager.isFullScreen();
+  }
+
+  /// Enters or leaves true fullscreen.
+  ///
+  /// On Windows, window_manager can leave the window frameless after exit
+  /// (title bar missing). Restore [TitleBarStyle.normal] so min/max/close
+  /// return. Returns the actual fullscreen state after the call.
+  static Future<bool> setFullScreen(bool isFullScreen) async {
+    if (!isDesktopPlatform) return false;
+
+    await windowManager.setFullScreen(isFullScreen);
+
+    if (!isFullScreen && defaultTargetPlatform == TargetPlatform.windows) {
+      await windowManager.setTitleBarStyle(
+        TitleBarStyle.normal,
+        windowButtonVisibility: true,
+      );
+    }
+
+    return windowManager.isFullScreen();
+  }
+
+  /// Toggles true fullscreen using the plugin's current state as source of
+  /// truth (Windows fullscreen events often do not fire).
+  static Future<bool> toggleFullScreen() async {
+    final currentlyFull = await isFullScreen();
+    return setFullScreen(!currentlyFull);
   }
 }

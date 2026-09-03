@@ -17,45 +17,15 @@ class EmptySystemState extends StatelessWidget {
     final theme = Theme.of(context);
 
     final (icon, title, subtitle) = switch (mode) {
-      SystemMode.productCategories => (
-          Icons.inventory_2_outlined,
-          'Select a category',
-          'Choose a category from the list to view details',
-        ),
-      SystemMode.quantityUnits => (
-          Icons.straighten_outlined,
-          'Select a unit',
-          'Choose a quantity unit from the list to view details',
-        ),
-      SystemMode.machines => (
-          Icons.local_laundry_service_outlined,
-          'Select a machine',
-          'Choose a machine from the list to view and manage load rules',
-        ),
       SystemMode.printers => (
           Icons.print_outlined,
           'Select a printer',
           'Choose a printer from the list to view and configure',
         ),
-      SystemMode.cashierGroups => (
-          Icons.point_of_sale_outlined,
-          'Select a group',
-          'Choose a group from the list to view and manage items',
-        ),
       SystemMode.appearance => (
           Icons.palette_outlined,
           'Appearance',
           'Customize app theme and colors',
-        ),
-      SystemMode.import => (
-          Icons.file_upload_outlined,
-          'Import Products',
-          'Import products and categories from a CSV file',
-        ),
-      SystemMode.featureFlags => (
-          Icons.flag_outlined,
-          'Select a feature flag',
-          'Choose a feature flag from the list to configure',
         ),
     };
 

@@ -143,43 +143,42 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - List of organizations you belong to, with your role and a switch action
 - Org details editable with `members.manage`
 - Invite people by email + role; accept/decline pending invites
-- Create a new organization (gated on global `organizations.create`) and a first-branch walkthrough
+- Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), optional team invites; the organization is created only when required setup is submitted
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs
 
 #### Management (`/management`)
-3-panel tablet layout for managing users, roles, branches, machines, and storages.
+3-panel tablet layout for org-wide people, assets, and catalog. The nav rail scrolls when needed.
 
 **Layout** (tablet):
 - Panel 1 (80px): Navigation rail with icon + text labels
-- Panel 2 (320px): List panel (users, roles, or branches)
+- Panel 2 (320px): List panel
 - Panel 3 (expanded): Detail panel or empty state
 
 **Modes:**
 - **Users** (`/management/users`) - User CRUD, role assignment, branch association
 - **Roles** (`/management/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/management/branches`) - Multi-location support with address and contact info
-- **Machines** (`/management/machines`) - Laundry machine management (washer, dryer, other) scoped to the current branch; unassigned machines remain visible
+- **Machines** (`/management/machines`) - Laundry machine management including size and per-machine weight→load rules; scoped to the current branch; unassigned machines remain visible
 - **Storages** (`/management/storages`) - Storage location management for ready laundry items, scoped to the current branch; unassigned locations remain visible
+- **Product Categories** (`/management/product-categories`) - Hierarchical product categories
+- **Quantity Units** (`/management/quantity-units`) - Units of measure used by products/services (e.g. kg, pc)
+- **Cashier Layout** (`/management/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
+- **Import** (`/management/import`) - CSV product import
+- **Settings** (`/management/settings`) - Organization workflow toggles (email updates, require machine/pack/storage)
 
-> A separate, more detailed **System → Machines** mode (below) also manages machines, including per-machine load rules — the Management mode is the quicker CRUD entry point.
+Old `/system/...` URLs for the moved items redirect here.
 
 #### System Settings (`/system`)
-3-panel tablet layout for system configuration.
+Device-specific settings only (this tablet/phone/desktop).
 
 **Layout** (tablet):
 - Panel 1 (80px): Navigation rail with icon + text labels
-- Panel 2 (320px): List panel (categories, machines, printers, etc.)
-- Panel 3 (expanded): Detail panel or empty state
+- Panel 2 (320px): Printer list (or full panel for Appearance)
+- Panel 3 (expanded): Printer detail or empty state
 
 **Modes:**
-- **Product Categories** (`/system/product-categories`) - Hierarchical product categories
-- **Quantity Units** (`/system/quantity-units`) - Units of measure used by products/services (e.g. kg, pc)
-- **Machines** (`/system/machines`) - Machine management including size (small/large) and per-machine weight→load rules
-- **Printers** (`/system/printers`) - Thermal/receipt printer configuration (connection type, paper width)
-- **Cashier Layout** (`/system/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
-- **Appearance** (`/system/appearance`) - Theme settings
-- **Import** (`/system/import`) - CSV product import
-- **Feature Flags** (`/system/feature-flags`) - Workflow/feature toggles
+- **Printers** (`/system/printers`) - Thermal/receipt printers stored on this device; one selected printer for printing
+- **Appearance** (`/system/appearance`) - Theme settings (local)
 
 ---
 
@@ -244,7 +243,7 @@ See [`docs/entities.md`](entities.md) for full field-level detail; this is a sum
 | `organizationMemberships` | User membership in an organization (role + status) |
 | `organizationInvites` | Email invite to join an organization |
 
-#### Management Domain (7 collections)
+#### Management Domain (6 collections)
 | Collection | Description |
 |------------|-------------|
 | `users` | System users (all types) |
@@ -253,7 +252,8 @@ See [`docs/entities.md`](entities.md) for full field-level detail; this is a sum
 | `machines` | Laundry machines (washer, dryer, other), with size and load rules |
 | `machineLoadRules` | Per-machine weight→load count rules |
 | `storages` | Storage locations for ready laundry items |
-| `printerConfigs` | Thermal/receipt printer configuration |
+
+Printers are stored on the device (secure storage), not in PocketBase. The leftover `printerConfigs` collection is only read once to import existing printers onto a device.
 
 #### Product Domain (5 collections)
 | Collection | Description |
@@ -304,10 +304,10 @@ See [`docs/entities.md`](entities.md) for full field-level detail; this is a sum
 | `activityLogs` | Audit log of create/update/delete actions |
 | `incentiveTiers` | Employee incentive tier definitions |
 
-#### System (1 collection)
+#### Workflow settings (1 collection)
 | Collection | Description |
 |------------|-------------|
-| `featureFlags` | Workflow/feature toggles |
+| `featureFlags` | Organization workflow toggles (UI under Management → Settings) |
 
 Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_summary`, `vw_sales_by_customer`, `vw_top_selling_products`, `vw_top_selling_services`, `vw_inventory_status`, `vw_low_stock_products`, `vw_expired_lots`, `vw_near_expiration_lots`, `vw_pos_search_items`, `vw_customer_order_stats`, `vw_payments_daily_summary`, `vw_sale_service_totals`, and others).
 
@@ -347,20 +347,20 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 - Users Management (list/detail)
 - Roles Management (list/detail)
 - Branches Management (list/detail)
-- Machines Management (list/detail)
+- Machines Management (list/detail, including load rules)
 - Storages Management (list/detail)
-
-### Organizations
-- Memberships, invites, create-org walkthrough (`/organizations`, `/organizations/create`, `/organizations/setup/:id`)
-- Header org switcher (2+ memberships) shows a full-screen, non-dismissible loader for at least 3 seconds while the new org loads
-
-### System Settings (3-panel layout)
 - Product Categories (list/detail)
 - Quantity Units (list/detail)
-- Machines with load rules (list/detail)
-- Printers (list/detail)
 - Cashier Layout / POS Groups (list/detail)
-- Appearance, Import, Feature Flags (single panels)
+- Import, Settings / feature flags (single panels)
+
+### Organizations
+- Memberships, invites, create-org setup dialog (`/organizations`)
+- Header org switcher (2+ memberships) shows a full-screen, non-dismissible loader for at least 3 seconds while the new org loads
+
+### System Settings (this device)
+- Printers (list/detail; local storage, one selected printer)
+- Appearance (theme)
 
 ### Responsive Behavior
 | Breakpoint | Layout |
@@ -448,27 +448,23 @@ App Root (Shell)
     │   │   └── /management/branches/:id
     │   ├── /management/machines
     │   │   └── /management/machines/:id
-    │   └── /management/storages
-    │       └── /management/storages/:id
+    │   ├── /management/storages
+    │   │   └── /management/storages/:id
+    │   ├── /management/product-categories
+    │   │   └── /management/product-categories/:id
+    │   ├── /management/quantity-units
+    │   │   └── /management/quantity-units/:id
+    │   ├── /management/cashier-groups
+    │   │   └── /management/cashier-groups/:id
+    │   ├── /management/import
+    │   └── /management/settings
     ├── /organizations
-    │   ├── /organizations/create
-    │   └── /organizations/setup/:id
     ├── /promos (Admin-only)
     │   └── /promos/:id (Detail)
-    └── /system (3-panel layout)
-        ├── /system/product-categories
-        │   └── /system/product-categories/:id
-        ├── /system/quantity-units
-        │   └── /system/quantity-units/:id
-        ├── /system/machines
-        │   └── /system/machines/:id
+    └── /system (this device)
         ├── /system/printers
         │   └── /system/printers/:id
-        ├── /system/cashier-groups
-        │   └── /system/cashier-groups/:id
-        ├── /system/appearance
-        ├── /system/import
-        └── /system/feature-flags
+        └── /system/appearance
 ```
 
 ### Navigation Components
@@ -489,8 +485,8 @@ Management and System sections use a 3-panel layout:
 | Panel 2 | 320px | List panel with AppBar title and FAB |
 | Panel 3 | Expanded | Detail panel or empty state |
 
-- **Management modes**: Users, Roles, Branches, Machines, Storages
-- **System modes**: Product Categories, Quantity Units, Machines (with load rules), Printers, Cashier Layout (POS Groups), plus single-panel Appearance/Import/Feature Flags
+- **Management modes**: Users, Roles, Branches, Machines, Storages, Product Categories, Quantity Units, Cashier Layout, plus single-panel Import/Settings
+- **System modes**: Printers, Appearance (this device only)
 
 ### Navigation (permission-filtered, `nav_permissions.dart`)
 1. 🏠 Dashboard - `/` (always visible)
@@ -580,7 +576,7 @@ lib/src/
     ├── reports/           # Sales/payroll reports
     ├── activities/        # Audit log
     ├── customer_history/  # Public tokenized order-history page
-    ├── settings/          # System settings (categories, printers, import, etc.)
+    ├── settings/          # Device printers, appearance; shared catalog controllers
     ├── management/        # Users/roles/branches/machines/storages (3-panel layout)
     ├── organizations/     # Multi-tenant orgs, memberships, invites
     ├── users/             # User & role management
@@ -618,8 +614,9 @@ lib/src/
 
 ## Recent Updates
 
-| Date | Feature | Description |
-|------|---------|-------------|
+| Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)
+| Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |
+| Sep 03 | Org create setup dialog | Create Organization is a stepper dialog (details, first branch, optional invites, review). The org is created only when required setup is submitted, in one server transaction with the first branch. |
 | Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 3 seconds when switching organizations |
 | Sep 03 | Desktop side nav | Firebase-style expandable sidebar at ≥900px (`DesktopSideNav`): Dashboard, Shortcuts, hover/tap category flyouts, System/Logout, session collapse. Tablet 600–899px still uses `TabletNavRail` |
 | Sep 03 | Multi-tenant organizations | Organizations, memberships, and invites; Management rename of the old admin section; org switcher for multi-org users; email+password auth with `reset-password.html` |

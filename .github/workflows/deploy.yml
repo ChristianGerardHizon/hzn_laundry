@@ -389,6 +389,7 @@ jobs:
           if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then MISSING="$MISSING KEYSTORE_PASSWORD"; fi
           if [ -z "${{ secrets.KEY_ALIAS }}" ]; then MISSING="$MISSING KEY_ALIAS"; fi
           if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then MISSING="$MISSING KEY_PASSWORD"; fi
+          if [ -z "${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}" ]; then MISSING="$MISSING PLAYSTORE_SERVICE_ACCOUNT_JSON"; fi
           if [ -z "${{ secrets.SSH_HOST }}" ]; then MISSING="$MISSING SSH_HOST"; fi
           if [ -z "${{ secrets.SSH_USER }}" ]; then MISSING="$MISSING SSH_USER"; fi
           if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then MISSING="$MISSING SSH_PRIVATE_KEY"; fi
@@ -599,27 +600,35 @@ jobs:
           path: release-notes/
           retention-days: 1
 
-      - name: Detect Play upload credentials
-        id: play_upload
-        env:
-          PLAYSTORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          if [ -n "$PLAYSTORE_SERVICE_ACCOUNT_JSON" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          fi
+  # ==========================================
+  # JOB 2a: PLAY INTERNAL (retry this job on failure)
+  # ==========================================
+  upload-play-internal:
+    needs: deploy-production
+    if: needs.deploy-production.result == 'success'
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: app-release-aab
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes
 
       - name: Upload to Google Play (internal testing)
-        if: steps.play_upload.outputs.enabled == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
           packageName: com.hznsystems.hznlaundry
-          releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
+          releaseFiles: app-prod-release.aab
           track: internal
           status: completed
-          releaseName: ${{ env.PROD_VER }}
+          releaseName: ${{ needs.deploy-production.outputs.prod_ver }}
           whatsNewDirectory: release-notes/whatsnew
 
   # ==========================================
@@ -713,7 +722,12 @@ jobs:
   # JOB 3: RELEASE & SYNC
   # ==========================================
   release-and-sync:
-    needs: deploy-production
+    needs: [deploy-production, upload-play-internal]
+    if: >
+      always() &&
+      needs.deploy-production.result == 'success' &&
+      (needs.upload-play-internal.result == 'success' ||
+       needs.upload-play-internal.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -732,6 +746,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-notes
+          path: release-notes
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

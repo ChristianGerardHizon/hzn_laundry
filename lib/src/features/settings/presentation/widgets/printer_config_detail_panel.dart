@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/foundation/failure.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
-import '../../data/repositories/printer_config_repository.dart';
 import '../../domain/printer_config.dart';
-import '../controllers/local_default_printer_provider.dart';
 import '../controllers/printer_configs_controller.dart';
+import '../controllers/selected_printer_id_provider.dart';
 import 'dialogs/printer_config_form_dialog.dart';
 
 /// Detail panel for viewing/editing a printer configuration.
@@ -26,7 +23,6 @@ class PrinterConfigDetailPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
-    // Handle "new" ID for creating new printer
     if (printerId == 'new') {
       return Scaffold(
         appBar: AppBar(title: const Text('Add Printer')),
@@ -56,14 +52,37 @@ class PrinterConfigDetailPanel extends ConsumerWidget {
       );
     }
 
-    return FutureBuilder<Either<Failure, PrinterConfig>>(
-      future: ref.read(printerConfigRepositoryProvider).fetchOne(printerId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+    final printersAsync = ref.watch(printerConfigsControllerProvider);
+
+    return printersAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load printer',
+              style: theme.textTheme.titleMedium,
+            ),
+          ],
+        ),
+      ),
+      data: (printers) {
+        PrinterConfig? config;
+        for (final printer in printers) {
+          if (printer.id == printerId) {
+            config = printer;
+            break;
+          }
         }
 
-        if (snapshot.hasError || !snapshot.hasData) {
+        if (config == null) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -83,27 +102,7 @@ class PrinterConfigDetailPanel extends ConsumerWidget {
           );
         }
 
-        final result = snapshot.data!;
-        return result.fold(
-          (failure) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: theme.colorScheme.error,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load printer',
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ),
-          (config) => _PrinterDetailContent(config: config),
-        );
+        return _PrinterDetailContent(config: config);
       },
     );
   }
@@ -124,8 +123,8 @@ class _PrinterDetailContent extends HookConsumerWidget {
     final isPrinting = useState(false);
     final printService = ref.read(thermalPrintServiceProvider.notifier);
     final autoCut = useState(printService.autoCut);
-    final localDefaultId = ref.watch(localDefaultPrinterIdProvider).value;
-    final isLocalDefault = localDefaultId == config.id;
+    final selectedId = ref.watch(selectedPrinterIdProvider).value;
+    final isSelected = selectedId == config.id;
 
     Future<void> handleTestPrint() async {
       if (!isThermalPrintingSupported) {
@@ -172,40 +171,9 @@ class _PrinterDetailContent extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status badges
             Row(
               children: [
-                if (isLocalDefault)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiary,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.phone_android,
-                          size: 16,
-                          color: theme.colorScheme.onTertiary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Local Default',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (isLocalDefault && config.isDefault)
-                  const SizedBox(width: 8),
-                if (config.isDefault)
+                if (isSelected)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -219,13 +187,13 @@ class _PrinterDetailContent extends HookConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.star,
+                          Icons.check,
                           size: 16,
                           color: theme.colorScheme.onPrimary,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Server Default',
+                          'Selected',
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onPrimary,
                           ),
@@ -257,24 +225,18 @@ class _PrinterDetailContent extends HookConsumerWidget {
               ],
             ),
             const SizedBox(height: 24),
-
-            // Connection type
             _DetailRow(
               icon: config.connectionType.icon,
               label: 'Connection Type',
               value: config.connectionType.displayName,
             ),
             const SizedBox(height: 16),
-
-            // Address
             _DetailRow(
               icon: config.isBluetooth ? Icons.bluetooth : Icons.language,
               label: config.isBluetooth ? 'MAC Address' : 'IP Address',
               value: config.address ?? 'Not configured',
             ),
             const SizedBox(height: 16),
-
-            // Port (network only)
             if (config.isNetwork) ...[
               _DetailRow(
                 icon: Icons.settings_ethernet,
@@ -283,16 +245,12 @@ class _PrinterDetailContent extends HookConsumerWidget {
               ),
               const SizedBox(height: 16),
             ],
-
-            // Paper width
             _DetailRow(
               icon: Icons.straighten,
               label: 'Paper Width',
               value: config.paperWidth.displayName,
             ),
             const SizedBox(height: 16),
-
-            // Auto-cut toggle
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: Icon(
@@ -311,8 +269,6 @@ class _PrinterDetailContent extends HookConsumerWidget {
               },
             ),
             const SizedBox(height: 16),
-
-            // Test Print button
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -331,7 +287,6 @@ class _PrinterDetailContent extends HookConsumerWidget {
                 label: Text(isPrinting.value ? 'Printing...' : 'Test Print'),
               ),
             ),
-
             if (!isThermalPrintingSupported) ...[
               const SizedBox(height: 8),
               Text(
@@ -351,63 +306,33 @@ class _PrinterDetailContent extends HookConsumerWidget {
                 textAlign: TextAlign.center,
               ),
             ],
-
-            // Set as server default button
-            if (!config.isDefault && config.isEnabled) ...[
+            if (config.isEnabled) ...[
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _setAsDefault(context, ref),
-                  icon: const Icon(Icons.star_outline),
-                  label: const Text('Set as Server Default'),
-                ),
+                child: isSelected
+                    ? OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check),
+                        label: const Text('Selected'),
+                      )
+                    : FilledButton.tonalIcon(
+                        onPressed: () async {
+                          await ref
+                              .read(selectedPrinterIdProvider.notifier)
+                              .setSelected(config.id);
+                          if (context.mounted) {
+                            showSuccessSnackBar(
+                              context,
+                              message:
+                                  '${config.name} set as the printer for this device',
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.print),
+                        label: const Text('Use this printer'),
+                      ),
               ),
-            ],
-
-            // Local default buttons
-            if (config.isEnabled) ...[
-              const SizedBox(height: 8),
-              if (isLocalDefault)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await ref
-                          .read(localDefaultPrinterIdProvider.notifier)
-                          .clearLocalDefault();
-                      if (context.mounted) {
-                        showSuccessSnackBar(
-                          context,
-                          message:
-                              'Local default cleared, using server default',
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.phone_android),
-                    label: const Text('Clear Local Default'),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await ref
-                          .read(localDefaultPrinterIdProvider.notifier)
-                          .setLocalDefault(config.id);
-                      if (context.mounted) {
-                        showSuccessSnackBar(
-                          context,
-                          message:
-                              '${config.name} set as local default for this device',
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.phone_android),
-                    label: const Text('Set as Local Default'),
-                  ),
-                ),
             ],
           ],
         ),
@@ -417,16 +342,6 @@ class _PrinterDetailContent extends HookConsumerWidget {
 
   void _showEditSheet(BuildContext context) {
     showPrinterConfigFormDialog(context, config: config);
-  }
-
-  Future<void> _setAsDefault(BuildContext context, WidgetRef ref) async {
-    final success = await ref
-        .read(printerConfigsControllerProvider.notifier)
-        .setAsDefault(config.id);
-
-    if (success && context.mounted) {
-      showSuccessSnackBar(context, message: '${config.name} set as default');
-    }
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

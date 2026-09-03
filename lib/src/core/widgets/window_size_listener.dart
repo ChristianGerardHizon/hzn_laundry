@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../utils/window_storage_service.dart';
+import '../utils/window_utils.dart';
 
 /// Widget that listens to window resize events and persists the size.
 ///
@@ -33,13 +33,7 @@ class _WindowSizeListenerState extends State<WindowSizeListener>
   }
 
   Future<void> _initWindowListener() async {
-    // Only add listener on desktop platforms
-    if (kIsWeb ||
-        ![
-          TargetPlatform.linux,
-          TargetPlatform.macOS,
-          TargetPlatform.windows,
-        ].contains(defaultTargetPlatform)) return;
+    if (!WindowUtils.isDesktopPlatform) return;
 
     windowManager.addListener(this);
   }
@@ -65,6 +59,7 @@ class _WindowSizeListenerState extends State<WindowSizeListener>
   void _saveCurrentSizeDebounced() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDelay, () async {
+      if (await WindowUtils.isFullScreen()) return;
       final size = await windowManager.getSize();
       await WindowStorageService.saveWindowSize(size);
     });

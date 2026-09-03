@@ -7,6 +7,7 @@ import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../domain/organization.dart';
+import '../../domain/organization_setup.dart';
 import '../dto/organization_dto.dart';
 
 part 'organization_repository.g.dart';
@@ -17,6 +18,8 @@ abstract class OrganizationRepository {
     required String name,
     String? contactNumber,
     String? address,
+    required OrganizationSetupBranch branch,
+    List<OrganizationSetupInvite> invites,
   });
   FutureEither<Organization> update(
     String id, {
@@ -67,6 +70,8 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     required String name,
     String? contactNumber,
     String? address,
+    required OrganizationSetupBranch branch,
+    List<OrganizationSetupInvite> invites = const [],
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -77,6 +82,8 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
             'name': name,
             'contactNumber': contactNumber ?? '',
             'address': address ?? '',
+            'branch': branch.toJson(),
+            'invites': invites.map((i) => i.toJson()).toList(),
           },
         );
         if (response is! Map<String, dynamic>) {

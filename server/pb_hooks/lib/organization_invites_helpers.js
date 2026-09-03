@@ -103,6 +103,121 @@ function requireManageOrgMembers(e, orgId) {
   }
 }
 
+function trimStr(value) {
+  return String(value || "").trim();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function parseSetupBranch(body) {
+  var branch = body.branch;
+  if (!branch || typeof branch !== "object") {
+    throw new BadRequestError("branch is required");
+  }
+
+  var name = trimStr(branch.name);
+  var address = trimStr(branch.address);
+  var contactNumber = trimStr(branch.contactNumber);
+  if (!name) {
+    throw new BadRequestError("branch name is required");
+  }
+  if (!address) {
+    throw new BadRequestError("branch address is required");
+  }
+  if (!contactNumber) {
+    throw new BadRequestError("branch contactNumber is required");
+  }
+
+  var rawTiers = branch.tiers;
+  if (!Array.isArray(rawTiers) || rawTiers.length < 1) {
+    throw new BadRequestError("at least one incentive tier is required");
+  }
+
+  var tiers = [];
+  var i;
+  for (i = 0; i < rawTiers.length; i++) {
+    var tier = rawTiers[i] || {};
+    var minAmount = Number(tier.minAmount);
+    var incentiveAmount = Number(tier.incentiveAmount);
+    if (isNaN(minAmount) || minAmount < 0) {
+      throw new BadRequestError("tier minAmount must be a number >= 0");
+    }
+    if (isNaN(incentiveAmount) || incentiveAmount < 0) {
+      throw new BadRequestError("tier incentiveAmount must be a number >= 0");
+    }
+    var maxAmount = 0;
+    if (tier.maxAmount !== undefined && tier.maxAmount !== null && tier.maxAmount !== "") {
+      maxAmount = Number(tier.maxAmount);
+      if (isNaN(maxAmount) || maxAmount < 0) {
+        throw new BadRequestError("tier maxAmount must be a number >= 0");
+      }
+    }
+    tiers.push({
+      minAmount: minAmount,
+      maxAmount: maxAmount,
+      incentiveAmount: incentiveAmount
+    });
+  }
+
+  var incentiveAmount = Number(branch.incentiveAmount);
+  if (isNaN(incentiveAmount) || incentiveAmount < 0) {
+    incentiveAmount = tiers[0].incentiveAmount;
+  }
+  var incentivePerServiceItems = Number(branch.incentivePerServiceItems);
+  if (isNaN(incentivePerServiceItems) || incentivePerServiceItems < 0) {
+    incentivePerServiceItems = tiers[0].maxAmount || 200;
+  }
+
+  return {
+    name: name,
+    address: address,
+    contactNumber: contactNumber,
+    operatingHours: trimStr(branch.operatingHours),
+    cutOffTime: trimStr(branch.cutOffTime),
+    incentiveAmount: incentiveAmount,
+    incentivePerServiceItems: incentivePerServiceItems,
+    tiers: tiers
+  };
+}
+
+function parseSetupInvites(body, app) {
+  var raw = body.invites;
+  if (raw === undefined || raw === null || raw === "") {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw new BadRequestError("invites must be an array");
+  }
+
+  var invites = [];
+  var seen = {};
+  var i;
+  for (i = 0; i < raw.length; i++) {
+    var item = raw[i] || {};
+    var email = trimStr(item.email).toLowerCase();
+    var role = trimStr(item.role || item.roleId);
+    if (!email || !role) {
+      throw new BadRequestError("each invite requires email and role");
+    }
+    if (!isValidEmail(email)) {
+      throw new BadRequestError("invalid invite email: " + email);
+    }
+    try {
+      app.findRecordById("userRoles", role);
+    } catch (_) {
+      throw new BadRequestError("invite role not found: " + role);
+    }
+    if (seen[email]) {
+      continue;
+    }
+    seen[email] = true;
+    invites.push({ email: email, role: role });
+  }
+  return invites;
+}
+
 function createOrganization(e) {
   if (!e.auth) {
     throw new ForbiddenError("authentication required");
@@ -116,34 +231,93 @@ function createOrganization(e) {
   }
 
   var body = e.requestInfo().body || {};
-  var name = (body.name || "").trim();
+  var name = trimStr(body.name);
   if (!name) {
     throw new BadRequestError("name is required");
   }
+
+  var branch = parseSetupBranch(body);
+  var invites = parseSetupInvites(body, e.app);
 
   var adminRole = findAdminSystemRole(e.app);
   if (!adminRole) {
     throw new ApiError(500, "Admin system role not found");
   }
 
-  var collection = e.app.findCollectionByNameOrId("organizations");
-  var record = new Record(collection);
-  record.set("name", name);
-  record.set("contactNumber", (body.contactNumber || "").trim());
-  record.set("address", (body.address || "").trim());
-  record.set("isDeleted", false);
-  e.app.save(record);
+  var createdOrg = null;
+  var authId = e.auth.id;
+  var contactNumber = trimStr(body.contactNumber);
+  var address = trimStr(body.address);
+  var nowIso = new Date().toISOString();
+  var inviteExpiresAt = new Date(
+    Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString();
 
-  var memberships = e.app.findCollectionByNameOrId("organizationMemberships");
-  var membership = new Record(memberships);
-  membership.set("user", e.auth.id);
-  membership.set("organization", record.id);
-  membership.set("role", adminRole.id);
-  membership.set("status", "active");
-  membership.set("joinedAt", new Date().toISOString());
-  e.app.save(membership);
+  e.app.runInTransaction(function(txApp) {
+    var orgCollection = txApp.findCollectionByNameOrId("organizations");
+    var org = new Record(orgCollection);
+    org.set("name", name);
+    org.set("contactNumber", contactNumber);
+    org.set("address", address);
+    org.set("isDeleted", false);
+    org.set("onboardingCompletedAt", nowIso);
+    txApp.save(org);
 
-  return e.json(200, exportRecord(record));
+    var memberships = txApp.findCollectionByNameOrId("organizationMemberships");
+    var membership = new Record(memberships);
+    membership.set("user", authId);
+    membership.set("organization", org.id);
+    membership.set("role", adminRole.id);
+    membership.set("status", "active");
+    membership.set("joinedAt", nowIso);
+    txApp.save(membership);
+
+    var branches = txApp.findCollectionByNameOrId("branches");
+    var branchRecord = new Record(branches);
+    branchRecord.set("name", branch.name);
+    branchRecord.set("address", branch.address);
+    branchRecord.set("contactNumber", branch.contactNumber);
+    branchRecord.set("organization", org.id);
+    branchRecord.set("operatingHours", branch.operatingHours);
+    branchRecord.set("cutOffTime", branch.cutOffTime);
+    branchRecord.set("incentiveAmount", branch.incentiveAmount);
+    branchRecord.set("incentivePerServiceItems", branch.incentivePerServiceItems);
+    branchRecord.set("isDeleted", false);
+    txApp.save(branchRecord);
+
+    var tiersCollection = txApp.findCollectionByNameOrId("incentiveTiers");
+    var t;
+    for (t = 0; t < branch.tiers.length; t++) {
+      var tier = branch.tiers[t];
+      var tierRecord = new Record(tiersCollection);
+      tierRecord.set("branch", branchRecord.id);
+      tierRecord.set("minAmount", tier.minAmount);
+      tierRecord.set("maxAmount", tier.maxAmount);
+      tierRecord.set("incentiveAmount", tier.incentiveAmount);
+      tierRecord.set("sortOrder", t);
+      txApp.save(tierRecord);
+    }
+
+    if (invites.length > 0) {
+      var invitesCollection = txApp.findCollectionByNameOrId("organizationInvites");
+      var i;
+      for (i = 0; i < invites.length; i++) {
+        var invite = invites[i];
+        var inviteRecord = new Record(invitesCollection);
+        inviteRecord.set("email", invite.email);
+        inviteRecord.set("organization", org.id);
+        inviteRecord.set("role", invite.role);
+        inviteRecord.set("invitedBy", authId);
+        inviteRecord.set("status", "pending");
+        inviteRecord.set("expiresAt", inviteExpiresAt);
+        txApp.save(inviteRecord);
+      }
+    }
+
+    createdOrg = org;
+  });
+
+  return e.json(200, exportRecord(createdOrg));
 }
 
 function updateOrganization(e) {

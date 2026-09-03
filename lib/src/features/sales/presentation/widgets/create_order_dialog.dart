@@ -2516,12 +2516,12 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final isPrinting = useState(false);
     final hasAutoPrinted = useState(false);
     final printStoreCopy = useState(true);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
-    final hasDefaultPrinter = defaultPrinterAsync.value != null;
-    final canThermalPrint = isThermalPrintingSupported && hasDefaultPrinter;
+    final hasSelectedPrinter = selectedPrinterAsync.value != null;
+    final canThermalPrint = isThermalPrintingSupported && hasSelectedPrinter;
 
     final unitLabel = service.quantityUnit?.shortPlural ??
         (service.weightBased == true ? 'KG' : 'PCS');
@@ -2592,10 +2592,10 @@ class _OrderSuccessPage extends HookConsumerWidget {
         return;
       }
 
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context,
-            message: 'No default printer configured', useRootMessenger: false);
+            message: 'No printer selected', useRootMessenger: false);
         return;
       }
 
@@ -2677,9 +2677,9 @@ class _OrderSuccessPage extends HookConsumerWidget {
       }
     }
 
-    // Auto-print when page appears if a default printer is set
+    // Auto-print when page appears if a printer is selected
     useEffect(() {
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (isThermalPrintingSupported &&
           printer != null &&
           !hasAutoPrinted.value &&
@@ -2690,7 +2690,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         });
       }
       return null;
-    }, [defaultPrinterAsync.value]);
+    }, [selectedPrinterAsync.value]);
 
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -67,6 +67,44 @@ RouteBase get $managementShellRoute => ShellRouteData.$route(
                 ),
               ],
             ),
+            GoRouteData.$route(
+              path: 'product-categories',
+              factory: $ManagementProductCategoriesRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':id',
+                  factory: $ManagementProductCategoryDetailRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
+              path: 'quantity-units',
+              factory: $ManagementQuantityUnitsRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':id',
+                  factory: $ManagementQuantityUnitDetailRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
+              path: 'cashier-groups',
+              factory: $ManagementCashierGroupsRoute._fromState,
+              routes: [
+                GoRouteData.$route(
+                  path: ':id',
+                  factory: $ManagementCashierGroupDetailRoute._fromState,
+                ),
+              ],
+            ),
+            GoRouteData.$route(
+              path: 'import',
+              factory: $ManagementImportRoute._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'settings',
+              factory: $ManagementSettingsRoute._fromState,
+            ),
           ],
         ),
       ],
@@ -340,6 +378,205 @@ mixin $ManagementStorageDetailRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/management/storages/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementProductCategoriesRoute on GoRouteData {
+  static ManagementProductCategoriesRoute _fromState(GoRouterState state) =>
+      const ManagementProductCategoriesRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/product-categories',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementProductCategoryDetailRoute on GoRouteData {
+  static ManagementProductCategoryDetailRoute _fromState(GoRouterState state) =>
+      ManagementProductCategoryDetailRoute(
+        id: state.pathParameters['id']!,
+      );
+
+  ManagementProductCategoryDetailRoute get _self =>
+      this as ManagementProductCategoryDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/product-categories/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementQuantityUnitsRoute on GoRouteData {
+  static ManagementQuantityUnitsRoute _fromState(GoRouterState state) =>
+      const ManagementQuantityUnitsRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/quantity-units',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementQuantityUnitDetailRoute on GoRouteData {
+  static ManagementQuantityUnitDetailRoute _fromState(GoRouterState state) =>
+      ManagementQuantityUnitDetailRoute(
+        id: state.pathParameters['id']!,
+      );
+
+  ManagementQuantityUnitDetailRoute get _self =>
+      this as ManagementQuantityUnitDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/quantity-units/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementCashierGroupsRoute on GoRouteData {
+  static ManagementCashierGroupsRoute _fromState(GoRouterState state) =>
+      const ManagementCashierGroupsRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/cashier-groups',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementCashierGroupDetailRoute on GoRouteData {
+  static ManagementCashierGroupDetailRoute _fromState(GoRouterState state) =>
+      ManagementCashierGroupDetailRoute(
+        id: state.pathParameters['id']!,
+      );
+
+  ManagementCashierGroupDetailRoute get _self =>
+      this as ManagementCashierGroupDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/cashier-groups/${Uri.encodeComponent(_self.id)}',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementImportRoute on GoRouteData {
+  static ManagementImportRoute _fromState(GoRouterState state) =>
+      const ManagementImportRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/import',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ManagementSettingsRoute on GoRouteData {
+  static ManagementSettingsRoute _fromState(GoRouterState state) =>
+      const ManagementSettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/management/settings',
       );
 
   @override

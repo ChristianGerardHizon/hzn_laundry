@@ -544,8 +544,20 @@ class TranslationsOrganizationsEn {
 	/// en: 'Invite your team'
 	String get stepInvite => 'Invite your team';
 
-	/// en: 'Review & finish'
-	String get stepReview => 'Review & finish';
+	/// en: 'Review & create'
+	String get stepReview => 'Review & create';
+
+	/// en: 'Details'
+	String get stepDetailsShort => 'Details';
+
+	/// en: 'Branch'
+	String get stepBranchShort => 'Branch';
+
+	/// en: 'Team'
+	String get stepInviteShort => 'Team';
+
+	/// en: 'Review'
+	String get stepReviewShort => 'Review';
 
 	/// en: 'Next'
 	String get next => 'Next';
@@ -556,20 +568,83 @@ class TranslationsOrganizationsEn {
 	/// en: 'Skip'
 	String get skip => 'Skip';
 
-	/// en: 'Finish setup'
-	String get finish => 'Finish setup';
+	/// en: 'Create organization'
+	String get finish => 'Create organization';
 
 	/// en: 'Add branch'
 	String get addBranch => 'Add branch';
 
-	/// en: 'Create at least one branch to continue.'
-	String get branchRequired => 'Create at least one branch to continue.';
+	/// en: 'Enter the first branch details to continue.'
+	String get branchRequired => 'Enter the first branch details to continue.';
 
 	/// en: 'No branch yet'
 	String get noBranchYet => 'No branch yet';
 
 	/// en: 'Organization is ready'
 	String get onboardingComplete => 'Organization is ready';
+
+	/// en: 'Operating Hours'
+	String get operatingHours => 'Operating Hours';
+
+	/// en: 'Cut-off Time'
+	String get cutOffTime => 'Cut-off Time';
+
+	/// en: 'Incentive Tiers'
+	String get incentiveTiers => 'Incentive Tiers';
+
+	/// en: 'Add Tier'
+	String get addTier => 'Add Tier';
+
+	/// en: 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier's incentive is used.'
+	String get incentiveTiersHint => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.';
+
+	/// en: 'At least one incentive tier is required.'
+	String get atLeastOneTier => 'At least one incentive tier is required.';
+
+	/// en: 'Tier $n'
+	String tierLabel({required Object n}) => 'Tier ${n}';
+
+	/// en: 'Min'
+	String get tierMin => 'Min';
+
+	/// en: 'Max'
+	String get tierMax => 'Max';
+
+	/// en: 'Incentive'
+	String get tierIncentive => 'Incentive';
+
+	/// en: 'No limit'
+	String get tierNoLimit => 'No limit';
+
+	/// en: 'Remove tier'
+	String get removeTier => 'Remove tier';
+
+	/// en: 'Add invite'
+	String get addInvite => 'Add invite';
+
+	/// en: 'No invites queued. You can skip this step.'
+	String get noInvitesQueued => 'No invites queued. You can skip this step.';
+
+	/// en: 'Queued invites'
+	String get queuedInvites => 'Queued invites';
+
+	/// en: 'Invite added'
+	String get inviteQueued => 'Invite added';
+
+	/// en: 'That email is already queued.'
+	String get inviteAlreadyQueued => 'That email is already queued.';
+
+	/// en: 'Remove'
+	String get removeInvite => 'Remove';
+
+	/// en: '(one) {1 queued invite} (other) {$n queued invites}'
+	String reviewInviteCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 queued invite',
+		other: '${n} queued invites',
+	);
+
+	/// en: '—'
+	String get reviewNone => '—';
 }
 
 // Path: sort
@@ -818,15 +893,39 @@ extension on Translations {
 			'organizations.stepDetails' => 'Organization details',
 			'organizations.stepBranch' => 'Create your first branch',
 			'organizations.stepInvite' => 'Invite your team',
-			'organizations.stepReview' => 'Review & finish',
+			'organizations.stepReview' => 'Review & create',
+			'organizations.stepDetailsShort' => 'Details',
+			'organizations.stepBranchShort' => 'Branch',
+			'organizations.stepInviteShort' => 'Team',
+			'organizations.stepReviewShort' => 'Review',
 			'organizations.next' => 'Next',
 			'organizations.back' => 'Back',
 			'organizations.skip' => 'Skip',
-			'organizations.finish' => 'Finish setup',
+			'organizations.finish' => 'Create organization',
 			'organizations.addBranch' => 'Add branch',
-			'organizations.branchRequired' => 'Create at least one branch to continue.',
+			'organizations.branchRequired' => 'Enter the first branch details to continue.',
 			'organizations.noBranchYet' => 'No branch yet',
 			'organizations.onboardingComplete' => 'Organization is ready',
+			'organizations.operatingHours' => 'Operating Hours',
+			'organizations.cutOffTime' => 'Cut-off Time',
+			'organizations.incentiveTiers' => 'Incentive Tiers',
+			'organizations.addTier' => 'Add Tier',
+			'organizations.incentiveTiersHint' => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.',
+			'organizations.atLeastOneTier' => 'At least one incentive tier is required.',
+			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
+			'organizations.tierMin' => 'Min',
+			'organizations.tierMax' => 'Max',
+			'organizations.tierIncentive' => 'Incentive',
+			'organizations.tierNoLimit' => 'No limit',
+			'organizations.removeTier' => 'Remove tier',
+			'organizations.addInvite' => 'Add invite',
+			'organizations.noInvitesQueued' => 'No invites queued. You can skip this step.',
+			'organizations.queuedInvites' => 'Queued invites',
+			'organizations.inviteQueued' => 'Invite added',
+			'organizations.inviteAlreadyQueued' => 'That email is already queued.',
+			'organizations.removeInvite' => 'Remove',
+			'organizations.reviewInviteCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 queued invite', other: '${n} queued invites', ), 
+			'organizations.reviewNone' => '—',
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',

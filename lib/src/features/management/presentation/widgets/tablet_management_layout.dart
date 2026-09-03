@@ -8,9 +8,18 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/routing/routes/management.routes.dart';
 import '../../../machines/presentation/controllers/machines_controller.dart';
 import '../../../machines/presentation/widgets/machine_form_dialog.dart';
+import '../../../pos/presentation/controllers/pos_groups_controller.dart';
+import '../../../pos/presentation/widgets/cashier_group_detail_panel.dart';
+import '../../../products/domain/product_category.dart';
 import '../../../settings/domain/branch.dart';
 import '../../../settings/presentation/controllers/branches_controller.dart';
+import '../../../settings/presentation/controllers/product_categories_controller.dart';
+import '../../../settings/presentation/controllers/quantity_units_controller.dart';
 import '../../../settings/presentation/widgets/dialogs/branch_form_dialog.dart';
+import '../../../settings/presentation/widgets/dialogs/product_category_form_dialog.dart';
+import '../../../settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
+import '../../../settings/presentation/widgets/email_settings_panel.dart';
+import '../../../settings/presentation/widgets/import_landing_panel.dart';
 import '../../../storages/presentation/controllers/storage_locations_controller.dart';
 import '../../../storages/presentation/widgets/storage_location_form_dialog.dart';
 import '../../../users/presentation/controllers/paginated_users_controller.dart';
@@ -52,6 +61,16 @@ class TabletManagementLayout extends ConsumerWidget {
       currentMode = ManagementMode.machines;
     } else if (path.contains('/storages')) {
       currentMode = ManagementMode.storages;
+    } else if (path.contains('/product-categories')) {
+      currentMode = ManagementMode.productCategories;
+    } else if (path.contains('/quantity-units')) {
+      currentMode = ManagementMode.quantityUnits;
+    } else if (path.contains('/cashier-groups')) {
+      currentMode = ManagementMode.cashierGroups;
+    } else if (path.contains('/import')) {
+      currentMode = ManagementMode.import;
+    } else if (path.contains('/settings')) {
+      currentMode = ManagementMode.settings;
     } else {
       currentMode = ManagementMode.users;
     }
@@ -73,33 +92,65 @@ class TabletManagementLayout extends ConsumerWidget {
                 const ManagementMachinesRoute().go(context);
               case ManagementMode.storages:
                 const ManagementStoragesRoute().go(context);
+              case ManagementMode.productCategories:
+                const ManagementProductCategoriesRoute().go(context);
+              case ManagementMode.quantityUnits:
+                const ManagementQuantityUnitsRoute().go(context);
+              case ManagementMode.cashierGroups:
+                const ManagementCashierGroupsRoute().go(context);
+              case ManagementMode.import:
+                const ManagementImportRoute().go(context);
+              case ManagementMode.settings:
+                const ManagementSettingsRoute().go(context);
             }
           },
         ),
         const VerticalDivider(width: 1),
 
-        // Panel 2: List
-        SizedBox(
-          width: 320,
-          child: switch (currentMode) {
-            ManagementMode.users => _UsersListWrapper(selectedId: selectedId),
-            ManagementMode.roles => _RolesListWrapper(selectedId: selectedId),
-            ManagementMode.branches =>
-              _BranchesListWrapper(selectedId: selectedId),
-            ManagementMode.machines =>
-              _MachinesListWrapper(selectedId: selectedId),
-            ManagementMode.storages =>
-              _StoragesListWrapper(selectedId: selectedId),
-          },
-        ),
-        const VerticalDivider(width: 1),
-
-        // Panel 3: Detail
-        Expanded(
-          child: selectedId != null
-              ? detailChild
-              : EmptyManagementState(mode: currentMode),
-        ),
+        if (currentMode == ManagementMode.import) ...[
+          const Expanded(child: ImportLandingPanel()),
+        ] else if (currentMode == ManagementMode.settings) ...[
+          const Expanded(child: EmailSettingsPanel()),
+        ] else if (currentMode == ManagementMode.cashierGroups) ...[
+          SizedBox(
+            width: 320,
+            child: _CashierGroupListWrapper(selectedId: selectedId),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: selectedId != null
+                ? CashierGroupDetailPanel(groupId: selectedId)
+                : EmptyManagementState(mode: currentMode),
+          ),
+        ] else ...[
+          SizedBox(
+            width: 320,
+            child: switch (currentMode) {
+              ManagementMode.users => _UsersListWrapper(selectedId: selectedId),
+              ManagementMode.roles => _RolesListWrapper(selectedId: selectedId),
+              ManagementMode.branches =>
+                _BranchesListWrapper(selectedId: selectedId),
+              ManagementMode.machines =>
+                _MachinesListWrapper(selectedId: selectedId),
+              ManagementMode.storages =>
+                _StoragesListWrapper(selectedId: selectedId),
+              ManagementMode.productCategories =>
+                _ProductCategoryListWrapper(selectedId: selectedId),
+              ManagementMode.quantityUnits =>
+                _QuantityUnitListWrapper(selectedId: selectedId),
+              ManagementMode.cashierGroups ||
+              ManagementMode.import ||
+              ManagementMode.settings =>
+                const SizedBox.shrink(),
+            },
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: selectedId != null
+                ? detailChild
+                : EmptyManagementState(mode: currentMode),
+          ),
+        ],
       ],
     );
   }
@@ -825,6 +876,449 @@ class _StoragesListWrapper extends HookConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _ProductCategoryListWrapper extends ConsumerWidget {
+  const _ProductCategoryListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final categoriesAsync = ref.watch(productCategoriesControllerProvider);
+    final controller = ref.read(productCategoriesControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Product Categories'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'product_category_fab',
+        onPressed: () => showProductCategoryFormDialog(context),
+        tooltip: 'Add Category',
+        child: const Icon(Icons.add),
+      ),
+      body: categoriesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (categories) {
+          if (categories.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No categories yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a category',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final rootCategories = categories.where((c) => !c.hasParent).toList();
+          final childCategories = categories.where((c) => c.hasParent).toList();
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: rootCategories.length,
+              itemBuilder: (context, index) {
+                final category = rootCategories[index];
+                final children = childCategories
+                    .where((c) => c.parentId == category.id)
+                    .toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _CategoryListTile(
+                      category: category,
+                      isSelected: category.id == selectedId,
+                      isChild: false,
+                      onTap: () => ManagementProductCategoryDetailRoute(
+                        id: category.id,
+                      ).go(context),
+                    ),
+                    ...children.map(
+                      (child) => Padding(
+                        padding: const EdgeInsets.only(left: 24),
+                        child: _CategoryListTile(
+                          category: child,
+                          isSelected: child.id == selectedId,
+                          isChild: true,
+                          onTap: () => ManagementProductCategoryDetailRoute(
+                            id: child.id,
+                          ).go(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryListTile extends StatelessWidget {
+  const _CategoryListTile({
+    required this.category,
+    required this.isSelected,
+    required this.isChild,
+    required this.onTap,
+  });
+
+  final ProductCategory category;
+  final bool isSelected;
+  final bool isChild;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+        alpha: 0.3,
+      ),
+      leading: CircleAvatar(
+        backgroundColor: isSelected
+            ? theme.colorScheme.primary
+            : isChild
+                ? theme.colorScheme.secondaryContainer
+                : theme.colorScheme.primaryContainer,
+        child: Icon(
+          isChild ? Icons.subdirectory_arrow_right : Icons.inventory_2_outlined,
+          color: isSelected
+              ? theme.colorScheme.onPrimary
+              : isChild
+                  ? theme.colorScheme.onSecondaryContainer
+                  : theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+      title: Text(category.name),
+      subtitle: category.hasParent && category.parentName != null
+          ? Text('Parent: ${category.parentName}')
+          : null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
+class _QuantityUnitListWrapper extends ConsumerWidget {
+  const _QuantityUnitListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final unitsAsync = ref.watch(quantityUnitsControllerProvider);
+    final controller = ref.read(quantityUnitsControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quantity Units'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'quantity_unit_fab',
+        onPressed: () => showQuantityUnitFormDialog(context),
+        tooltip: 'Add Unit',
+        child: const Icon(Icons.add),
+      ),
+      body: unitsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (units) {
+          if (units.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.straighten_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No quantity units yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a unit',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: units.length,
+              itemBuilder: (context, index) {
+                final unit = units[index];
+                final isSelected = unit.id == selectedId;
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.straighten,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(unit.name),
+                  subtitle: Text(unit.shortPlural),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => ManagementQuantityUnitDetailRoute(id: unit.id)
+                      .go(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CashierGroupListWrapper extends ConsumerWidget {
+  const _CashierGroupListWrapper({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final groupsAsync = ref.watch(posGroupsControllerProvider);
+    final controller = ref.read(posGroupsControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cashier Layout'),
+        automaticallyImplyLeading: false,
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'cashier_group_list_fab',
+        onPressed: () => _showCreateDialog(context),
+        tooltip: 'Add Group',
+        child: const Icon(Icons.add),
+      ),
+      body: groupsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48),
+              const SizedBox(height: 16),
+              Text('Error: ${error.toString()}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => controller.refresh(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (groups) {
+          if (groups.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.dashboard_customize_outlined,
+                    size: 64,
+                    color: theme.colorScheme.outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No groups yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add a group',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.refresh(),
+            child: ListView.builder(
+              itemCount: groups.length,
+              itemBuilder: (context, index) {
+                final group = groups[index];
+                final isSelected = group.id == selectedId;
+
+                return ListTile(
+                  selected: isSelected,
+                  selectedTileColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.dashboard_customize,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(group.name),
+                  subtitle: Text(
+                    '${group.items.length} item${group.items.length == 1 ? '' : 's'}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => ManagementCashierGroupDetailRoute(id: group.id)
+                      .go(context),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const _CreateGroupDialog(),
+    );
+  }
+}
+
+class _CreateGroupDialog extends HookConsumerWidget {
+  const _CreateGroupDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nameController = useTextEditingController();
+    final isSaving = useState(false);
+
+    Future<void> handleSave() async {
+      final name = nameController.text.trim();
+      if (name.isEmpty) return;
+
+      isSaving.value = true;
+      final error = await ref
+          .read(posGroupsControllerProvider.notifier)
+          .createGroup(name);
+      isSaving.value = false;
+
+      if (error == null && context.mounted) {
+        Navigator.of(context).pop();
+      } else if (context.mounted) {
+        showErrorSnackBar(context, message: error ?? 'Unknown error');
+      }
+    }
+
+    return AlertDialog(
+      title: const Text('New Group'),
+      content: TextField(
+        controller: nameController,
+        decoration: const InputDecoration(
+          labelText: 'Group Name *',
+          hintText: 'e.g., Detergents, Wash Services',
+        ),
+        autofocus: true,
+        onSubmitted: (_) => handleSave(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: isSaving.value ? null : handleSave,
+          child: isSaving.value
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create'),
+        ),
+      ],
     );
   }
 }

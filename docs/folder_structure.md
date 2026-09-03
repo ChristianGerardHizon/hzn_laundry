@@ -821,7 +821,7 @@ Features are organized into domain groups (see `lib/src/features/` for the autho
 
 ```
 features/
-├── management/             # Users/roles/branches/machines/storages admin section
+├── management/             # Users/roles/branches/machines/storages/catalog/cashier/settings
 │   ├── (branches, users, and roles live in their own top-level features
 │   │    below and are surfaced together here — see `docs/entities.md`)
 │
@@ -865,7 +865,7 @@ features/
 │
 ├── dashboard/                  # Home dashboard
 │
-├── settings/                  # Branches, printers, POS groups, incentive tiers
+├── settings/                  # Device printers/appearance; POS groups, incentive tiers, feature flags
 │
 ├── auth/                      # Login, session state
 │
