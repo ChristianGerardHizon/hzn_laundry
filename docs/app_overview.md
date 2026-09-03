@@ -614,6 +614,7 @@ lib/src/
 
 ## Recent Updates
 
+| Sep 04 | Feedback popup colors | Error, success, warning, and info snackbars (and dashboard attendance / needs-attention alerts) use theme-aware container colors with contrasting text in dark and light mode |
 | Sep 04 | Windows Alt key assert | Debug no longer dumps Flutter's empty-`keysPressed` assert when Windows sends Alt Left with no modifier flags |
 | Sep 04 | Desktop side nav server URL | Expanded desktop sidebar shows the PocketBase server URL under the app title |
 | Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)

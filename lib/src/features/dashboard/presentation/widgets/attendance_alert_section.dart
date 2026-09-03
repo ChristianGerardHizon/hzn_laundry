@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/packages/theme/feedback_colors.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../employees/presentation/controllers/attendance_controller.dart';
@@ -86,17 +87,18 @@ class AttendanceAlertSection extends ConsumerWidget {
           final totalCount = employees.length;
           final markedCount = totalCount - unmarkedCount;
           final theme = Theme.of(context);
+          final colors = FeedbackColors.warning(theme);
           final compact = Breakpoints.isMobile(context);
           final titleStyle = theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.orange.shade900,
+            color: colors.foreground,
           );
           final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-            color: Colors.orange.shade800,
+            color: colors.foreground,
           );
 
           final banner = Material(
-            color: Colors.orange.shade50,
+            color: colors.background,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               onTap: () => showAttendanceDialog(context),
@@ -106,21 +108,21 @@ class AttendanceAlertSection extends ConsumerWidget {
                 child: Row(
                   children: [
                     if (compact)
-                      const Icon(
+                      Icon(
                         Icons.warning_amber_rounded,
-                        color: Colors.orange,
+                        color: colors.icon,
                         size: 18,
                       )
                     else
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.2),
+                          color: colors.icon.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.warning_amber_rounded,
-                          color: Colors.orange,
+                          color: colors.icon,
                           size: 24,
                         ),
                       ),
@@ -153,7 +155,7 @@ class AttendanceAlertSection extends ConsumerWidget {
                     ),
                     Icon(
                       Icons.chevron_right,
-                      color: Colors.orange.shade700,
+                      color: colors.foreground,
                     ),
                   ],
                 ),
