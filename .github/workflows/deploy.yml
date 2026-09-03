@@ -1,5 +1,8 @@
 name: Deploy System
 
+# HZN Laundry only. Never rsync, restart, or point API_URL at Hi-Zone Laundry
+# (hizonelaundry.hznsystems.com, /opt/pocketbase/hizonelaundry*, pocketbase_hizonelaundry*).
+
 on:
   pull_request:
     types: [ closed ]
@@ -62,6 +65,11 @@ jobs:
     needs: preflight-staging
     if: needs.preflight-staging.outputs.skip != 'true'
     runs-on: ubuntu-latest
+    env:
+      HZN_PB_DIR: /opt/pocketbase/hznlaundry-staging
+      HZN_PB_SERVICE: pocketbase_hznlaundry-staging.service
+      HZN_PB_URL: https://staging.hznlaundry.hznsystems.com
+      HZN_SSH_USER: deploy-hznlaundry
     outputs:
       staging_tag: ${{ steps.resolve_tag.outputs.tag }}
     steps:
@@ -88,6 +96,28 @@ jobs:
             exit 1
           fi
       # --- PREFLIGHT CHECKS END ---
+
+      - name: Guard HZN Laundry staging targets
+        env:
+          PB_URL: ${{ secrets.POCKETBASE_URL_STAGING }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -euo pipefail
+          echo "dir=$HZN_PB_DIR service=$HZN_PB_SERVICE url=$HZN_PB_URL user=$HZN_SSH_USER"
+          for value in "$HZN_PB_DIR" "$HZN_PB_SERVICE" "$HZN_PB_URL" "$PB_URL" "$SSH_USER"; do
+            if echo "$value" | grep -qi hizonelaundry; then
+              echo "::error::Refusing staging deploy: value points at Hi-Zone Laundry: $value"
+              exit 1
+            fi
+          done
+          if [ "${PB_URL%/}" != "$HZN_PB_URL" ]; then
+            echo "::error::POCKETBASE_URL_STAGING must be $HZN_PB_URL (got $PB_URL)"
+            exit 1
+          fi
+          if [ "$SSH_USER" != "$HZN_SSH_USER" ]; then
+            echo "::error::SSH_USER must be $HZN_SSH_USER (got $SSH_USER)"
+            exit 1
+          fi
 
       # ROBUST VERSION CALCULATION
       - name: Calculate Staging Version
@@ -218,24 +248,24 @@ jobs:
         run: |
           rsync -avz --delete \
             build/web/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_public/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_public/
 
       - name: Deploy migrations to staging server
         run: |
           rsync -avz --delete \
             server/pb_migrations/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_migrations/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_migrations/
 
       - name: Deploy hooks to staging server
         run: |
           rsync -avz --delete \
             server/pb_hooks/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_hooks/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_hooks/
 
       - name: Restart PocketBase staging service
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'sudo systemctl restart pocketbase_hznlaundry-staging.service'
+            "sudo systemctl restart ${HZN_PB_SERVICE}"
       # --- SSH DEPLOY END ---
 
       # RELEASE
@@ -361,6 +391,11 @@ jobs:
     if: github.event.pull_request.merged == true && github.base_ref == 'main'
     runs-on: ubuntu-latest
     environment: Production
+    env:
+      HZN_PB_DIR: /opt/pocketbase/hznlaundry
+      HZN_PB_SERVICE: pocketbase_hznlaundry.service
+      HZN_PB_URL: https://hznlaundry.hznsystems.com
+      HZN_SSH_USER: deploy-hznlaundry
     outputs:
       prod_ver: ${{ steps.calc_prod.outputs.prod_ver }}
       new_patch: ${{ steps.calc_prod.outputs.new_patch }}
@@ -398,6 +433,28 @@ jobs:
             exit 1
           fi
       # --- PREFLIGHT CHECKS END ---
+
+      - name: Guard HZN Laundry production targets
+        env:
+          PB_URL: ${{ secrets.POCKETBASE_URL_PROD }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -euo pipefail
+          echo "dir=$HZN_PB_DIR service=$HZN_PB_SERVICE url=$HZN_PB_URL user=$HZN_SSH_USER"
+          for value in "$HZN_PB_DIR" "$HZN_PB_SERVICE" "$HZN_PB_URL" "$PB_URL" "$SSH_USER"; do
+            if echo "$value" | grep -qi hizonelaundry; then
+              echo "::error::Refusing production deploy: value points at Hi-Zone Laundry: $value"
+              exit 1
+            fi
+          done
+          if [ "${PB_URL%/}" != "$HZN_PB_URL" ]; then
+            echo "::error::POCKETBASE_URL_PROD must be $HZN_PB_URL (got $PB_URL)"
+            exit 1
+          fi
+          if [ "$SSH_USER" != "$HZN_SSH_USER" ]; then
+            echo "::error::SSH_USER must be $HZN_SSH_USER (got $SSH_USER)"
+            exit 1
+          fi
 
       # --- VERSION CHECKS (before setup — no dependencies on Java/Flutter) ---
       # DETECT VERSION BUMP TYPE FROM PR LABELS
@@ -548,24 +605,24 @@ jobs:
         run: |
           rsync -avz --delete \
             build/web/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_public/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_public/
 
       - name: Deploy migrations to production server
         run: |
           rsync -avz --delete \
             server/pb_migrations/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_migrations/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_migrations/
 
       - name: Deploy hooks to production server
         run: |
           rsync -avz --delete \
             server/pb_hooks/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_hooks/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${HZN_PB_DIR}/pb_hooks/
 
       - name: Restart PocketBase production service
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'sudo systemctl restart pocketbase_hznlaundry.service'
+            "sudo systemctl restart ${HZN_PB_SERVICE}"
       # --- SSH DEPLOY END ---
 
       # UPLOAD & DEPLOY

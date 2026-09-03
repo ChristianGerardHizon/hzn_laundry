@@ -184,6 +184,17 @@ def load_pocketbase_urls() -> dict[str, str]:
         missing.append("PROD_URL")
     if missing:
         raise SyncError(f".env is missing: {', '.join(missing)}")
+
+    forbidden = "hizonelaundry"
+    expected_staging = "https://staging.hznlaundry.hznsystems.com"
+    expected_prod = "https://hznlaundry.hznsystems.com"
+    if forbidden in staging.lower() or forbidden in prod.lower():
+        raise SyncError("STAGING_URL / PROD_URL must not point at Hi-Zone Laundry (hizonelaundry).")
+    if staging != expected_staging:
+        raise SyncError(f"STAGING_URL must be {expected_staging} (got {staging})")
+    if prod != expected_prod:
+        raise SyncError(f"PROD_URL must be {expected_prod} (got {prod})")
+
     return {
         "POCKETBASE_URL_STAGING": staging,
         "POCKETBASE_URL_PROD": prod,
@@ -195,6 +206,10 @@ def optional_secrets(args: argparse.Namespace) -> dict[str, str]:
     if args.ssh_host:
         extras["SSH_HOST"] = args.ssh_host
     if args.ssh_user:
+        if "hizonelaundry" in args.ssh_user.lower():
+            raise SyncError("SSH_USER must not be the Hi-Zone Laundry deploy user.")
+        if args.ssh_user != "deploy-hznlaundry":
+            raise SyncError("SSH_USER must be deploy-hznlaundry.")
         extras["SSH_USER"] = args.ssh_user
     if args.ssh_key:
         path = Path(args.ssh_key).expanduser()

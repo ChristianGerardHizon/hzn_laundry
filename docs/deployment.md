@@ -244,6 +244,8 @@ Both staging and production deploy to the **same server** via SSH. The following
 | Production | `hznlaundry.hznsystems.com` | `/opt/pocketbase/hznlaundry/` | `pocketbase_hznlaundry.service` | 8104 |
 | Staging | `staging.hznlaundry.hznsystems.com` | `/opt/pocketbase/hznlaundry-staging/` | `pocketbase_hznlaundry-staging.service` | 8105 |
 
+CI (`deploy.yml`) pins these paths and **fails the job** if `POCKETBASE_URL_*` or `SSH_USER` still point at Hi-Zone Laundry (`hizonelaundry*`).
+
 ### SSH Access
 - `SSH_USER` is `deploy-hznlaundry` (not `deploy-hizonelaundry`)
 - The `SSH_USER` must have `authorized_keys` configured with the public key matching `SSH_PRIVATE_KEY`
