@@ -2,7 +2,7 @@
 ///
 /// This library exports all common widgets for easy importing:
 /// ```dart
-/// import 'package:hizonelaundry/src/core/widgets/common/common.dart';
+/// import 'package:hzn_laundry/src/core/widgets/common/common.dart';
 /// ```
 library;
 

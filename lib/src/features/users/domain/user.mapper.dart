@@ -25,8 +25,8 @@ class UserMapper extends ClassMapperBase<User> {
   static const Field<User, String> _f$id = Field('id', _$id);
   static String _$name(User v) => v.name;
   static const Field<User, String> _f$name = Field('name', _$name);
-  static String _$username(User v) => v.username;
-  static const Field<User, String> _f$username = Field('username', _$username);
+  static String _$email(User v) => v.email;
+  static const Field<User, String> _f$email = Field('email', _$email);
   static String? _$avatar(User v) => v.avatar;
   static const Field<User, String> _f$avatar = Field(
     'avatar',
@@ -88,7 +88,7 @@ class UserMapper extends ClassMapperBase<User> {
   final MappableFields<User> fields = const {
     #id: _f$id,
     #name: _f$name,
-    #username: _f$username,
+    #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
     #roleId: _f$roleId,
@@ -104,7 +104,7 @@ class UserMapper extends ClassMapperBase<User> {
     return User(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
-      username: data.dec(_f$username),
+      email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
       roleId: data.dec(_f$roleId),
@@ -166,7 +166,7 @@ abstract class UserCopyWith<$R, $In extends User, $Out>
   $R call({
     String? id,
     String? name,
-    String? username,
+    String? email,
     String? avatar,
     bool? verified,
     String? roleId,
@@ -190,7 +190,7 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   $R call({
     String? id,
     String? name,
-    String? username,
+    String? email,
     Object? avatar = $none,
     bool? verified,
     Object? roleId = $none,
@@ -200,40 +200,40 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (username != null) #username: username,
-      if (avatar != $none) #avatar: avatar,
-      if (verified != null) #verified: verified,
-      if (roleId != $none) #roleId: roleId,
-      if (roleName != $none) #roleName: roleName,
-      if (branchId != $none) #branchId: branchId,
-      if (branchName != $none) #branchName: branchName,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (email != null) #email: email,
+          if (avatar != $none) #avatar: avatar,
+          if (verified != null) #verified: verified,
+          if (roleId != $none) #roleId: roleId,
+          if (roleName != $none) #roleName: roleName,
+          if (branchId != $none) #branchId: branchId,
+          if (branchName != $none) #branchName: branchName,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   User $make(CopyWithData data) => User(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    username: data.get(#username, or: $value.username),
-    avatar: data.get(#avatar, or: $value.avatar),
-    verified: data.get(#verified, or: $value.verified),
-    roleId: data.get(#roleId, or: $value.roleId),
-    roleName: data.get(#roleName, or: $value.roleName),
-    branchId: data.get(#branchId, or: $value.branchId),
-    branchName: data.get(#branchName, or: $value.branchName),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        email: data.get(#email, or: $value.email),
+        avatar: data.get(#avatar, or: $value.avatar),
+        verified: data.get(#verified, or: $value.verified),
+        roleId: data.get(#roleId, or: $value.roleId),
+        roleName: data.get(#roleName, or: $value.roleName),
+        branchId: data.get(#branchId, or: $value.branchId),
+        branchName: data.get(#branchName, or: $value.branchName),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   UserCopyWith<$R2, User, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _UserCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

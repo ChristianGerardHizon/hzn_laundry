@@ -168,6 +168,12 @@ abstract class Permissions {
   // Dashboard permissions
   static const dashboardDateOverride = 'dashboard.dateOverride';
 
+  // Organizations permissions
+  static const organizationsCreate = 'organizations.create';
+
+  // Organization members permissions
+  static const membersManage = 'members.manage';
+
   // System permissions
   static const systemAdmin = 'system.admin';
 
@@ -200,6 +206,8 @@ abstract class Permissions {
     'Settings': [settingsView, settingsEdit],
     'Incentive': [incentiveView],
     'Dashboard': [dashboardDateOverride],
+    'Organizations': [organizationsCreate],
+    'Organization Members': [membersManage],
     'System': [systemAdmin],
   };
 
@@ -596,7 +604,8 @@ abstract class Permissions {
         key: incentiveView,
         name: 'View Incentive',
         category: 'Incentive',
-        description: "View today's incentive KPI and incentive breakdown on the dashboard",
+        description:
+            "View today's incentive KPI and incentive breakdown on the dashboard",
         icon: Icons.payments,
       ),
       // Dashboard
@@ -607,6 +616,23 @@ abstract class Permissions {
         description:
             'Change the dashboard date to view and post sales on a different date',
         icon: Icons.date_range,
+      ),
+      // Organizations
+      const Permission(
+        key: organizationsCreate,
+        name: 'Create Organizations',
+        category: 'Organizations',
+        description: 'Create a new organization and become its first member',
+        icon: Icons.add_business,
+      ),
+      // Organization Members
+      const Permission(
+        key: membersManage,
+        name: 'Manage Members',
+        category: 'Organization Members',
+        description:
+            'Invite, revoke, and manage members within an organization',
+        icon: Icons.group_add,
       ),
       // System
       const Permission(

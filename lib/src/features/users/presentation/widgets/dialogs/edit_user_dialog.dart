@@ -33,7 +33,7 @@ class EditUserDialog extends HookConsumerWidget {
       formKey: formKey,
       initialValues: {
         'name': user.name,
-        'username': user.username,
+        'email': user.email,
         'role': user.roleId,
         'branch': user.branchId,
       },
@@ -66,7 +66,7 @@ class EditUserDialog extends HookConsumerWidget {
       final updatedUser = User(
         id: user.id,
         name: (values['name'] as String).trim(),
-        username: (values['username'] as String).trim().toLowerCase(),
+        email: (values['email'] as String).trim().toLowerCase(),
         avatar: user.avatar,
         verified: user.verified,
         roleId: values['role'] as String?,
@@ -129,296 +129,296 @@ class EditUserDialog extends HookConsumerWidget {
                       child:
                           Text('Edit User', style: theme.textTheme.titleLarge),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: TextButton(
-                      onPressed: isSaving.value
-                          ? null
-                          : () async {
-                              if (await dirtyGuard.confirmDiscard(context)) {
-                                if (context.mounted) context.pop();
-                              }
-                            },
-                      child: Text(t.common.cancel),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: TextButton(
+                        onPressed: isSaving.value
+                            ? null
+                            : () async {
+                                if (await dirtyGuard.confirmDiscard(context)) {
+                                  if (context.mounted) context.pop();
+                                }
+                              },
+                        child: Text(t.common.cancel),
+                      ),
                     ),
-                  ),
-                  FilledButton(
-                    onPressed: isSaving.value ? null : handleSave,
-                    child: isSaving.value
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(t.common.save),
-                  ),
-                  const SizedBox(width: 8),
-                ],
+                    FilledButton(
+                      onPressed: isSaving.value ? null : handleSave,
+                      child: isSaving.value
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(t.common.save),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // Content
-            Expanded(
-              child: FormBuilder(
-                key: formKey,
-                initialValue: {
-                  'name': user.name,
-                  'username': user.username,
-                  'role': user.roleId,
-                  'branch': user.branchId,
-                },
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 16),
+              // Content
+              Expanded(
+                child: FormBuilder(
+                  key: formKey,
+                  initialValue: {
+                    'name': user.name,
+                    'email': user.email,
+                    'role': user.roleId,
+                    'branch': user.branchId,
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 16),
 
-                      // === BASIC INFORMATION SECTION ===
-                      _SectionHeader(
-                        title: 'Basic Information',
-                        icon: Icons.person,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Name (required)
-                      FormBuilderTextField(
-                        name: 'name',
-                        decoration: const InputDecoration(
-                          labelText: 'Name *',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
+                        // === BASIC INFORMATION SECTION ===
+                        _SectionHeader(
+                          title: 'Basic Information',
+                          icon: Icons.person,
                         ),
-                        enabled: !isSaving.value,
-                        textCapitalization: TextCapitalization.words,
-                        validator: FormBuilderValidators.required(
-                          errorText: 'Name is required',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Username (required)
-                      FormBuilderTextField(
-                        name: 'username',
-                        decoration: const InputDecoration(
-                          labelText: 'Username *',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.alternate_email),
-                        ),
-                        enabled: !isSaving.value,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: 'Username is required',
+                        // Name (required)
+                        FormBuilderTextField(
+                          name: 'name',
+                          decoration: const InputDecoration(
+                            labelText: 'Name *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person),
                           ),
-                          FormBuilderValidators.minLength(
-                            3,
-                            errorText: 'Username must be at least 3 characters',
+                          enabled: !isSaving.value,
+                          textCapitalization: TextCapitalization.words,
+                          validator: FormBuilderValidators.required(
+                            errorText: 'Name is required',
                           ),
-                        ]),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Password note
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 20,
-                              color: theme.colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 16),
+
+                        FormBuilderTextField(
+                          name: 'email',
+                          decoration: InputDecoration(
+                            labelText: '${t.fields.email} *',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.email_outlined),
+                          ),
+                          enabled: !isSaving.value,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.required(
+                              errorText: 'Email is required',
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Use "Reset Password" from the user detail page to change the password.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                            FormBuilderValidators.email(
+                              errorText: 'Enter a valid email',
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Password note
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 20,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Use "Reset Password" from the user detail page to change the password.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // === ASSIGNMENT SECTION ===
+                        _SectionHeader(
+                          title: 'Assignment',
+                          icon: Icons.assignment_ind,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Role dropdown
+                        rolesAsync.when(
+                          data: (roles) => FormBuilderDropdown<String>(
+                            name: 'role',
+                            decoration: const InputDecoration(
+                              labelText: 'Role',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.admin_panel_settings),
+                            ),
+                            enabled: !isSaving.value,
+                            items: roles.map((role) {
+                              return DropdownMenuItem(
+                                value: role.id,
+                                child: Row(
+                                  children: [
+                                    Text(role.name),
+                                    if (role.isSystem) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme
+                                              .colorScheme.tertiaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'System',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: theme.colorScheme
+                                                .onTertiaryContainer,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          loading: () => const TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Role',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.admin_panel_settings),
+                              suffixIcon: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // === ASSIGNMENT SECTION ===
-                      _SectionHeader(
-                        title: 'Assignment',
-                        icon: Icons.assignment_ind,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Role dropdown
-                      rolesAsync.when(
-                        data: (roles) => FormBuilderDropdown<String>(
-                          name: 'role',
-                          decoration: const InputDecoration(
-                            labelText: 'Role',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.admin_panel_settings),
+                            enabled: false,
                           ),
-                          enabled: !isSaving.value,
-                          items: roles.map((role) {
-                            return DropdownMenuItem(
-                              value: role.id,
-                              child: Row(
-                                children: [
-                                  Text(role.name),
-                                  if (role.isSystem) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            theme.colorScheme.tertiaryContainer,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'System',
-                                        style:
-                                            theme.textTheme.labelSmall?.copyWith(
-                                          color: theme
-                                              .colorScheme.onTertiaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                          error: (_, __) => const TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Role',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.admin_panel_settings),
+                              errorText: 'Failed to load roles',
+                            ),
+                            enabled: false,
+                          ),
                         ),
-                        loading: () => const TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Role',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.admin_panel_settings),
-                            suffixIcon: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                        const SizedBox(height: 16),
+
+                        // Branch dropdown
+                        branchesAsync.when(
+                          data: (branches) => FormBuilderDropdown<String>(
+                            name: 'branch',
+                            decoration: const InputDecoration(
+                              labelText: 'Branch',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.business),
+                            ),
+                            enabled: !isSaving.value,
+                            items: branches.map((branch) {
+                              return DropdownMenuItem(
+                                value: branch.id,
+                                child: Text(branch.name),
+                              );
+                            }).toList(),
+                          ),
+                          loading: () => const TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Branch',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.business),
+                              suffixIcon: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
                               ),
                             ),
+                            enabled: false,
                           ),
-                          enabled: false,
-                        ),
-                        error: (_, __) => const TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Role',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.admin_panel_settings),
-                            errorText: 'Failed to load roles',
-                          ),
-                          enabled: false,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Branch dropdown
-                      branchesAsync.when(
-                        data: (branches) => FormBuilderDropdown<String>(
-                          name: 'branch',
-                          decoration: const InputDecoration(
-                            labelText: 'Branch',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.business),
-                          ),
-                          enabled: !isSaving.value,
-                          items: branches.map((branch) {
-                            return DropdownMenuItem(
-                              value: branch.id,
-                              child: Text(branch.name),
-                            );
-                          }).toList(),
-                        ),
-                        loading: () => const TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Branch',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.business),
-                            suffixIcon: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
+                          error: (_, __) => const TextField(
+                            decoration: InputDecoration(
+                              labelText: 'Branch',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.business),
+                              errorText: 'Failed to load branches',
                             ),
+                            enabled: false,
                           ),
-                          enabled: false,
                         ),
-                        error: (_, __) => const TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Branch',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.business),
-                            errorText: 'Failed to load branches',
+                        const SizedBox(height: 24),
+
+                        // === STATUS SECTION ===
+                        _SectionHeader(
+                          title: 'Status',
+                          icon: Icons.info_outline,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Status info (read-only)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: theme.colorScheme.outlineVariant),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          enabled: false,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // === STATUS SECTION ===
-                      _SectionHeader(
-                        title: 'Status',
-                        icon: Icons.info_outline,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Status info (read-only)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border:
-                              Border.all(color: theme.colorScheme.outlineVariant),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            _StatusRow(
-                              label: 'Verified',
-                              value: user.verified ? 'Yes' : 'No',
-                              icon: user.verified
-                                  ? Icons.check_circle
-                                  : Icons.cancel,
-                              iconColor: user.verified
-                                  ? Colors.green
-                                  : theme.colorScheme.error,
-                            ),
-                            const SizedBox(height: 8),
-                            if (user.created != null)
+                          child: Column(
+                            children: [
                               _StatusRow(
-                                label: 'Created',
-                                value: _formatDate(user.created!),
-                                icon: Icons.calendar_today,
+                                label: 'Verified',
+                                value: user.verified ? 'Yes' : 'No',
+                                icon: user.verified
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                iconColor: user.verified
+                                    ? Colors.green
+                                    : theme.colorScheme.error,
                               ),
-                          ],
+                              const SizedBox(height: 8),
+                              if (user.created != null)
+                                _StatusRow(
+                                  label: 'Created',
+                                  value: _formatDate(user.created!),
+                                  icon: Icons.calendar_today,
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -429,7 +429,7 @@ class EditUserDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
-    'username': 'Username',
+    'email': 'Email',
     'role': 'Role',
     'branch': 'Branch',
   };

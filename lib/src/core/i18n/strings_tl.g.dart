@@ -42,6 +42,7 @@ class TranslationsTl with BaseTranslations<AppLocale, Translations> implements T
 	@override late final _TranslationsFailuresTl failures = _TranslationsFailuresTl._(_root);
 	@override late final _TranslationsFieldsTl fields = _TranslationsFieldsTl._(_root);
 	@override late final _TranslationsNavigationTl navigation = _TranslationsNavigationTl._(_root);
+	@override late final _TranslationsOrganizationsTl organizations = _TranslationsOrganizationsTl._(_root);
 	@override late final _TranslationsSortTl sort = _TranslationsSortTl._(_root);
 	@override late final _TranslationsValidationTl validation = _TranslationsValidationTl._(_root);
 }
@@ -85,7 +86,7 @@ class _TranslationsCommonTl implements TranslationsCommonEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get appName => 'Hi-Zone Laundry';
+	@override String get appName => 'HZN Laundry';
 	@override String get placeholderText => 'N/A';
 	@override String get save => 'I-save';
 	@override String get cancel => 'Kanselahin';
@@ -138,7 +139,7 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get conflict => 'May nangyaring conflict. Maaaring umiiral na ang resource.';
 	@override String get timeout => 'Nag-timeout ang request. Pakisubukang muli.';
 	@override String get noInternet => 'Walang koneksyon sa internet.';
-	@override String get invalidCredentials => 'Di-wastong username o password.';
+	@override String get invalidCredentials => 'Di-wastong email o password.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
 	@override String get tooManyRequests => 'Masyadong maraming request. Maghintay ng ilang sandali.';
@@ -151,7 +152,6 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get userName => 'Username';
 	@override String get email => 'Email';
 	@override String get password => 'Password';
 	@override String get passwordConfirmation => 'Password confirmation';
@@ -177,6 +177,16 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
+	@override String get shortcuts => 'Mga Shortcut';
+	@override String get categories => 'Mga Kategorya';
+	@override String get showMore => 'Magpakita pa';
+	@override String get showLess => 'Magpakita ng mas kaunti';
+	@override String get operations => 'Operasyon';
+	@override String get people => 'Mga Tao';
+	@override String get insights => 'Mga Insight';
+	@override String get administration => 'Administrasyon';
+	@override String get collapseNav => 'I-collapse ang navigation';
+	@override String get expandNav => 'I-expand ang navigation';
 	@override String get dashboard => 'Dashboard';
 	@override String get products => 'Mga Produkto';
 	@override String get inventory => 'Imbentaryo';
@@ -189,7 +199,8 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get more => 'Iba Pa';
 	@override String get sales => 'Cashier';
 	@override String get salesHistory => 'Mga Order';
-	@override String get organization => 'Organisasyon';
+	@override String get management => 'Pamamahala';
+	@override String get organizations => 'Mga Organisasyon';
 	@override String get services => 'Mga Serbisyo';
 	@override String get customers => 'Mga Customer';
 	@override String get employees => 'Mga Empleyado';
@@ -200,6 +211,55 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get posUnavailableAllBranches => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.';
 	@override String get createUnavailableAllBranches => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.';
 	@override String get activities => 'Mga Aktibidad';
+}
+
+// Path: organizations
+class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
+	_TranslationsOrganizationsTl._(this._root);
+
+	final TranslationsTl _root; // ignore: unused_field
+
+	// Translations
+	@override String get title => 'Mga Organisasyon';
+	@override String get create => 'Gumawa ng Organisasyon';
+	@override String get yourOrganizations => 'Mga organisasyon mo';
+	@override String get yourRole => 'Iyong tungkulin';
+	@override String get switchToThis => 'Lumipat sa organisasyong ito';
+	@override String get current => 'Kasalukuyan';
+	@override String get details => 'Mga Detalye';
+	@override String get saveDetails => 'I-save ang mga detalye';
+	@override String get invitePeople => 'Mag-imbita ng tao';
+	@override String get inviteEmail => 'Email';
+	@override String get inviteRole => 'Tungkulin';
+	@override String get sendInvite => 'Ipadala ang imbitasyon';
+	@override String get pendingInvites => 'Mga imbitasyong para sa iyo';
+	@override String get pendingOrgInvites => 'Mga pending na imbitasyon';
+	@override String get accept => 'Tanggapin';
+	@override String get decline => 'Tanggihan';
+	@override String get revoke => 'Bawiin';
+	@override String get noOrganizations => 'Wala ka pang organisasyon.';
+	@override String get contactAdmin => 'Makipag-ugnayan sa iyong administrator para maimbitahan sa isang organisasyon.';
+	@override String get inviteSent => 'Naipadala ang imbitasyon';
+	@override String get inviteAccepted => 'Tinanggap ang imbitasyon';
+	@override String get inviteDeclined => 'Tinanggihan ang imbitasyon';
+	@override String get inviteRevoked => 'Binawi ang imbitasyon';
+	@override String get saveSuccess => 'Na-update ang organisasyon';
+	@override String get switchOrganization => 'Organisasyon';
+	@override String get switchingOrganization => 'Pinapalitan ang organisasyon…';
+	@override String switchingToOrganization({required Object name}) => 'Lumilipat sa ${name}…';
+	@override String get setupTitle => 'I-setup ang iyong organisasyon';
+	@override String get stepDetails => 'Mga detalye ng organisasyon';
+	@override String get stepBranch => 'Gumawa ng unang sangay';
+	@override String get stepInvite => 'Imbitahan ang iyong team';
+	@override String get stepReview => 'Suriin at tapusin';
+	@override String get next => 'Susunod';
+	@override String get back => 'Bumalik';
+	@override String get skip => 'Laktawan';
+	@override String get finish => 'Tapusin ang setup';
+	@override String get addBranch => 'Magdagdag ng sangay';
+	@override String get branchRequired => 'Gumawa muna ng kahit isang sangay para magpatuloy.';
+	@override String get noBranchYet => 'Wala pang sangay';
+	@override String get onboardingComplete => 'Handa na ang organisasyon';
 }
 
 // Path: sort
@@ -271,7 +331,7 @@ extension on TranslationsTl {
 			'auth.signInToContinue' => 'Mag-sign in upang magpatuloy',
 			'auth.signingIn' => 'Nagsa-sign in...',
 			'auth.verificationEmailSent' => 'Naipadala na ang verification email sa iyong email address',
-			'common.appName' => 'Hi-Zone Laundry',
+			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'I-save',
 			'common.cancel' => 'Kanselahin',
@@ -315,11 +375,10 @@ extension on TranslationsTl {
 			'failures.conflict' => 'May nangyaring conflict. Maaaring umiiral na ang resource.',
 			'failures.timeout' => 'Nag-timeout ang request. Pakisubukang muli.',
 			'failures.noInternet' => 'Walang koneksyon sa internet.',
-			'failures.invalidCredentials' => 'Di-wastong username o password.',
+			'failures.invalidCredentials' => 'Di-wastong email o password.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',
 			'failures.tooManyRequests' => 'Masyadong maraming request. Maghintay ng ilang sandali.',
-			'fields.userName' => 'Username',
 			'fields.email' => 'Email',
 			'fields.password' => 'Password',
 			'fields.passwordConfirmation' => 'Password confirmation',
@@ -336,6 +395,16 @@ extension on TranslationsTl {
 			'fields.notes' => 'Mga Tala',
 			'fields.description' => 'Paglalarawan',
 			'fields.category' => 'Kategorya',
+			'navigation.shortcuts' => 'Mga Shortcut',
+			'navigation.categories' => 'Mga Kategorya',
+			'navigation.showMore' => 'Magpakita pa',
+			'navigation.showLess' => 'Magpakita ng mas kaunti',
+			'navigation.operations' => 'Operasyon',
+			'navigation.people' => 'Mga Tao',
+			'navigation.insights' => 'Mga Insight',
+			'navigation.administration' => 'Administrasyon',
+			'navigation.collapseNav' => 'I-collapse ang navigation',
+			'navigation.expandNav' => 'I-expand ang navigation',
 			'navigation.dashboard' => 'Dashboard',
 			'navigation.products' => 'Mga Produkto',
 			'navigation.inventory' => 'Imbentaryo',
@@ -348,7 +417,8 @@ extension on TranslationsTl {
 			'navigation.more' => 'Iba Pa',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Mga Order',
-			'navigation.organization' => 'Organisasyon',
+			'navigation.management' => 'Pamamahala',
+			'navigation.organizations' => 'Mga Organisasyon',
 			'navigation.services' => 'Mga Serbisyo',
 			'navigation.customers' => 'Mga Customer',
 			'navigation.employees' => 'Mga Empleyado',
@@ -359,6 +429,46 @@ extension on TranslationsTl {
 			'navigation.posUnavailableAllBranches' => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.',
 			'navigation.createUnavailableAllBranches' => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.',
 			'navigation.activities' => 'Mga Aktibidad',
+			'organizations.title' => 'Mga Organisasyon',
+			'organizations.create' => 'Gumawa ng Organisasyon',
+			'organizations.yourOrganizations' => 'Mga organisasyon mo',
+			'organizations.yourRole' => 'Iyong tungkulin',
+			'organizations.switchToThis' => 'Lumipat sa organisasyong ito',
+			'organizations.current' => 'Kasalukuyan',
+			'organizations.details' => 'Mga Detalye',
+			'organizations.saveDetails' => 'I-save ang mga detalye',
+			'organizations.invitePeople' => 'Mag-imbita ng tao',
+			'organizations.inviteEmail' => 'Email',
+			'organizations.inviteRole' => 'Tungkulin',
+			'organizations.sendInvite' => 'Ipadala ang imbitasyon',
+			'organizations.pendingInvites' => 'Mga imbitasyong para sa iyo',
+			'organizations.pendingOrgInvites' => 'Mga pending na imbitasyon',
+			'organizations.accept' => 'Tanggapin',
+			'organizations.decline' => 'Tanggihan',
+			'organizations.revoke' => 'Bawiin',
+			'organizations.noOrganizations' => 'Wala ka pang organisasyon.',
+			'organizations.contactAdmin' => 'Makipag-ugnayan sa iyong administrator para maimbitahan sa isang organisasyon.',
+			'organizations.inviteSent' => 'Naipadala ang imbitasyon',
+			'organizations.inviteAccepted' => 'Tinanggap ang imbitasyon',
+			'organizations.inviteDeclined' => 'Tinanggihan ang imbitasyon',
+			'organizations.inviteRevoked' => 'Binawi ang imbitasyon',
+			'organizations.saveSuccess' => 'Na-update ang organisasyon',
+			'organizations.switchOrganization' => 'Organisasyon',
+			'organizations.switchingOrganization' => 'Pinapalitan ang organisasyon…',
+			'organizations.switchingToOrganization' => ({required Object name}) => 'Lumilipat sa ${name}…',
+			'organizations.setupTitle' => 'I-setup ang iyong organisasyon',
+			'organizations.stepDetails' => 'Mga detalye ng organisasyon',
+			'organizations.stepBranch' => 'Gumawa ng unang sangay',
+			'organizations.stepInvite' => 'Imbitahan ang iyong team',
+			'organizations.stepReview' => 'Suriin at tapusin',
+			'organizations.next' => 'Susunod',
+			'organizations.back' => 'Bumalik',
+			'organizations.skip' => 'Laktawan',
+			'organizations.finish' => 'Tapusin ang setup',
+			'organizations.addBranch' => 'Magdagdag ng sangay',
+			'organizations.branchRequired' => 'Gumawa muna ng kahit isang sangay para magpatuloy.',
+			'organizations.noBranchYet' => 'Wala pang sangay',
+			'organizations.onboardingComplete' => 'Handa na ang organisasyon',
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',

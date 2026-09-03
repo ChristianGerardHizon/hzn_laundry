@@ -31,7 +31,7 @@ routerAdd("GET", "/api/download/latest", function(e) {
       headers: {
         "Authorization": "token " + github.githubPat,
         "Accept": "application/vnd.github+json",
-        "User-Agent": "HizoneLaundry-PocketBase"
+        "User-Agent": "HznLaundry-PocketBase"
       },
       timeout: 15
     });
@@ -68,7 +68,7 @@ routerAdd("GET", "/api/download/latest", function(e) {
       headers: {
         "Authorization": "token " + github.githubPat,
         "Accept": "application/octet-stream",
-        "User-Agent": "HizoneLaundry-PocketBase"
+        "User-Agent": "HznLaundry-PocketBase"
       },
       timeout: 120
     });

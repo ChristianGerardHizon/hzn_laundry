@@ -18,7 +18,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.hznsystems.hizonelaundry"
+    namespace = "com.hznsystems.hznlaundry"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "28.2.13676358"
 
@@ -32,7 +32,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.hznsystems.hizonelaundry"
+        applicationId = "com.hznsystems.hznlaundry"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -45,18 +45,18 @@ android {
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "Hi-Zone Laundry Dev")
+            resValue("string", "app_name", "HZN Laundry Dev")
             manifestPlaceholders["usesCleartextTraffic"] = "true"
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
-            resValue("string", "app_name", "Hi-Zone Laundry Stg")
+            resValue("string", "app_name", "HZN Laundry Stg")
             manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
         create("prod") {
             dimension = "environment"
-            resValue("string", "app_name", "Hi-Zone Laundry")
+            resValue("string", "app_name", "HZN Laundry")
             manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
     }

@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 /// PocketBase backend URLs per flavor.
 abstract class PocketBaseUrls {
   static const String dev = 'http://127.0.0.1:8090';
-  static const String staging = 'https://staging.hizonelaundry.hznsystems.com';
-  static const String prod = 'https://hizonelaundry.hznsystems.com';
+  static const String staging = 'https://staging.hznlaundry.hznsystems.com';
+  static const String prod = 'https://hznlaundry.hznsystems.com';
 }
 
 /// App flavor: `dev` (local testing), `staging`, or `prod`.
@@ -83,9 +83,9 @@ class AppEnvironment {
       };
 
   String get appTitle => switch (name) {
-        'dev' => 'Hi-Zone Laundry [Dev]',
-        'staging' => 'Hi-Zone Laundry [Stg]',
-        _ => 'Hi-Zone Laundry',
+        'dev' => 'HZN Laundry [Dev]',
+        'staging' => 'HZN Laundry [Stg]',
+        _ => 'HZN Laundry',
       };
 }
 

@@ -54,7 +54,7 @@ class LoginPage extends HookConsumerWidget {
         errorMessage.value = null;
         final values = formKey.currentState!.value;
         ref.read(authControllerProvider.notifier).login(
-              values['username'] as String,
+              values['email'] as String,
               values['password'] as String,
             );
       }
@@ -128,18 +128,20 @@ class LoginPage extends HookConsumerWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // Username field
                   FormBuilderTextField(
-                    name: 'username',
+                    name: 'email',
                     enabled: !isLoading,
                     decoration: InputDecoration(
-                      labelText: t.fields.userName,
-                      prefixIcon: const Icon(Icons.person_outlined),
+                      labelText: t.fields.email,
+                      prefixIcon: const Icon(Icons.email_outlined),
                       border: const OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.text,
+                    keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    validator: FormBuilderValidators.required(),
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.email(),
+                    ]),
                   ),
                   const SizedBox(height: 16),
 

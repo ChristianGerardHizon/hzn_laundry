@@ -216,18 +216,18 @@ The SSH user needs write access to:
 
 | Path | Purpose |
 |------|---------|
-| `/opt/pocketbase/hizonelaundry-staging/pb_public/` | Staging web build |
-| `/opt/pocketbase/hizonelaundry-staging/pb_migrations/` | Staging PocketBase migrations |
-| `/opt/pocketbase/hizonelaundry/pb_public/` | Production web build |
-| `/opt/pocketbase/hizonelaundry/pb_migrations/` | Production PocketBase migrations |
+| `/opt/pocketbase/hznlaundry-staging/pb_public/` | Staging web build |
+| `/opt/pocketbase/hznlaundry-staging/pb_migrations/` | Staging PocketBase migrations |
+| `/opt/pocketbase/hznlaundry/pb_public/` | Production web build |
+| `/opt/pocketbase/hznlaundry/pb_migrations/` | Production PocketBase migrations |
 
 ### Passwordless Sudo
 
 The SSH user needs passwordless sudo for restarting PocketBase services. Add to `/etc/sudoers.d/deploy`:
 
 ```
-deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hizonelaundry-staging.service
-deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hizonelaundry.service
+deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hznlaundry-staging.service
+deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hznlaundry.service
 ```
 
 ---
@@ -245,9 +245,9 @@ Android flavor IDs:
 
 | Flavor | Application ID | PocketBase |
 |--------|----------------|------------|
-| `dev` | `com.hznsystems.hizonelaundry.dev` | `http://127.0.0.1:8090` |
-| `staging` | `com.hznsystems.hizonelaundry.staging` | staging URL |
-| `prod` | `com.hznsystems.hizonelaundry` | production URL (Play Store) |
+| `dev` | `com.hznsystems.hznlaundry.dev` | `http://127.0.0.1:8090` |
+| `staging` | `com.hznsystems.hznlaundry.staging` | staging URL |
+| `prod` | `com.hznsystems.hznlaundry` | production URL (Play Store) |
 
 ---
 
@@ -354,7 +354,7 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 
 Play Console does **not** accept APKs for new uploads. Production deploys therefore build a signed **Android App Bundle** (`.aab`) and upload it with the Play Developer API.
 
-**Package name:** `com.hznsystems.hizonelaundry` (must match `applicationId` in `android/app/build.gradle.kts` and the Play Console app).
+**Package name:** `com.hznsystems.hznlaundry` (must match `applicationId` in `android/app/build.gradle.kts` and the Play Console app).
 
 The AAB is uploaded to **Internal testing** with `status: completed` (published to testers). Staging deploys do **not** upload to Play. The public production track is not used. The app does not appear in Play Store search; testers install via the Internal testing opt-in link.
 
@@ -367,7 +367,7 @@ Do these steps once. After that, every merge to `main` publishes a new Internal 
 #### 1. Create the app in Play Console
 
 1. Open [Google Play Console](https://play.google.com/console) with your developer account.
-2. **Create app** → name **Hi-Zone Laundry**, default language, app (not game), free or paid.
+2. **Create app** → name **HZN Laundry**, default language, app (not game), free or paid.
 3. Complete the required dashboard tasks until the app exists (privacy policy, app access, ads, content rating, target audience, Data safety, store listing). You can finish store listing later, but the **app record must exist** before the API can upload.
 
 #### 2. Enable Play App Signing
@@ -394,9 +394,9 @@ After one successful console upload, later production deploys use the API.
 1. In Play Console go to **Setup** → **API access** (or **Users and permissions** → **Invite new users** / service accounts, depending on the current Console UI).
 2. Link a Google Cloud project if prompted.
 3. In [Google Cloud Console](https://console.cloud.google.com/) create (or pick) a project, enable **Google Play Android Developer API**.
-4. Create a service account (e.g. `hizone-play-upload`) with no GCP roles required.
+4. Create a service account (e.g. `hzn-play-upload`) with no GCP roles required.
 5. Create a **JSON key** for that service account. Download it. This file is a secret — never commit it.
-6. Back in Play Console, grant that service account access to **Hi-Zone Laundry** with at least **Release apps to testing tracks**.
+6. Back in Play Console, grant that service account access to **HZN Laundry** with at least **Release apps to testing tracks**.
 
 #### 5. GitHub secret
 
@@ -414,10 +414,17 @@ A static privacy policy page ships with every web build at:
 
 | Environment | URL |
 |-------------|-----|
-| Production | `https://hizonelaundry.hznsystems.com/privacy-policy.html` |
-| Staging | `https://staging.hizonelaundry.hznsystems.com/privacy-policy.html` |
+| Production | `https://hznlaundry.hznsystems.com/privacy-policy.html` |
+| Staging | `https://staging.hznlaundry.hznsystems.com/privacy-policy.html` |
 
-Source: [`web/privacy-policy.html`](web/privacy-policy.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** URL in Play Console → App content → Privacy policy.
+Password reset page (linked from PocketBase reset emails):
+
+| Environment | URL |
+|-------------|-----|
+| Production | `https://hznlaundry.hznsystems.com/reset-password.html` |
+| Staging | `https://staging.hznlaundry.hznsystems.com/reset-password.html` |
+
+Source: [`web/privacy-policy.html`](web/privacy-policy.html) and [`web/reset-password.html`](web/reset-password.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** privacy-policy URL in Play Console → App content → Privacy policy.
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 

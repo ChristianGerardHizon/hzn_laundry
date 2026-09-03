@@ -26,25 +26,25 @@ class AuthController extends _$AuthController {
     );
   }
 
-  /// Attempts to login with username and password.
+  /// Attempts to login with email and password.
   ///
   /// Returns true on success, false on failure.
-  Future<bool> login(String username, String password) async {
-    addBreadcrumb('Login attempt', category: 'auth', data: {'username': username});
+  Future<bool> login(String email, String password) async {
+    addBreadcrumb('Login attempt', category: 'auth', data: {'email': email});
     state = const AsyncLoading();
 
-    final result = await _repository.login(username, password);
+    final result = await _repository.login(email, password);
 
     return result.fold(
       (failure) {
-        addBreadcrumb('Login failed', category: 'auth', data: {'username': username});
+        addBreadcrumb('Login failed', category: 'auth', data: {'email': email});
         state = AsyncError(failure, StackTrace.current);
         return false;
       },
       (authState) async {
         addBreadcrumb('Login success', category: 'auth', data: {
           'userId': authState.user.id,
-          'username': username,
+          'email': email,
         });
         state = AsyncData(authState);
         return true;
@@ -78,7 +78,6 @@ class AuthController extends _$AuthController {
       },
     );
   }
-
 }
 
 /// Convenience provider to check if user is authenticated.

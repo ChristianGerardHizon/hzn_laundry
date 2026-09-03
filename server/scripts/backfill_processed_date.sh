@@ -13,7 +13,7 @@
 # ready/pickedUp, or logs were trimmed), falls back to postedDate/created.
 #
 # Usage:
-#   PB_URL=https://hizonelaundry.hznsystems.com \
+#   PB_URL=https://hznlaundry.hznsystems.com \
 #   PB_EMAIL=test@test.com \
 #   PB_PASSWORD=yourpassword \
 #   bash backfill_processed_date.sh

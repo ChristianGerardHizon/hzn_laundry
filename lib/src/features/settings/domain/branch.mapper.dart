@@ -32,6 +32,12 @@ class BranchMapper extends ClassMapperBase<Branch> {
     'contactNumber',
     _$contactNumber,
   );
+  static String? _$organizationId(Branch v) => v.organizationId;
+  static const Field<Branch, String> _f$organizationId = Field(
+    'organizationId',
+    _$organizationId,
+    opt: true,
+  );
   static String? _$operatingHours(Branch v) => v.operatingHours;
   static const Field<Branch, String> _f$operatingHours = Field(
     'operatingHours',
@@ -84,6 +90,7 @@ class BranchMapper extends ClassMapperBase<Branch> {
     #name: _f$name,
     #address: _f$address,
     #contactNumber: _f$contactNumber,
+    #organizationId: _f$organizationId,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
     #incentiveAmount: _f$incentiveAmount,
@@ -99,6 +106,7 @@ class BranchMapper extends ClassMapperBase<Branch> {
       name: data.dec(_f$name),
       address: data.dec(_f$address),
       contactNumber: data.dec(_f$contactNumber),
+      organizationId: data.dec(_f$organizationId),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
       incentiveAmount: data.dec(_f$incentiveAmount),
@@ -160,6 +168,7 @@ abstract class BranchCopyWith<$R, $In extends Branch, $Out>
     String? name,
     String? address,
     String? contactNumber,
+    String? organizationId,
     String? operatingHours,
     String? cutOffTime,
     num? incentiveAmount,
@@ -183,6 +192,7 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     String? name,
     String? address,
     String? contactNumber,
+    Object? organizationId = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
     num? incentiveAmount,
@@ -190,42 +200,44 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (address != null) #address: address,
-      if (contactNumber != null) #contactNumber: contactNumber,
-      if (operatingHours != $none) #operatingHours: operatingHours,
-      if (cutOffTime != $none) #cutOffTime: cutOffTime,
-      if (incentiveAmount != null) #incentiveAmount: incentiveAmount,
-      if (incentivePerServiceItems != null)
-        #incentivePerServiceItems: incentivePerServiceItems,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (address != null) #address: address,
+          if (contactNumber != null) #contactNumber: contactNumber,
+          if (organizationId != $none) #organizationId: organizationId,
+          if (operatingHours != $none) #operatingHours: operatingHours,
+          if (cutOffTime != $none) #cutOffTime: cutOffTime,
+          if (incentiveAmount != null) #incentiveAmount: incentiveAmount,
+          if (incentivePerServiceItems != null)
+            #incentivePerServiceItems: incentivePerServiceItems,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   Branch $make(CopyWithData data) => Branch(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    address: data.get(#address, or: $value.address),
-    contactNumber: data.get(#contactNumber, or: $value.contactNumber),
-    operatingHours: data.get(#operatingHours, or: $value.operatingHours),
-    cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
-    incentiveAmount: data.get(#incentiveAmount, or: $value.incentiveAmount),
-    incentivePerServiceItems: data.get(
-      #incentivePerServiceItems,
-      or: $value.incentivePerServiceItems,
-    ),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        address: data.get(#address, or: $value.address),
+        contactNumber: data.get(#contactNumber, or: $value.contactNumber),
+        organizationId: data.get(#organizationId, or: $value.organizationId),
+        operatingHours: data.get(#operatingHours, or: $value.operatingHours),
+        cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
+        incentiveAmount: data.get(#incentiveAmount, or: $value.incentiveAmount),
+        incentivePerServiceItems: data.get(
+          #incentivePerServiceItems,
+          or: $value.incentivePerServiceItems,
+        ),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   BranchCopyWith<$R2, Branch, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _BranchCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

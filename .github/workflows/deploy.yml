@@ -218,24 +218,24 @@ jobs:
         run: |
           rsync -avz --delete \
             build/web/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_public/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_public/
 
       - name: Deploy migrations to staging server
         run: |
           rsync -avz --delete \
             server/pb_migrations/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_migrations/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_migrations/
 
       - name: Deploy hooks to staging server
         run: |
           rsync -avz --delete \
             server/pb_hooks/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry-staging/pb_hooks/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry-staging/pb_hooks/
 
       - name: Restart PocketBase staging service
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'sudo systemctl restart pocketbase_hizonelaundry-staging.service'
+            'sudo systemctl restart pocketbase_hznlaundry-staging.service'
       # --- SSH DEPLOY END ---
 
       # RELEASE
@@ -305,7 +305,7 @@ jobs:
           esac
 
           STAGING_VER="$MAJOR.$MINOR.$PATCH-staging"
-          ZIP_NAME="hizonelaundry-staging-windows-$STAGING_VER.zip"
+          ZIP_NAME="hznlaundry-staging-windows-$STAGING_VER.zip"
 
           echo "STAGING_VER=$STAGING_VER" >> $GITHUB_ENV
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
@@ -547,24 +547,24 @@ jobs:
         run: |
           rsync -avz --delete \
             build/web/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_public/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_public/
 
       - name: Deploy migrations to production server
         run: |
           rsync -avz --delete \
             server/pb_migrations/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_migrations/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_migrations/
 
       - name: Deploy hooks to production server
         run: |
           rsync -avz --delete \
             server/pb_hooks/ \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hizonelaundry/pb_hooks/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/pocketbase/hznlaundry/pb_hooks/
 
       - name: Restart PocketBase production service
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'sudo systemctl restart pocketbase_hizonelaundry.service'
+            'sudo systemctl restart pocketbase_hznlaundry.service'
       # --- SSH DEPLOY END ---
 
       # UPLOAD & DEPLOY
@@ -615,7 +615,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.hznsystems.hizonelaundry
+          packageName: com.hznsystems.hznlaundry
           releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
           track: internal
           status: completed
@@ -681,7 +681,7 @@ jobs:
           esac
 
           PROD_VER="$MAJOR.$MINOR.$PATCH"
-          ZIP_NAME="hizonelaundry-windows-$PROD_VER.zip"
+          ZIP_NAME="hznlaundry-windows-$PROD_VER.zip"
 
           echo "PROD_VER=$PROD_VER" >> $GITHUB_ENV
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV

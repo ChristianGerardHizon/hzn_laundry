@@ -11,7 +11,7 @@ part 'play_store_update_provider.g.dart';
 /// android/app/build.gradle.kts. Used as a fallback when Play's native
 /// in-app update flow isn't available/allowed on this device.
 const _playStoreListingUrl =
-    'https://play.google.com/store/apps/details?id=com.hznsystems.hizonelaundry';
+    'https://play.google.com/store/apps/details?id=com.hznsystems.hznlaundry';
 
 /// State of the background flexible update download.
 enum FlexibleUpdateState {

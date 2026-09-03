@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/routing/routes/organization.routes.dart';
+import '../../../../core/routing/routes/management.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../data/repositories/incentive_tier_repository.dart';
 import '../../domain/branch.dart';
@@ -26,9 +26,9 @@ class BranchDetailPanel extends ConsumerWidget {
     // Find the branch from the list
     final branches = branchesAsync.value;
     final branch = branches?.cast<Branch?>().firstWhere(
-      (b) => b?.id == branchId,
-      orElse: () => null,
-    );
+          (b) => b?.id == branchId,
+          orElse: () => null,
+        );
 
     if (branchesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -61,7 +61,7 @@ class BranchDetailPanel extends ConsumerWidget {
         title: Text(branch.name),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => const OrganizationBranchesRoute().go(context),
+          onPressed: () => const ManagementBranchesRoute().go(context),
         ),
         actions: [
           IconButton(
@@ -113,7 +113,7 @@ class BranchDetailPanel extends ConsumerWidget {
     if (context.mounted) {
       if (success) {
         showSuccessSnackBar(context, message: 'Branch deleted successfully');
-        const OrganizationBranchesRoute().go(context);
+        const ManagementBranchesRoute().go(context);
       } else {
         showFormErrorDialog(
           context,
@@ -261,7 +261,8 @@ class _IncentiveTiersCard extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return FutureBuilder(
-      future: ref.read(incentiveTierRepositoryProvider).fetchForBranch(branchId),
+      future:
+          ref.read(incentiveTierRepositoryProvider).fetchForBranch(branchId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Card(

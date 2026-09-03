@@ -14,8 +14,11 @@ part 'auth_repository.g.dart';
 
 /// Repository interface for authentication operations.
 abstract class AuthRepository {
-  /// Attempts to login with username and password.
-  FutureEither<AuthState> login(String username, String password);
+  /// Attempts to login with email and password.
+  FutureEither<AuthState> login(String email, String password);
+
+  /// Sends a password-reset email.
+  FutureEither<void> requestPasswordReset(String email);
 
   /// Logs out the current user.
   FutureEither<void> logout();
@@ -25,7 +28,6 @@ abstract class AuthRepository {
 
   /// Initializes auth state from storage on app startup.
   FutureEither<AuthState> initialize();
-
 }
 
 /// Provides the auth repository instance.
@@ -57,12 +59,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  FutureEither<AuthState> login(String username, String password) async {
+  FutureEither<AuthState> login(String email, String password) async {
     return TaskEither.tryCatch(
       () async {
-        // Usernames are stored lowercase (see create/edit user dialogs).
-        // PocketBase identity lookup is case-sensitive, so normalize input.
-        final identity = username.trim().toLowerCase();
+        final identity = email.trim().toLowerCase();
 
         pb.authStore.clear();
 
@@ -76,6 +76,16 @@ class AuthRepositoryImpl implements AuthRepository {
         await authStorage.save(authDto);
         pb.authStore.save(authDto.token, authDto.toRecordModel());
         return _createAuthState(authDto);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<void> requestPasswordReset(String email) async {
+    return TaskEither.tryCatch(
+      () async {
+        await _collection.requestPasswordReset(email.trim().toLowerCase());
       },
       Failure.handle,
     ).run();
@@ -130,5 +140,4 @@ class AuthRepositoryImpl implements AuthRepository {
       Failure.handle,
     ).run();
   }
-
 }

@@ -25,8 +25,8 @@ class UserMapper extends ClassMapperBase<User> {
   static const Field<User, String> _f$id = Field('id', _$id);
   static String _$name(User v) => v.name;
   static const Field<User, String> _f$name = Field('name', _$name);
-  static String _$username(User v) => v.username;
-  static const Field<User, String> _f$username = Field('username', _$username);
+  static String _$email(User v) => v.email;
+  static const Field<User, String> _f$email = Field('email', _$email);
   static String? _$avatarUrl(User v) => v.avatarUrl;
   static const Field<User, String> _f$avatarUrl = Field(
     'avatarUrl',
@@ -51,7 +51,7 @@ class UserMapper extends ClassMapperBase<User> {
   final MappableFields<User> fields = const {
     #id: _f$id,
     #name: _f$name,
-    #username: _f$username,
+    #email: _f$email,
     #avatarUrl: _f$avatarUrl,
     #verified: _f$verified,
     #branch: _f$branch,
@@ -61,7 +61,7 @@ class UserMapper extends ClassMapperBase<User> {
     return User(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
-      username: data.dec(_f$username),
+      email: data.dec(_f$email),
       avatarUrl: data.dec(_f$avatarUrl),
       verified: data.dec(_f$verified),
       branch: data.dec(_f$branch),
@@ -117,7 +117,7 @@ abstract class UserCopyWith<$R, $In extends User, $Out>
   $R call({
     String? id,
     String? name,
-    String? username,
+    String? email,
     String? avatarUrl,
     bool? verified,
     String? branch,
@@ -135,32 +135,32 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
   $R call({
     String? id,
     String? name,
-    String? username,
+    String? email,
     Object? avatarUrl = $none,
     bool? verified,
     Object? branch = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (username != null) #username: username,
-      if (avatarUrl != $none) #avatarUrl: avatarUrl,
-      if (verified != null) #verified: verified,
-      if (branch != $none) #branch: branch,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (email != null) #email: email,
+          if (avatarUrl != $none) #avatarUrl: avatarUrl,
+          if (verified != null) #verified: verified,
+          if (branch != $none) #branch: branch,
+        }),
+      );
   @override
   User $make(CopyWithData data) => User(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    username: data.get(#username, or: $value.username),
-    avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
-    verified: data.get(#verified, or: $value.verified),
-    branch: data.get(#branch, or: $value.branch),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        email: data.get(#email, or: $value.email),
+        avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
+        verified: data.get(#verified, or: $value.verified),
+        branch: data.get(#branch, or: $value.branch),
+      );
 
   @override
   UserCopyWith<$R2, User, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _UserCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

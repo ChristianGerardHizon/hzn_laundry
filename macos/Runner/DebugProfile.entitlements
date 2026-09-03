@@ -18,7 +18,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.mobileapp.hizonelaundry</string>
+		<string>$(AppIdentifierPrefix)com.hznsystems.hznlaundry</string>
 	</array>
 </dict>
 </plist>

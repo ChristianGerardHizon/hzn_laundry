@@ -1,11 +1,11 @@
 {
-    "name": "Hi-Zone Laundry",
-    "short_name": "Hi-Zone Laundry",
+    "name": "HZN Laundry",
+    "short_name": "HZN Laundry",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
     "theme_color": "#hexcode",
-    "description": "Hi-Zone Laundry",
+    "description": "HZN Laundry",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
