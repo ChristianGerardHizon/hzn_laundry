@@ -614,6 +614,7 @@ lib/src/
 
 ## Recent Updates
 
+| Sep 04 | Windows Alt key assert | Debug no longer dumps Flutter's empty-`keysPressed` assert when Windows sends Alt Left with no modifier flags |
 | Sep 04 | Desktop side nav server URL | Expanded desktop sidebar shows the PocketBase server URL under the app title |
 | Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)
 | Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |

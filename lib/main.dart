@@ -9,6 +9,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'src/core/packages/sentry/sentry_provider_observer.dart';
+import 'src/core/utils/spurious_key_event_assert.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,4 +51,7 @@ Future<void> main() async {
   } else {
     runApp(app);
   }
+
+  // After Sentry so this wraps its FlutterError handler too.
+  installSpuriousKeyEventAssertFilter();
 }
