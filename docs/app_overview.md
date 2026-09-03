@@ -572,6 +572,7 @@ lib/src/
 
 | Date | Feature | Description |
 |------|---------|-------------|
+| Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |
 | Sep 02 | Google Play In-App Updates | Replaced the custom PocketBase APK-download updater with Play's native In-App Update API (flexible nudge + immediate force-update, Play Store listing fallback). Minimum-version lockout is now Android+web only; iOS/macOS/Linux/Windows skip auto-update entirely |
 | Aug 30 | Dashboard order tags | Kanban cards show location when assigned: Processing = machine; Ready = location + packs; Picked Up = machine + location + packs |
 | Aug 28 | App flavors | `dev`, `staging`, and `prod` flavors. Android can install all three side by side. Dev talks to local PocketBase; staging and prod use their live URLs |
