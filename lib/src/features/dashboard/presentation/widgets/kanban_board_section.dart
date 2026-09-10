@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -174,7 +175,7 @@ class KanbanBoardSection extends HookConsumerWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => const SalesHistoryRoute().go(context),
+                onPressed: () => const SalesHistoryRoute().goScoped(context),
                 child: const Text('View All'),
               ),
             ],

@@ -11,7 +11,7 @@ List<RouteBase> get $appRoutes => [
     ];
 
 RouteBase get $dashboardRoute => GoRouteData.$route(
-      path: '/',
+      path: '/dashboard',
       factory: $DashboardRoute._fromState,
     );
 
@@ -21,7 +21,7 @@ mixin $DashboardRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location(
-        '/',
+        '/dashboard',
       );
 
   @override

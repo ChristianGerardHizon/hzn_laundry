@@ -7,10 +7,10 @@ import '../utils/breakpoints.dart';
 import 'nav_permissions.dart';
 import 'network_health_logo.dart';
 
-/// Navigation rail for tablet and desktop layouts.
+/// Navigation rail for tablet layouts (600–899px).
 ///
 /// Displays permission-filtered navigation destinations with icons.
-/// On larger screens, shows labels alongside icons.
+/// For tablet-large and desktop (>=900px), `AppRoot` uses `DesktopSideNav`.
 class TabletNavRail extends ConsumerWidget {
   const TabletNavRail({
     super.key,

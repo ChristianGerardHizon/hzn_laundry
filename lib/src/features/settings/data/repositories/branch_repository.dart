@@ -92,8 +92,10 @@ class BranchRepositoryImpl implements BranchRepository {
       () async {
         final body = <String, dynamic>{
           'name': branch.name,
+          'slug': branch.slug,
           'address': branch.address,
           'contactNumber': branch.contactNumber,
+          'organization': branch.organizationId,
           'operatingHours': branch.operatingHours,
           'cutOffTime': branch.cutOffTime,
           'incentiveAmount': branch.incentiveAmount,
@@ -122,6 +124,7 @@ class BranchRepositoryImpl implements BranchRepository {
 
         final body = <String, dynamic>{
           'name': branch.name,
+          'slug': branch.slug,
           'address': branch.address,
           'contactNumber': branch.contactNumber,
           'operatingHours': branch.operatingHours,

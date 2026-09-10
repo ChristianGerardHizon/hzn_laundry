@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/promos.routes.dart';
 import '../../domain/promo.dart';
@@ -168,7 +169,7 @@ class _PromoListTile extends StatelessWidget {
           ? Icon(Icons.circle, size: 10, color: theme.colorScheme.primary)
           : Icon(Icons.circle, size: 10,
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
-      onTap: () => PromoDetailRoute(id: promo.id).go(context),
+      onTap: () => PromoDetailRoute(id: promo.id).goScoped(context),
     );
   }
 }

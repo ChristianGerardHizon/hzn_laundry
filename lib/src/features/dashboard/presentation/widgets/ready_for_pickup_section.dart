@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../pos/domain/payment_status.dart';
@@ -50,7 +51,7 @@ class ReadyForPickupSection extends ConsumerWidget {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => const SalesHistoryRoute().go(context),
+                    onPressed: () => const SalesHistoryRoute().goScoped(context),
                     child: const Text('View All'),
                   ),
                 ],
@@ -174,7 +175,7 @@ class _SaleListTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return InkWell(
-      onTap: () => SaleDetailRoute(id: sale.id).go(context),
+      onTap: () => SaleDetailRoute(id: sale.id).goScoped(context),
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),

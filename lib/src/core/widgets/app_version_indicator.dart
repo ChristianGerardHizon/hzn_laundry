@@ -10,7 +10,7 @@ import 'network_health_logo.dart';
 ///
 /// Shows:
 /// - Online / poor / offline status from PocketBase health
-/// - Server domain: `staging.hizonelaundry.hznsystems.com`
+/// - Server domain: `staging.hznlaundry.hznsystems.com`
 /// - Version and build number: `v1.0.0+1`
 /// - Environment badge (only for non-prod): `DEV` or `STAGING`
 class AppVersionIndicator extends ConsumerWidget {

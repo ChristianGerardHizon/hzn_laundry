@@ -10,14 +10,15 @@ This document describes the GitHub Actions deployment pipeline, branching strate
 2. [Workflow Files](#workflow-files)
 3. [Deployment Flows](#deployment-flows)
 4. [Required GitHub Secrets](#required-github-secrets)
-5. [GitHub Environment Setup](#github-environment-setup)
-6. [Server-Side Requirements](#server-side-requirements)
-7. [Build-Time Dart Defines](#build-time-dart-defines)
-8. [Android Signing](#android-signing)
-9. [Version Management](#version-management)
-10. [Build Artifacts & Caching](#build-artifacts--caching)
-11. [Platform Support](#platform-support)
-12. [Google Play Store](#google-play-store)
+5. [Sync secrets from this machine](#sync-secrets-from-this-machine)
+6. [GitHub Environment Setup](#github-environment-setup)
+7. [Server-Side Requirements](#server-side-requirements)
+8. [Build-Time Dart Defines](#build-time-dart-defines)
+9. [Android Signing](#android-signing)
+10. [Version Management](#version-management)
+11. [Build Artifacts & Caching](#build-artifacts--caching)
+12. [Platform Support](#platform-support)
+13. [Google Play Store](#google-play-store)
 
 ---
 
@@ -37,9 +38,10 @@ feature branch → staging → main
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/deploy.yml` | Main deployment — staging + production builds and releases |
+| `.github/workflows/deploy.yml` | Main deployment — staging + production builds, Play Internal upload, and releases |
 | `.github/workflows/auto-promote.yml` | Auto-creates a PR from `staging` → `main` when a merged PR has the `deploy` label |
 | `.github/workflows/branch-protection.yml` | Blocks PRs to `main` that don't originate from `staging` |
+| `.github/scripts/sync_github_secrets.py` | Pushes local keystore / Play JSON / PocketBase URLs into GitHub Actions secrets |
 
 ---
 
@@ -125,10 +127,13 @@ PR merged to main
   │   ├─ Restart PocketBase production service
   │   │
   │   ├─ Upload APK + AAB as GitHub Actions artifacts
-  │   ├─ Compile user-facing release notes from merged staging PRs
+  │   └─ Compile user-facing release notes from merged staging PRs
+  │
+  ├─ [upload-play-internal job] (depends on deploy-production; retry this job on Play API failure)
+  │   ├─ Download AAB + What's new artifacts
   │   └─ Upload AAB to Google Play Internal testing (published, with What's new)
   │
-  ├─ [release-and-sync job] (depends on deploy-production)
+  ├─ [release-and-sync job] (depends on deploy-production + upload-play-internal)
   │   ├─ Download APK + AAB + release notes artifacts
   │   ├─ Create GitHub Release (body = compiled release notes)
   │   │   Tag: vX.Y.Z
@@ -182,13 +187,39 @@ These must be configured in **Settings → Secrets and variables → Actions**.
 | `KEYSTORE_PASSWORD` | Yes | Staging & Production | Keystore store password |
 | `KEY_ALIAS` | Yes | Staging & Production | Key alias within the keystore |
 | `KEY_PASSWORD` | Yes | Staging & Production | Key password |
-| `PLAYSTORE_SERVICE_ACCOUNT_JSON` | Optional | Production | Play Console service-account JSON. If unset, Play upload is skipped (see [Google Play Store](#google-play-store)). |
+| `PLAYSTORE_SERVICE_ACCOUNT_JSON` | Yes | Production (`upload-play-internal`) | Play Console service-account JSON (see [Google Play Store](#google-play-store)) |
 | `SSH_HOST` | Yes | Staging & Production | Server hostname or IP for SSH deployment |
 | `SSH_USER` | Yes | Staging & Production | SSH username (e.g., `deploy`) |
 | `SSH_PRIVATE_KEY` | Yes | Staging & Production | Ed25519 or RSA private key (PEM format) for SSH authentication |
 | `PB_TOKEN` | Optional | Production (release-and-sync) | Auth token for PATCH-ing the Version Manager after release |
 
 `GITHUB_TOKEN` is provided automatically by GitHub Actions.
+
+Prefer [syncing from this machine](#sync-secrets-from-this-machine) instead of pasting values by hand. The script always writes **repository** secrets. It also writes the **Production** environment when the GitHub token can manage environments; otherwise re-run after creating **Settings → Environments → Production**, or paste the same names there if that environment restricts secrets.
+
+---
+
+## Sync secrets from this machine
+
+[`.github/scripts/sync_github_secrets.py`](../.github/scripts/sync_github_secrets.py) reads gitignored local files and runs `gh secret set` for both **repository** secrets and the **Production** environment.
+
+Requires authenticated GitHub CLI (`gh auth login`).
+
+```bash
+python .github/scripts/sync_github_secrets.py --dry-run
+python .github/scripts/sync_github_secrets.py
+```
+
+| Local file (never commit) | Secrets |
+|---------------------------|---------|
+| `android/keystore/github-secrets.txt` | `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` |
+| `android/keystore/upload-keystore.jks` | Re-encodes `KEYSTORE_BASE64` when present so the txt file cannot drift |
+| `android/keystore/hznsystems-d413e58b8c31.json` | `PLAYSTORE_SERVICE_ACCOUNT_JSON` |
+| `.env` `STAGING_URL` / `PROD_URL` | `POCKETBASE_URL_STAGING` / `POCKETBASE_URL_PROD` |
+
+`--dry-run` prints secret **names** only. SSH, version-manager, and `PB_TOKEN` are left unchanged unless you pass optional flags (`--ssh-key`, `--ssh-host`, `--ssh-user`, `--version-manager-url`, `--version-collection-id`, `--pb-token` / `--pb-token-file`).
+
+Do not put the Play JSON in `.env`.
 
 ---
 
@@ -198,7 +229,7 @@ A **"Production"** environment must be created in the repository:
 
 **Settings → Environments → New environment → "Production"**
 
-This environment acts as an approval gate — production deploys require manual approval before running.
+This environment acts as an approval gate — production deploys require manual approval before running. The sync script creates the environment if it is missing and writes Play/signing/PocketBase secrets onto it so `deploy-production` and `upload-play-internal` can read them. Add required reviewers in **Settings → Environments → Production** if they are not already set.
 
 ---
 
@@ -206,7 +237,17 @@ This environment acts as an approval gate — production deploys require manual 
 
 Both staging and production deploy to the **same server** via SSH. The following must be configured on the server:
 
+**Hi-Zone Laundry is a different product.** Do not deploy this repo to `hizonelaundry.hznsystems.com`, `/opt/pocketbase/hizonelaundry/`, `/opt/pocketbase/hizonelaundry-staging/`, or `pocketbase_hizonelaundry*` services. Those belong to Hi-Zone Laundry. This project only uses **HZN Laundry** hosts: `hznlaundry.hznsystems.com` and `staging.hznlaundry.hznsystems.com`.
+
+| Environment | Hostname | Path | systemd unit | Port |
+|-------------|----------|------|--------------|------|
+| Production | `hznlaundry.hznsystems.com` | `/opt/pocketbase/hznlaundry/` | `pocketbase_hznlaundry.service` | 8104 |
+| Staging | `staging.hznlaundry.hznsystems.com` | `/opt/pocketbase/hznlaundry-staging/` | `pocketbase_hznlaundry-staging.service` | 8105 |
+
+CI (`deploy.yml`) pins these paths and **fails the job** if `POCKETBASE_URL_*` or `SSH_USER` still point at Hi-Zone Laundry (`hizonelaundry*`).
+
 ### SSH Access
+- `SSH_USER` is `deploy-hznlaundry` (not `deploy-hizonelaundry`)
 - The `SSH_USER` must have `authorized_keys` configured with the public key matching `SSH_PRIVATE_KEY`
 - `rsync` must be installed on the server
 
@@ -216,18 +257,20 @@ The SSH user needs write access to:
 
 | Path | Purpose |
 |------|---------|
-| `/opt/pocketbase/hizonelaundry-staging/pb_public/` | Staging web build |
-| `/opt/pocketbase/hizonelaundry-staging/pb_migrations/` | Staging PocketBase migrations |
-| `/opt/pocketbase/hizonelaundry/pb_public/` | Production web build |
-| `/opt/pocketbase/hizonelaundry/pb_migrations/` | Production PocketBase migrations |
+| `/opt/pocketbase/hznlaundry-staging/pb_public/` | Staging web build |
+| `/opt/pocketbase/hznlaundry-staging/pb_migrations/` | Staging PocketBase migrations |
+| `/opt/pocketbase/hznlaundry-staging/pb_hooks/` | Staging PocketBase hooks |
+| `/opt/pocketbase/hznlaundry/pb_public/` | Production web build |
+| `/opt/pocketbase/hznlaundry/pb_migrations/` | Production PocketBase migrations |
+| `/opt/pocketbase/hznlaundry/pb_hooks/` | Production PocketBase hooks |
 
 ### Passwordless Sudo
 
-The SSH user needs passwordless sudo for restarting PocketBase services. Add to `/etc/sudoers.d/deploy`:
+The SSH user needs passwordless sudo for restarting PocketBase services. Configured in `/etc/sudoers.d/deploy-hznlaundry`:
 
 ```
-deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hizonelaundry-staging.service
-deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart pocketbase_hizonelaundry.service
+deploy-hznlaundry ALL=(root) NOPASSWD: /usr/bin/systemctl restart pocketbase_hznlaundry-staging.service
+deploy-hznlaundry ALL=(root) NOPASSWD: /usr/bin/systemctl restart pocketbase_hznlaundry.service
 ```
 
 ---
@@ -245,9 +288,9 @@ Android flavor IDs:
 
 | Flavor | Application ID | PocketBase |
 |--------|----------------|------------|
-| `dev` | `com.hznsystems.hizonelaundry.dev` | `http://127.0.0.1:8090` |
-| `staging` | `com.hznsystems.hizonelaundry.staging` | staging URL |
-| `prod` | `com.hznsystems.hizonelaundry` | production URL (Play Store) |
+| `dev` | `com.hznsystems.hznlaundry.dev` | `http://127.0.0.1:8090` |
+| `staging` | `com.hznsystems.hznlaundry.staging` | staging URL |
+| `prod` | `com.hznsystems.hznlaundry` | production URL (Play Store) |
 
 ---
 
@@ -267,9 +310,16 @@ The APK and App Bundle (AAB) build steps set these environment variables, which 
 - If `CI=true` and `CM_KEYSTORE_PATH` is set → uses CI environment variables
 - Otherwise → falls back to local `android/key.properties` file
 
-### Generating `KEYSTORE_BASE64`
+Local signing files (gitignored — never commit):
 
-To encode your keystore for the secret:
+| Path | Purpose |
+|------|---------|
+| `android/keystore/upload-keystore.jks` | Production **upload** keystore |
+| `android/keystore/github-secrets.txt` | `KEYSTORE_*` values for GitHub Actions |
+| `android/keystore/hznsystems-d413e58b8c31.json` | Play Developer API service account (same Google Cloud account as San Jose Animal Clinic) |
+| `android/key.properties` | Local Gradle signing config (`storeFile` points at the JKS) |
+
+The sync script re-encodes `KEYSTORE_BASE64` from the JKS when that file exists. Manual encode (if needed):
 
 ```bash
 base64 -i your-keystore.jks | pbcopy   # macOS (copies to clipboard)
@@ -354,9 +404,11 @@ Staging and production have **separate** Flutter build caches to prevent conflic
 
 Play Console does **not** accept APKs for new uploads. Production deploys therefore build a signed **Android App Bundle** (`.aab`) and upload it with the Play Developer API.
 
-**Package name:** `com.hznsystems.hizonelaundry` (must match `applicationId` in `android/app/build.gradle.kts` and the Play Console app).
+**Package name:** `com.hznsystems.hznlaundry` (must match `applicationId` in `android/app/build.gradle.kts` and the Play Console app).
 
-The AAB is uploaded to **Internal testing** with `status: completed` (published to testers). Staging deploys do **not** upload to Play. The public production track is not used. The app does not appear in Play Store search; testers install via the Internal testing opt-in link.
+The AAB is uploaded to **Internal testing** with `status: completed` (published to testers) by the **`upload-play-internal`** job. If that job fails, use **Re-run failed jobs** so the AAB is uploaded again without rebuilding. Staging deploys do **not** upload to Play. The public production track is not used. The app does not appear in Play Store search; testers install via the Internal testing opt-in link.
+
+Store listing graphics to paste into Console live in [`store-listing/`](../store-listing/README.md).
 
 Testers already on the Internal testing email list receive the new build automatically after a successful production deploy.
 
@@ -367,7 +419,7 @@ Do these steps once. After that, every merge to `main` publishes a new Internal 
 #### 1. Create the app in Play Console
 
 1. Open [Google Play Console](https://play.google.com/console) with your developer account.
-2. **Create app** → name **Hi-Zone Laundry**, default language, app (not game), free or paid.
+2. **Create app** → name **HZN Laundry**, default language, app (not game), free or paid.
 3. Complete the required dashboard tasks until the app exists (privacy policy, app access, ads, content rating, target audience, Data safety, store listing). You can finish store listing later, but the **app record must exist** before the API can upload.
 
 #### 2. Enable Play App Signing
@@ -391,22 +443,20 @@ After one successful console upload, later production deploys use the API.
 
 #### 4. Google Cloud service account
 
-1. In Play Console go to **Setup** → **API access** (or **Users and permissions** → **Invite new users** / service accounts, depending on the current Console UI).
-2. Link a Google Cloud project if prompted.
-3. In [Google Cloud Console](https://console.cloud.google.com/) create (or pick) a project, enable **Google Play Android Developer API**.
-4. Create a service account (e.g. `hizone-play-upload`) with no GCP roles required.
-5. Create a **JSON key** for that service account. Download it. This file is a secret — never commit it.
-6. Back in Play Console, grant that service account access to **Hi-Zone Laundry** with at least **Release apps to testing tracks**.
+This app uses the existing HznSystems Play Developer API service account (`google-playstore-upload@hznsystems.iam.gserviceaccount.com`) — the same JSON as San Jose Animal Clinic, stored locally at `android/keystore/hznsystems-d413e58b8c31.json`.
+
+1. In Play Console, grant that service account access to **HZN Laundry** with at least **Release apps to testing tracks**.
+2. If you ever rotate the JSON key, replace the local file and re-run the sync script. Never commit it.
 
 #### 5. GitHub secret
 
-1. Open the JSON key in a text editor and copy the **entire** file (including `{` and `}`).
-2. Repo **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
-3. Name: `PLAYSTORE_SERVICE_ACCOUNT_JSON`
-4. Value: the full JSON.
-5. Also add it on the **Production** environment if that environment is set to restrict secrets.
+Run the [sync script](#sync-secrets-from-this-machine) so `PLAYSTORE_SERVICE_ACCOUNT_JSON` is set on the repository **and** the Production environment:
 
-Until this secret exists, production still deploys web and GitHub Releases; the Play upload step is skipped.
+```bash
+python .github/scripts/sync_github_secrets.py
+```
+
+Production deploys **fail** in preflight if this secret is missing. There is no skip path.
 
 #### Privacy policy URL (Play Console)
 
@@ -414,10 +464,17 @@ A static privacy policy page ships with every web build at:
 
 | Environment | URL |
 |-------------|-----|
-| Production | `https://hizonelaundry.hznsystems.com/privacy-policy.html` |
-| Staging | `https://staging.hizonelaundry.hznsystems.com/privacy-policy.html` |
+| Production | `https://hznlaundry.hznsystems.com/privacy-policy.html` |
+| Staging | `https://staging.hznlaundry.hznsystems.com/privacy-policy.html` |
 
-Source: [`web/privacy-policy.html`](web/privacy-policy.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** URL in Play Console → App content → Privacy policy.
+Password reset page (linked from PocketBase reset emails):
+
+| Environment | URL |
+|-------------|-----|
+| Production | `https://hznlaundry.hznsystems.com/reset-password.html` |
+| Staging | `https://staging.hznlaundry.hznsystems.com/reset-password.html` |
+
+Source: [`web/privacy-policy.html`](web/privacy-policy.html) and [`web/reset-password.html`](web/reset-password.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** privacy-policy URL in Play Console → App content → Privacy policy.
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 
@@ -425,7 +482,7 @@ The web build also ships `robots.txt` and `noindex` meta tags on the main app so
 
 #### 6. After each production deploy
 
-1. Wait for `deploy-production` to finish.
+1. Wait for `deploy-production` and `upload-play-internal` to finish. If only Play failed, **Re-run failed jobs**.
 2. Testers already opted in get the new version (`X.Y.Z`, version code = GitHub run number) from Play Store without a new opt-in.
 3. New testers still need the Internal testing opt-in URL (email lists cannot be updated via the Play API; add emails in Play Console).
 

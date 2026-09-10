@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -56,7 +57,7 @@ class MachineDetailPanel extends HookConsumerWidget {
         title: Text(machine.name),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => const MachinesRoute().go(context),
+          onPressed: () => const MachinesRoute().goScoped(context),
         ),
         actions: [
           IconButton(

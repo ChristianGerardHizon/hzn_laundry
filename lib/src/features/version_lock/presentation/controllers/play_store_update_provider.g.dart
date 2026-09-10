@@ -56,7 +56,7 @@ final class PlayStoreUpdateProvider
   }
 }
 
-String _$playStoreUpdateHash() => r'dad52a0eee8b7fdd90c153f3984fbaf8ebb7fb65';
+String _$playStoreUpdateHash() => r'65b5274a996248400aeb437cd22a4f954c491326';
 
 /// Drives Google Play's native In-App Updates flow.
 ///

@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>$(DISPLAY_NAME)</string>
+	<string>HZN Laundry</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -19,7 +19,7 @@
 			<string>en</string>
 		</array>
 		<key>CFBundleName</key>
-		<string>com.2doit.dev</string>
+	<string>HZN Laundry</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -73,7 +73,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
 				<!-- You can find it on /ios/project.pbxproj - 'PRODUCT_BUNDLE_IDENTIFIER' -->
-				<string>com.mobileapp.hizonelaundry</string>
+				<string>com.hznsystems.hznlaundry</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<!-- Your app title -->

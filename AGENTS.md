@@ -58,6 +58,7 @@ Use `flutter run` for local development; run `build_runner` and `slang` after mo
 
 ## Agent-Specific Notes
 - Follow the rules and code patterns defined in `CLAUDE.md`, especially for architectural changes and established project conventions.
+- **Hi-Zone Laundry is not this repo.** Never touch `hizonelaundry.hznsystems.com` or `/opt/pocketbase/hizonelaundry*`. This project is HZN Laundry (`hznlaundry.hznsystems.com`).
 
 
 ## grepai - Semantic Code Search

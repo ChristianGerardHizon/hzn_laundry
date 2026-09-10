@@ -14,8 +14,10 @@ class BranchDto with BranchDtoMappable {
   final String collectionId;
   final String collectionName;
   final String name;
+  final String slug;
   final String address;
   final String contactNumber;
+  final String? organizationId;
   final String? operatingHours;
   final String? cutOffTime;
   final num incentiveAmount;
@@ -29,8 +31,10 @@ class BranchDto with BranchDtoMappable {
     required this.collectionId,
     required this.collectionName,
     required this.name,
+    required this.slug,
     required this.address,
     required this.contactNumber,
+    this.organizationId,
     this.operatingHours,
     this.cutOffTime,
     this.incentiveAmount = 5,
@@ -49,8 +53,10 @@ class BranchDto with BranchDtoMappable {
       collectionId: json['collectionId'] as String? ?? '',
       collectionName: json['collectionName'] as String? ?? '',
       name: json['name'] as String? ?? '',
+      slug: json['slug'] as String? ?? '',
       address: json['address'] as String? ?? '',
       contactNumber: json['contactNumber'] as String? ?? '',
+      organizationId: json['organization'] as String?,
       operatingHours: json['operatingHours'] as String?,
       cutOffTime: json['cutOffTime'] as String?,
       incentiveAmount: json['incentiveAmount'] as num? ?? 5,
@@ -66,8 +72,10 @@ class BranchDto with BranchDtoMappable {
     return Branch(
       id: id,
       name: name,
+      slug: slug,
       address: address,
       contactNumber: contactNumber,
+      organizationId: organizationId,
       operatingHours: operatingHours,
       cutOffTime: cutOffTime,
       incentiveAmount: incentiveAmount,

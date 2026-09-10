@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/settings/domain/branch.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../i18n/strings.g.dart';
+import '../routing/router_utils.dart';
 import 'nav_permissions.dart';
 
 /// Branch switcher widget for the sidebar/drawer and app branch bar.
@@ -65,13 +67,37 @@ class BranchSwitcher extends ConsumerWidget {
                 branches: branches,
                 compact: compact,
                 onChanged: (value) {
+                  final routerState = GoRouterState.of(context);
+                  final isScoped =
+                      routerState.pathParameters['orgSlug'] != null;
+                  final currentLocation = routerState.uri.path;
+                  final targetSlug = value == kAllBranchesSentinel
+                      ? allBranchesSlug
+                      : branches
+                          .cast<Branch?>()
+                          .firstWhere(
+                            (b) => b?.id == value,
+                            orElse: () => null,
+                          )
+                          ?.slug;
                   final notifier =
                       ref.read(currentBranchControllerProvider.notifier);
-                  if (value == kAllBranchesSentinel) {
-                    notifier.switchToAllBranches();
-                  } else {
-                    notifier.switchBranch(value);
-                  }
+                  final future = value == kAllBranchesSentinel
+                      ? notifier.switchToAllBranches()
+                      : notifier.switchBranch(value);
+                  future.then((_) {
+                    if (!context.mounted ||
+                        !isScoped ||
+                        targetSlug == null) {
+                      return;
+                    }
+                    context.go(
+                      RouterUtils.replaceScopeSegment(
+                        currentLocation,
+                        branchSlug: targetSlug,
+                      ),
+                    );
+                  });
                 },
               );
             },

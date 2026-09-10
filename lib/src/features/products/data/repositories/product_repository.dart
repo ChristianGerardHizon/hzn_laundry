@@ -217,6 +217,12 @@ class ProductRepositoryImpl implements ProductRepository {
           'expiration': product.expiration.toUtcIso8601OrNull(),
           'trackByLot': product.trackByLot,
           'quantityUnit': product.quantityUnitId,
+          'isConsumable': product.isConsumable,
+          'countsTowardMaterialCost': product.countsTowardMaterialCost,
+          'usageMin': product.usageMin,
+          'usageMax': product.usageMax,
+          'usageStep': product.usageStep,
+          'defaultUsage': product.defaultUsage,
           'isDeleted': false,
         };
 
@@ -247,6 +253,12 @@ class ProductRepositoryImpl implements ProductRepository {
           'expiration': product.expiration.toUtcIso8601OrNull(),
           'trackByLot': product.trackByLot,
           'quantityUnit': product.quantityUnitId,
+          'isConsumable': product.isConsumable,
+          'countsTowardMaterialCost': product.countsTowardMaterialCost,
+          'usageMin': product.usageMin,
+          'usageMax': product.usageMax,
+          'usageStep': product.usageStep,
+          'defaultUsage': product.defaultUsage,
         };
 
         final record =

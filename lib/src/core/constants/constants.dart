@@ -7,7 +7,7 @@ library;
 /// Application metadata and configuration
 abstract class AppConstants {
   /// Application name
-  static const String appName = 'Hi-Zone Laundry';
+  static const String appName = 'HZN Laundry';
 
   /// Application version (synced with pubspec.yaml)
   static const String version = '1.0.0';
@@ -81,4 +81,3 @@ abstract class Pagination {
   /// Maximum page size allowed
   static const int maxPageSize = 100;
 }
-

@@ -59,7 +59,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'This link may have expired. Please contact Hizone Laundry for a new link.',
+              'This link may have expired. Please contact HZN Laundry for a new link.',
               textAlign: TextAlign.center,
             ),
           ],

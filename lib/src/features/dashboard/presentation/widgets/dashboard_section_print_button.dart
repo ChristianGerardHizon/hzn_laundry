@@ -6,6 +6,7 @@ import '../../../../core/pdf/pdf_task_runner.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/add_ons_summary.dart';
+import '../../domain/consumables_usage_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
@@ -28,6 +29,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
     this.color,
   })  : incentive = null,
         addOns = null,
+        consumables = null,
+        showConsumableCost = false,
         loads = null,
         packs = null;
 
@@ -39,6 +42,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         salesItems = null,
         total = null,
         addOns = null,
+        consumables = null,
+        showConsumableCost = false,
         loads = null,
         packs = null;
 
@@ -50,6 +55,21 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         salesItems = null,
         total = null,
         incentive = null,
+        consumables = null,
+        showConsumableCost = false,
+        loads = null,
+        packs = null;
+
+  const DashboardSectionPrintButton.consumables({
+    super.key,
+    required ConsumablesUsageSummaryData this.consumables,
+    this.showConsumableCost = false,
+    this.color,
+  })  : sectionTitle = 'Consumables used',
+        salesItems = null,
+        total = null,
+        incentive = null,
+        addOns = null,
         loads = null,
         packs = null;
 
@@ -62,6 +82,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         total = null,
         incentive = null,
         addOns = null,
+        consumables = null,
+        showConsumableCost = false,
         packs = null;
 
   const DashboardSectionPrintButton.packs({
@@ -73,6 +95,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         total = null,
         incentive = null,
         addOns = null,
+        consumables = null,
+        showConsumableCost = false,
         loads = null;
 
   final String sectionTitle;
@@ -80,6 +104,8 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   final num? total;
   final TodayIncentiveSummary? incentive;
   final AddOnsSummaryData? addOns;
+  final ConsumablesUsageSummaryData? consumables;
+  final bool showConsumableCost;
   final LoadsSummaryData? loads;
   final TotalPacksSummary? packs;
   final Color? color;
@@ -112,6 +138,16 @@ class DashboardSectionPrintButton extends ConsumerWidget {
           if (addOns != null) {
             return DashboardSectionPdfPayload.fromAddOns(
               summary: addOns!,
+              businessName: branch?.name,
+              reportDate: reportDate,
+              generatedAt: DateTime.now(),
+              isDateOverridden: isOverridden,
+            );
+          }
+          if (consumables != null) {
+            return DashboardSectionPdfPayload.fromConsumables(
+              summary: consumables!,
+              showCost: showConsumableCost,
               businessName: branch?.name,
               reportDate: reportDate,
               generatedAt: DateTime.now(),

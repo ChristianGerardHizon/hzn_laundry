@@ -35,11 +35,8 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
   );
   static String _$name(UserDto v) => v.name;
   static const Field<UserDto, String> _f$name = Field('name', _$name);
-  static String _$username(UserDto v) => v.username;
-  static const Field<UserDto, String> _f$username = Field(
-    'username',
-    _$username,
-  );
+  static String _$email(UserDto v) => v.email;
+  static const Field<UserDto, String> _f$email = Field('email', _$email);
   static String? _$avatar(UserDto v) => v.avatar;
   static const Field<UserDto, String> _f$avatar = Field(
     'avatar',
@@ -103,7 +100,7 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
-    #username: _f$username,
+    #email: _f$email,
     #avatar: _f$avatar,
     #verified: _f$verified,
     #role: _f$role,
@@ -121,7 +118,7 @@ class UserDtoMapper extends ClassMapperBase<UserDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
-      username: data.dec(_f$username),
+      email: data.dec(_f$email),
       avatar: data.dec(_f$avatar),
       verified: data.dec(_f$verified),
       role: data.dec(_f$role),
@@ -196,7 +193,7 @@ abstract class UserDtoCopyWith<$R, $In extends UserDto, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
-    String? username,
+    String? email,
     String? avatar,
     bool? verified,
     String? role,
@@ -224,7 +221,7 @@ class _UserDtoCopyWithImpl<$R, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
-    String? username,
+    String? email,
     Object? avatar = $none,
     bool? verified,
     Object? role = $none,
@@ -234,44 +231,44 @@ class _UserDtoCopyWithImpl<$R, $Out>
     Object? updated = $none,
     Object? roleName = $none,
     Object? branchName = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (name != null) #name: name,
-      if (username != null) #username: username,
-      if (avatar != $none) #avatar: avatar,
-      if (verified != null) #verified: verified,
-      if (role != $none) #role: role,
-      if (branch != $none) #branch: branch,
-      if (isDeleted != null) #isDeleted: isDeleted,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-      if (roleName != $none) #roleName: roleName,
-      if (branchName != $none) #branchName: branchName,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (name != null) #name: name,
+          if (email != null) #email: email,
+          if (avatar != $none) #avatar: avatar,
+          if (verified != null) #verified: verified,
+          if (role != $none) #role: role,
+          if (branch != $none) #branch: branch,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+          if (roleName != $none) #roleName: roleName,
+          if (branchName != $none) #branchName: branchName,
+        }),
+      );
   @override
   UserDto $make(CopyWithData data) => UserDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    name: data.get(#name, or: $value.name),
-    username: data.get(#username, or: $value.username),
-    avatar: data.get(#avatar, or: $value.avatar),
-    verified: data.get(#verified, or: $value.verified),
-    role: data.get(#role, or: $value.role),
-    branch: data.get(#branch, or: $value.branch),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-    roleName: data.get(#roleName, or: $value.roleName),
-    branchName: data.get(#branchName, or: $value.branchName),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        name: data.get(#name, or: $value.name),
+        email: data.get(#email, or: $value.email),
+        avatar: data.get(#avatar, or: $value.avatar),
+        verified: data.get(#verified, or: $value.verified),
+        role: data.get(#role, or: $value.role),
+        branch: data.get(#branch, or: $value.branch),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+        roleName: data.get(#roleName, or: $value.roleName),
+        branchName: data.get(#branchName, or: $value.branchName),
+      );
 
   @override
   UserDtoCopyWith<$R2, UserDto, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _UserDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/repositories/branch_repository.dart';
 import '../../domain/branch.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 
 part 'branches_controller.g.dart';
 
@@ -14,28 +15,46 @@ class BranchesController extends _$BranchesController {
 
   @override
   Future<List<Branch>> build() async {
+    final orgId = ref.watch(currentOrganizationIdProvider);
     final result = await _repository.fetchAll();
-    return result.fold(
+    final branches = result.fold(
       (failure) => throw failure,
-      (branches) => branches,
+      (value) => value,
     );
+    return _scopedToOrg(branches, orgId);
+  }
+
+  List<Branch> _scopedToOrg(List<Branch> branches, String? orgId) {
+    if (orgId == null || orgId.isEmpty) return branches;
+    return branches
+        .where(
+          (b) =>
+              b.organizationId == orgId ||
+              b.organizationId == null ||
+              b.organizationId!.isEmpty,
+        )
+        .toList();
   }
 
   /// Refreshes the branch list.
   Future<void> refresh() async {
     state = const AsyncLoading();
-
+    final orgId = ref.read(currentOrganizationIdProvider);
     final result = await _repository.fetchAll();
-
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),
-      (branches) => AsyncData(branches),
+      (branches) => AsyncData(_scopedToOrg(branches, orgId)),
     );
   }
 
   /// Creates a new branch.
   Future<bool> createBranch(Branch branch) async {
-    final result = await _repository.create(branch);
+    final stamped =
+        branch.organizationId == null || branch.organizationId!.isEmpty
+            ? branch.copyWith(
+                organizationId: ref.read(currentOrganizationIdProvider))
+            : branch;
+    final result = await _repository.create(stamped);
 
     return result.fold(
       (failure) => false,

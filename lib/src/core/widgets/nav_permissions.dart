@@ -8,15 +8,35 @@ import '../../features/users/presentation/controllers/user_role_provider.dart';
 
 part 'nav_permissions.g.dart';
 
+/// Stable identity for top-level shell destinations.
+enum NavId {
+  dashboard,
+  salesHistory,
+  products,
+  services,
+  customers,
+  employees,
+  reports,
+  activities,
+  management,
+  organizations,
+  promos,
+  system,
+}
+
 /// A navigation destination with its required permission.
 class NavItem {
   const NavItem({
+    required this.id,
     required this.index,
     required this.icon,
     required this.selectedIcon,
     required this.label,
     this.requiredPermission,
   });
+
+  /// Stable destination identity for desktop grouping.
+  final NavId id;
 
   /// Original route index in AppRoot._routes.
   final int index;
@@ -33,6 +53,7 @@ class NavItem {
 /// Order matches AppRoot._routePaths / _routes.
 List<NavItem> buildAllNavItems(String Function(String key) t) => [
       NavItem(
+        id: NavId.dashboard,
         index: 0,
         icon: Icons.dashboard_outlined,
         selectedIcon: Icons.dashboard,
@@ -40,6 +61,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         // Dashboard is always visible
       ),
       NavItem(
+        id: NavId.salesHistory,
         index: 1,
         icon: Icons.receipt_long_outlined,
         selectedIcon: Icons.receipt_long,
@@ -47,6 +69,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.salesView,
       ),
       NavItem(
+        id: NavId.products,
         index: 2,
         icon: Icons.inventory_2_outlined,
         selectedIcon: Icons.inventory_2,
@@ -54,6 +77,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.productsView,
       ),
       NavItem(
+        id: NavId.services,
         index: 3,
         icon: Icons.miscellaneous_services_outlined,
         selectedIcon: Icons.miscellaneous_services,
@@ -61,6 +85,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.servicesView,
       ),
       NavItem(
+        id: NavId.customers,
         index: 4,
         icon: Icons.people_outlined,
         selectedIcon: Icons.people,
@@ -68,6 +93,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.customersView,
       ),
       NavItem(
+        id: NavId.employees,
         index: 5,
         icon: Icons.badge_outlined,
         selectedIcon: Icons.badge,
@@ -75,6 +101,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.employeesView,
       ),
       NavItem(
+        id: NavId.reports,
         index: 6,
         icon: Icons.analytics_outlined,
         selectedIcon: Icons.analytics,
@@ -82,6 +109,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.reportsView,
       ),
       NavItem(
+        id: NavId.activities,
         index: 7,
         icon: Icons.history_outlined,
         selectedIcon: Icons.history,
@@ -89,21 +117,32 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         requiredPermission: Permissions.systemAdmin,
       ),
       NavItem(
+        id: NavId.management,
         index: 8,
         icon: Icons.business_outlined,
         selectedIcon: Icons.business,
-        label: t('organization'),
+        label: t('management'),
         requiredPermission: Permissions.branchesView,
       ),
       NavItem(
+        id: NavId.organizations,
         index: 9,
+        icon: Icons.apartment_outlined,
+        selectedIcon: Icons.apartment,
+        label: t('organizations'),
+        // No permission gate — every logged-in user must see pending invites.
+      ),
+      NavItem(
+        id: NavId.promos,
+        index: 10,
         icon: Icons.loyalty_outlined,
         selectedIcon: Icons.loyalty,
         label: 'Promos',
         requiredPermission: Permissions.systemAdmin,
       ),
       NavItem(
-        index: 10,
+        id: NavId.system,
+        index: 11,
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
         label: t('system'),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/users.routes.dart';
@@ -50,7 +51,7 @@ class UserDetailPage extends HookConsumerWidget {
               ? null
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => const UsersRoute().go(context),
+                  onPressed: () => const UsersRoute().goScoped(context),
                 ),
         ),
         body: Center(
@@ -77,7 +78,7 @@ class UserDetailPage extends HookConsumerWidget {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => const UsersRoute().go(context),
+                      onPressed: () => const UsersRoute().goScoped(context),
                     ),
             ),
             body: const Center(
@@ -93,7 +94,7 @@ class UserDetailPage extends HookConsumerWidget {
                 ? null
                 : IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => const UsersRoute().go(context),
+                    onPressed: () => const UsersRoute().goScoped(context),
                   ),
             title: Text('${user.name} - ${user.displayRole}'),
             actions: [
@@ -292,7 +293,7 @@ class UserDetailPage extends HookConsumerWidget {
                   .deleteUser(user.id);
               if (context.mounted) {
                 if (success) {
-                  const UsersRoute().go(context);
+                  const UsersRoute().goScoped(context);
                   showSuccessSnackBar(context, message: 'User deleted');
                 } else {
                   showErrorSnackBar(context, message: 'Failed to delete user');

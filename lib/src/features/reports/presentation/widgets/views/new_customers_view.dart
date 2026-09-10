@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../../core/routing/routes/customers.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
@@ -404,7 +405,7 @@ class NewCustomersView extends HookConsumerWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          onTap: () => CustomerDetailRoute(id: customer.id).go(context),
+          onTap: () => CustomerDetailRoute(id: customer.id).goScoped(context),
         ),
         DataCell(Text(customer.phone ?? '—')),
         DataCell(Text(customer.address ?? '—')),
@@ -456,7 +457,7 @@ class NewCustomersView extends HookConsumerWidget {
           children: [
             GestureDetector(
               onTap: () =>
-                  CustomerDetailRoute(id: customer.id).go(context),
+                  CustomerDetailRoute(id: customer.id).goScoped(context),
               child: Text(
                 customer.name,
                 style: theme.textTheme.titleSmall?.copyWith(

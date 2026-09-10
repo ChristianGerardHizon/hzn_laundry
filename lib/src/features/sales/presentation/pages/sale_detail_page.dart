@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
@@ -27,6 +28,7 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
+import '../widgets/sale_usage_section.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
@@ -66,7 +68,7 @@ class SaleDetailPage extends ConsumerWidget {
               ? null
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => const SalesHistoryRoute().go(context),
+                  onPressed: () => const SalesHistoryRoute().goScoped(context),
                 ),
         ),
         body: Center(
@@ -93,7 +95,7 @@ class SaleDetailPage extends ConsumerWidget {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => const SalesHistoryRoute().go(context),
+                      onPressed: () => const SalesHistoryRoute().goScoped(context),
                     ),
             ),
             body: const Center(
@@ -154,7 +156,7 @@ class _SaleDetailContent extends HookConsumerWidget {
               ? null
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => const SalesHistoryRoute().go(context),
+                  onPressed: () => const SalesHistoryRoute().goScoped(context),
                 ),
           title: Text(sale.receiptNumber),
           actions: [
@@ -398,6 +400,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    SaleUsageSection(saleId: sale.id),
 
                     // Total Card
                     Card(
@@ -2102,7 +2106,7 @@ class _PrintMenuButton extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPrinting = useState(false);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
@@ -2136,7 +2140,7 @@ class _PrintMenuButton extends HookConsumerWidget {
     }
 
     Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
       final pdfData = buildPdfData(
@@ -2173,8 +2177,8 @@ class _PrintMenuButton extends HookConsumerWidget {
         return false;
       }
 
-      if (defaultPrinterAsync.value == null) {
-        showErrorSnackBar(context, message: 'No default printer configured');
+      if (selectedPrinterAsync.value == null) {
+        showErrorSnackBar(context, message: 'No printer selected');
         return false;
       }
 

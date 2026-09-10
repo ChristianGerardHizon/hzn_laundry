@@ -36,6 +36,12 @@ class FeatureFlagDtoMapper extends ClassMapperBase<FeatureFlagDto> {
     _$description,
     opt: true,
   );
+  static String? _$organization(FeatureFlagDto v) => v.organization;
+  static const Field<FeatureFlagDto, String> _f$organization = Field(
+    'organization',
+    _$organization,
+    opt: true,
+  );
 
   @override
   final MappableFields<FeatureFlagDto> fields = const {
@@ -43,6 +49,7 @@ class FeatureFlagDtoMapper extends ClassMapperBase<FeatureFlagDto> {
     #key: _f$key,
     #enabled: _f$enabled,
     #description: _f$description,
+    #organization: _f$organization,
   };
 
   static FeatureFlagDto _instantiate(DecodingData data) {
@@ -51,6 +58,7 @@ class FeatureFlagDtoMapper extends ClassMapperBase<FeatureFlagDto> {
       key: data.dec(_f$key),
       enabled: data.dec(_f$enabled),
       description: data.dec(_f$description),
+      organization: data.dec(_f$organization),
     );
   }
 
@@ -116,7 +124,13 @@ extension FeatureFlagDtoValueCopy<$R, $Out>
 
 abstract class FeatureFlagDtoCopyWith<$R, $In extends FeatureFlagDto, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
-  $R call({String? id, String? key, bool? enabled, String? description});
+  $R call({
+    String? id,
+    String? key,
+    bool? enabled,
+    String? description,
+    String? organization,
+  });
   FeatureFlagDtoCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   );
@@ -136,12 +150,14 @@ class _FeatureFlagDtoCopyWithImpl<$R, $Out>
     String? key,
     bool? enabled,
     Object? description = $none,
+    Object? organization = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != null) #id: id,
       if (key != null) #key: key,
       if (enabled != null) #enabled: enabled,
       if (description != $none) #description: description,
+      if (organization != $none) #organization: organization,
     }),
   );
   @override
@@ -150,6 +166,7 @@ class _FeatureFlagDtoCopyWithImpl<$R, $Out>
     key: data.get(#key, or: $value.key),
     enabled: data.get(#enabled, or: $value.enabled),
     description: data.get(#description, or: $value.description),
+    organization: data.get(#organization, or: $value.organization),
   );
 
   @override

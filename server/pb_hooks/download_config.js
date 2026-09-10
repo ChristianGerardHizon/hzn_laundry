@@ -2,7 +2,7 @@
 // NOT .pb.js so it won't auto-load as a hook
 
 var VERSION_MANAGER_URL = "https://version-manager.fly.dev";
-var HIZONELAUNDRY_APP_ID = "ex29s5w2t8j8v29";
+var HZNLAUNDRY_APP_ID = "ex29s5w2t8j8v29";
 var SUPERUSER_EMAIL = "test@test.com";
 var SUPERUSER_PASSWORD = "password101";
 
@@ -31,7 +31,7 @@ function getGithubConfig() {
 
   // 2. Fetch the application record (includes hidden githubPat field for superusers)
   var appRes = $http.send({
-    url: VERSION_MANAGER_URL + "/api/collections/applications/records/" + HIZONELAUNDRY_APP_ID,
+    url: VERSION_MANAGER_URL + "/api/collections/applications/records/" + HZNLAUNDRY_APP_ID,
     method: "GET",
     headers: { "Authorization": "Bearer " + vmToken },
     timeout: 10
@@ -57,7 +57,7 @@ function getGithubConfig() {
  */
 function getVersionInfo() {
   var versionRes = $http.send({
-    url: VERSION_MANAGER_URL + "/api/collections/versions/records?filter=application%3D%22" + HIZONELAUNDRY_APP_ID + "%22&perPage=1",
+    url: VERSION_MANAGER_URL + "/api/collections/versions/records?filter=application%3D%22" + HZNLAUNDRY_APP_ID + "%22&perPage=1",
     method: "GET",
     timeout: 10
   });

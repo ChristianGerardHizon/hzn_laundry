@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../../core/routing/routes/customers.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
@@ -355,7 +356,7 @@ class SalesByCustomerView extends HookConsumerWidget {
             ),
           ),
           onTap: entry.customerId != null
-              ? () => CustomerDetailRoute(id: entry.customerId!).go(context)
+              ? () => CustomerDetailRoute(id: entry.customerId!).goScoped(context)
               : null,
         ),
         DataCell(Text(
@@ -435,7 +436,7 @@ class SalesByCustomerView extends HookConsumerWidget {
                   child: GestureDetector(
                     onTap: entry.customerId != null
                         ? () => CustomerDetailRoute(id: entry.customerId!)
-                            .go(context)
+                            .goScoped(context)
                         : null,
                     child: Text(
                       entry.customerName,

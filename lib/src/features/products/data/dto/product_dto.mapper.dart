@@ -139,6 +139,46 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
     _$quantityUnitExpanded,
     opt: true,
   );
+  static bool _$isConsumable(ProductDto v) => v.isConsumable;
+  static const Field<ProductDto, bool> _f$isConsumable = Field(
+    'isConsumable',
+    _$isConsumable,
+    opt: true,
+    def: false,
+  );
+  static bool _$countsTowardMaterialCost(ProductDto v) =>
+      v.countsTowardMaterialCost;
+  static const Field<ProductDto, bool> _f$countsTowardMaterialCost = Field(
+    'countsTowardMaterialCost',
+    _$countsTowardMaterialCost,
+    opt: true,
+    def: false,
+  );
+  static num _$usageMin(ProductDto v) => v.usageMin;
+  static const Field<ProductDto, num> _f$usageMin = Field(
+    'usageMin',
+    _$usageMin,
+    opt: true,
+    def: 0,
+  );
+  static num? _$usageMax(ProductDto v) => v.usageMax;
+  static const Field<ProductDto, num> _f$usageMax = Field(
+    'usageMax',
+    _$usageMax,
+    opt: true,
+  );
+  static num? _$usageStep(ProductDto v) => v.usageStep;
+  static const Field<ProductDto, num> _f$usageStep = Field(
+    'usageStep',
+    _$usageStep,
+    opt: true,
+  );
+  static num? _$defaultUsage(ProductDto v) => v.defaultUsage;
+  static const Field<ProductDto, num> _f$defaultUsage = Field(
+    'defaultUsage',
+    _$defaultUsage,
+    opt: true,
+  );
   static bool _$isDeleted(ProductDto v) => v.isDeleted;
   static const Field<ProductDto, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -181,6 +221,12 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
     #trackByLot: _f$trackByLot,
     #quantityUnit: _f$quantityUnit,
     #quantityUnitExpanded: _f$quantityUnitExpanded,
+    #isConsumable: _f$isConsumable,
+    #countsTowardMaterialCost: _f$countsTowardMaterialCost,
+    #usageMin: _f$usageMin,
+    #usageMax: _f$usageMax,
+    #usageStep: _f$usageStep,
+    #defaultUsage: _f$defaultUsage,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -208,6 +254,12 @@ class ProductDtoMapper extends ClassMapperBase<ProductDto> {
       trackByLot: data.dec(_f$trackByLot),
       quantityUnit: data.dec(_f$quantityUnit),
       quantityUnitExpanded: data.dec(_f$quantityUnitExpanded),
+      isConsumable: data.dec(_f$isConsumable),
+      countsTowardMaterialCost: data.dec(_f$countsTowardMaterialCost),
+      usageMin: data.dec(_f$usageMin),
+      usageMax: data.dec(_f$usageMax),
+      usageStep: data.dec(_f$usageStep),
+      defaultUsage: data.dec(_f$defaultUsage),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -297,6 +349,12 @@ abstract class ProductDtoCopyWith<$R, $In extends ProductDto, $Out>
     bool? trackByLot,
     String? quantityUnit,
     QuantityUnit? quantityUnitExpanded,
+    bool? isConsumable,
+    bool? countsTowardMaterialCost,
+    num? usageMin,
+    num? usageMax,
+    num? usageStep,
+    num? defaultUsage,
     bool? isDeleted,
     String? created,
     String? updated,
@@ -339,6 +397,12 @@ class _ProductDtoCopyWithImpl<$R, $Out>
     bool? trackByLot,
     Object? quantityUnit = $none,
     Object? quantityUnitExpanded = $none,
+    bool? isConsumable,
+    bool? countsTowardMaterialCost,
+    num? usageMin,
+    Object? usageMax = $none,
+    Object? usageStep = $none,
+    Object? defaultUsage = $none,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -365,6 +429,13 @@ class _ProductDtoCopyWithImpl<$R, $Out>
       if (quantityUnit != $none) #quantityUnit: quantityUnit,
       if (quantityUnitExpanded != $none)
         #quantityUnitExpanded: quantityUnitExpanded,
+      if (isConsumable != null) #isConsumable: isConsumable,
+      if (countsTowardMaterialCost != null)
+        #countsTowardMaterialCost: countsTowardMaterialCost,
+      if (usageMin != null) #usageMin: usageMin,
+      if (usageMax != $none) #usageMax: usageMax,
+      if (usageStep != $none) #usageStep: usageStep,
+      if (defaultUsage != $none) #defaultUsage: defaultUsage,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -395,6 +466,15 @@ class _ProductDtoCopyWithImpl<$R, $Out>
       #quantityUnitExpanded,
       or: $value.quantityUnitExpanded,
     ),
+    isConsumable: data.get(#isConsumable, or: $value.isConsumable),
+    countsTowardMaterialCost: data.get(
+      #countsTowardMaterialCost,
+      or: $value.countsTowardMaterialCost,
+    ),
+    usageMin: data.get(#usageMin, or: $value.usageMin),
+    usageMax: data.get(#usageMax, or: $value.usageMax),
+    usageStep: data.get(#usageStep, or: $value.usageStep),
+    defaultUsage: data.get(#defaultUsage, or: $value.defaultUsage),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

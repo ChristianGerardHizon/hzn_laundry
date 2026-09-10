@@ -12,21 +12,27 @@ class FeatureFlagDto with FeatureFlagDtoMappable {
     required this.key,
     required this.enabled,
     this.description,
+    this.organization,
   });
 
   final String id;
   final String key;
   final bool enabled;
   final String? description;
+  final String? organization;
 
-  factory FeatureFlagDto.fromRecord(RecordModel record) {
-    final json = record.toJson();
+  factory FeatureFlagDto.fromJson(Map<String, dynamic> json) {
     return FeatureFlagDto(
       id: json['id'] as String? ?? '',
       key: json['key'] as String? ?? '',
       enabled: json['enabled'] as bool? ?? false,
       description: json['description'] as String?,
+      organization: json['organization'] as String?,
     );
+  }
+
+  factory FeatureFlagDto.fromRecord(RecordModel record) {
+    return FeatureFlagDto.fromJson(record.toJson());
   }
 
   FeatureFlag toEntity() {
@@ -35,6 +41,7 @@ class FeatureFlagDto with FeatureFlagDtoMappable {
       key: key,
       enabled: enabled,
       description: description,
+      organizationId: organization,
     );
   }
 }

@@ -1,4 +1,4 @@
-# Hi-Zone Laundry
+# HZN Laundry
 
 A Flutter multi-platform laundry management system supporting Android, iOS, macOS, Linux, Windows, and Web.
 
@@ -485,9 +485,9 @@ The app has three flavors. Android and iOS can install them side by side. Web, W
 
 | Flavor | URL | Application ID (Android) | Usage |
 |--------|-----|--------------------------|-------|
-| `dev` | `http://127.0.0.1:8090` | `com.hznsystems.hizonelaundry.dev` | Local testing |
-| `staging` | `https://staging.hizonelaundry.hznsystems.com` | `com.hznsystems.hizonelaundry.staging` | Staging/QA |
-| `prod` | `https://hizonelaundry.hznsystems.com` | `com.hznsystems.hizonelaundry` | Production / Play Store |
+| `dev` | `http://127.0.0.1:8090` | `com.hznsystems.hznlaundry.dev` | Local testing |
+| `staging` | `https://staging.hznlaundry.hznsystems.com` | `com.hznsystems.hznlaundry.staging` | Staging/QA |
+| `prod` | `https://hznlaundry.hznsystems.com` | `com.hznsystems.hznlaundry` | Production / Play Store |
 
 ### VS Code Launch Configs
 

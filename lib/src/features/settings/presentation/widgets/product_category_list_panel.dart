@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/system.routes.dart';
@@ -47,7 +48,7 @@ class ProductCategoryListPanel extends HookConsumerWidget {
       floatingActionButton: FloatingActionButton(
         heroTag: 'product_category_fab',
         onPressed: () =>
-            const ProductCategoryDetailRoute(id: 'new').go(context),
+            const ProductCategoryDetailRoute(id: 'new').goScoped(context),
         child: const Icon(Icons.add),
       ),
       body: categoriesAsync.when(
@@ -168,7 +169,7 @@ class ProductCategoryListPanel extends HookConsumerWidget {
                                   isChild: false,
                                   onTap: () =>
                                       ProductCategoryDetailRoute(id: category.id)
-                                          .go(context),
+                                          .goScoped(context),
                                 ),
                                 // Show children with indentation
                                 ...children.map((child) => Padding(
@@ -179,7 +180,7 @@ class ProductCategoryListPanel extends HookConsumerWidget {
                                         isChild: true,
                                         onTap: () => ProductCategoryDetailRoute(
                                                 id: child.id)
-                                            .go(context),
+                                            .goScoped(context),
                                       ),
                                     )),
                               ],

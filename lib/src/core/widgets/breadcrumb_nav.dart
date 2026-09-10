@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../i18n/strings.g.dart';
-import '../routing/routes/organization.routes.dart';
+import '../routing/routes/dashboard.routes.dart';
+import '../routing/routes/management.routes.dart';
+import '../routing/routes/organizations.routes.dart';
 import '../routing/routes/products.routes.dart';
 import '../routing/routes/sales.routes.dart';
 import '../routing/routes/system.routes.dart';
@@ -101,14 +104,20 @@ class BreadcrumbNav extends StatelessWidget {
     final pathParameters = state.pathParameters;
     final items = <BreadcrumbItem>[];
 
-    // Parse the path segments
-    final segments = location.split('/').where((s) => s.isNotEmpty).toList();
+    // Parse the path segments, skipping org/branch scope prefix.
+    var segments = location.split('/').where((s) => s.isNotEmpty).toList();
+    if (pathParameters['orgSlug'] != null &&
+        pathParameters['branchSlug'] != null &&
+        segments.length >= 2) {
+      segments = segments.sublist(2);
+    }
 
-    if (segments.isEmpty) {
-      // On dashboard - show just Dashboard
+    if (segments.isEmpty ||
+        (segments.length == 1 && segments.first == 'dashboard')) {
       items.add(BreadcrumbItem(
         label: t.navigation.dashboard,
-        path: '/',
+        path: DashboardRoute.path,
+        onTap: () => const DashboardRoute().goScoped(context),
       ));
       return items;
     }
@@ -150,32 +159,46 @@ class BreadcrumbNav extends StatelessWidget {
 
     // Handle known routes
     switch (segment) {
+      case 'dashboard':
+        return BreadcrumbItem(
+          label: t.navigation.dashboard,
+          path: DashboardRoute.path,
+          onTap: () => const DashboardRoute().goScoped(context),
+        );
+
       case 'products':
         return BreadcrumbItem(
           label: t.navigation.products,
           path: ProductsRoute.path,
-          onTap: () => const ProductsRoute().go(context),
+          onTap: () => const ProductsRoute().goScoped(context),
         );
 
       case 'cashier':
         return BreadcrumbItem(
           label: t.navigation.sales,
           path: SalesRoute.path,
-          onTap: () => const SalesRoute().go(context),
+          onTap: () => const SalesRoute().goScoped(context),
         );
 
-      case 'organization':
+      case 'management':
         return BreadcrumbItem(
-          label: t.navigation.organization,
-          path: OrganizationRoute.path,
-          onTap: () => const OrganizationRoute().go(context),
+          label: t.navigation.management,
+          path: ManagementRoute.path,
+          onTap: () => const ManagementRoute().goScoped(context),
+        );
+
+      case 'organizations':
+        return BreadcrumbItem(
+          label: t.navigation.organizations,
+          path: OrganizationsRoute.path,
+          onTap: () => const OrganizationsRoute().goScoped(context),
         );
 
       case 'system':
         return BreadcrumbItem(
           label: t.navigation.system,
           path: SystemRoute.path,
-          onTap: () => const SystemRoute().go(context),
+          onTap: () => const SystemRoute().goScoped(context),
         );
 
       default:

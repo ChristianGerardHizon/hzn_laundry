@@ -13,6 +13,7 @@ import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../domain/order_status.dart';
 import '../../domain/sale.dart';
+import '../../domain/sale_consumable_usage.dart';
 import '../../domain/sale_item.dart';
 import '../dto/sale_dto.dart';
 import '../dto/sale_item_dto.dart';
@@ -23,7 +24,8 @@ abstract class SalesRepository {
   FutureEither<Sale> createSale(
     Sale sale,
     List<SaleItem> items, {
-    List<SaleServiceItem> serviceItems,
+    List<SaleServiceItem> serviceItems = const [],
+    List<SaleConsumableUsage> consumableUsages = const [],
     DateTime? postedDate,
   });
   FutureEither<Sale> getSale(String id);
@@ -140,6 +142,8 @@ class SalesRepositoryImpl implements SalesRepository {
       _pb.collection(PocketBaseCollections.saleItems);
   RecordService get _saleServiceItems =>
       _pb.collection(PocketBaseCollections.saleServiceItems);
+  RecordService get _saleConsumableUsages =>
+      _pb.collection(PocketBaseCollections.saleConsumableUsages);
   Sale _toSaleEntity(RecordModel record) {
     return SaleDto.fromRecord(record).toEntity();
   }
@@ -166,6 +170,7 @@ class SalesRepositoryImpl implements SalesRepository {
     Sale sale,
     List<SaleItem> items, {
     List<SaleServiceItem> serviceItems = const [],
+    List<SaleConsumableUsage> consumableUsages = const [],
     DateTime? postedDate,
   }) async {
     return TaskEither.tryCatch(
@@ -216,6 +221,18 @@ class SalesRepositoryImpl implements SalesRepository {
             'subtotal': item.subtotal,
           };
           await _saleServiceItems.create(body: itemBody);
+        }
+
+        for (final usage in consumableUsages) {
+          await _saleConsumableUsages.create(body: {
+            'sale': saleRecord.id,
+            'product': usage.productId,
+            'productName': usage.productName,
+            'quantity': usage.quantity,
+            'unitLabel': usage.unitLabel,
+            'unitCost': usage.unitCost,
+            'cost': usage.cost,
+          });
         }
 
         final createdSale = _toSaleEntity(saleRecord);

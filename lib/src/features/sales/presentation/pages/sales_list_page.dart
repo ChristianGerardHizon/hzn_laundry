@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../controllers/paginated_sales_controller.dart';
@@ -42,7 +43,7 @@ class SalesListPage extends ConsumerWidget {
         paginatedState: paginatedState,
         selectedId: null,
         onSaleTap: (sale) {
-          SaleDetailRoute(id: sale.id).push(context);
+          SaleDetailRoute(id: sale.id).pushScoped(context);
         },
         onRefresh: () =>
             ref.read(paginatedSalesControllerProvider.notifier).refresh(),

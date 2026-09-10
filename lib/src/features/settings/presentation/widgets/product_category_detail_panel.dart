@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -95,7 +96,7 @@ class ProductCategoryDetailPanel extends HookConsumerWidget {
         );
 
         if (isCreating) {
-          const ProductCategoriesRoute().go(context);
+          const ProductCategoriesRoute().goScoped(context);
         }
       }
     }
@@ -132,7 +133,7 @@ class ProductCategoryDetailPanel extends HookConsumerWidget {
         if (success) {
           showSuccessSnackBar(
               context, message: 'Category deleted successfully');
-          const ProductCategoriesRoute().go(context);
+          const ProductCategoriesRoute().goScoped(context);
         } else {
           showFormErrorDialog(
             context,
@@ -173,7 +174,7 @@ class ProductCategoryDetailPanel extends HookConsumerWidget {
         title: Text(isCreating ? 'New Category' : 'Edit Category'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => const ProductCategoriesRoute().go(context),
+          onPressed: () => const ProductCategoriesRoute().goScoped(context),
         ),
         actions: [
           if (!isCreating)

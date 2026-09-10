@@ -25,12 +25,20 @@ class BranchMapper extends ClassMapperBase<Branch> {
   static const Field<Branch, String> _f$id = Field('id', _$id);
   static String _$name(Branch v) => v.name;
   static const Field<Branch, String> _f$name = Field('name', _$name);
+  static String _$slug(Branch v) => v.slug;
+  static const Field<Branch, String> _f$slug = Field('slug', _$slug);
   static String _$address(Branch v) => v.address;
   static const Field<Branch, String> _f$address = Field('address', _$address);
   static String _$contactNumber(Branch v) => v.contactNumber;
   static const Field<Branch, String> _f$contactNumber = Field(
     'contactNumber',
     _$contactNumber,
+  );
+  static String? _$organizationId(Branch v) => v.organizationId;
+  static const Field<Branch, String> _f$organizationId = Field(
+    'organizationId',
+    _$organizationId,
+    opt: true,
   );
   static String? _$operatingHours(Branch v) => v.operatingHours;
   static const Field<Branch, String> _f$operatingHours = Field(
@@ -82,8 +90,10 @@ class BranchMapper extends ClassMapperBase<Branch> {
   final MappableFields<Branch> fields = const {
     #id: _f$id,
     #name: _f$name,
+    #slug: _f$slug,
     #address: _f$address,
     #contactNumber: _f$contactNumber,
+    #organizationId: _f$organizationId,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
     #incentiveAmount: _f$incentiveAmount,
@@ -97,8 +107,10 @@ class BranchMapper extends ClassMapperBase<Branch> {
     return Branch(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
+      slug: data.dec(_f$slug),
       address: data.dec(_f$address),
       contactNumber: data.dec(_f$contactNumber),
+      organizationId: data.dec(_f$organizationId),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
       incentiveAmount: data.dec(_f$incentiveAmount),
@@ -158,8 +170,10 @@ abstract class BranchCopyWith<$R, $In extends Branch, $Out>
   $R call({
     String? id,
     String? name,
+    String? slug,
     String? address,
     String? contactNumber,
+    String? organizationId,
     String? operatingHours,
     String? cutOffTime,
     num? incentiveAmount,
@@ -181,8 +195,10 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
   $R call({
     String? id,
     String? name,
+    String? slug,
     String? address,
     String? contactNumber,
+    Object? organizationId = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
     num? incentiveAmount,
@@ -194,8 +210,10 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     FieldCopyWithData({
       if (id != null) #id: id,
       if (name != null) #name: name,
+      if (slug != null) #slug: slug,
       if (address != null) #address: address,
       if (contactNumber != null) #contactNumber: contactNumber,
+      if (organizationId != $none) #organizationId: organizationId,
       if (operatingHours != $none) #operatingHours: operatingHours,
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
       if (incentiveAmount != null) #incentiveAmount: incentiveAmount,
@@ -210,8 +228,10 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
   Branch $make(CopyWithData data) => Branch(
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
+    slug: data.get(#slug, or: $value.slug),
     address: data.get(#address, or: $value.address),
     contactNumber: data.get(#contactNumber, or: $value.contactNumber),
+    organizationId: data.get(#organizationId, or: $value.organizationId),
     operatingHours: data.get(#operatingHours, or: $value.operatingHours),
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
     incentiveAmount: data.get(#incentiveAmount, or: $value.incentiveAmount),

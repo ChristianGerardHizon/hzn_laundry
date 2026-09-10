@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/packages/theme/feedback_colors.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../domain/incomplete_orders.dart';
 import 'incomplete_orders_modal.dart';
@@ -13,9 +14,8 @@ class NeedsAttentionAlert extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colors = FeedbackColors.warning(theme);
     final compact = Breakpoints.isMobile(context);
-    final color = Colors.deepOrange;
     final subtitle = [
       if (data.processingCount > 0) '${data.processingCount} processing',
       if (data.missingDataCount > 0) '${data.missingDataCount} missing data',
@@ -23,16 +23,16 @@ class NeedsAttentionAlert extends StatelessWidget {
 
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w600,
-      color: isDark ? color.shade200 : Colors.deepOrange.shade900,
+      color: colors.foreground,
     );
     final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
-      color: isDark ? color.shade100 : Colors.deepOrange.shade800,
+      color: colors.foreground,
     );
     final countLine = '${data.count} order${data.count == 1 ? '' : 's'}'
         '${subtitle.isEmpty ? '' : ' · $subtitle'}';
 
     return Material(
-      color: isDark ? color.withValues(alpha: 0.16) : Colors.deepOrange.shade50,
+      color: colors.background,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: () => showIncompleteOrdersModal(context, data),
@@ -44,19 +44,19 @@ class NeedsAttentionAlert extends StatelessWidget {
               if (compact)
                 Icon(
                   Icons.warning_amber_rounded,
-                  color: color,
+                  color: colors.icon,
                   size: 18,
                 )
               else
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
+                    color: colors.icon.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     Icons.warning_amber_rounded,
-                    color: color,
+                    color: colors.icon,
                     size: 24,
                   ),
                 ),
@@ -81,7 +81,7 @@ class NeedsAttentionAlert extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: isDark ? color.shade200 : Colors.deepOrange.shade700,
+                color: colors.foreground,
               ),
             ],
           ),

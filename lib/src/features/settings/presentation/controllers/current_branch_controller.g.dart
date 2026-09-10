@@ -12,6 +12,7 @@ part of 'current_branch_controller.dart';
 ///
 /// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
+/// - Once a validated route scope exists, the URL is the source of truth
 
 @ProviderFor(CurrentBranchController)
 final currentBranchControllerProvider = CurrentBranchControllerProvider._();
@@ -20,12 +21,14 @@ final currentBranchControllerProvider = CurrentBranchControllerProvider._();
 ///
 /// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
+/// - Once a validated route scope exists, the URL is the source of truth
 final class CurrentBranchControllerProvider
     extends $AsyncNotifierProvider<CurrentBranchController, Branch?> {
   /// Controller for managing the current working branch.
   ///
   /// - For admins: Allows switching between branches (or All Branches), persists selection
   /// - For regular users: Locked to their assigned branch
+  /// - Once a validated route scope exists, the URL is the source of truth
   CurrentBranchControllerProvider._()
       : super(
           from: null,
@@ -46,12 +49,13 @@ final class CurrentBranchControllerProvider
 }
 
 String _$currentBranchControllerHash() =>
-    r'c0dfecbd549d252951962a2bf7040cafad84b0dc';
+    r'5d35c51969e9bff268f7e3e2965c4b17b8ff4e1e';
 
 /// Controller for managing the current working branch.
 ///
 /// - For admins: Allows switching between branches (or All Branches), persists selection
 /// - For regular users: Locked to their assigned branch
+/// - Once a validated route scope exists, the URL is the source of truth
 
 abstract class _$CurrentBranchController extends $AsyncNotifier<Branch?> {
   FutureOr<Branch?> build();

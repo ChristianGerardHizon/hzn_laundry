@@ -26,6 +26,7 @@ alwaysApply: true
 - **PRs:** Target `staging`; ask user about version/deploy/minimum-version labels; include QA Notes.
 - **Docs:** Update `docs/app_overview.md` when adding or changing features.
 - **PocketBase changes:** Use the API (credentials in `.env`), not direct DB edits alone.
+- **Hi-Zone Laundry is separate:** Never touch `hizonelaundry.hznsystems.com`, `/opt/pocketbase/hizonelaundry*`, or `pocketbase_hizonelaundry*` services. This repo is HZN Laundry (`hznlaundry.hznsystems.com` only).
 
 ## Related docs
 

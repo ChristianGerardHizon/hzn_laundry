@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../i18n/strings.g.dart';
+import '../packages/theme/feedback_colors.dart';
 import '../routing/router.dart';
 
 /// Gets the ScaffoldMessenger to use for snackbars.
@@ -78,6 +79,41 @@ void showFormErrorDialog(
   );
 }
 
+void _showFeedbackSnackBar(
+  BuildContext context, {
+  required String message,
+  required Duration duration,
+  required bool useRootMessenger,
+  required IconData icon,
+  required FeedbackColors colors,
+}) {
+  _getMessenger(context, useRootMessenger: useRootMessenger).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          Icon(icon, color: colors.icon),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: colors.foreground),
+            ),
+          ),
+        ],
+      ),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: colors.background,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      margin: const EdgeInsets.all(16),
+      duration: duration,
+      showCloseIcon: true,
+      closeIconColor: colors.foreground,
+    ),
+  );
+}
+
 /// Shows a floating success snackbar with a check icon.
 ///
 /// Used for displaying success messages after form submissions.
@@ -92,25 +128,13 @@ void showSuccessSnackBar(
   Duration duration = const Duration(seconds: 3),
   bool useRootMessenger = true,
 }) {
-  _getMessenger(context, useRootMessenger: useRootMessenger).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.green,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      margin: const EdgeInsets.all(16),
-      duration: duration,
-      showCloseIcon: true,
-      closeIconColor: Colors.white,
-    ),
+  _showFeedbackSnackBar(
+    context,
+    message: message,
+    duration: duration,
+    useRootMessenger: useRootMessenger,
+    icon: Icons.check_circle,
+    colors: FeedbackColors.success(Theme.of(context)),
   );
 }
 
@@ -129,25 +153,13 @@ void showErrorSnackBar(
   Duration duration = const Duration(seconds: 4),
   bool useRootMessenger = true,
 }) {
-  _getMessenger(context, useRootMessenger: useRootMessenger).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.red,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      margin: const EdgeInsets.all(16),
-      duration: duration,
-      showCloseIcon: true,
-      closeIconColor: Colors.white,
-    ),
+  _showFeedbackSnackBar(
+    context,
+    message: message,
+    duration: duration,
+    useRootMessenger: useRootMessenger,
+    icon: Icons.error_outline,
+    colors: FeedbackColors.error(Theme.of(context)),
   );
 }
 
@@ -165,25 +177,13 @@ void showInfoSnackBar(
   Duration duration = const Duration(seconds: 3),
   bool useRootMessenger = true,
 }) {
-  _getMessenger(context, useRootMessenger: useRootMessenger).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.blue,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      margin: const EdgeInsets.all(16),
-      duration: duration,
-      showCloseIcon: true,
-      closeIconColor: Colors.white,
-    ),
+  _showFeedbackSnackBar(
+    context,
+    message: message,
+    duration: duration,
+    useRootMessenger: useRootMessenger,
+    icon: Icons.info_outline,
+    colors: FeedbackColors.info(Theme.of(context)),
   );
 }
 
@@ -201,25 +201,13 @@ void showWarningSnackBar(
   Duration duration = const Duration(seconds: 4),
   bool useRootMessenger = true,
 }) {
-  _getMessenger(context, useRootMessenger: useRootMessenger).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.warning_amber, color: Colors.white),
-          const SizedBox(width: 8),
-          Expanded(child: Text(message)),
-        ],
-      ),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.orange,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      margin: const EdgeInsets.all(16),
-      duration: duration,
-      showCloseIcon: true,
-      closeIconColor: Colors.white,
-    ),
+  _showFeedbackSnackBar(
+    context,
+    message: message,
+    duration: duration,
+    useRootMessenger: useRootMessenger,
+    icon: Icons.warning_amber,
+    colors: FeedbackColors.warning(Theme.of(context)),
   );
 }
 

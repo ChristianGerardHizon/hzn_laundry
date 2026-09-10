@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/products.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -184,7 +185,7 @@ class ProductDetailPage extends HookConsumerWidget {
             showSuccessSnackBar(context,
                 message: 'Product deleted successfully');
             // Navigate back to products list
-            const ProductsRoute().go(context);
+            const ProductsRoute().goScoped(context);
           } else {
             showErrorSnackBar(context, message: 'Failed to delete product');
           }

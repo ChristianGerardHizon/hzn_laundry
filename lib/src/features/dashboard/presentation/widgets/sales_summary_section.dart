@@ -9,10 +9,15 @@ import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_refresh.dart';
+import '../controllers/consumables_usage_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/sales_summary_hidden_date_provider.dart';
 import '../controllers/total_packs_summary_controller.dart';
+import '../../../settings/data/repositories/feature_flag_repository.dart';
+import '../../../users/domain/user_role.dart';
+import '../../../../core/widgets/nav_permissions.dart';
 import 'add_ons_breakdown_modal.dart';
+import 'consumables_usage_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
@@ -297,6 +302,16 @@ class _SalesSummaryContent extends ConsumerWidget {
     final packsAsync = ref.watch(totalPacksSummaryProvider);
     final addOns = AddOnsSummaryData.fromSalesItems(data.salesItems);
     final loads = LoadsSummaryData.fromSalesItems(data.salesItems);
+    final usageEnabled =
+        ref.watch(consumableUsageEnabledProvider).value ?? false;
+    final role = ref.watch(currentUserRoleProvider).value;
+    final canViewUsage = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageView));
+    final canViewUsageCost = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageCostView));
+    final usageAsync = usageEnabled && canViewUsage
+        ? ref.watch(consumablesUsageSummaryProvider)
+        : null;
 
     final salesCards = [
       KpiCard(
@@ -362,6 +377,28 @@ class _SalesSummaryContent extends ConsumerWidget {
           color: Colors.teal,
         ),
       ),
+      if (usageAsync != null)
+        usageAsync.when(
+          data: (usage) => KpiCard(
+            title: 'Consumables used',
+            value: _qty.format(usage.totalQuantity),
+            icon: Icons.science_outlined,
+            subtitle: usage.orderCount == 0
+                ? 'No orders today'
+                : '${_qty.format(usage.averagePerOrder)} avg/order'
+                    '${canViewUsageCost ? ' · ${_fmt(usage.totalCost)}' : ''}',
+            compact: true,
+            color: Colors.deepPurple,
+            onTap: () => showConsumablesUsageBreakdownModal(
+              context,
+              usage,
+              color: Colors.deepPurple,
+              showCost: canViewUsageCost,
+            ),
+          ),
+          loading: () => const _LoadingCard(),
+          error: (_, __) => const _LoadingCard(),
+        ),
       KpiCard(
         title: 'Loads',
         value: '${loads.totalLoads}',

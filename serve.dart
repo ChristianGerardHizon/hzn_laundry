@@ -10,7 +10,10 @@ void main() async {
     exit(1);
   }
 
+  const httpAddr = '127.0.0.1:8088';
+
   print('Starting PocketBase server (dev mode)...');
+  print('HTTP:       http://$httpAddr');
   print('Data dir:   $serverDir/pb_data');
   print('Hooks dir:  $serverDir/pb_hooks');
   print('Public dir: $serverDir/pb_public');
@@ -19,6 +22,7 @@ void main() async {
     pb,
     [
       'serve',
+      '--http=$httpAddr',
       '--dir', '$serverDir/pb_data',
       '--hooksDir', '$serverDir/pb_hooks',
       '--publicDir', '$serverDir/pb_public',

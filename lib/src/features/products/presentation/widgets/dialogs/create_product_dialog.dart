@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../settings/domain/branch.dart';
 import '../../../domain/product_category.dart';
@@ -18,6 +19,7 @@ import '../../../../settings/presentation/controllers/branches_controller.dart';
 import '../../../domain/product.dart';
 import '../../controllers/paginated_products_controller.dart';
 import '../../controllers/product_categories_provider.dart';
+import '../product_consumable_fields.dart';
 
 /// Dialog for creating a new product.
 class CreateProductDialog extends HookConsumerWidget {
@@ -54,6 +56,7 @@ class CreateProductDialog extends HookConsumerWidget {
       }
 
       final values = formKey.currentState!.value;
+      final consumable = ProductConsumableFields.valuesFrom(values);
 
       isSaving.value = true;
 
@@ -76,6 +79,12 @@ class CreateProductDialog extends HookConsumerWidget {
             ? _parseNum(values['stockThreshold'] as String?)
             : null,
         forSale: values['forSale'] as bool? ?? true,
+        isConsumable: consumable.isConsumable,
+        countsTowardMaterialCost: consumable.countsTowardMaterialCost,
+        usageMin: consumable.usageMin,
+        usageMax: consumable.usageMax,
+        usageStep: consumable.usageStep,
+        defaultUsage: consumable.defaultUsage,
         trackStock: stockEnabled.value,
         trackByLot: stockEnabled.value
             ? (values['trackByLot'] as bool? ?? false)
@@ -111,7 +120,7 @@ class CreateProductDialog extends HookConsumerWidget {
         showSuccessSnackBar(context, message: 'Product created successfully');
 
         // Navigate to product detail
-        ProductDetailRoute(id: createdProduct.id).go(context);
+        ProductDetailRoute(id: createdProduct.id).goScoped(context);
       }
     }
 
@@ -207,6 +216,8 @@ class CreateProductDialog extends HookConsumerWidget {
             title: const Text('For Sale'),
             enabled: !isSaving.value,
           ),
+          const SizedBox(height: 8),
+          ProductConsumableFields(enabled: !isSaving.value),
           const SizedBox(height: 24),
 
           // === PRICE SECTION ===

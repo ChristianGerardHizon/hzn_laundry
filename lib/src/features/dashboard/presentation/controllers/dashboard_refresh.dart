@@ -4,6 +4,7 @@ import 'package:riverpod/misc.dart' show ProviderOrFamily;
 import '../../../employees/presentation/controllers/attendance_controller.dart';
 import '../../../employees/presentation/controllers/employees_controller.dart';
 import 'add_ons_summary_controller.dart';
+import 'consumables_usage_summary_controller.dart';
 import 'dashboard_kpi_provider.dart';
 import 'inventory_alerts_controller.dart';
 import 'kanban_sales_controller.dart';
@@ -29,6 +30,7 @@ void invalidateAllDashboardProviders(
   invalidate(salesSummaryProvider);
   invalidate(totalPacksSummaryProvider);
   invalidate(addOnsSummaryProvider);
+  invalidate(consumablesUsageSummaryProvider);
   invalidate(loadsSummaryProvider);
   invalidate(incompleteOrdersProvider);
   invalidate(todaySalesProvider);

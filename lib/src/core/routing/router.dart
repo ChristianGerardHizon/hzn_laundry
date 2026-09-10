@@ -1,16 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
+import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../pages/app_root.dart';
+import '../widgets/nav_permissions.dart';
 import 'dialog_dismissing_observer.dart';
+import 'pending_redirect_provider.dart';
 import 'router_utils.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
-import 'routes/organization.routes.dart';
+import 'routes/management.routes.dart';
+import 'routes/organizations.routes.dart';
 import 'routes/products.routes.dart';
 import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
@@ -37,6 +43,8 @@ final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 /// Configured with auth redirects and error handling.
 @Riverpod(keepAlive: true)
 GoRouter router(Ref ref) {
+  _stashWebDeepLinkIfNeeded();
+
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: SplashRoute.path,
@@ -58,40 +66,81 @@ GoRouter router(Ref ref) {
       $forgotPasswordRoute,
       $authLoadingRoute,
 
-      // Main app shell with navigation
-      ShellRoute(
-        builder: (context, state, child) => AppRoot(child: child),
+      // Org/branch-scoped main app. `:orgSlug`/`:branchSlug` are hand-written
+      // so feature route `path:` constants stay unchanged. Navigate with
+      // `.goScoped(context)` / `.pushScoped(context)` under this prefix.
+      GoRoute(
+        path: '/:orgSlug/:branchSlug',
+        redirect: (context, state) {
+          final org = state.pathParameters['orgSlug']!;
+          final branch = state.pathParameters['branchSlug']!;
+          final path = state.uri.path.replaceAll(RegExp(r'/+$'), '');
+          if (path == '/$org/$branch') {
+            return '/$org/$branch${DashboardRoute.path}';
+          }
+          return null;
+        },
         routes: [
-          $dashboardRoute,
-          $productsShellRoute,
-          $servicesShellRoute,
-          $customersShellRoute,
-          $employeesShellRoute,
-          $salesRoute,
-          $salesShellRoute,
-          $reportsRoute,
-          $activitiesRoute,
-          $organizationShellRoute,
-          $promosShellRoute,
-          $systemShellRoute,
+          ShellRoute(
+            builder: (context, state, child) => AppRoot(child: child),
+            routes: [
+              $dashboardRoute,
+              $productsShellRoute,
+              $servicesShellRoute,
+              $customersShellRoute,
+              $employeesShellRoute,
+              $salesRoute,
+              $salesShellRoute,
+              $reportsRoute,
+              $activitiesRoute,
+              $managementShellRoute,
+              $organizationsRoute,
+              $promosShellRoute,
+              $systemShellRoute,
+            ],
+          ),
         ],
       ),
     ],
   );
 
-  // Listen to auth state changes and refresh router to re-evaluate redirects
   ref.listen(authControllerProvider, (previous, next) {
-    // Refresh router when auth state changes (loading -> data/error)
-    // This triggers redirect logic to navigate after login success/failure
     router.refresh();
   });
 
-  // Refresh router when version check completes to trigger version redirects
   ref.listen(versionCheckProvider, (previous, next) {
     if (previous?.isLoading == true && !next.isLoading) {
       router.refresh();
     }
   });
 
+  ref.listen(currentUserRoleProvider, (previous, next) {
+    router.refresh();
+  });
+
+  ref.listen(currentOrganizationControllerProvider, (previous, next) {
+    router.refresh();
+  });
+
+  ref.listen(currentBranchControllerProvider, (previous, next) {
+    router.refresh();
+  });
+
+  Future.microtask(router.refresh);
+
   return router;
+}
+
+void _stashWebDeepLinkIfNeeded() {
+  if (!kIsWeb) return;
+
+  final platform = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+  final uri = Uri.tryParse(platform);
+  final path = uri?.path ?? platform;
+  if (path.isEmpty || path == '/') return;
+  if (RouterUtils.ignoredRoutes.any((route) => path.startsWith(route))) {
+    return;
+  }
+
+  PendingRedirect.stash(uri?.toString() ?? platform);
 }
