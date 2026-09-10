@@ -200,40 +200,40 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (id != null) #id: id,
-          if (name != null) #name: name,
-          if (email != null) #email: email,
-          if (avatar != $none) #avatar: avatar,
-          if (verified != null) #verified: verified,
-          if (roleId != $none) #roleId: roleId,
-          if (roleName != $none) #roleName: roleName,
-          if (branchId != $none) #branchId: branchId,
-          if (branchName != $none) #branchName: branchName,
-          if (isDeleted != null) #isDeleted: isDeleted,
-          if (created != $none) #created: created,
-          if (updated != $none) #updated: updated,
-        }),
-      );
+  }) => $apply(
+    FieldCopyWithData({
+      if (id != null) #id: id,
+      if (name != null) #name: name,
+      if (email != null) #email: email,
+      if (avatar != $none) #avatar: avatar,
+      if (verified != null) #verified: verified,
+      if (roleId != $none) #roleId: roleId,
+      if (roleName != $none) #roleName: roleName,
+      if (branchId != $none) #branchId: branchId,
+      if (branchName != $none) #branchName: branchName,
+      if (isDeleted != null) #isDeleted: isDeleted,
+      if (created != $none) #created: created,
+      if (updated != $none) #updated: updated,
+    }),
+  );
   @override
   User $make(CopyWithData data) => User(
-        id: data.get(#id, or: $value.id),
-        name: data.get(#name, or: $value.name),
-        email: data.get(#email, or: $value.email),
-        avatar: data.get(#avatar, or: $value.avatar),
-        verified: data.get(#verified, or: $value.verified),
-        roleId: data.get(#roleId, or: $value.roleId),
-        roleName: data.get(#roleName, or: $value.roleName),
-        branchId: data.get(#branchId, or: $value.branchId),
-        branchName: data.get(#branchName, or: $value.branchName),
-        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-        created: data.get(#created, or: $value.created),
-        updated: data.get(#updated, or: $value.updated),
-      );
+    id: data.get(#id, or: $value.id),
+    name: data.get(#name, or: $value.name),
+    email: data.get(#email, or: $value.email),
+    avatar: data.get(#avatar, or: $value.avatar),
+    verified: data.get(#verified, or: $value.verified),
+    roleId: data.get(#roleId, or: $value.roleId),
+    roleName: data.get(#roleName, or: $value.roleName),
+    branchId: data.get(#branchId, or: $value.branchId),
+    branchName: data.get(#branchName, or: $value.branchName),
+    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+    created: data.get(#created, or: $value.created),
+    updated: data.get(#updated, or: $value.updated),
+  );
 
   @override
   UserCopyWith<$R2, User, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _UserCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

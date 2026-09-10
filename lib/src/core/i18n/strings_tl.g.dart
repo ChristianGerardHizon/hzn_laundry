@@ -75,8 +75,22 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get checkEmail => 'Tingnan ang Iyong Email';
 	@override String resetLinkSent({required Object email}) => 'Naipadala na ang password reset link sa ${email}';
 	@override String get signInToContinue => 'Mag-sign in upang magpatuloy';
+	@override String get continueWithGoogle => 'Magpatuloy sa Google';
+	@override String get orDivider => 'o';
 	@override String get signingIn => 'Nagsa-sign in...';
+	@override String get almostThereWarmingUp => 'Malapit na — pinapainit pa ang app';
 	@override String get verificationEmailSent => 'Naipadala na ang verification email sa iyong email address';
+	@override String get continueButton => 'Magpatuloy';
+	@override String get changeEmail => 'Palitan ang email';
+	@override String get signInWithEmailCode => 'Mag-sign in gamit ang email code';
+	@override String get backToPasswordLogin => 'Bumalik sa password login';
+	@override String get sendLoginCode => 'Ipadala ang code';
+	@override String get verifyLoginCode => 'I-verify ang code';
+	@override String get enterLoginCode => 'Login code';
+	@override String loginCodeSent({required Object email}) => 'Nagpadala kami ng login code sa ${email}';
+	@override String get resendLoginCode => 'Ipadala ulit ang code';
+	@override String resendLoginCodeCooldown({required Object seconds}) => 'Ipadala ulit sa ${seconds}s';
+	@override String get loginCodeSendFailed => 'Hindi maipadala ang login code. Subukan ulit mamaya.';
 }
 
 // Path: common
@@ -140,6 +154,9 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get timeout => 'Nag-timeout ang request. Pakisubukang muli.';
 	@override String get noInternet => 'Walang koneksyon sa internet.';
 	@override String get invalidCredentials => 'Di-wastong email o password.';
+	@override String get invalidLoginCode => 'Di-wasto o expired na login code.';
+	@override String get googleNoAccount => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.';
+	@override String get googleSignInFailed => 'Hindi masimulan ang Google sign-in. Subukan ulit.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
 	@override String get tooManyRequests => 'Masyadong maraming request. Maghintay ng ilang sandali.';
@@ -372,8 +389,22 @@ extension on TranslationsTl {
 			'auth.checkEmail' => 'Tingnan ang Iyong Email',
 			'auth.resetLinkSent' => ({required Object email}) => 'Naipadala na ang password reset link sa ${email}',
 			'auth.signInToContinue' => 'Mag-sign in upang magpatuloy',
+			'auth.continueWithGoogle' => 'Magpatuloy sa Google',
+			'auth.orDivider' => 'o',
 			'auth.signingIn' => 'Nagsa-sign in...',
+			'auth.almostThereWarmingUp' => 'Malapit na — pinapainit pa ang app',
 			'auth.verificationEmailSent' => 'Naipadala na ang verification email sa iyong email address',
+			'auth.continueButton' => 'Magpatuloy',
+			'auth.changeEmail' => 'Palitan ang email',
+			'auth.signInWithEmailCode' => 'Mag-sign in gamit ang email code',
+			'auth.backToPasswordLogin' => 'Bumalik sa password login',
+			'auth.sendLoginCode' => 'Ipadala ang code',
+			'auth.verifyLoginCode' => 'I-verify ang code',
+			'auth.enterLoginCode' => 'Login code',
+			'auth.loginCodeSent' => ({required Object email}) => 'Nagpadala kami ng login code sa ${email}',
+			'auth.resendLoginCode' => 'Ipadala ulit ang code',
+			'auth.resendLoginCodeCooldown' => ({required Object seconds}) => 'Ipadala ulit sa ${seconds}s',
+			'auth.loginCodeSendFailed' => 'Hindi maipadala ang login code. Subukan ulit mamaya.',
 			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'I-save',
@@ -419,6 +450,9 @@ extension on TranslationsTl {
 			'failures.timeout' => 'Nag-timeout ang request. Pakisubukang muli.',
 			'failures.noInternet' => 'Walang koneksyon sa internet.',
 			'failures.invalidCredentials' => 'Di-wastong email o password.',
+			'failures.invalidLoginCode' => 'Di-wasto o expired na login code.',
+			'failures.googleNoAccount' => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.',
+			'failures.googleSignInFailed' => 'Hindi masimulan ang Google sign-in. Subukan ulit.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',
 			'failures.tooManyRequests' => 'Masyadong maraming request. Maghintay ng ilang sandali.',

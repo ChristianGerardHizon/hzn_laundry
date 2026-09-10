@@ -106,11 +106,53 @@ class TranslationsAuthEn {
 	/// en: 'Sign in to continue'
 	String get signInToContinue => 'Sign in to continue';
 
+	/// en: 'Continue with Google'
+	String get continueWithGoogle => 'Continue with Google';
+
+	/// en: 'or'
+	String get orDivider => 'or';
+
 	/// en: 'Signing in...'
 	String get signingIn => 'Signing in...';
 
+	/// en: 'You're almost there — just warming things up'
+	String get almostThereWarmingUp => 'You\'re almost there — just warming things up';
+
 	/// en: 'A verification email has been sent to your email address'
 	String get verificationEmailSent => 'A verification email has been sent to your email address';
+
+	/// en: 'Continue'
+	String get continueButton => 'Continue';
+
+	/// en: 'Change email'
+	String get changeEmail => 'Change email';
+
+	/// en: 'Sign in with email code'
+	String get signInWithEmailCode => 'Sign in with email code';
+
+	/// en: 'Back to password login'
+	String get backToPasswordLogin => 'Back to password login';
+
+	/// en: 'Send code'
+	String get sendLoginCode => 'Send code';
+
+	/// en: 'Verify code'
+	String get verifyLoginCode => 'Verify code';
+
+	/// en: 'Login code'
+	String get enterLoginCode => 'Login code';
+
+	/// en: 'We sent a login code to $email'
+	String loginCodeSent({required Object email}) => 'We sent a login code to ${email}';
+
+	/// en: 'Resend code'
+	String get resendLoginCode => 'Resend code';
+
+	/// en: 'Resend in ${seconds}s'
+	String resendLoginCodeCooldown({required Object seconds}) => 'Resend in ${seconds}s';
+
+	/// en: 'Could not send login code. Try again later.'
+	String get loginCodeSendFailed => 'Could not send login code. Try again later.';
 }
 
 // Path: common
@@ -264,6 +306,15 @@ class TranslationsFailuresEn {
 
 	/// en: 'Invalid email or password.'
 	String get invalidCredentials => 'Invalid email or password.';
+
+	/// en: 'Invalid or expired login code.'
+	String get invalidLoginCode => 'Invalid or expired login code.';
+
+	/// en: 'No account for this Google email. Ask an admin to create your user first.'
+	String get googleNoAccount => 'No account for this Google email. Ask an admin to create your user first.';
+
+	/// en: 'Could not start Google sign-in. Please try again.'
+	String get googleSignInFailed => 'Could not start Google sign-in. Please try again.';
 
 	/// en: 'Your account has been disabled.'
 	String get accountDisabled => 'Your account has been disabled.';
@@ -810,8 +861,22 @@ extension on Translations {
 			'auth.checkEmail' => 'Check Your Email',
 			'auth.resetLinkSent' => ({required Object email}) => 'Password reset link has been sent to ${email}',
 			'auth.signInToContinue' => 'Sign in to continue',
+			'auth.continueWithGoogle' => 'Continue with Google',
+			'auth.orDivider' => 'or',
 			'auth.signingIn' => 'Signing in...',
+			'auth.almostThereWarmingUp' => 'You\'re almost there — just warming things up',
 			'auth.verificationEmailSent' => 'A verification email has been sent to your email address',
+			'auth.continueButton' => 'Continue',
+			'auth.changeEmail' => 'Change email',
+			'auth.signInWithEmailCode' => 'Sign in with email code',
+			'auth.backToPasswordLogin' => 'Back to password login',
+			'auth.sendLoginCode' => 'Send code',
+			'auth.verifyLoginCode' => 'Verify code',
+			'auth.enterLoginCode' => 'Login code',
+			'auth.loginCodeSent' => ({required Object email}) => 'We sent a login code to ${email}',
+			'auth.resendLoginCode' => 'Resend code',
+			'auth.resendLoginCodeCooldown' => ({required Object seconds}) => 'Resend in ${seconds}s',
+			'auth.loginCodeSendFailed' => 'Could not send login code. Try again later.',
 			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'Save',
@@ -857,6 +922,9 @@ extension on Translations {
 			'failures.timeout' => 'Request timed out. Please try again.',
 			'failures.noInternet' => 'No internet connection.',
 			'failures.invalidCredentials' => 'Invalid email or password.',
+			'failures.invalidLoginCode' => 'Invalid or expired login code.',
+			'failures.googleNoAccount' => 'No account for this Google email. Ask an admin to create your user first.',
+			'failures.googleSignInFailed' => 'Could not start Google sign-in. Please try again.',
 			'failures.accountDisabled' => 'Your account has been disabled.',
 			'failures.emailNotVerified' => 'Please verify your email address.',
 			'failures.tooManyRequests' => 'Too many requests. Please wait a moment.',

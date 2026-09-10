@@ -189,11 +189,12 @@ Device-specific settings only (this tablet/phone/desktop).
 
 ### Authentication (`/login`)
 
-- Splash screen (`/splash`)
-- Login page (`/login`)
+- Splash screen (`/splash`) — black warming-up UI with rotating status verbs
+- Login page (`/login`) — email step, then password or email OTP code; Google OAuth on web only
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
 - Session management
+- OAuth cannot create new users (server hook); Google email must match an existing account
 
 ---
 
@@ -335,8 +336,8 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 ## Key Screens
 
 ### Authentication
-- Splash Screen (`/splash`)
-- Login Screen (`/login`)
+- Splash Screen (`/splash`) — black warming-up verbs
+- Login Screen (`/login`) — password, email OTP code, Google (web)
 - Forgot Password (`/forgot-password`)
 
 ### Main Navigation
@@ -622,6 +623,7 @@ lib/src/
 
 ---
 
+| Sep 10 | OTP + Google login + black splash | Password login kept; email OTP and web Google OAuth via PocketBase; invite-only OAuth hook; black HTML/Flutter splash with rotating verbs; gyms-style login atmosphere |
 | Sep 10 | Org/branch URL routing | Authenticated routes use `/{orgSlug}/{branchSlug}/…` (dashboard at `/dashboard`); navigate with `goScoped`/`pushScoped`; org/branch switchers update the URL; slug fields on organizations and branches |
 | Sep 04 | Consumable usage | Per-org Features (including `consumableUsage`); house-chemical recipes on services; Create Order / order-detail usage; dashboard Consumables used KPI and Reports tab |
 | Sep 04 | Windows Alt key assert | Debug no longer dumps Flutter's empty-`keysPressed` assert when Windows sends Alt Left with no modifier flags |

@@ -29,6 +29,9 @@ class $AssetsIconsGen {
   AssetGenImage get faviconSource =>
       const AssetGenImage('assets/icons/favicon_source.png');
 
+  /// File path: assets/icons/google_g.png
+  AssetGenImage get googleG => const AssetGenImage('assets/icons/google_g.png');
+
   /// File path: assets/icons/hzn_laundry_logo.png
   AssetGenImage get hznLaundryLogo =>
       const AssetGenImage('assets/icons/hzn_laundry_logo.png');
@@ -43,6 +46,7 @@ class $AssetsIconsGen {
         appIconMac,
         appIconTransparent,
         faviconSource,
+        googleG,
         hznLaundryLogo,
         playStoreIcon512
       ];

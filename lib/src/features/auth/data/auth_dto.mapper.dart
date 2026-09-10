@@ -187,36 +187,36 @@ class _AuthDtoCopyWithImpl<$R, $Out>
     bool? verified,
     Object? role = $none,
     Object? branch = $none,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (token != null) #token: token,
-          if (id != null) #id: id,
-          if (collectionId != null) #collectionId: collectionId,
-          if (collectionName != null) #collectionName: collectionName,
-          if (name != null) #name: name,
-          if (email != null) #email: email,
-          if (avatar != null) #avatar: avatar,
-          if (verified != null) #verified: verified,
-          if (role != $none) #role: role,
-          if (branch != $none) #branch: branch,
-        }),
-      );
+  }) => $apply(
+    FieldCopyWithData({
+      if (token != null) #token: token,
+      if (id != null) #id: id,
+      if (collectionId != null) #collectionId: collectionId,
+      if (collectionName != null) #collectionName: collectionName,
+      if (name != null) #name: name,
+      if (email != null) #email: email,
+      if (avatar != null) #avatar: avatar,
+      if (verified != null) #verified: verified,
+      if (role != $none) #role: role,
+      if (branch != $none) #branch: branch,
+    }),
+  );
   @override
   AuthDto $make(CopyWithData data) => AuthDto(
-        token: data.get(#token, or: $value.token),
-        id: data.get(#id, or: $value.id),
-        collectionId: data.get(#collectionId, or: $value.collectionId),
-        collectionName: data.get(#collectionName, or: $value.collectionName),
-        name: data.get(#name, or: $value.name),
-        email: data.get(#email, or: $value.email),
-        avatar: data.get(#avatar, or: $value.avatar),
-        verified: data.get(#verified, or: $value.verified),
-        role: data.get(#role, or: $value.role),
-        branch: data.get(#branch, or: $value.branch),
-      );
+    token: data.get(#token, or: $value.token),
+    id: data.get(#id, or: $value.id),
+    collectionId: data.get(#collectionId, or: $value.collectionId),
+    collectionName: data.get(#collectionName, or: $value.collectionName),
+    name: data.get(#name, or: $value.name),
+    email: data.get(#email, or: $value.email),
+    avatar: data.get(#avatar, or: $value.avatar),
+    verified: data.get(#verified, or: $value.verified),
+    role: data.get(#role, or: $value.role),
+    branch: data.get(#branch, or: $value.branch),
+  );
 
   @override
   AuthDtoCopyWith<$R2, AuthDto, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _AuthDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

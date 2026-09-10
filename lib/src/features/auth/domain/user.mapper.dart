@@ -139,28 +139,28 @@ class _UserCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, User, $Out>
     Object? avatarUrl = $none,
     bool? verified,
     Object? branch = $none,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (id != null) #id: id,
-          if (name != null) #name: name,
-          if (email != null) #email: email,
-          if (avatarUrl != $none) #avatarUrl: avatarUrl,
-          if (verified != null) #verified: verified,
-          if (branch != $none) #branch: branch,
-        }),
-      );
+  }) => $apply(
+    FieldCopyWithData({
+      if (id != null) #id: id,
+      if (name != null) #name: name,
+      if (email != null) #email: email,
+      if (avatarUrl != $none) #avatarUrl: avatarUrl,
+      if (verified != null) #verified: verified,
+      if (branch != $none) #branch: branch,
+    }),
+  );
   @override
   User $make(CopyWithData data) => User(
-        id: data.get(#id, or: $value.id),
-        name: data.get(#name, or: $value.name),
-        email: data.get(#email, or: $value.email),
-        avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
-        verified: data.get(#verified, or: $value.verified),
-        branch: data.get(#branch, or: $value.branch),
-      );
+    id: data.get(#id, or: $value.id),
+    name: data.get(#name, or: $value.name),
+    email: data.get(#email, or: $value.email),
+    avatarUrl: data.get(#avatarUrl, or: $value.avatarUrl),
+    verified: data.get(#verified, or: $value.verified),
+    branch: data.get(#branch, or: $value.branch),
+  );
 
   @override
   UserCopyWith<$R2, User, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _UserCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

@@ -43,21 +43,36 @@ abstract class RouterUtils {
   }
 
   /// Home path for an authenticated user: scoped dashboard when possible.
-  static String homePathFor(Ref ref) {
+  ///
+  /// Returns null while org/branch scope is still loading, or when scope
+  /// cannot be resolved (missing memberships / empty slugs). Callers on
+  /// splash must not treat null as "stay via redirect to /splash" forever
+  /// without also checking loading — see [redirect] step 3.
+  static String? homePathFor(Ref ref) {
     final prefix = _resolveScopePrefix(ref);
-    if (prefix == null) return SplashRoute.path;
+    if (prefix == null) return null;
     return '$prefix${DashboardRoute.path}';
+  }
+
+  /// True while org or branch controllers are still resolving.
+  static bool isScopeLoading(Ref ref) {
+    final orgAsync = ref.read(currentOrganizationControllerProvider);
+    final branchAsync = ref.read(currentBranchControllerProvider);
+    return orgAsync.isLoading || branchAsync.isLoading;
   }
 
   /// Resolves `/orgSlug/branchSlug` from current org/branch controllers.
   static String? _resolveScopePrefix(Ref ref) {
-    final org = ref.read(currentOrganizationControllerProvider).value;
+    final orgAsync = ref.read(currentOrganizationControllerProvider);
+    if (orgAsync.isLoading) return null;
+    final org = orgAsync.value;
     if (org == null || org.slug.isEmpty) return null;
 
     final branchAsync = ref.read(currentBranchControllerProvider);
     if (branchAsync.isLoading) return null;
 
-    final isAll = ref.read(currentBranchControllerProvider.notifier).isAllBranchesMode;
+    final isAll =
+        ref.read(currentBranchControllerProvider.notifier).isAllBranchesMode;
     if (isAll) {
       return '/${org.slug}/$allBranchesSlug';
     }
@@ -133,7 +148,8 @@ abstract class RouterUtils {
     if (isEmptyRootPath(uriPath)) {
       if (isAuthLoading) return SplashRoute.path;
       if (!isAuthenticated) return LoginRoute.path;
-      return homePathFor(ref);
+      if (isScopeLoading(ref)) return SplashRoute.path;
+      return homePathFor(ref) ?? SplashRoute.path;
     }
 
     // 1. Still loading auth on splash - stay on splash
@@ -152,26 +168,31 @@ abstract class RouterUtils {
 
     // 3. Splash complete - redirect based on auth result
     if (isOnSplashPage && !isAuthLoading) {
-      if (isAuthenticated) {
-        final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
-        if (pendingUrl != null) {
-          ref.read(pendingRedirectProvider.notifier).clear();
-          return pendingUrl;
-        }
-        return homePathFor(ref);
+      if (!isAuthenticated) return LoginRoute.path;
+      // Wait for org/branch (and their slugs) before leaving splash.
+      if (isScopeLoading(ref)) return null;
+      final home = homePathFor(ref);
+      if (home == null) return null;
+      final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
+      if (pendingUrl != null) {
+        ref.read(pendingRedirectProvider.notifier).clear();
+        return pendingUrl;
       }
-      return LoginRoute.path;
+      return home;
     }
 
     // 4. Login page - redirect if authenticated
     if (isOnLoginPage) {
       if (isAuthenticated) {
+        if (isScopeLoading(ref)) return SplashRoute.path;
+        final home = homePathFor(ref);
+        if (home == null) return SplashRoute.path;
         final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
         if (pendingUrl != null) {
           ref.read(pendingRedirectProvider.notifier).clear();
           return pendingUrl;
         }
-        return homePathFor(ref);
+        return home;
       }
       return null;
     }
@@ -240,7 +261,7 @@ abstract class RouterUtils {
       }
 
       if (!branchValid) {
-        return homePathFor(ref);
+        return homePathFor(ref) ?? SplashRoute.path;
       }
 
       ref.read(currentRouteScopeProvider.notifier).set(orgSlug, branchSlug);

@@ -206,40 +206,39 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     Object? notes = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (id != null) #id: id,
-          if (collectionId != null) #collectionId: collectionId,
-          if (collectionName != null) #collectionName: collectionName,
-          if (name != null) #name: name,
-          if (branch != $none) #branch: branch,
-          if (phone != $none) #phone: phone,
-          if (email != $none) #email: email,
-          if (address != $none) #address: address,
-          if (notes != $none) #notes: notes,
-          if (created != $none) #created: created,
-          if (updated != $none) #updated: updated,
-        }),
-      );
+  }) => $apply(
+    FieldCopyWithData({
+      if (id != null) #id: id,
+      if (collectionId != null) #collectionId: collectionId,
+      if (collectionName != null) #collectionName: collectionName,
+      if (name != null) #name: name,
+      if (branch != $none) #branch: branch,
+      if (phone != $none) #phone: phone,
+      if (email != $none) #email: email,
+      if (address != $none) #address: address,
+      if (notes != $none) #notes: notes,
+      if (created != $none) #created: created,
+      if (updated != $none) #updated: updated,
+    }),
+  );
   @override
   CustomerDto $make(CopyWithData data) => CustomerDto(
-        id: data.get(#id, or: $value.id),
-        collectionId: data.get(#collectionId, or: $value.collectionId),
-        collectionName: data.get(#collectionName, or: $value.collectionName),
-        name: data.get(#name, or: $value.name),
-        branch: data.get(#branch, or: $value.branch),
-        phone: data.get(#phone, or: $value.phone),
-        email: data.get(#email, or: $value.email),
-        address: data.get(#address, or: $value.address),
-        notes: data.get(#notes, or: $value.notes),
-        created: data.get(#created, or: $value.created),
-        updated: data.get(#updated, or: $value.updated),
-      );
+    id: data.get(#id, or: $value.id),
+    collectionId: data.get(#collectionId, or: $value.collectionId),
+    collectionName: data.get(#collectionName, or: $value.collectionName),
+    name: data.get(#name, or: $value.name),
+    branch: data.get(#branch, or: $value.branch),
+    phone: data.get(#phone, or: $value.phone),
+    email: data.get(#email, or: $value.email),
+    address: data.get(#address, or: $value.address),
+    notes: data.get(#notes, or: $value.notes),
+    created: data.get(#created, or: $value.created),
+    updated: data.get(#updated, or: $value.updated),
+  );
 
   @override
   CustomerDtoCopyWith<$R2, CustomerDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) =>
-      _CustomerDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) => _CustomerDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

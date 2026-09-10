@@ -20,6 +20,20 @@
     "checkEmail": "Tingnan ang Iyong Email",
     "resetLinkSent(email)": "Naipadala na ang password reset link sa $email",
     "signInToContinue": "Mag-sign in upang magpatuloy",
+    "continueWithGoogle": "Magpatuloy sa Google",
+    "orDivider": "o",
     "signingIn": "Nagsa-sign in...",
-    "verificationEmailSent": "Naipadala na ang verification email sa iyong email address"
+    "almostThereWarmingUp": "Malapit na — pinapainit pa ang app",
+    "verificationEmailSent": "Naipadala na ang verification email sa iyong email address",
+    "continueButton": "Magpatuloy",
+    "changeEmail": "Palitan ang email",
+    "signInWithEmailCode": "Mag-sign in gamit ang email code",
+    "backToPasswordLogin": "Bumalik sa password login",
+    "sendLoginCode": "Ipadala ang code",
+    "verifyLoginCode": "I-verify ang code",
+    "enterLoginCode": "Login code",
+    "loginCodeSent(email)": "Nagpadala kami ng login code sa $email",
+    "resendLoginCode": "Ipadala ulit ang code",
+    "resendLoginCodeCooldown(seconds)": "Ipadala ulit sa ${seconds}s",
+    "loginCodeSendFailed": "Hindi maipadala ang login code. Subukan ulit mamaya."
 }
