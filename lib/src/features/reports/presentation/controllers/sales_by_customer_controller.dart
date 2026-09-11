@@ -15,11 +15,8 @@ part 'sales_by_customer_controller.g.dart';
 @riverpod
 Future<List<CustomerSalesEntry>> salesByCustomer(Ref ref) async {
   final dateRange = ref.watch(salesByCustomerDateRangeControllerProvider);
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final pb = ref.read(pocketbaseProvider);
-
-  final branchFilter =
-      branchId != null ? 'branch = "$branchId"' : null;
 
   final records = await pb
       .collection(PocketBaseCollections.vwSalesByCustomer)

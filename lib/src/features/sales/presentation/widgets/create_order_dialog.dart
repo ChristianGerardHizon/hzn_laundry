@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -24,14 +25,17 @@ import '../../../dashboard/presentation/controllers/todays_sales_controller.dart
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
+import '../../../pos/domain/sale_consumable_usage.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../products/data/repositories/product_repository.dart';
 import '../../../products/domain/product.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service.dart';
 import '../../../services/domain/service_price_tier.dart';
+import '../../../services/presentation/controllers/service_consumable_recipes_provider.dart';
 import '../../../services/presentation/controllers/service_price_tiers_provider.dart';
 import '../../../services/presentation/controllers/services_controller.dart';
+import '../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -42,7 +46,13 @@ import '../../../promos/data/repositories/promo_repository.dart';
 import '../../../promos/domain/customer_promo.dart';
 import '../../../promos/presentation/controllers/redeemable_promos_provider.dart';
 import '../../../promos/presentation/widgets/loyalty_rewards_section.dart';
+import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
+import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../../core/widgets/nav_permissions.dart';
+import '../../../users/domain/user_role.dart';
 import '../../presentation/controllers/paginated_sales_controller.dart';
+import '../../../pos/data/repositories/sale_consumable_usage_repository.dart';
+import 'order_usage_section.dart';
 
 /// Generates a receipt number in format: S-YYMMDD-XXXX
 String _generateReceiptNumber() {
@@ -74,6 +84,49 @@ class _OrderProductItem {
 
   num get effectivePrice => customPrice ?? product.price;
   num get subtotal => effectivePrice * quantity;
+}
+
+List<SaleConsumableUsage> _mergedConsumableUsages({
+  required List<OrderUsageDraft> drafts,
+  required List<_OrderProductItem> addOns,
+}) {
+  final byProduct = <String, OrderUsageDraft>{
+    for (final draft in drafts)
+      draft.product.id: OrderUsageDraft(
+        product: draft.product,
+        prefill: draft.prefill,
+        quantity: draft.quantity,
+      ),
+  };
+
+  for (final item in addOns) {
+    if (!item.product.countsTowardMaterialCost) continue;
+    final existing = byProduct[item.product.id];
+    if (existing != null) {
+      existing.quantity = (existing.quantity ?? 0) + item.quantity;
+    } else {
+      byProduct[item.product.id] = OrderUsageDraft(
+        product: item.product,
+        prefill: true,
+        quantity: item.quantity,
+      );
+    }
+  }
+
+  return [
+    for (final draft in byProduct.values)
+      if (draft.quantity != null)
+        SaleConsumableUsage(
+          id: '',
+          saleId: '',
+          productId: draft.product.id,
+          productName: draft.product.name,
+          quantity: draft.quantity!,
+          unitLabel: draft.product.quantityUnit?.shortPlural,
+          unitCost: draft.product.unitCost,
+          cost: draft.product.unitCost * draft.quantity!,
+        ),
+  ];
 }
 
 /// Shows the Create New Order dialog.
@@ -141,6 +194,39 @@ class _CreateOrderDialog extends HookConsumerWidget {
     // Product items
     final productItems = useState<List<_OrderProductItem>>([]);
 
+    // Consumable usage (org-flagged)
+    final usageDrafts = useState<List<OrderUsageDraft>>([]);
+    final lastRecipeServiceId = useRef<String?>(null);
+    final isCopyingLast = useState(false);
+
+    final usageEnabled =
+        ref.watch(consumableUsageEnabledProvider).value ?? false;
+    final role = ref.watch(currentUserRoleProvider).value;
+    final canViewUsage = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageView));
+    final canViewUsageCost = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageCostView));
+    final showUsage = usageEnabled && canViewUsage;
+
+    final recipesAsync = showUsage && selectedService.value != null
+        ? ref.watch(serviceConsumableRecipesProvider(selectedService.value!.id))
+        : null;
+
+    useEffect(() {
+      final serviceId = selectedService.value?.id;
+      if (!showUsage || serviceId == null) {
+        usageDrafts.value = [];
+        lastRecipeServiceId.value = null;
+        return null;
+      }
+      final recipes = recipesAsync?.asData?.value;
+      if (recipes == null) return null;
+      if (lastRecipeServiceId.value == serviceId) return null;
+      usageDrafts.value = draftsFromRecipes(recipes);
+      lastRecipeServiceId.value = serviceId;
+      return null;
+    }, [selectedService.value?.id, recipesAsync, showUsage]);
+
     // Tracks whether order was created → show success page
     final orderCreated = useState(false);
     final createdReceiptNumber = useState<String?>(null);
@@ -160,6 +246,68 @@ class _CreateOrderDialog extends HookConsumerWidget {
     Future<void> handleClose() async {
       if (await confirmDiscard()) {
         if (context.mounted) Navigator.of(context).pop();
+      }
+    }
+
+    Future<void> copyLastRecipe() async {
+      final service = selectedService.value;
+      final branchId = ref.read(currentBranchIdProvider);
+      if (service == null || branchId == null || usageDrafts.value.isEmpty) {
+        return;
+      }
+
+      isCopyingLast.value = true;
+      try {
+        final pb = ref.read(pocketbaseProvider);
+        final result =
+            await pb.collection(PocketBaseCollections.saleServiceItems).getList(
+                  page: 1,
+                  perPage: 1,
+                  filter:
+                      'service = "${service.id}" && sale.branch = "$branchId" && sale.status != "voided" && sale.status != "refunded"',
+                  sort: '-created',
+                );
+        if (result.items.isEmpty) {
+          if (context.mounted) {
+            showInfoSnackBar(
+              context,
+              message: 'No previous order with this service on this branch',
+              useRootMessenger: false,
+            );
+          }
+          return;
+        }
+
+        final saleId = result.items.first.getStringValue('sale');
+        final usagesResult = await ref
+            .read(saleConsumableUsageRepositoryProvider)
+            .fetchForSale(saleId);
+        final usages =
+            usagesResult.fold((_) => <SaleConsumableUsage>[], (u) => u);
+        if (usages.isEmpty) {
+          if (context.mounted) {
+            showInfoSnackBar(
+              context,
+              message: 'The last matching order has no usage recorded',
+              useRootMessenger: false,
+            );
+          }
+          return;
+        }
+
+        final qtyByProduct = {
+          for (final usage in usages) usage.productId: usage.quantity,
+        };
+        for (final draft in usageDrafts.value) {
+          final copied = qtyByProduct[draft.product.id];
+          if (copied != null) {
+            draft.quantity = copied < 0 ? 0 : copied;
+          }
+        }
+        usageDrafts.value = [...usageDrafts.value];
+        isDirty.value = true;
+      } finally {
+        isCopyingLast.value = false;
       }
     }
 
@@ -196,6 +344,36 @@ class _CreateOrderDialog extends HookConsumerWidget {
         showErrorSnackBar(context,
             message: 'No branch selected', useRootMessenger: false);
         return;
+      }
+
+      if (showUsage) {
+        final serviceId = selectedService.value!.id;
+        if (lastRecipeServiceId.value != serviceId) {
+          try {
+            final recipes = await ref.read(
+              serviceConsumableRecipesProvider(serviceId).future,
+            );
+            usageDrafts.value = draftsFromRecipes(recipes);
+            lastRecipeServiceId.value = serviceId;
+          } catch (_) {
+            showErrorSnackBar(
+              context,
+              message: 'Could not load consumable recipe',
+              useRootMessenger: false,
+            );
+            return;
+          }
+        }
+        final missing = usageDrafts.value.where((d) => d.isMissing).toList();
+        if (missing.isNotEmpty) {
+          showErrorSnackBar(
+            context,
+            message:
+                'Enter usage for ${missing.map((d) => d.product.name).join(', ')}',
+            useRootMessenger: false,
+          );
+          return;
+        }
       }
 
       isSaving.value = true;
@@ -284,11 +462,19 @@ class _CreateOrderDialog extends HookConsumerWidget {
               ))
           .toList();
 
+      final consumableUsages = showUsage
+          ? _mergedConsumableUsages(
+              drafts: usageDrafts.value,
+              addOns: productItems.value,
+            )
+          : const <SaleConsumableUsage>[];
+
       final repo = ref.read(salesRepositoryProvider);
       final result = await repo.createSale(
         sale,
         saleItems,
         serviceItems: [serviceItem],
+        consumableUsages: consumableUsages,
       );
 
       isSaving.value = false;
@@ -504,6 +690,21 @@ class _CreateOrderDialog extends HookConsumerWidget {
                       enabled: !isSaving.value,
                       onChanged: () => isDirty.value = true,
                     ),
+                    if (showUsage && usageDrafts.value.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      OrderUsageSection(
+                        drafts: usageDrafts.value,
+                        enabled: !isSaving.value,
+                        canEdit: true,
+                        showCost: canViewUsageCost,
+                        onChanged: () {
+                          usageDrafts.value = [...usageDrafts.value];
+                          isDirty.value = true;
+                        },
+                        onCopyLast: copyLastRecipe,
+                        copyLastEnabled: !isCopyingLast.value,
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     // Special instructions
@@ -2516,12 +2717,12 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final isPrinting = useState(false);
     final hasAutoPrinted = useState(false);
     final printStoreCopy = useState(true);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
-    final hasDefaultPrinter = defaultPrinterAsync.value != null;
-    final canThermalPrint = isThermalPrintingSupported && hasDefaultPrinter;
+    final hasSelectedPrinter = selectedPrinterAsync.value != null;
+    final canThermalPrint = isThermalPrintingSupported && hasSelectedPrinter;
 
     final unitLabel = service.quantityUnit?.shortPlural ??
         (service.weightBased == true ? 'KG' : 'PCS');
@@ -2592,10 +2793,10 @@ class _OrderSuccessPage extends HookConsumerWidget {
         return;
       }
 
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context,
-            message: 'No default printer configured', useRootMessenger: false);
+            message: 'No printer selected', useRootMessenger: false);
         return;
       }
 
@@ -2677,9 +2878,9 @@ class _OrderSuccessPage extends HookConsumerWidget {
       }
     }
 
-    // Auto-print when page appears if a default printer is set
+    // Auto-print when page appears if a printer is selected
     useEffect(() {
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (isThermalPrintingSupported &&
           printer != null &&
           !hasAutoPrinted.value &&
@@ -2690,7 +2891,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         });
       }
       return null;
-    }, [defaultPrinterAsync.value]);
+    }, [selectedPrinterAsync.value]);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2758,7 +2959,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                 TextButton(
                   onPressed: () {
                     DialogDismissingObserver.dismissAllDialogs();
-                    const PrinterSettingsRoute().go(context);
+                    const PrinterSettingsRoute().goScoped(context);
                   },
                   child: const Text('Setup Printer'),
                 ),

@@ -56,7 +56,7 @@ abstract class PaymentRepository {
   FutureEither<List<PaymentReportEntry>> getForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   });
 
   /// Deletes a payment and updates the sale's isPaid status.
@@ -189,7 +189,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
   FutureEither<List<PaymentReportEntry>> getForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -197,12 +197,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
             .notEquals('sale.status', 'voided')
             .isFalse('isVoided')
             .between('postedDate', startDate, endDate);
-        if (branchId != null) {
-          filter.relation('sale.branch', branchId);
-        }
 
         final records = await _payments.getFullList(
-          filter: filter.build(),
+          filter: PBFilters.combine(filter.build(), branchScope),
           sort: '-postedDate',
           expand: 'sale',
         );

@@ -58,4 +58,4 @@ final class SalesByCustomerProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesByCustomerHash() => r'e997603d2b86fbe3ebbe039a036a2b456ea7cd23';
+String _$salesByCustomerHash() => r'e890ae76ce0474ccb1207eef6ef318cd2ac53d5c';

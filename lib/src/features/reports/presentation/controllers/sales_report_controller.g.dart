@@ -45,4 +45,4 @@ final class SalesReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesReportHash() => r'a7a3da9f8f7b6081da9730afdc955cd5b4379448';
+String _$salesReportHash() => r'4c27f1cb1eca52d9699bc072d89d40be2748155b';

@@ -13,6 +13,7 @@ import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../domain/order_status.dart';
 import '../../domain/sale.dart';
+import '../../domain/sale_consumable_usage.dart';
 import '../../domain/sale_item.dart';
 import '../dto/sale_dto.dart';
 import '../dto/sale_item_dto.dart';
@@ -23,11 +24,12 @@ abstract class SalesRepository {
   FutureEither<Sale> createSale(
     Sale sale,
     List<SaleItem> items, {
-    List<SaleServiceItem> serviceItems,
+    List<SaleServiceItem> serviceItems = const [],
+    List<SaleConsumableUsage> consumableUsages = const [],
     DateTime? postedDate,
   });
   FutureEither<Sale> getSale(String id);
-  FutureEither<List<Sale>> getSales({String? branchId, DateTime? date});
+  FutureEither<List<Sale>> getSales({String? branchFilter, DateTime? date});
   FutureEither<List<SaleItem>> getSaleItems(String saleId);
   FutureEither<List<SaleServiceItem>> getSaleServiceItems(String saleId);
 
@@ -66,14 +68,14 @@ abstract class SalesRepository {
   FutureEither<List<Sale>> getSalesForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   });
 
   /// Fetches pre-aggregated sale service totals from the view collection.
   FutureEither<List<RecordModel>> getSaleServiceTotals({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
     bool filterByProcessedDate = false,
   });
 
@@ -81,7 +83,7 @@ abstract class SalesRepository {
   FutureEither<List<RecordModel>> getTodayIncentiveRows({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   });
 
   /// Fetches all sales for a specific customer.
@@ -140,6 +142,8 @@ class SalesRepositoryImpl implements SalesRepository {
       _pb.collection(PocketBaseCollections.saleItems);
   RecordService get _saleServiceItems =>
       _pb.collection(PocketBaseCollections.saleServiceItems);
+  RecordService get _saleConsumableUsages =>
+      _pb.collection(PocketBaseCollections.saleConsumableUsages);
   Sale _toSaleEntity(RecordModel record) {
     return SaleDto.fromRecord(record).toEntity();
   }
@@ -166,6 +170,7 @@ class SalesRepositoryImpl implements SalesRepository {
     Sale sale,
     List<SaleItem> items, {
     List<SaleServiceItem> serviceItems = const [],
+    List<SaleConsumableUsage> consumableUsages = const [],
     DateTime? postedDate,
   }) async {
     return TaskEither.tryCatch(
@@ -216,6 +221,18 @@ class SalesRepositoryImpl implements SalesRepository {
             'subtotal': item.subtotal,
           };
           await _saleServiceItems.create(body: itemBody);
+        }
+
+        for (final usage in consumableUsages) {
+          await _saleConsumableUsages.create(body: {
+            'sale': saleRecord.id,
+            'product': usage.productId,
+            'productName': usage.productName,
+            'quantity': usage.quantity,
+            'unitLabel': usage.unitLabel,
+            'unitCost': usage.unitCost,
+            'cost': usage.cost,
+          });
         }
 
         final createdSale = _toSaleEntity(saleRecord);
@@ -279,13 +296,10 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<List<Sale>> getSales({String? branchId, DateTime? date}) async {
+  FutureEither<List<Sale>> getSales({String? branchFilter, DateTime? date}) async {
     return TaskEither.tryCatch(
       () async {
-        var filter = '';
-        if (branchId != null) {
-          filter = 'branch = "$branchId"';
-        }
+        var filter = branchFilter ?? '';
 
         if (date != null) {
           // Get start and end of day in local time, then convert to UTC for filter
@@ -470,19 +484,16 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<List<Sale>> getSalesForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final filter = PBFilter()
             .notEquals('status', 'voided')
             .between('postedDate', startDate, endDate);
-        if (branchId != null) {
-          filter.relation('branch', branchId);
-        }
 
         final records = await _sales.getFullList(
-          filter: filter.build(),
+          filter: PBFilters.combine(filter.build(), branchScope),
           sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
@@ -495,7 +506,7 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<List<RecordModel>> getSaleServiceTotals({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
     bool filterByProcessedDate = false,
   }) async {
     return TaskEither.tryCatch(
@@ -516,14 +527,10 @@ class SalesRepositoryImpl implements SalesRepository {
           filter.or(postedFilter).or(createdFilter);
         }
 
-        if (branchId != null) {
-          filter.relation('branch', branchId);
-        }
-
         final records = await _pb
             .collection(PocketBaseCollections.vwSaleServiceTotals)
             .getFullList(
-              filter: filter.build(),
+              filter: PBFilters.combine(filter.build(), branchScope),
               sort: filterByProcessedDate ? '-processedDate' : '-postedDate',
             );
         return records;
@@ -536,20 +543,17 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<List<RecordModel>> getTodayIncentiveRows({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final filter =
             PBFilter().between('effectiveProcessedDate', startDate, endDate);
-        if (branchId != null) {
-          filter.relation('branch', branchId);
-        }
 
         final records = await _pb
             .collection(PocketBaseCollections.vwSaleServiceTotals)
             .getFullList(
-              filter: filter.build(),
+              filter: PBFilters.combine(filter.build(), branchScope),
               sort: '-effectiveProcessedDate',
             );
         return records;

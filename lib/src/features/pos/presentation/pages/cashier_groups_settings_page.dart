@@ -22,7 +22,7 @@ class CashierGroupsSettingsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cashier Layout'),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'cashier_groups_fab',

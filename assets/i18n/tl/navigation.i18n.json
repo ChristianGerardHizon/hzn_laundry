@@ -1,4 +1,14 @@
 {
+    "shortcuts": "Mga Shortcut",
+    "categories": "Mga Kategorya",
+    "showMore": "Magpakita pa",
+    "showLess": "Magpakita ng mas kaunti",
+    "operations": "Operasyon",
+    "people": "Mga Tao",
+    "insights": "Mga Insight",
+    "administration": "Administrasyon",
+    "collapseNav": "I-collapse ang navigation",
+    "expandNav": "I-expand ang navigation",
     "dashboard": "Dashboard",
     "products": "Mga Produkto",
     "inventory": "Imbentaryo",
@@ -11,7 +21,8 @@
     "more": "Iba Pa",
     "sales": "Cashier",
     "salesHistory": "Mga Order",
-    "organization": "Organisasyon",
+    "management": "Pamamahala",
+    "organizations": "Mga Organisasyon",
     "services": "Mga Serbisyo",
     "customers": "Mga Customer",
     "employees": "Mga Empleyado",
@@ -21,5 +32,8 @@
     "allBranches": "Lahat ng Sangay",
     "posUnavailableAllBranches": "Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.",
     "createUnavailableAllBranches": "Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.",
-    "activities": "Mga Aktibidad"
+    "activities": "Mga Aktibidad",
+    "searchNavHint": "Maghanap ng mga pahina",
+    "searchResults": "Mga resulta ng paghahanap",
+    "noSearchResults": "Walang resulta"
 }

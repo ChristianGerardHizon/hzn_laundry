@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/users.routes.dart';
 import '../controllers/paginated_users_controller.dart';
@@ -45,7 +46,7 @@ class UsersListPage extends ConsumerWidget {
           paginatedState: paginatedState,
           selectedId: null,
           onUserTap: (user) {
-            UserDetailRoute(id: user.id).push(context);
+            UserDetailRoute(id: user.id).pushScoped(context);
           },
           onRefresh: () =>
               ref.read(paginatedUsersControllerProvider.notifier).refresh(),

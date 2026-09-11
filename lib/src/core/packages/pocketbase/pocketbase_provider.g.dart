@@ -65,24 +65,30 @@ abstract class _$PbDebugController extends $AsyncNotifier<bool> {
 
 /// Provides a singleton PocketBase instance.
 ///
-/// The instance uses the URL resolved from --dart-define=ENV or falls back
-/// to kDebugMode-based selection.
+/// URL comes from `--flavor` / `--dart-define=ENV` (see [AppEnvironment]).
+///
+/// Uses [PocketBase.reuseHTTPClient] with a platform HTTP client (Fetch on web
+/// for OAuth2 realtime) and a request timeout wrapper.
 
 @ProviderFor(pocketbase)
 final pocketbaseProvider = PocketbaseProvider._();
 
 /// Provides a singleton PocketBase instance.
 ///
-/// The instance uses the URL resolved from --dart-define=ENV or falls back
-/// to kDebugMode-based selection.
+/// URL comes from `--flavor` / `--dart-define=ENV` (see [AppEnvironment]).
+///
+/// Uses [PocketBase.reuseHTTPClient] with a platform HTTP client (Fetch on web
+/// for OAuth2 realtime) and a request timeout wrapper.
 
 final class PocketbaseProvider
     extends $FunctionalProvider<PocketBase, PocketBase, PocketBase>
     with $Provider<PocketBase> {
   /// Provides a singleton PocketBase instance.
   ///
-  /// The instance uses the URL resolved from --dart-define=ENV or falls back
-  /// to kDebugMode-based selection.
+  /// URL comes from `--flavor` / `--dart-define=ENV` (see [AppEnvironment]).
+  ///
+  /// Uses [PocketBase.reuseHTTPClient] with a platform HTTP client (Fetch on web
+  /// for OAuth2 realtime) and a request timeout wrapper.
   PocketbaseProvider._()
       : super(
           from: null,
@@ -116,4 +122,4 @@ final class PocketbaseProvider
   }
 }
 
-String _$pocketbaseHash() => r'504c7dfbfae9874cc12c1a0bbf23d94b01a9e525';
+String _$pocketbaseHash() => r'82c2822f7dba07d2f2814689a8122294a6a825e7';

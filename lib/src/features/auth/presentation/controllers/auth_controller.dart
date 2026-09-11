@@ -17,34 +17,56 @@ class AuthController extends _$AuthController {
 
   @override
   Future<AuthState?> build() async {
-    // Try to initialize from stored auth on app startup
     final result = await _repository.initialize();
 
     return result.fold(
-      (failure) => null, // No valid auth, return null
+      (failure) => null,
       (authState) => authState,
     );
   }
 
-  /// Attempts to login with username and password.
-  ///
-  /// Returns true on success, false on failure.
-  Future<bool> login(String username, String password) async {
-    addBreadcrumb('Login attempt', category: 'auth', data: {'username': username});
+  /// Attempts to login with email and password.
+  Future<bool> login(String email, String password) async {
+    addBreadcrumb('Login attempt', category: 'auth', data: {'email': email});
     state = const AsyncLoading();
 
-    final result = await _repository.login(username, password);
+    final result = await _repository.login(email, password);
 
     return result.fold(
       (failure) {
-        addBreadcrumb('Login failed', category: 'auth', data: {'username': username});
+        addBreadcrumb('Login failed', category: 'auth', data: {'email': email});
         state = AsyncError(failure, StackTrace.current);
         return false;
       },
       (authState) async {
         addBreadcrumb('Login success', category: 'auth', data: {
           'userId': authState.user.id,
-          'username': username,
+          'email': email,
+        });
+        state = AsyncData(authState);
+        return true;
+      },
+    );
+  }
+
+  /// Attempts Google OAuth2 login (web).
+  ///
+  /// Does not set [AsyncLoading] while waiting: PocketBase OAuth waits on a
+  /// realtime redirect that never completes if the user closes the popup/tab.
+  Future<bool> loginWithGoogle() async {
+    addBreadcrumb('Google login attempt', category: 'auth');
+
+    final result = await _repository.loginWithGoogle();
+
+    return result.fold(
+      (failure) {
+        addBreadcrumb('Google login failed', category: 'auth');
+        state = AsyncError(failure, StackTrace.current);
+        return false;
+      },
+      (authState) {
+        addBreadcrumb('Google login success', category: 'auth', data: {
+          'userId': authState.user.id,
         });
         state = AsyncData(authState);
         return true;
@@ -55,15 +77,12 @@ class AuthController extends _$AuthController {
   /// Logs out the current user.
   Future<void> logout() async {
     addBreadcrumb('Logout', category: 'auth');
-    // Clear pending redirect to prevent unexpected navigation on next login
     ref.read(pendingRedirectProvider.notifier).consume();
     await _repository.logout();
     state = const AsyncData(null);
   }
 
   /// Refreshes the current authentication token.
-  ///
-  /// Returns true on success, false on failure.
   Future<bool> refresh() async {
     final result = await _repository.refresh();
 
@@ -79,6 +98,29 @@ class AuthController extends _$AuthController {
     );
   }
 
+  /// Requests an email OTP. Does not change global auth loading state.
+  Future<String?> requestOtp(String email) async {
+    final result = await _repository.requestOtp(email);
+    return result.fold((_) => null, (otpId) => otpId);
+  }
+
+  /// Logs in with an email OTP id and code.
+  Future<bool> loginWithOtp(String otpId, String code) async {
+    state = const AsyncLoading();
+
+    final result = await _repository.loginWithOtp(otpId, code);
+
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return false;
+      },
+      (authState) {
+        state = AsyncData(authState);
+        return true;
+      },
+    );
+  }
 }
 
 /// Convenience provider to check if user is authenticated.

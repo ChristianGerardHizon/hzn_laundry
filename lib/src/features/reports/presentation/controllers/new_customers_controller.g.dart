@@ -9,19 +9,19 @@ part of 'new_customers_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Fetches customers created within the selected date range,
-/// scoped to the current branch when one is selected.
+/// scoped to the current branch / organization.
 
 @ProviderFor(newCustomersReport)
 final newCustomersReportProvider = NewCustomersReportProvider._();
 
 /// Fetches customers created within the selected date range,
-/// scoped to the current branch when one is selected.
+/// scoped to the current branch / organization.
 
 final class NewCustomersReportProvider extends $FunctionalProvider<
         AsyncValue<List<Customer>>, List<Customer>, FutureOr<List<Customer>>>
     with $FutureModifier<List<Customer>>, $FutureProvider<List<Customer>> {
   /// Fetches customers created within the selected date range,
-  /// scoped to the current branch when one is selected.
+  /// scoped to the current branch / organization.
   NewCustomersReportProvider._()
       : super(
           from: null,
@@ -49,4 +49,4 @@ final class NewCustomersReportProvider extends $FunctionalProvider<
 }
 
 String _$newCustomersReportHash() =>
-    r'e63920979a95d1f7542fc6cbffe9994b6564eb10';
+    r'341e71b01911f05c3d2c8716bdd714580abe575c';

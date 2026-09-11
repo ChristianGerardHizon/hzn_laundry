@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/foundation/sort_config.dart';
 import '../../../../core/hooks/use_infinite_scroll.dart';
@@ -183,7 +184,7 @@ class ProductListPanel extends HookConsumerWidget {
                     ),
                     selected: isSelected,
                     selectedTileColor: theme.colorScheme.primaryContainer,
-                    onTap: () => ProductDetailRoute(id: product.id).go(context),
+                    onTap: () => ProductDetailRoute(id: product.id).goScoped(context),
                   );
                 },
               ),

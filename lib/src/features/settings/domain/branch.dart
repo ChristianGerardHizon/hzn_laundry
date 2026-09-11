@@ -10,8 +10,10 @@ class Branch with BranchMappable {
   const Branch({
     required this.id,
     required this.name,
+    required this.slug,
     required this.address,
     required this.contactNumber,
+    this.organizationId,
     this.operatingHours,
     this.cutOffTime,
     this.incentiveAmount = 5,
@@ -24,8 +26,14 @@ class Branch with BranchMappable {
   /// PocketBase record ID.
   final String id;
 
+  /// Parent organization ID (tenant).
+  final String? organizationId;
+
   /// Branch name (short internal identifier, e.g., "Main Branch").
   final String name;
+
+  /// URL-safe slug unique within the organization. Literal `all` is reserved.
+  final String slug;
 
   /// Branch address.
   final String address;

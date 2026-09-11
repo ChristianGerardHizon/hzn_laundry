@@ -25,8 +25,31 @@ class $AssetsIconsGen {
   AssetGenImage get appIconTransparent =>
       const AssetGenImage('assets/icons/app_icon_transparent.png');
 
+  /// File path: assets/icons/favicon_source.png
+  AssetGenImage get faviconSource =>
+      const AssetGenImage('assets/icons/favicon_source.png');
+
+  /// File path: assets/icons/google_g.png
+  AssetGenImage get googleG => const AssetGenImage('assets/icons/google_g.png');
+
+  /// File path: assets/icons/hzn_laundry_logo.png
+  AssetGenImage get hznLaundryLogo =>
+      const AssetGenImage('assets/icons/hzn_laundry_logo.png');
+
+  /// File path: assets/icons/play_store_icon_512.png
+  AssetGenImage get playStoreIcon512 =>
+      const AssetGenImage('assets/icons/play_store_icon_512.png');
+
   /// List of all assets
-  List<AssetGenImage> get values => [appIcon, appIconMac, appIconTransparent];
+  List<AssetGenImage> get values => [
+        appIcon,
+        appIconMac,
+        appIconTransparent,
+        faviconSource,
+        googleG,
+        hznLaundryLogo,
+        playStoreIcon512
+      ];
 }
 
 class Assets {

@@ -37,7 +37,7 @@ final class CustomersControllerProvider
 }
 
 String _$customersControllerHash() =>
-    r'816130a91c2d163e57042f799a929f8b907f7755';
+    r'e5d63474ab15bb8fe75a8a97c886099a8351a509';
 
 /// Controller for managing the list of customers.
 

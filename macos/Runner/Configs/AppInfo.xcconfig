@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = Hi-Zone Laundry
+PRODUCT_NAME = HZN Laundry
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.it2do.dev
+PRODUCT_BUNDLE_IDENTIFIER = com.hznsystems.hznlaundry
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = com.it2do.dev
+PRODUCT_COPYRIGHT = HZN Systems

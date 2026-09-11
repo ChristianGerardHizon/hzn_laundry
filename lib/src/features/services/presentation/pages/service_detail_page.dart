@@ -13,6 +13,7 @@ import '../controllers/service_provider.dart';
 import '../controllers/services_controller.dart';
 import '../widgets/service_form_sheet.dart';
 import '../widgets/service_price_tier_form_dialog.dart';
+import '../widgets/service_consumable_recipe_card.dart';
 
 /// Service detail page showing service information.
 class ServiceDetailPage extends HookConsumerWidget {
@@ -165,6 +166,8 @@ class ServiceDetailPage extends HookConsumerWidget {
                 unitLabel: service.quantityUnit?.shortPlural ??
                     (service.weightBased ? 'kg' : 'pcs'),
               ),
+              const SizedBox(height: 16),
+              ServiceConsumableRecipeCard(serviceId: serviceId),
             ],
           ),
         );

@@ -35,6 +35,8 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
   );
   static String _$name(BranchDto v) => v.name;
   static const Field<BranchDto, String> _f$name = Field('name', _$name);
+  static String _$slug(BranchDto v) => v.slug;
+  static const Field<BranchDto, String> _f$slug = Field('slug', _$slug);
   static String _$address(BranchDto v) => v.address;
   static const Field<BranchDto, String> _f$address = Field(
     'address',
@@ -44,6 +46,12 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
   static const Field<BranchDto, String> _f$contactNumber = Field(
     'contactNumber',
     _$contactNumber,
+  );
+  static String? _$organizationId(BranchDto v) => v.organizationId;
+  static const Field<BranchDto, String> _f$organizationId = Field(
+    'organizationId',
+    _$organizationId,
+    opt: true,
   );
   static String? _$operatingHours(BranchDto v) => v.operatingHours;
   static const Field<BranchDto, String> _f$operatingHours = Field(
@@ -98,8 +106,10 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
+    #slug: _f$slug,
     #address: _f$address,
     #contactNumber: _f$contactNumber,
+    #organizationId: _f$organizationId,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
     #incentiveAmount: _f$incentiveAmount,
@@ -115,8 +125,10 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
+      slug: data.dec(_f$slug),
       address: data.dec(_f$address),
       contactNumber: data.dec(_f$contactNumber),
+      organizationId: data.dec(_f$organizationId),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
       incentiveAmount: data.dec(_f$incentiveAmount),
@@ -191,8 +203,10 @@ abstract class BranchDtoCopyWith<$R, $In extends BranchDto, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
+    String? slug,
     String? address,
     String? contactNumber,
+    String? organizationId,
     String? operatingHours,
     String? cutOffTime,
     num? incentiveAmount,
@@ -218,8 +232,10 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     String? collectionId,
     String? collectionName,
     String? name,
+    String? slug,
     String? address,
     String? contactNumber,
+    Object? organizationId = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
     num? incentiveAmount,
@@ -233,8 +249,10 @@ class _BranchDtoCopyWithImpl<$R, $Out>
       if (collectionId != null) #collectionId: collectionId,
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
+      if (slug != null) #slug: slug,
       if (address != null) #address: address,
       if (contactNumber != null) #contactNumber: contactNumber,
+      if (organizationId != $none) #organizationId: organizationId,
       if (operatingHours != $none) #operatingHours: operatingHours,
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
       if (incentiveAmount != null) #incentiveAmount: incentiveAmount,
@@ -251,8 +269,10 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     collectionId: data.get(#collectionId, or: $value.collectionId),
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
+    slug: data.get(#slug, or: $value.slug),
     address: data.get(#address, or: $value.address),
     contactNumber: data.get(#contactNumber, or: $value.contactNumber),
+    organizationId: data.get(#organizationId, or: $value.organizationId),
     operatingHours: data.get(#operatingHours, or: $value.operatingHours),
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
     incentiveAmount: data.get(#incentiveAmount, or: $value.incentiveAmount),

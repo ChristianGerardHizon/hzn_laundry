@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
@@ -549,7 +550,7 @@ class SalesReportView extends HookConsumerWidget {
                 size: 16, color: theme.colorScheme.primary),
             tooltip: 'View order',
             onPressed: () =>
-                SaleDetailRoute(id: entry.saleId).go(context),
+                SaleDetailRoute(id: entry.saleId).goScoped(context),
           ),
         ),
       ],
@@ -597,7 +598,7 @@ class SalesReportView extends HookConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => SaleDetailRoute(id: entry.saleId).go(context),
+        onTap: () => SaleDetailRoute(id: entry.saleId).goScoped(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

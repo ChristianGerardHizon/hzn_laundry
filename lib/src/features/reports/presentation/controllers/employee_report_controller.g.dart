@@ -49,7 +49,7 @@ final class EmployeeReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$employeeReportHash() => r'933584b7ec3474ddf8fa94a684623f024135a062';
+String _$employeeReportHash() => r'bdcab5f7c14cdb3aefe49d04789cbc50344e4474';
 
 /// Fetches salary report data for the selected month and period.
 
@@ -92,4 +92,4 @@ final class SalaryReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$salaryReportHash() => r'3055a5c4327efad009a1508380d71f287cc73673';
+String _$salaryReportHash() => r'92da2fd9488a72b3cda12f1d6eda0e83c917329c';

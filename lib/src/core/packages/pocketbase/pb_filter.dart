@@ -244,6 +244,45 @@ abstract class PBFilters {
   static PBFilter forBranch(String branchId) =>
       PBFilter().relation('branch', branchId).notDeleted();
 
+  /// Records whose branch belongs to [organizationId].
+  ///
+  /// [branchField] defaults to `branch`; use `sale.branch` for payment queries.
+  /// Does not include blank-branch rows (those would leak across orgs).
+  static String forOrganization(
+    String organizationId, {
+    String branchField = 'branch',
+  }) =>
+      '$branchField.organization = "$organizationId"';
+
+  /// Flat branch-id match for a single branch or any of [branchIds].
+  ///
+  /// Safe for SQL views that expose a plain branch id (no relation traversal).
+  /// Empty [branchIds] matches nothing.
+  static String forBranchIds(
+    Iterable<String> branchIds, {
+    String branchField = 'branch',
+  }) {
+    final ids = branchIds.where((id) => id.isNotEmpty).toList();
+    if (ids.isEmpty) return '$branchField = "__none__"';
+    if (ids.length == 1) return '$branchField = "${ids.first}"';
+    return '(${ids.map((id) => '$branchField = "$id"').join(' || ')})';
+  }
+
+  /// Selected branch, or all branches of [organizationId] when [branchId] is null.
+  static String? forBranchOrOrganization({
+    required String? branchId,
+    required String? organizationId,
+    String branchField = 'branch',
+  }) {
+    if (branchId != null && branchId.isNotEmpty) {
+      return '$branchField = "$branchId"';
+    }
+    if (organizationId != null && organizationId.isNotEmpty) {
+      return forOrganization(organizationId, branchField: branchField);
+    }
+    return null;
+  }
+
   /// AND-combines filter fragments, skipping null/empty parts.
   static String? combine(String? a, [String? b, String? c]) {
     final parts = <String>[];

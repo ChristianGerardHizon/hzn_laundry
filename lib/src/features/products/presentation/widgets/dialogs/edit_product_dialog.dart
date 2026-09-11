@@ -16,6 +16,7 @@ import '../../../domain/product.dart';
 import '../../controllers/paginated_products_controller.dart';
 import '../../controllers/product_categories_provider.dart';
 import '../../controllers/product_provider.dart';
+import '../product_consumable_fields.dart';
 
 /// Shows the edit product dialog.
 void showEditProductDialog(BuildContext context, String productId) {
@@ -179,6 +180,12 @@ class _EditProductForm extends HookConsumerWidget {
         'stockThreshold': product.stockThreshold?.toString() ?? '',
         'expiration': product.expiration,
         'forSale': product.forSale,
+        'isConsumable': product.isConsumable,
+        'countsTowardMaterialCost': product.countsTowardMaterialCost,
+        'usageMin': '${product.usageMin}',
+        'usageMax': product.usageMax?.toString() ?? '',
+        'usageStep': product.usageStep?.toString() ?? '',
+        'defaultUsage': product.defaultUsage?.toString() ?? '',
         'trackByLot': product.trackByLot,
         'requireStock': product.requireStock,
       },
@@ -212,6 +219,7 @@ class _EditProductForm extends HookConsumerWidget {
       }
 
       final values = formKey.currentState!.value;
+      final consumable = ProductConsumableFields.valuesFrom(values);
 
       isSaving.value = true;
 
@@ -234,6 +242,12 @@ class _EditProductForm extends HookConsumerWidget {
             ? _parseNum(values['stockThreshold'] as String?)
             : null,
         forSale: values['forSale'] as bool? ?? true,
+        isConsumable: consumable.isConsumable,
+        countsTowardMaterialCost: consumable.countsTowardMaterialCost,
+        usageMin: consumable.usageMin,
+        usageMax: consumable.usageMax,
+        usageStep: consumable.usageStep,
+        defaultUsage: consumable.defaultUsage,
         trackStock: stockEnabled.value,
         trackByLot: stockEnabled.value
             ? (values['trackByLot'] as bool? ?? false)
@@ -488,6 +502,11 @@ class _EditProductForm extends HookConsumerWidget {
                       ),
                       title: const Text('For Sale'),
                       enabled: !isSaving.value,
+                    ),
+                    const SizedBox(height: 8),
+                    ProductConsumableFields(
+                      enabled: !isSaving.value,
+                      product: product,
                     ),
                     const SizedBox(height: 24),
 

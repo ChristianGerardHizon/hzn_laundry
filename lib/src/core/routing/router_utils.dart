@@ -3,11 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
+import '../../features/settings/presentation/controllers/branches_controller.dart';
+import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../../features/version_lock/domain/version_check_result.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
+import '../widgets/nav_permissions.dart';
 import 'pending_redirect_provider.dart';
+import 'route_permissions.dart';
+import 'route_scope_provider.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
 import 'routes/version_lock.routes.dart';
@@ -25,21 +32,83 @@ abstract class RouterUtils {
     '/history',
   ];
 
-  /// Global redirect function for auth guards.
+  /// True for empty or slash-only paths (not a registered shell route).
+  static bool isEmptyRootPath(String path) => path.isEmpty || path == '/';
+
+  /// Current path without calling [GoRouter.state], which throws [StateError]
+  /// when the match list is empty.
+  static String currentLocation(GoRouter router) {
+    final config = router.routerDelegate.currentConfiguration;
+    return config.lastOrNull?.matchedLocation ?? config.uri.path;
+  }
+
+  /// Home path for an authenticated user: scoped dashboard when possible.
   ///
-  /// Redirects unauthenticated users to login and
-  /// authenticated users away from login pages.
-  /// Preserves deep link URLs on web by storing them during auth loading.
+  /// Returns null while org/branch scope is still loading, or when scope
+  /// cannot be resolved (missing memberships / empty slugs). Callers on
+  /// splash must not treat null as "stay via redirect to /splash" forever
+  /// without also checking loading — see [redirect] step 3.
+  static String? homePathFor(Ref ref) {
+    final prefix = _resolveScopePrefix(ref);
+    if (prefix == null) return null;
+    return '$prefix${DashboardRoute.path}';
+  }
+
+  /// True while org or branch controllers are still resolving.
+  static bool isScopeLoading(Ref ref) {
+    final orgAsync = ref.read(currentOrganizationControllerProvider);
+    final branchAsync = ref.read(currentBranchControllerProvider);
+    return orgAsync.isLoading || branchAsync.isLoading;
+  }
+
+  /// Resolves `/orgSlug/branchSlug` from current org/branch controllers.
+  static String? _resolveScopePrefix(Ref ref) {
+    final orgAsync = ref.read(currentOrganizationControllerProvider);
+    if (orgAsync.isLoading) return null;
+    final org = orgAsync.value;
+    if (org == null || org.slug.isEmpty) return null;
+
+    final branchAsync = ref.read(currentBranchControllerProvider);
+    if (branchAsync.isLoading) return null;
+
+    final isAll =
+        ref.read(currentBranchControllerProvider.notifier).isAllBranchesMode;
+    if (isAll) {
+      return '/${org.slug}/$allBranchesSlug';
+    }
+
+    final branch = branchAsync.value;
+    final branchSlug = branch?.slug;
+    if (branchSlug == null || branchSlug.isEmpty) return null;
+    return '/${org.slug}/$branchSlug';
+  }
+
+  /// Replaces the `/orgSlug/branchSlug` segments of [currentLocation].
+  static String replaceScopeSegment(
+    String currentLocation, {
+    String? orgSlug,
+    String? branchSlug,
+  }) {
+    final segments = currentLocation.split('/');
+    // ['', orgSlug, branchSlug, ...rest]
+    if (segments.length < 3) return currentLocation;
+    if (orgSlug != null) segments[1] = orgSlug;
+    if (branchSlug != null) segments[2] = branchSlug;
+    return segments.join('/');
+  }
+
+  /// Global redirect function for auth, version, and org/branch scope guards.
   static FutureOr<String?> redirect(
     BuildContext context,
     GoRouterState state,
     Ref ref,
-  ) {
+  ) async {
     final currentPath = state.matchedLocation;
+    final uriPath = state.uri.path;
     final fullUri = state.uri.toString();
 
-    // Public customer history route — fully independent, no auth/version checks.
-    if (currentPath.startsWith('/history')) {
+    // Public customer history — no auth/version/scope checks.
+    if (uriPath.startsWith('/history') || currentPath.startsWith('/history')) {
       return null;
     }
 
@@ -47,30 +116,26 @@ abstract class RouterUtils {
     final versionAsync = ref.read(versionCheckProvider);
     final versionStatus = versionAsync.value?.status;
 
-    // Force update required → redirect to force-update page
     if (versionStatus == VersionCheckStatus.forceUpdateRequired &&
         currentPath != ForceUpdateRoute.path) {
       return ForceUpdateRoute.path;
     }
-    // On force-update page but no longer required → redirect to splash
     if (currentPath == ForceUpdateRoute.path &&
         versionStatus != VersionCheckStatus.forceUpdateRequired) {
       return SplashRoute.path;
     }
-    // Web update available → redirect to web-update page
     if (versionStatus == VersionCheckStatus.webUpdateAvailable &&
         currentPath != WebUpdateRoute.path) {
       return WebUpdateRoute.path;
     }
-    // On web-update page but no longer required → redirect to splash
     if (currentPath == WebUpdateRoute.path &&
         versionStatus != VersionCheckStatus.webUpdateAvailable) {
       return SplashRoute.path;
     }
 
-    // Check if this route should skip auth check
     final isIgnored = ignoredRoutes.any(
-      (route) => currentPath.startsWith(route),
+      (route) =>
+          currentPath.startsWith(route) || uriPath.startsWith(route),
     );
 
     final authAsync = ref.read(authControllerProvider);
@@ -79,15 +144,22 @@ abstract class RouterUtils {
     final isOnLoginPage = currentPath == LoginRoute.path;
     final isOnSplashPage = currentPath == SplashRoute.path;
 
+    // Bare `/` is not registered under the org/branch shell.
+    if (isEmptyRootPath(uriPath)) {
+      if (isAuthLoading) return SplashRoute.path;
+      if (!isAuthenticated) return LoginRoute.path;
+      if (isScopeLoading(ref)) return SplashRoute.path;
+      return homePathFor(ref) ?? SplashRoute.path;
+    }
+
     // 1. Still loading auth on splash - stay on splash
     if (isAuthLoading && isOnSplashPage) {
       return SplashRoute.path;
     }
 
-    // 2. Auth loading + protected route - save URL, go to splash
-    // This prevents login flash and preserves deep links on web
+    // 2. Auth loading + protected route - stash URL, go to splash
     if (isAuthLoading && !isIgnored) {
-      // Delay state modification to avoid modifying provider during build
+      PendingRedirect.stash(fullUri);
       Future(() {
         ref.read(pendingRedirectProvider.notifier).set(fullUri);
       });
@@ -96,30 +168,31 @@ abstract class RouterUtils {
 
     // 3. Splash complete - redirect based on auth result
     if (isOnSplashPage && !isAuthLoading) {
-      if (isAuthenticated) {
-        // Read pending URL, then clear it after redirect
-        final pendingUrl = ref.read(pendingRedirectProvider);
-        if (pendingUrl != null) {
-          Future(() {
-            ref.read(pendingRedirectProvider.notifier).clear();
-          });
-        }
-        return pendingUrl ?? '/';
+      if (!isAuthenticated) return LoginRoute.path;
+      // Wait for org/branch (and their slugs) before leaving splash.
+      if (isScopeLoading(ref)) return null;
+      final home = homePathFor(ref);
+      if (home == null) return null;
+      final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
+      if (pendingUrl != null) {
+        ref.read(pendingRedirectProvider.notifier).clear();
+        return pendingUrl;
       }
-      return LoginRoute.path;
+      return home;
     }
 
     // 4. Login page - redirect if authenticated
     if (isOnLoginPage) {
       if (isAuthenticated) {
-        // Read pending URL, then clear it after redirect
-        final pendingUrl = ref.read(pendingRedirectProvider);
+        if (isScopeLoading(ref)) return SplashRoute.path;
+        final home = homePathFor(ref);
+        if (home == null) return SplashRoute.path;
+        final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
         if (pendingUrl != null) {
-          Future(() {
-            ref.read(pendingRedirectProvider.notifier).clear();
-          });
+          ref.read(pendingRedirectProvider.notifier).clear();
+          return pendingUrl;
         }
-        return pendingUrl ?? '/';
+        return home;
       }
       return null;
     }
@@ -129,7 +202,91 @@ abstract class RouterUtils {
       return LoginRoute.path;
     }
 
-    // No redirect needed
+    // 5d. Flat main-app path (no org/branch prefix) → scoped rewrite
+    if (isAuthenticated &&
+        !isIgnored &&
+        state.pathParameters['orgSlug'] == null &&
+        scopedAppPaths.any((p) => matchesRoutePath(uriPath, p))) {
+      final prefix = _resolveScopePrefix(ref);
+      if (prefix != null) {
+        return state.uri.replace(path: '$prefix$uriPath').toString();
+      }
+      return SplashRoute.path;
+    }
+
+    // 5e. Validate scoped URL org/branch segments
+    if (isAuthenticated &&
+        !isIgnored &&
+        state.pathParameters['orgSlug'] != null) {
+      final orgSlug = state.pathParameters['orgSlug']!;
+      final branchSlug = state.pathParameters['branchSlug']!;
+
+      final orgAsync = ref.read(currentOrganizationControllerProvider);
+      if (orgAsync.isLoading) return null;
+      final org = orgAsync.value;
+      if (org == null || org.slug != orgSlug) {
+        final prefix = _resolveScopePrefix(ref);
+        if (prefix == null) return null;
+        final wrongPrefixLength = '/$orgSlug/$branchSlug'.length;
+        final suffix = currentPath.length > wrongPrefixLength
+            ? currentPath.substring(wrongPrefixLength)
+            : '';
+        // Prefer uriPath suffix when matchedLocation is incomplete.
+        final uriSuffix = uriPath.length > wrongPrefixLength
+            ? uriPath.substring(wrongPrefixLength)
+            : suffix;
+        return state.uri.replace(path: '$prefix$uriSuffix').toString();
+      }
+
+      final branchesAsync = ref.read(branchesControllerProvider);
+      if (branchesAsync.isLoading) return null;
+      final orgBranches = branchesAsync.value ?? const [];
+
+      bool branchValid;
+      if (branchSlug == allBranchesSlug) {
+        branchValid = await ref
+            .read(currentBranchControllerProvider.notifier)
+            .canViewAllBranches();
+      } else {
+        final match =
+            orgBranches.where((b) => b.slug == branchSlug).firstOrNull;
+        if (match == null) {
+          branchValid = false;
+        } else {
+          final allowedIds = await ref
+              .read(currentBranchControllerProvider.notifier)
+              .switchableBranchIds();
+          branchValid = allowedIds.contains(match.id);
+        }
+      }
+
+      if (!branchValid) {
+        return homePathFor(ref) ?? SplashRoute.path;
+      }
+
+      ref.read(currentRouteScopeProvider.notifier).set(orgSlug, branchSlug);
+    }
+
+    // 6. Role permission guards
+    if (isAuthenticated && !isIgnored) {
+      final role = ref.read(currentUserRoleProvider).value;
+      final scopePrefixLength = state.pathParameters['orgSlug'] != null
+          ? '/${state.pathParameters['orgSlug']}/${state.pathParameters['branchSlug']}'
+              .length
+          : 0;
+      final pathForPerms = uriPath.length >= scopePrefixLength
+          ? uriPath.substring(scopePrefixLength)
+          : currentPath.substring(
+              scopePrefixLength.clamp(0, currentPath.length),
+            );
+      final unscoped =
+          pathForPerms.isEmpty ? DashboardRoute.path : pathForPerms;
+      if (!canAccessPath(unscoped, role)) {
+        final prefix = uriPath.substring(0, scopePrefixLength);
+        return '$prefix${fallbackPathFor(role)}';
+      }
+    }
+
     return null;
   }
 
@@ -160,7 +317,13 @@ abstract class RouterUtils {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => const DashboardRoute().go(context),
+              onPressed: () {
+                try {
+                  const DashboardRoute().goScoped(context);
+                } catch (_) {
+                  context.go(SplashRoute.path);
+                }
+              },
               child: const Text('Go Home'),
             ),
           ],

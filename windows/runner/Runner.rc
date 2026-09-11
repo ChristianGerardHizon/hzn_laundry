@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "2doit" "\0"
-            VALUE "FileDescription", "Hi-Zone Laundry" "\0"
+            VALUE "CompanyName", "HZN Systems" "\0"
+            VALUE "FileDescription", "HZN Laundry" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "Hi-Zone Laundry" "\0"
-            VALUE "LegalCopyright", "2doit" "\0"
-            VALUE "OriginalFilename", "hizonelaundry.exe" "\0"
-            VALUE "ProductName", "Hi-Zone Laundry" "\0"
+            VALUE "InternalName", "HZN Laundry" "\0"
+            VALUE "LegalCopyright", "HZN Systems" "\0"
+            VALUE "OriginalFilename", "hznlaundry.exe" "\0"
+            VALUE "ProductName", "HZN Laundry" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

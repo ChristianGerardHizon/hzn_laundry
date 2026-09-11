@@ -69,7 +69,7 @@ class UserDetailsTab extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.username,
+                    user.email,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -203,8 +203,8 @@ class UserDetailsTab extends HookConsumerWidget {
       ),
       _DetailItem(
         icon: Icons.alternate_email,
-        label: 'Username',
-        value: user.username,
+        label: 'Email',
+        value: user.email,
       ),
       _DetailItem(
         icon: Icons.admin_panel_settings,
@@ -317,7 +317,8 @@ class UserDetailsTab extends HookConsumerWidget {
             ),
             FilledButton.tonalIcon(
               onPressed: () {
-                showWarningSnackBar(context, message: 'Reset password coming soon');
+                showWarningSnackBar(context,
+                    message: 'Reset password coming soon');
               },
               icon: const Icon(Icons.lock_reset),
               label: const Text('Reset Password'),

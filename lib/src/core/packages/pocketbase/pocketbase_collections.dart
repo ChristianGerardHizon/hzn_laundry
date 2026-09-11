@@ -7,7 +7,12 @@ abstract class PocketBaseCollections {
   static const String users = 'users';
   static const String userRoles = 'userRoles';
 
-  // Organization
+  // Organizations (multi-tenant)
+  static const String organizations = 'organizations';
+  static const String organizationMemberships = 'organizationMemberships';
+  static const String organizationInvites = 'organizationInvites';
+
+  // Management
   static const String branches = 'branches';
   static const String printerConfigs = 'printerConfigs';
 
@@ -22,6 +27,7 @@ abstract class PocketBaseCollections {
   static const String services = 'services';
   static const String serviceCategories = 'serviceCategories';
   static const String servicePriceTiers = 'servicePriceTiers';
+  static const String serviceConsumableRecipes = 'serviceConsumableRecipes';
 
   // Quantity Units
   static const String quantityUnits = 'quantityUnits';
@@ -48,6 +54,7 @@ abstract class PocketBaseCollections {
   static const String sales = 'sales';
   static const String saleItems = 'saleItems';
   static const String saleServiceItems = 'saleServiceItems';
+  static const String saleConsumableUsages = 'saleConsumableUsages';
   static const String payments = 'payments';
   // Activity Logs
   static const String activityLogs = 'activityLogs';

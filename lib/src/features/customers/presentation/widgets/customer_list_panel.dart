@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
@@ -161,7 +162,7 @@ class _CustomerListTile extends StatelessWidget {
               ),
             )
           : null,
-      onTap: () => CustomerDetailRoute(id: customer.id).go(context),
+      onTap: () => CustomerDetailRoute(id: customer.id).goScoped(context),
     );
   }
 }

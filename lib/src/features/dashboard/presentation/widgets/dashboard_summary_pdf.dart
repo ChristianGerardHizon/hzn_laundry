@@ -5,6 +5,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../domain/add_ons_summary.dart';
+import '../../domain/consumables_usage_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
@@ -224,6 +225,23 @@ List<_PdfLine> _mapIncentiveLines(List<TodayOrderIncentiveEntry> orders) {
   }).toList();
 }
 
+/// Maps consumable usage breakdown items to PDF lines.
+List<_PdfLine> _mapConsumableLines(
+  List<ConsumableUsageBreakdownItem> items, {
+  required bool showCost,
+}) {
+  return items.map((item) {
+    final name = item.productName.isNotEmpty ? item.productName : 'Unnamed';
+    return _PdfLine(
+      title: name,
+      subtitle: 'in ${item.orderCount} order${item.orderCount == 1 ? '' : 's'}',
+      trailing: 'x${_qtyPdf.format(item.quantity)}',
+      amount: showCost ? item.cost : item.quantity,
+      amountText: showCost ? null : '${_qtyPdf.format(item.quantity)} used',
+    );
+  }).toList();
+}
+
 /// Maps add-on breakdown items (aggregated per product) to PDF lines.
 List<_PdfLine> _mapAddOnLines(List<AddOnBreakdownItem> items) {
   return items.map((item) {
@@ -371,6 +389,31 @@ class DashboardSectionPdfPayload {
     );
   }
 
+  /// Builds the payload for the consumables usage breakdown section.
+  factory DashboardSectionPdfPayload.fromConsumables({
+    required ConsumablesUsageSummaryData summary,
+    required bool showCost,
+    required String? businessName,
+    required DateTime reportDate,
+    required DateTime generatedAt,
+    required bool isDateOverridden,
+  }) {
+    return DashboardSectionPdfPayload(
+      sectionTitle: 'Consumables used',
+      businessName: businessName,
+      reportDate: reportDate,
+      generatedAt: generatedAt,
+      isDateOverridden: isDateOverridden,
+      total: showCost ? summary.totalCost : summary.totalQuantity,
+      totalText: showCost
+          ? null
+          : '${_qtyPdf.format(summary.totalQuantity)} used · '
+              '${_qtyPdf.format(summary.averagePerOrder)} avg/order',
+      lines: _mapConsumableLines(summary.items, showCost: showCost),
+      emptyText: 'No consumables recorded this day.',
+    );
+  }
+
   /// Builds the payload for the add-ons breakdown section.
   factory DashboardSectionPdfPayload.fromAddOns({
     required AddOnsSummaryData summary,
@@ -456,7 +499,8 @@ Future<Uint8List> buildDashboardSectionPdf(
               margin: const pw.EdgeInsets.only(bottom: 12),
               child: pw.Text(
                 '${payload.sectionTitle} - ${dateFormat.format(payload.reportDate)}',
-                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+                style:
+                    const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
               ),
             ),
       footer: (context) => pw.Container(
@@ -480,7 +524,8 @@ Future<Uint8List> buildDashboardSectionPdf(
           )
         else
           _buildSection(payload.sectionTitle, payload.lines, payload.total,
-              payload.emptyText, totalText: payload.totalText),
+              payload.emptyText,
+              totalText: payload.totalText),
       ],
     ),
   );
@@ -595,7 +640,8 @@ class DashboardSummaryPdfPayload {
 
 // Use 'P' instead of '₱' — the default Helvetica font in the pdf package does
 // not include the peso glyph.
-final NumberFormat _pesoPdf = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+final NumberFormat _pesoPdf =
+    NumberFormat.currency(symbol: 'P', decimalDigits: 2);
 final NumberFormat _qtyPdf = NumberFormat('#,##0.##');
 
 String _shortReceipt(String receipt) {

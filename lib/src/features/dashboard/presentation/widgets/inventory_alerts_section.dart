@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/products.routes.dart';
 import '../../domain/inventory_alert.dart';
@@ -48,7 +49,7 @@ class InventoryAlertsSection extends ConsumerWidget {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: () => const ProductsRoute().go(context),
+                    onPressed: () => const ProductsRoute().goScoped(context),
                     child: const Text('View All'),
                   ),
                 ],
@@ -63,7 +64,7 @@ class InventoryAlertsSection extends ConsumerWidget {
                   subtitle:
                       '${summary.expiredCount} item${summary.expiredCount > 1 ? 's' : ''} expired',
                   color: Colors.red,
-                  onTap: () => const ProductsRoute().go(context),
+                  onTap: () => const ProductsRoute().goScoped(context),
                 ),
 
               // Low stock alert
@@ -76,7 +77,7 @@ class InventoryAlertsSection extends ConsumerWidget {
                   color: Colors.orange,
                   alerts: summary.lowStockAlerts.take(_maxItems).toList(),
                   totalCount: summary.lowStockCount,
-                  onTap: () => const ProductsRoute().go(context),
+                  onTap: () => const ProductsRoute().goScoped(context),
                 ),
 
               // Near expiration alert
@@ -89,7 +90,7 @@ class InventoryAlertsSection extends ConsumerWidget {
                   color: Colors.amber.shade700,
                   alerts: summary.nearExpirationAlerts.take(_maxItems).toList(),
                   totalCount: summary.nearExpirationCount,
-                  onTap: () => const ProductsRoute().go(context),
+                  onTap: () => const ProductsRoute().goScoped(context),
                 ),
             ],
           ),

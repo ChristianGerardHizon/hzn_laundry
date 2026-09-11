@@ -1,6 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/customer_repository.dart';
 import '../../domain/customer.dart';
@@ -12,18 +11,11 @@ part 'customers_controller.g.dart';
 class CustomersController extends _$CustomersController {
   CustomerRepository get _repository => ref.read(customerRepositoryProvider);
 
-  String? get _branchFilter {
-    final branchId = ref.read(currentBranchIdProvider);
-    if (branchId == null) return null;
-    return PBFilter().relation('branch', branchId).build();
-  }
+  String? get _branchFilter => ref.read(currentBranchFilterProvider);
 
   @override
   Future<List<Customer>> build() async {
-    final branchId = ref.watch(currentBranchIdProvider);
-    final filter = branchId == null
-        ? null
-        : PBFilter().relation('branch', branchId).build();
+    final filter = ref.watch(currentBranchFilterProvider);
     final result = await _repository.fetchAll(filter: filter);
 
     return result.fold(

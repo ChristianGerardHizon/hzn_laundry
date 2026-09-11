@@ -110,6 +110,11 @@ abstract class Permissions {
   static const salesView = 'sales.view';
   static const salesCreate = 'sales.create';
 
+  // Consumable usage permissions
+  static const usageView = 'usage.view';
+  static const usageEdit = 'usage.edit';
+  static const usageCostView = 'usage.cost.view';
+
   // Payments permissions
   static const paymentsEdit = 'payments.edit';
   static const paymentsVoid = 'payments.void';
@@ -168,6 +173,12 @@ abstract class Permissions {
   // Dashboard permissions
   static const dashboardDateOverride = 'dashboard.dateOverride';
 
+  // Organizations permissions
+  static const organizationsCreate = 'organizations.create';
+
+  // Organization members permissions
+  static const membersManage = 'members.manage';
+
   // System permissions
   static const systemAdmin = 'system.admin';
 
@@ -183,6 +194,7 @@ abstract class Permissions {
     'Services': [servicesView, servicesCreate, servicesEdit, servicesDelete],
     'Inventory': [inventoryView, inventoryAdjust],
     'Sales': [salesView, salesCreate],
+    'Usage': [usageView, usageEdit, usageCostView],
     'Payments': [paymentsEdit, paymentsVoid],
     'Machines': [machinesView, machinesCreate, machinesEdit, machinesDelete],
     'Storages': [storagesView, storagesCreate, storagesEdit, storagesDelete],
@@ -200,6 +212,8 @@ abstract class Permissions {
     'Settings': [settingsView, settingsEdit],
     'Incentive': [incentiveView],
     'Dashboard': [dashboardDateOverride],
+    'Organizations': [organizationsCreate],
+    'Organization Members': [membersManage],
     'System': [systemAdmin],
   };
 
@@ -356,6 +370,27 @@ abstract class Permissions {
         category: 'Sales',
         description: 'Process sales transactions',
         icon: Icons.add,
+      ),
+      const Permission(
+        key: usageView,
+        name: 'View Usage',
+        category: 'Usage',
+        description: 'View consumable quantities used on orders',
+        icon: Icons.visibility,
+      ),
+      const Permission(
+        key: usageEdit,
+        name: 'Edit Usage',
+        category: 'Usage',
+        description: 'Change consumable amounts on orders',
+        icon: Icons.edit,
+      ),
+      const Permission(
+        key: usageCostView,
+        name: 'View Usage Cost',
+        category: 'Usage',
+        description: 'See peso material cost for consumable usage',
+        icon: Icons.payments,
       ),
       // Payments
       const Permission(
@@ -596,7 +631,8 @@ abstract class Permissions {
         key: incentiveView,
         name: 'View Incentive',
         category: 'Incentive',
-        description: "View today's incentive KPI and incentive breakdown on the dashboard",
+        description:
+            "View today's incentive KPI and incentive breakdown on the dashboard",
         icon: Icons.payments,
       ),
       // Dashboard
@@ -607,6 +643,23 @@ abstract class Permissions {
         description:
             'Change the dashboard date to view and post sales on a different date',
         icon: Icons.date_range,
+      ),
+      // Organizations
+      const Permission(
+        key: organizationsCreate,
+        name: 'Create Organizations',
+        category: 'Organizations',
+        description: 'Create a new organization and become its first member',
+        icon: Icons.add_business,
+      ),
+      // Organization Members
+      const Permission(
+        key: membersManage,
+        name: 'Manage Members',
+        category: 'Organization Members',
+        description:
+            'Invite, revoke, and manage members within an organization',
+        icon: Icons.group_add,
       ),
       // System
       const Permission(

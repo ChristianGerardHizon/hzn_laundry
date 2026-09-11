@@ -59,6 +59,7 @@ class TodayIncentiveSummary {
 @Riverpod(keepAlive: true)
 Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
   final branchId = ref.watch(currentBranchIdProvider);
+  final branchScope = ref.watch(currentBranchIdsFilterProvider);
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
 
   final dayStart =
@@ -74,7 +75,7 @@ Future<TodayIncentiveSummary> todayIncentiveSummary(Ref ref) async {
     salesRepo.getTodayIncentiveRows(
       startDate: dayStart,
       endDate: dayEnd,
-      branchId: branchId,
+      branchScope: branchScope,
     ),
     if (branchId != null) ref.watch(branchProvider(branchId).future),
     if (branchId != null)

@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../controllers/attendance_report_controller.dart';
+import '../controllers/consumables_usage_report_controller.dart';
 import '../controllers/employee_report_controller.dart';
 import '../controllers/new_customers_controller.dart';
 import '../controllers/payments_report_controller.dart';
@@ -10,6 +11,7 @@ import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
 import '../widgets/views/attendance_report_view.dart';
+import '../widgets/views/consumables_usage_report_view.dart';
 import '../widgets/views/incentive_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
 import '../widgets/views/salary_report_view.dart';
@@ -23,7 +25,7 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 7);
+    final tabController = useTabController(initialLength: 8);
 
     void refreshCurrentTab() {
       switch (tabController.index) {
@@ -42,6 +44,8 @@ class ReportsPage extends HookConsumerWidget {
           ref.invalidate(salaryReportProvider);
         case 6:
           ref.invalidate(employeeReportProvider);
+        case 7:
+          ref.invalidate(consumablesUsageReportProvider);
       }
     }
 
@@ -88,6 +92,10 @@ class ReportsPage extends HookConsumerWidget {
               icon: Icon(Icons.payments),
               text: 'Incentives',
             ),
+            Tab(
+              icon: Icon(Icons.science_outlined),
+              text: 'Consumables',
+            ),
           ],
         ),
       ),
@@ -101,6 +109,7 @@ class ReportsPage extends HookConsumerWidget {
           AttendanceReportView(),
           SalaryReportView(),
           IncentiveReportView(),
+          ConsumablesUsageReportView(),
         ],
       ),
     );

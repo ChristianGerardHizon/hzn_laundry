@@ -33,6 +33,12 @@ class ProductDto with ProductDtoMappable {
   final bool trackByLot;
   final String? quantityUnit;
   final QuantityUnit? quantityUnitExpanded;
+  final bool isConsumable;
+  final bool countsTowardMaterialCost;
+  final num usageMin;
+  final num? usageMax;
+  final num? usageStep;
+  final num? defaultUsage;
   final bool isDeleted;
   final String? created;
   final String? updated;
@@ -58,6 +64,12 @@ class ProductDto with ProductDtoMappable {
     this.trackByLot = false,
     this.quantityUnit,
     this.quantityUnitExpanded,
+    this.isConsumable = false,
+    this.countsTowardMaterialCost = false,
+    this.usageMin = 0,
+    this.usageMax,
+    this.usageStep,
+    this.defaultUsage,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -101,6 +113,13 @@ class ProductDto with ProductDtoMappable {
       trackByLot: json['trackByLot'] as bool? ?? false,
       quantityUnit: json['quantityUnit'] as String?,
       quantityUnitExpanded: quantityUnitExpanded,
+      isConsumable: json['isConsumable'] as bool? ?? false,
+      countsTowardMaterialCost:
+          json['countsTowardMaterialCost'] as bool? ?? false,
+      usageMin: json['usageMin'] as num? ?? 0,
+      usageMax: json['usageMax'] as num?,
+      usageStep: json['usageStep'] as num?,
+      defaultUsage: json['defaultUsage'] as num?,
       isDeleted: json['isDeleted'] as bool? ?? false,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
@@ -128,6 +147,12 @@ class ProductDto with ProductDtoMappable {
       trackByLot: trackByLot,
       quantityUnitId: quantityUnit,
       quantityUnit: quantityUnitExpanded,
+      isConsumable: isConsumable,
+      countsTowardMaterialCost: countsTowardMaterialCost,
+      usageMin: usageMin,
+      usageMax: usageMax,
+      usageStep: usageStep,
+      defaultUsage: defaultUsage,
       isDeleted: isDeleted,
       created: parseToLocal(created),
       updated: parseToLocal(updated),

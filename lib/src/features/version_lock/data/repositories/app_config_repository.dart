@@ -14,7 +14,7 @@ part 'app_config_repository.g.dart';
 /// Read-only repository for fetching version config from the external
 /// version-manager service at https://version-manager.fly.dev.
 abstract class AppConfigRepository {
-  /// Fetches the version record for the hizonelaundry application.
+  /// Fetches the version record for the hznlaundry application.
   ///
   /// Returns `null` if no record exists.
   FutureEither<AppConfig?> fetch();
@@ -53,8 +53,7 @@ class AppConfigRepositoryImpl implements AppConfigRepository {
 
         if (items == null || items.isEmpty) return null;
 
-        final dto =
-            AppConfigDto.fromJson(items.first as Map<String, dynamic>);
+        final dto = AppConfigDto.fromJson(items.first as Map<String, dynamic>);
         return dto.toEntity();
       },
       Failure.handle,

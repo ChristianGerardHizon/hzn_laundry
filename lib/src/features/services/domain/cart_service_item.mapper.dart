@@ -131,12 +131,12 @@ mixin CartServiceItemMappable {
   }
 
   CartServiceItemCopyWith<CartServiceItem, CartServiceItem, CartServiceItem>
-      get copyWith =>
-          _CartServiceItemCopyWithImpl<CartServiceItem, CartServiceItem>(
-            this as CartServiceItem,
-            $identity,
-            $identity,
-          );
+  get copyWith =>
+      _CartServiceItemCopyWithImpl<CartServiceItem, CartServiceItem>(
+        this as CartServiceItem,
+        $identity,
+        $identity,
+      );
   @override
   String toString() {
     return CartServiceItemMapper.ensureInitialized().stringifyValue(
@@ -169,9 +169,12 @@ extension CartServiceItemValueCopy<$R, $Out>
 abstract class CartServiceItemCopyWith<$R, $In extends CartServiceItem, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ServiceCopyWith<$R, Service, Service>? get service;
-  ListCopyWith<$R, ServicePriceTier,
-          ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>>
-      get priceTiers;
+  ListCopyWith<
+    $R,
+    ServicePriceTier,
+    ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>
+  >
+  get priceTiers;
   $R call({
     String? id,
     String? cartId,
@@ -200,13 +203,16 @@ class _CartServiceItemCopyWithImpl<$R, $Out>
   ServiceCopyWith<$R, Service, Service>? get service =>
       $value.service?.copyWith.$chain((v) => call(service: v));
   @override
-  ListCopyWith<$R, ServicePriceTier,
-          ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>>
-      get priceTiers => ListCopyWith(
-            $value.priceTiers,
-            (v, t) => v.copyWith.$chain(t),
-            (v) => call(priceTiers: v),
-          );
+  ListCopyWith<
+    $R,
+    ServicePriceTier,
+    ServicePriceTierCopyWith<$R, ServicePriceTier, ServicePriceTier>
+  >
+  get priceTiers => ListCopyWith(
+    $value.priceTiers,
+    (v, t) => v.copyWith.$chain(t),
+    (v) => call(priceTiers: v),
+  );
   @override
   $R call({
     String? id,
@@ -218,36 +224,35 @@ class _CartServiceItemCopyWithImpl<$R, $Out>
     List<ServicePriceTier>? priceTiers,
     Object? created = $none,
     Object? updated = $none,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (id != null) #id: id,
-          if (cartId != null) #cartId: cartId,
-          if (serviceId != null) #serviceId: serviceId,
-          if (service != $none) #service: service,
-          if (quantity != null) #quantity: quantity,
-          if (customPrice != $none) #customPrice: customPrice,
-          if (priceTiers != null) #priceTiers: priceTiers,
-          if (created != $none) #created: created,
-          if (updated != $none) #updated: updated,
-        }),
-      );
+  }) => $apply(
+    FieldCopyWithData({
+      if (id != null) #id: id,
+      if (cartId != null) #cartId: cartId,
+      if (serviceId != null) #serviceId: serviceId,
+      if (service != $none) #service: service,
+      if (quantity != null) #quantity: quantity,
+      if (customPrice != $none) #customPrice: customPrice,
+      if (priceTiers != null) #priceTiers: priceTiers,
+      if (created != $none) #created: created,
+      if (updated != $none) #updated: updated,
+    }),
+  );
   @override
   CartServiceItem $make(CopyWithData data) => CartServiceItem(
-        id: data.get(#id, or: $value.id),
-        cartId: data.get(#cartId, or: $value.cartId),
-        serviceId: data.get(#serviceId, or: $value.serviceId),
-        service: data.get(#service, or: $value.service),
-        quantity: data.get(#quantity, or: $value.quantity),
-        customPrice: data.get(#customPrice, or: $value.customPrice),
-        priceTiers: data.get(#priceTiers, or: $value.priceTiers),
-        created: data.get(#created, or: $value.created),
-        updated: data.get(#updated, or: $value.updated),
-      );
+    id: data.get(#id, or: $value.id),
+    cartId: data.get(#cartId, or: $value.cartId),
+    serviceId: data.get(#serviceId, or: $value.serviceId),
+    service: data.get(#service, or: $value.service),
+    quantity: data.get(#quantity, or: $value.quantity),
+    customPrice: data.get(#customPrice, or: $value.customPrice),
+    priceTiers: data.get(#priceTiers, or: $value.priceTiers),
+    created: data.get(#created, or: $value.created),
+    updated: data.get(#updated, or: $value.updated),
+  );
 
   @override
   CartServiceItemCopyWith<$R2, CartServiceItem, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) =>
-      _CartServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) => _CartServiceItemCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

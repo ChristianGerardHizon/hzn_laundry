@@ -14,7 +14,7 @@ function getResendApiKey() {
 function getAppBaseUrl() {
   var url = $os.getenv("APP_BASE_URL");
   if (!url) {
-    url = "https://hizonelaundry.hznsystems.com";
+    url = "https://hznlaundry.hznsystems.com";
   }
   return url;
 }
@@ -24,7 +24,7 @@ function getAppBaseUrl() {
 function getFromEmail() {
   var v = $os.getenv("RESEND_FROM_EMAIL");
   if (!v) {
-    return "Hizone Laundry <info@hizonelaundry.hznsystems.com>";
+    return "HZN Laundry <info@hznlaundry.hznsystems.com>";
   }
   return v;
 }
@@ -78,7 +78,7 @@ function buildEmail(customerName, link) {
       "<meta charset=\"UTF-8\">" +
       "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
       "<meta name=\"x-apple-disable-message-reformatting\">" +
-      "<title>Hizone Laundry</title>" +
+      "<title>HZN Laundry</title>" +
     "</head>" +
     "<body style=\"margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1f2937;\">" +
       "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">" + escapeHtml(preheader) + "</div>" +
@@ -91,7 +91,7 @@ function buildEmail(customerName, link) {
                 "<td style=\"background:linear-gradient(135deg,#0ea5e9 0%,#0369a1 100%); padding:28px 32px;\">" +
                   "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">" +
                     "<tr>" +
-                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">Hizone Laundry</td>" +
+                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">HZN Laundry</td>" +
                       "<td align=\"right\" style=\"color:#e0f2fe; font-size:13px;\">Order History</td>" +
                     "</tr>" +
                   "</table>" +
@@ -101,7 +101,7 @@ function buildEmail(customerName, link) {
               "<tr>" +
                 "<td style=\"padding:32px;\">" +
                   "<h1 style=\"margin:0 0 16px; font-size:22px; line-height:1.3; color:#0f172a;\">Hi " + safeName + ",</h1>" +
-                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Thanks for choosing Hizone Laundry. You can now track your laundry orders, see what is pending, and check any outstanding balances using your personal order history link below.</p>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Thanks for choosing HZN Laundry. You can now track your laundry orders, see what is pending, and check any outstanding balances using your personal order history link below.</p>" +
                   "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0;\">" +
                     "<tr>" +
                       "<td align=\"center\">" +
@@ -132,7 +132,7 @@ function buildEmail(customerName, link) {
               "<tr>" +
                 "<td style=\"background-color:#f8fafc; padding:20px 32px; border-top:1px solid #e2e8f0;\">" +
                   "<p style=\"margin:0 0 4px; font-size:12px; line-height:1.5; color:#64748b;\">This link is private to you — please do not share it. It expires after 90 days of inactivity but is refreshed every time you place a new order.</p>" +
-                  "<p style=\"margin:8px 0 0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; Hizone Laundry. All rights reserved.</p>" +
+                  "<p style=\"margin:8px 0 0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; HZN Laundry. All rights reserved.</p>" +
                 "</td>" +
               "</tr>" +
             "</table>" +
@@ -144,7 +144,7 @@ function buildEmail(customerName, link) {
 
   var text =
     "Hi " + customerName + ",\n\n" +
-    "Thanks for choosing Hizone Laundry. View your order history, track status, and check outstanding balances here:\n\n" +
+    "Thanks for choosing HZN Laundry. View your order history, track status, and check outstanding balances here:\n\n" +
     link + "\n\n" +
     "What you can do:\n" +
     "  - See all your orders in one place\n" +
@@ -152,7 +152,7 @@ function buildEmail(customerName, link) {
     "  - Check unpaid balances\n" +
     "  - View receipts and order details\n\n" +
     "This link is private to you — please do not share it. It expires after 90 days of inactivity but is refreshed every time you place a new order.\n\n" +
-    "Hizone Laundry";
+    "HZN Laundry";
 
   return { html: html, text: text };
 }
@@ -172,7 +172,7 @@ function sendHistoryLinkEmail(toEmail, customerName, link) {
     body: JSON.stringify({
       from: getFromEmail(),
       to: [toEmail],
-      subject: "Your Hizone Laundry order history",
+      subject: "Your HZN Laundry order history",
       html: body.html,
       text: body.text
     }),

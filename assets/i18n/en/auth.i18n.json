@@ -20,6 +20,20 @@
     "checkEmail": "Check Your Email",
     "resetLinkSent(email)": "Password reset link has been sent to $email",
     "signInToContinue": "Sign in to continue",
+    "continueWithGoogle": "Continue with Google",
+    "orDivider": "or",
     "signingIn": "Signing in...",
-    "verificationEmailSent": "A verification email has been sent to your email address"
+    "almostThereWarmingUp": "You're almost there — just warming things up",
+    "verificationEmailSent": "A verification email has been sent to your email address",
+    "continueButton": "Continue",
+    "changeEmail": "Change email",
+    "signInWithEmailCode": "Sign in with email code",
+    "backToPasswordLogin": "Back to password login",
+    "sendLoginCode": "Send code",
+    "verifyLoginCode": "Verify code",
+    "enterLoginCode": "Login code",
+    "loginCodeSent(email)": "We sent a login code to $email",
+    "resendLoginCode": "Resend code",
+    "resendLoginCodeCooldown(seconds)": "Resend in ${seconds}s",
+    "loginCodeSendFailed": "Could not send login code. Try again later."
 }

@@ -1,5 +1,5 @@
-name: hizonelaundry
-description: "A template application"
+name: hzn_laundry
+description: "HZN Laundry"
 
 publish_to: 'none' 
 
@@ -41,6 +41,7 @@ dependencies:
 
   pocketbase: ^0.23.1
   http: ^1.2.2
+  fetch_client: ^1.1.2
   flutter_side_menu: ^0.5.41
   package_info_plus: ^8.1.2
   form_builder: ^1.0.1
@@ -129,14 +130,18 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/icons/app_icon.png"
+    background_color: "#1A1F24"
+    theme_color: "#40A8A8"
   windows:
     generate: true
     image_path: "assets/icons/app_icon.png"
   macos:
     generate: true
     image_path: "assets/icons/app_icon.png"
-  adaptive_icon_background: "#ffffff"
+  adaptive_icon_background: "#1A1F24"
   adaptive_icon_foreground: "assets/icons/app_icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#1A1F24"
 
 
   

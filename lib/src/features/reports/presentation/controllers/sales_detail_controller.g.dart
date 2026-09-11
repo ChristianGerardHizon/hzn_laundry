@@ -44,4 +44,4 @@ final class SalesDetailProvider extends $FunctionalProvider<
   }
 }
 
-String _$salesDetailHash() => r'06981ddee79087ee5a2faf3dd24b834ad8311636';
+String _$salesDetailHash() => r'0e521f24e65b4c86d14600f1339c0cb54a6b7c4a';

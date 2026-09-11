@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/services.routes.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -183,7 +184,7 @@ class _ServiceListTile extends StatelessWidget {
           ],
         ],
       ),
-      onTap: () => ServiceDetailRoute(id: service.id).go(context),
+      onTap: () => ServiceDetailRoute(id: service.id).goScoped(context),
     );
   }
 }

@@ -5,7 +5,7 @@ import 'printer_paper_width.dart';
 
 part 'printer_config.mapper.dart';
 
-/// Printer configuration domain model.
+/// Printer configuration stored on this device.
 ///
 /// Represents a configured thermal printer for receipt printing.
 @MappableClass()
@@ -17,15 +17,12 @@ class PrinterConfig with PrinterConfigMappable {
     this.address,
     this.port = 9100,
     this.paperWidth = PrinterPaperWidth.mm80,
-    this.isDefault = false,
     this.isEnabled = true,
-    this.branchId,
-    this.isDeleted = false,
     this.created,
     this.updated,
   });
 
-  /// PocketBase record ID.
+  /// Local record ID.
   final String id;
 
   /// Printer name (user-friendly identifier).
@@ -45,17 +42,8 @@ class PrinterConfig with PrinterConfigMappable {
   /// Paper width (58mm or 80mm).
   final PrinterPaperWidth paperWidth;
 
-  /// Whether this is the default printer.
-  final bool isDefault;
-
   /// Whether the printer is enabled.
   final bool isEnabled;
-
-  /// Associated branch ID (optional).
-  final String? branchId;
-
-  /// Soft delete flag.
-  final bool isDeleted;
 
   /// Creation timestamp.
   final DateTime? created;

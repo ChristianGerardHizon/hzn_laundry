@@ -10,10 +10,10 @@ part 'inventory_report_controller.g.dart';
 /// Note: Inventory report doesn't use date filtering - it shows current state.
 @riverpod
 Future<InventoryReport> inventoryReport(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final filter = ref.watch(currentBranchFilterProvider);
   final repository = ref.read(reportsRepositoryProvider);
 
-  final result = await repository.getInventoryReport(branchId: branchId);
+  final result = await repository.getInventoryReport(filter: filter);
 
   return result.fold(
     (failure) => throw failure,

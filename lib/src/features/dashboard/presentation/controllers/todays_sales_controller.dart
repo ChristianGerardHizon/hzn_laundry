@@ -1,8 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/date_utils.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -22,15 +24,18 @@ class TodaySalesSummary {
 }
 
 /// Sales data for the effective dashboard date.
-/// Filtered by the current branch.
+/// Filtered by the current branch / organization scope.
 @riverpod
 Future<List<Sale>> todaySales(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = PBFilters.forBranchOrOrganization(
+    branchId: ref.watch(currentBranchIdProvider),
+    organizationId: ref.watch(currentOrganizationIdProvider),
+  );
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
   final result = await ref.read(salesRepositoryProvider).getSales(
-    branchId: branchId,
-    date: effectiveDate,
-  );
+        branchFilter: branchFilter,
+        date: effectiveDate,
+      );
   return result.fold(
     (failure) => [],
     (sales) => sales,
@@ -40,10 +45,11 @@ Future<List<Sale>> todaySales(Ref ref) async {
 /// Sales summary (count and total amount) for the effective dashboard date.
 /// When viewing today, uses vw_todays_sales view for optimized query.
 /// When viewing a different date, queries the sales collection directly.
-/// Filtered by the current branch.
+/// Filtered by the current branch / organization scope.
 @Riverpod(keepAlive: true)
 Future<TodaySalesSummary> todaySalesSummary(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchIdsFilter = ref.watch(currentBranchIdsFilterProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
   final isOverridden = ref.watch(isDashboardDateOverriddenProvider);
 
@@ -51,9 +57,7 @@ Future<TodaySalesSummary> todaySalesSummary(Ref ref) async {
     // Use the optimized view for today
     final records = await pb
         .collection(PocketBaseCollections.vwTodaysSales)
-        .getFullList(
-          filter: branchId != null ? 'branch = "$branchId"' : null,
-        );
+        .getFullList(filter: branchIdsFilter);
 
     if (records.isEmpty) {
       return const TodaySalesSummary(count: 0, total: 0);
@@ -68,16 +72,14 @@ Future<TodaySalesSummary> todaySalesSummary(Ref ref) async {
 
   // Query sales collection directly for the overridden date
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
-  final dayStart = DateTime(effectiveDate.year, effectiveDate.month, effectiveDate.day);
+  final dayStart =
+      DateTime(effectiveDate.year, effectiveDate.month, effectiveDate.day);
   final dayEnd = dayStart.add(const Duration(days: 1));
   final startUtc = dayStart.toPocketBaseUtc();
   final endUtc = dayEnd.toPocketBaseUtc();
 
-  var filter =
-      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$branchClause";
 
   final records = await pb
       .collection(PocketBaseCollections.sales)

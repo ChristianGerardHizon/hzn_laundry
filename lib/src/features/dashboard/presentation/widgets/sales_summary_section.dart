@@ -9,10 +9,15 @@ import '../../domain/add_ons_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_refresh.dart';
+import '../controllers/consumables_usage_summary_controller.dart';
 import '../controllers/sales_summary_controller.dart';
 import '../controllers/sales_summary_hidden_date_provider.dart';
 import '../controllers/total_packs_summary_controller.dart';
+import '../../../settings/data/repositories/feature_flag_repository.dart';
+import '../../../users/domain/user_role.dart';
+import '../../../../core/widgets/nav_permissions.dart';
 import 'add_ons_breakdown_modal.dart';
+import 'consumables_usage_breakdown_modal.dart';
 import 'dashboard_section_print_button.dart';
 import 'kpi_card.dart';
 import 'loads_breakdown_modal.dart';
@@ -297,6 +302,16 @@ class _SalesSummaryContent extends ConsumerWidget {
     final packsAsync = ref.watch(totalPacksSummaryProvider);
     final addOns = AddOnsSummaryData.fromSalesItems(data.salesItems);
     final loads = LoadsSummaryData.fromSalesItems(data.salesItems);
+    final usageEnabled =
+        ref.watch(consumableUsageEnabledProvider).value ?? false;
+    final role = ref.watch(currentUserRoleProvider).value;
+    final canViewUsage = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageView));
+    final canViewUsageCost = role != null &&
+        (role.isAdmin || role.hasPermission(Permissions.usageCostView));
+    final usageAsync = usageEnabled && canViewUsage
+        ? ref.watch(consumablesUsageSummaryProvider)
+        : null;
 
     final salesCards = [
       KpiCard(
@@ -362,6 +377,28 @@ class _SalesSummaryContent extends ConsumerWidget {
           color: Colors.teal,
         ),
       ),
+      if (usageAsync != null)
+        usageAsync.when(
+          data: (usage) => KpiCard(
+            title: 'Consumables used',
+            value: _qty.format(usage.totalQuantity),
+            icon: Icons.science_outlined,
+            subtitle: usage.orderCount == 0
+                ? 'No orders today'
+                : '${_qty.format(usage.averagePerOrder)} avg/order'
+                    '${canViewUsageCost ? ' · ${_fmt(usage.totalCost)}' : ''}',
+            compact: true,
+            color: Colors.deepPurple,
+            onTap: () => showConsumablesUsageBreakdownModal(
+              context,
+              usage,
+              color: Colors.deepPurple,
+              showCost: canViewUsageCost,
+            ),
+          ),
+          loading: () => const _LoadingCard(),
+          error: (_, __) => const _LoadingCard(),
+        ),
       KpiCard(
         title: 'Loads',
         value: '${loads.totalLoads}',
@@ -820,7 +857,6 @@ class _PaymentChip extends StatelessWidget {
 
 const _kpiSpacing = 8.0;
 const _kpiMinCardWidth = 168.0;
-const _kpiMaxCardWidth = 220.0;
 
 ({int cols, double cardWidth}) _kpiGridLayout({
   required double maxWidth,
@@ -830,19 +866,24 @@ const _kpiMaxCardWidth = 220.0;
     return (cols: 1, cardWidth: 0);
   }
 
-  final int cols;
   final isMobileWidth = maxWidth < Breakpoints.mobile;
-  if (isMobileWidth) {
-    cols = itemCount >= 2 ? 2 : 1;
-  } else {
-    cols = ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
-        .floor()
-        .clamp(1, itemCount);
+  var cols = isMobileWidth
+      ? (itemCount >= 2 ? 2 : 1)
+      : ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
+          .floor()
+          .clamp(1, itemCount);
+
+  // Prefer an even grid (e.g. 3×2 over 5+1) so the last row isn't sparse.
+  if (!isMobileWidth && itemCount > cols && itemCount % cols != 0) {
+    for (var c = cols - 1; c >= 2; c--) {
+      if (itemCount % c == 0) {
+        cols = c;
+        break;
+      }
+    }
   }
 
-  final stretched = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
-  final cardWidth =
-      isMobileWidth ? stretched : stretched.clamp(0.0, _kpiMaxCardWidth);
+  final cardWidth = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
   return (cols: cols, cardWidth: cardWidth);
 }
 

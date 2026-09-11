@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/customers.routes.dart';
 import '../../../../core/routing/routes/employees.routes.dart';
@@ -44,9 +45,7 @@ const _tabs = <_ActivityTab>[
   _ActivityTab(
       label: 'Payments', icon: Icons.payment, collectionFilter: 'payments'),
   _ActivityTab(
-      label: 'Organization',
-      icon: Icons.business,
-      collectionFilter: 'branches'),
+      label: 'Management', icon: Icons.business, collectionFilter: 'branches'),
   _ActivityTab(
       label: 'Promos', icon: Icons.loyalty, collectionFilter: 'promos'),
 ];
@@ -61,8 +60,7 @@ class ActivitiesPage extends HookConsumerWidget {
 
     void refreshCurrentTab() {
       final tab = _tabs[tabController.index];
-      ref.invalidate(
-          activitiesControllerProvider(tab.collectionFilter));
+      ref.invalidate(activitiesControllerProvider(tab.collectionFilter));
     }
 
     return Scaffold(
@@ -79,15 +77,13 @@ class ActivitiesPage extends HookConsumerWidget {
           controller: tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: _tabs
-              .map((t) => Tab(icon: Icon(t.icon), text: t.label))
-              .toList(),
+          tabs:
+              _tabs.map((t) => Tab(icon: Icon(t.icon), text: t.label)).toList(),
         ),
       ),
       body: TabBarView(
         controller: tabController,
-        children:
-            _tabs.map((t) => _ActivityTabView(tab: t)).toList(),
+        children: _tabs.map((t) => _ActivityTabView(tab: t)).toList(),
       ),
     );
   }
@@ -148,8 +144,7 @@ class _ActivityTabView extends HookConsumerWidget {
                               .read(activitiesControllerProvider(
                                       tab.collectionFilter)
                                   .notifier)
-                              .filterByAction(
-                                  selected ? action.name : null);
+                              .filterByAction(selected ? action.name : null);
                         },
                       ),
                     ))
@@ -253,15 +248,15 @@ class _ActivityTile extends StatelessWidget {
     final id = log.recordId;
     switch (log.collection) {
       case 'sales':
-        SaleDetailRoute(id: id).go(context);
+        SaleDetailRoute(id: id).goScoped(context);
       case 'products':
-        ProductDetailRoute(id: id).go(context);
+        ProductDetailRoute(id: id).goScoped(context);
       case 'services':
-        ServiceDetailRoute(id: id).go(context);
+        ServiceDetailRoute(id: id).goScoped(context);
       case 'customers':
-        CustomerDetailRoute(id: id).go(context);
+        CustomerDetailRoute(id: id).goScoped(context);
       case 'employees':
-        EmployeeDetailRoute(id: id).go(context);
+        EmployeeDetailRoute(id: id).goScoped(context);
       default:
         // No detail page for this collection
         break;
@@ -409,8 +404,7 @@ class _ActivityTile extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
@@ -440,9 +434,7 @@ class _ActivityTile extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  log.created != null
-                      ? timeFormat.format(log.created!)
-                      : '',
+                  log.created != null ? timeFormat.format(log.created!) : '',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

@@ -20,4 +20,9 @@ class UserEntityCache extends _$UserEntityCache {
 
   /// Gets a cached user by ID, if available.
   User? getUser(String id) => state[id];
+
+  /// Clears all cached users (e.g. after organization switch).
+  void clear() {
+    state = {};
+  }
 }

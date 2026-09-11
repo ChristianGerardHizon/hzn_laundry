@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
-import '../../../../core/routing/routes/organization.routes.dart';
+import '../../../../core/routing/routes/management.routes.dart';
 import '../../domain/branch.dart';
 import '../controllers/branches_controller.dart';
 import '../widgets/dialogs/branch_form_dialog.dart';
@@ -114,8 +115,8 @@ class BranchesPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  onTap: () => OrganizationBranchDetailRoute(id: branch.id)
-                      .push(context),
+                  onTap: () =>
+                      ManagementBranchDetailRoute(id: branch.id).pushScoped(context),
                 );
               },
             ),

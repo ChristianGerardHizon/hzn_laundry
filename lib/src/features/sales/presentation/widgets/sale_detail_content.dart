@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
@@ -23,6 +24,7 @@ import 'prepare_order_for_ready.dart';
 import 'set_packs_dialog.dart';
 import 'sale_highlight_banner.dart';
 import 'sale_status_chip.dart';
+import 'sale_usage_section.dart';
 
 /// Reusable sale detail content widget.
 ///
@@ -86,6 +88,11 @@ class SaleDetailContent extends ConsumerWidget {
             compact: compact,
           ),
           SizedBox(height: compact ? 12 : 16),
+
+          SaleUsageSection(
+            saleId: sale.id,
+            compact: compact,
+          ),
 
           // Special Instructions Section
           _SpecialInstructionsSection(
@@ -313,10 +320,8 @@ class _ServiceItemTile extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final hasMachine =
-        item.machineName != null && item.machineName!.isNotEmpty;
-    final hasStorage =
-        item.storageName != null && item.storageName!.isNotEmpty;
+    final hasMachine = item.machineName != null && item.machineName!.isNotEmpty;
+    final hasStorage = item.storageName != null && item.storageName!.isNotEmpty;
     final isCompleted = item.status == ServiceItemStatus.completed;
     final isProcessing = sale.orderStatus == OrderStatus.processing;
     final canMarkDone = isProcessing && hasMachine && !isCompleted;
@@ -359,8 +364,7 @@ class _ServiceItemTile extends HookConsumerWidget {
               statusResult.fold(
                 (failure) {
                   if (context.mounted) {
-                    showErrorSnackBar(context,
-                        message: failure.messageString);
+                    showErrorSnackBar(context, message: failure.messageString);
                   }
                 },
                 (_) {
@@ -478,9 +482,8 @@ class _ServiceItemTile extends HookConsumerWidget {
                 if (hasMachine)
                   Expanded(
                     child: GestureDetector(
-                      onTap: isCompleted
-                          ? null
-                          : () => _editMachine(context, ref),
+                      onTap:
+                          isCompleted ? null : () => _editMachine(context, ref),
                       child: SaleAssignmentInfoCard(
                         icon: Icons.local_laundry_service,
                         label: 'Machine',
@@ -593,8 +596,7 @@ class _PacksSection extends HookConsumerWidget {
       if (result == null || !context.mounted) return;
 
       final repo = ref.read(salesRepositoryProvider);
-      final updateResult =
-          await repo.updateSale(sale.id, {'packs': result});
+      final updateResult = await repo.updateSale(sale.id, {'packs': result});
       updateResult.fold(
         (failure) {
           if (context.mounted) {
@@ -708,9 +710,8 @@ class _SpecialInstructionsSection extends StatelessWidget {
                   child: Text(
                     hasNotes ? notes! : 'No special instructions',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: hasNotes
-                          ? null
-                          : theme.colorScheme.onSurfaceVariant,
+                      color:
+                          hasNotes ? null : theme.colorScheme.onSurfaceVariant,
                       fontStyle: hasNotes ? null : FontStyle.italic,
                     ),
                   ),
@@ -846,7 +847,7 @@ class SaleCustomerInfoRow extends StatelessWidget {
                 ? InkWell(
                     onTap: () {
                       DialogDismissingObserver.dismissAllDialogs();
-                      CustomerDetailRoute(id: customerId!).go(context);
+                      CustomerDetailRoute(id: customerId!).goScoped(context);
                     },
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
@@ -959,7 +960,8 @@ class SaleAssignmentInfoCard extends StatelessWidget {
               child: Icon(
                 Icons.edit,
                 size: 14,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ),
         ],
@@ -976,8 +978,7 @@ class _SaleHighlightBannerWithBalance extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final totalPaid =
-        ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+    final totalPaid = ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
     final balanceDue = sale.totalAmount - totalPaid;
 
     return SaleHighlightBanner(

@@ -51,32 +51,12 @@ class PrinterConfigMapper extends ClassMapperBase<PrinterConfig> {
     opt: true,
     def: PrinterPaperWidth.mm80,
   );
-  static bool _$isDefault(PrinterConfig v) => v.isDefault;
-  static const Field<PrinterConfig, bool> _f$isDefault = Field(
-    'isDefault',
-    _$isDefault,
-    opt: true,
-    def: false,
-  );
   static bool _$isEnabled(PrinterConfig v) => v.isEnabled;
   static const Field<PrinterConfig, bool> _f$isEnabled = Field(
     'isEnabled',
     _$isEnabled,
     opt: true,
     def: true,
-  );
-  static String? _$branchId(PrinterConfig v) => v.branchId;
-  static const Field<PrinterConfig, String> _f$branchId = Field(
-    'branchId',
-    _$branchId,
-    opt: true,
-  );
-  static bool _$isDeleted(PrinterConfig v) => v.isDeleted;
-  static const Field<PrinterConfig, bool> _f$isDeleted = Field(
-    'isDeleted',
-    _$isDeleted,
-    opt: true,
-    def: false,
   );
   static DateTime? _$created(PrinterConfig v) => v.created;
   static const Field<PrinterConfig, DateTime> _f$created = Field(
@@ -99,10 +79,7 @@ class PrinterConfigMapper extends ClassMapperBase<PrinterConfig> {
     #address: _f$address,
     #port: _f$port,
     #paperWidth: _f$paperWidth,
-    #isDefault: _f$isDefault,
     #isEnabled: _f$isEnabled,
-    #branchId: _f$branchId,
-    #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -115,10 +92,7 @@ class PrinterConfigMapper extends ClassMapperBase<PrinterConfig> {
       address: data.dec(_f$address),
       port: data.dec(_f$port),
       paperWidth: data.dec(_f$paperWidth),
-      isDefault: data.dec(_f$isDefault),
       isEnabled: data.dec(_f$isEnabled),
-      branchId: data.dec(_f$branchId),
-      isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -193,10 +167,7 @@ abstract class PrinterConfigCopyWith<$R, $In extends PrinterConfig, $Out>
     String? address,
     int? port,
     PrinterPaperWidth? paperWidth,
-    bool? isDefault,
     bool? isEnabled,
-    String? branchId,
-    bool? isDeleted,
     DateTime? created,
     DateTime? updated,
   });
@@ -219,10 +190,7 @@ class _PrinterConfigCopyWithImpl<$R, $Out>
     Object? address = $none,
     int? port,
     PrinterPaperWidth? paperWidth,
-    bool? isDefault,
     bool? isEnabled,
-    Object? branchId = $none,
-    bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -233,10 +201,7 @@ class _PrinterConfigCopyWithImpl<$R, $Out>
       if (address != $none) #address: address,
       if (port != null) #port: port,
       if (paperWidth != null) #paperWidth: paperWidth,
-      if (isDefault != null) #isDefault: isDefault,
       if (isEnabled != null) #isEnabled: isEnabled,
-      if (branchId != $none) #branchId: branchId,
-      if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -249,10 +214,7 @@ class _PrinterConfigCopyWithImpl<$R, $Out>
     address: data.get(#address, or: $value.address),
     port: data.get(#port, or: $value.port),
     paperWidth: data.get(#paperWidth, or: $value.paperWidth),
-    isDefault: data.get(#isDefault, or: $value.isDefault),
     isEnabled: data.get(#isEnabled, or: $value.isEnabled),
-    branchId: data.get(#branchId, or: $value.branchId),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

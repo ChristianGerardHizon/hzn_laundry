@@ -15,15 +15,12 @@ part 'new_customers_controller.g.dart';
 Future<int> todaysNewCustomersCount(Ref ref) async {
   final pb = ref.read(pocketbaseProvider);
   final now = ref.watch(dashboardEffectiveDateProvider);
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final startOfDay = DateTime(now.year, now.month, now.day);
   final endOfDay = startOfDay.add(const Duration(days: 1));
 
-  var filter =
-      'created >= "${startOfDay.toUtc().toIso8601String()}" && created < "${endOfDay.toUtc().toIso8601String()}"';
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      'created >= "${startOfDay.toUtc().toIso8601String()}" && created < "${endOfDay.toUtc().toIso8601String()}"$branchClause';
 
   final result = await pb.collection(PocketBaseCollections.customers).getList(
         page: 1,

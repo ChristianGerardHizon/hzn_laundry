@@ -7,21 +7,26 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../core/hooks/use_form_dirty_guard.dart';
 import '../../../../../core/i18n/strings.g.dart';
+import '../../../../../core/utils/slugify.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
 import '../../../data/repositories/incentive_tier_repository.dart';
 import '../../../domain/branch.dart';
 import '../../controllers/branches_controller.dart';
+import '../../../../organizations/presentation/controllers/current_organization_controller.dart';
+import '../../controllers/current_branch_controller.dart';
 
 /// Dialog for creating or editing a branch.
 class BranchFormDialog extends HookConsumerWidget {
   const BranchFormDialog({
     super.key,
     this.branch,
+    this.organizationId,
   });
 
   final Branch? branch;
+  final String? organizationId;
 
   bool get isEditing => branch != null;
 
@@ -37,6 +42,7 @@ class BranchFormDialog extends HookConsumerWidget {
       initialValues: isEditing
           ? {
               'name': branch!.name,
+              'slug': branch!.slug,
               'address': branch!.address,
               'contactNumber': branch!.contactNumber,
               'operatingHours': branch!.operatingHours ?? '',
@@ -120,12 +126,26 @@ class BranchFormDialog extends HookConsumerWidget {
       }
 
       final values = formKey.currentState!.value;
+      final name = (values['name'] as String).trim();
+      var slug = (values['slug'] as String?)?.trim().toLowerCase() ?? '';
+      if (slug.isEmpty) slug = slugify(name);
+      if (slug == allBranchesSlug) {
+        showFormErrorDialog(
+          context,
+          errors: ['Branch slug "$allBranchesSlug" is reserved.'],
+        );
+        return;
+      }
 
       isSaving.value = true;
 
       final branchData = Branch(
         id: branch?.id ?? '',
-        name: (values['name'] as String).trim(),
+        organizationId: branch?.organizationId ??
+            organizationId ??
+            ref.read(currentOrganizationIdProvider),
+        name: name,
+        slug: slug,
         address: (values['address'] as String).trim(),
         contactNumber: (values['contactNumber'] as String).trim(),
         operatingHours: _nullIfEmpty(values['operatingHours'] as String?),
@@ -275,6 +295,42 @@ class BranchFormDialog extends HookConsumerWidget {
                           validator: FormBuilderValidators.required(
                             errorText: 'Name is required',
                           ),
+                          textInputAction: TextInputAction.next,
+                          onChanged: (value) {
+                            if (isEditing) return;
+                            formKey.currentState?.fields['slug']
+                                ?.didChange(slugify(value ?? ''));
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        FormBuilderTextField(
+                          name: 'slug',
+                          initialValue: branch?.slug,
+                          decoration: const InputDecoration(
+                            labelText: 'Slug *',
+                            hintText: 'url-safe-slug',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.link),
+                            helperText:
+                                'Used in URLs. Reserved value "all" is not allowed.',
+                          ),
+                          enabled: !isSaving.value,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.required(
+                              errorText: 'Slug is required',
+                            ),
+                            (value) {
+                              final v = value?.trim().toLowerCase() ?? '';
+                              if (v == allBranchesSlug) {
+                                return 'Slug "$allBranchesSlug" is reserved';
+                              }
+                              if (!RegExp(r'^[a-z0-9-]+$').hasMatch(v)) {
+                                return 'Use lowercase letters, numbers, hyphens';
+                              }
+                              return null;
+                            },
+                          ]),
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
@@ -441,6 +497,7 @@ class BranchFormDialog extends HookConsumerWidget {
 
   static const _fieldLabels = {
     'name': 'Name',
+    'slug': 'Slug',
     'address': 'Address',
     'contactNumber': 'Contact Number',
     'operatingHours': 'Operating Hours',
@@ -454,10 +511,17 @@ class BranchFormDialog extends HookConsumerWidget {
 }
 
 /// Shows the branch form dialog.
-void showBranchFormDialog(BuildContext context, {Branch? branch}) {
+void showBranchFormDialog(
+  BuildContext context, {
+  Branch? branch,
+  String? organizationId,
+}) {
   showConstrainedDialog(
     context: context,
-    builder: (context) => BranchFormDialog(branch: branch),
+    builder: (context) => BranchFormDialog(
+      branch: branch,
+      organizationId: organizationId,
+    ),
   );
 }
 

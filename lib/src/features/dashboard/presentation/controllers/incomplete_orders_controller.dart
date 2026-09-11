@@ -24,15 +24,13 @@ bool _isOnDashboardDay(DateTime? date, DateTime dayStart, DateTime dayEnd) {
 /// machines or packs.
 @Riverpod(keepAlive: true)
 Future<IncompleteOrdersData> incompleteOrders(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
   final now = ref.watch(dashboardEffectiveDateProvider);
   final dayStart = DateTime(now.year, now.month, now.day);
   final dayEnd = dayStart.add(const Duration(days: 1));
   final startUtc = dayStart.toPocketBaseUtc();
   final endUtc = dayEnd.toPocketBaseUtc();
-
-  final branchFilter = branchId != null ? ' && branch = "$branchId"' : '';
   final openFilter =
       "status != 'voided' && (orderStatus = 'processing' || orderStatus = 'ready')$branchFilter";
   final pickedUpFilter =

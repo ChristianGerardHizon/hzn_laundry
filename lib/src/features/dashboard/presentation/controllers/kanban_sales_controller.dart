@@ -104,18 +104,15 @@ class KanbanFilter extends _$KanbanFilter {
 /// Used to display a badge on the "Backlogs" filter chip.
 @riverpod
 Future<int> notPickedUpCount(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final startUtc = todayStart.toPocketBaseUtc();
 
-  var filter =
-      "status != 'voided' && postedDate < '$startUtc' && (orderStatus != 'pickedUp' || pickedUpAt >= '$startUtc')";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      "status != 'voided' && postedDate < '$startUtc' && (orderStatus != 'pickedUp' || pickedUpAt >= '$startUtc')$branchClause";
 
   final result = await pb.collection(PocketBaseCollections.sales).getList(
         page: 1,
@@ -131,18 +128,15 @@ Future<int> notPickedUpCount(Ref ref) async {
 /// regardless of which filter is currently active.
 @riverpod
 Future<int> backlogPendingCount(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
   final todayStart = DateTime(now.year, now.month, now.day);
   final startUtc = todayStart.toPocketBaseUtc();
 
-  var filter =
-      "status != 'voided' && postedDate < '$startUtc' && orderStatus = 'pending'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      "status != 'voided' && postedDate < '$startUtc' && orderStatus = 'pending'$branchClause";
 
   final result = await pb.collection(PocketBaseCollections.sales).getList(
         page: 1,
@@ -157,7 +151,7 @@ Future<int> backlogPendingCount(Ref ref) async {
 /// Used to display a badge on the "Today's Orders" filter chip.
 @riverpod
 Future<int> todayCount(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
@@ -166,11 +160,8 @@ Future<int> todayCount(Ref ref) async {
   final startUtc = todayStart.toPocketBaseUtc();
   final endUtc = todayEnd.toPocketBaseUtc();
 
-  var filter =
-      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$branchClause";
 
   final result = await pb.collection(PocketBaseCollections.sales).getList(
         page: 1,
@@ -188,7 +179,7 @@ Future<int> todayCount(Ref ref) async {
 Future<int> crossTabSearchCount(Ref ref, String query) async {
   if (query.isEmpty) return 0;
 
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final filterMode = ref.watch(kanbanFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
@@ -197,10 +188,7 @@ Future<int> crossTabSearchCount(Ref ref, String query) async {
   final startUtc = todayStart.toPocketBaseUtc();
 
   // Build the opposite filter
-  var filter = "status != 'voided'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  var filter = "status != 'voided'$branchClause";
 
   switch (filterMode) {
     case KanbanFilterMode.today:
@@ -235,14 +223,11 @@ Future<int> crossTabSearchCount(Ref ref, String query) async {
 /// Also fetches service items for processing/ready sales to display machine/storage.
 @riverpod
 Future<KanbanSalesData> kanbanSales(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final filterMode = ref.watch(kanbanFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  var filter = "status != 'voided'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  var filter = "status != 'voided'$branchClause";
 
   final now = ref.watch(dashboardEffectiveDateProvider);
 
@@ -261,7 +246,8 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
           '$filter && postedDate < "$startUtc" && (orderStatus != "pickedUp" || pickedUpAt >= "$startUtc")';
   }
 
-  final records = branchId == null
+  final isAllBranches = ref.watch(currentBranchIdProvider) == null;
+  final records = isAllBranches
       ? (await pb.collection(PocketBaseCollections.sales).getList(
                 page: 1,
                 perPage: 500,

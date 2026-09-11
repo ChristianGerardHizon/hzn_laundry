@@ -2,7 +2,7 @@
 # =============================================================================
 # Backfill customers.branch from each customer's most recent sale
 # =============================================================================
-# Local helper for the PocketBase at http://127.0.0.1:8090.
+# Local helper for the PocketBase at http://127.0.0.1:8088.
 # Does not target staging or production.
 #
 # Assigns unassigned customers to a branch:
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-PB_URL="${PB_URL:-http://127.0.0.1:8090}"
+PB_URL="${PB_URL:-http://127.0.0.1:8088}"
 PB_EMAIL="${PB_EMAIL:-}"
 PB_PASSWORD="${PB_PASSWORD:-}"
 DRY_RUN="${DRY_RUN:-1}"
@@ -34,7 +34,7 @@ Usage:
   PB_EMAIL=... PB_PASSWORD=... bash server/scripts/backfill_customer_branch.sh
   PB_EMAIL=... PB_PASSWORD=... bash server/scripts/backfill_customer_branch.sh --apply
 
-Runs against local PocketBase (http://127.0.0.1:8090) only.
+Runs against local PocketBase (http://127.0.0.1:8088) only.
 
 Options:
   --dry-run   Preview assignments without writing (default)
@@ -68,7 +68,7 @@ case "$PB_URL" in
   http://127.0.0.1:*|http://localhost:*|http://127.0.0.1|http://localhost)
     ;;
   *)
-    echo "Error: this script is local-only. PB_URL must be http://127.0.0.1:8090 (got $PB_URL)."
+    echo "Error: this script is local-only. PB_URL must be a localhost URL (got $PB_URL)."
     exit 1
     ;;
 esac

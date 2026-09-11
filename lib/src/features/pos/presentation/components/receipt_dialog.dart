@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -331,7 +332,7 @@ class ReceiptDialog extends HookConsumerWidget {
     final isPrinting = useState(false);
     final hasAutoPrinted = useState(false);
     final printCashierCopy = useState(true);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
 
     // Watch branch for business info on receipts
@@ -349,10 +350,10 @@ class ReceiptDialog extends HookConsumerWidget {
       }
 
       // Get printer before async operations to avoid ref disposal issues
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) {
         showErrorSnackBar(context,
-            message: 'No default printer configured', useRootMessenger: false);
+            message: 'No printer selected', useRootMessenger: false);
         return;
       }
 
@@ -422,9 +423,9 @@ class ReceiptDialog extends HookConsumerWidget {
       }
     }
 
-    // Auto-print when dialog opens if default printer is configured
+    // Auto-print when dialog opens if a printer is selected
     useEffect(() {
-      final defaultPrinter = defaultPrinterAsync.value;
+      final defaultPrinter = selectedPrinterAsync.value;
       if (isThermalPrintingSupported &&
           defaultPrinter != null &&
           !hasAutoPrinted.value &&
@@ -436,7 +437,7 @@ class ReceiptDialog extends HookConsumerWidget {
         });
       }
       return null;
-    }, [defaultPrinterAsync.value]);
+    }, [selectedPrinterAsync.value]);
 
     Future<void> handlePdfPrint() async {
       final result = await runPdfTask<_ReceiptPdfPayload>(
@@ -466,9 +467,8 @@ class ReceiptDialog extends HookConsumerWidget {
       );
     }
 
-    final hasDefaultPrinter = defaultPrinterAsync.value != null;
-    final canThermalPrint =
-        isThermalPrintingSupported && hasDefaultPrinter;
+    final hasSelectedPrinter = selectedPrinterAsync.value != null;
+    final canThermalPrint = isThermalPrintingSupported && hasSelectedPrinter;
 
     return DialogCloseHandler(
       child: Column(
@@ -518,7 +518,7 @@ class ReceiptDialog extends HookConsumerWidget {
                     TextButton(
                       onPressed: () {
                         DialogDismissingObserver.dismissAllDialogs();
-                        const PrinterSettingsRoute().go(context);
+                        const PrinterSettingsRoute().goScoped(context);
                       },
                       child: const Text('Setup Printer'),
                     ),

@@ -62,7 +62,7 @@ final class TopSellingProductsProvider extends $FunctionalProvider<
 }
 
 String _$topSellingProductsHash() =>
-    r'e27a0df07a2f653a99a9b5fa44c0ac2b7aac96b0';
+    r'5ac69af6e5e584b8974d711d3b0f77494c32c830';
 
 /// Top 5 selling services (all-time, aggregated from date-grouped view).
 ///
@@ -118,4 +118,4 @@ final class TopSellingServicesProvider extends $FunctionalProvider<
 }
 
 String _$topSellingServicesHash() =>
-    r'5260178ae662e9beb139d17017a7c42304a78c26';
+    r'a49d74439be432a210ae6161cff86208d12456ab';

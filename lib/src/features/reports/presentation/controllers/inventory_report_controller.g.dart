@@ -48,4 +48,4 @@ final class InventoryReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$inventoryReportHash() => r'd5f021b7a5a38457dc2a506cc3fa26c5be626f61';
+String _$inventoryReportHash() => r'56fc78035118cab30ab0a6b39c711fe147c47ca5';

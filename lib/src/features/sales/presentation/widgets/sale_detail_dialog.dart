@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
@@ -214,7 +215,7 @@ class _DialogFooter extends ConsumerWidget {
             child: FilledButton.tonal(
               onPressed: () {
                 DialogDismissingObserver.dismissAllDialogs();
-                SaleDetailRoute(id: saleId).go(context);
+                SaleDetailRoute(id: saleId).goScoped(context);
               },
               child: const Text('View Full Details'),
             ),
@@ -252,7 +253,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPrinting = useState(false);
-    final defaultPrinterAsync = ref.watch(defaultPrinterProvider);
+    final selectedPrinterAsync = ref.watch(selectedPrinterProvider);
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
@@ -287,7 +288,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
     }
 
     Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
-      final printer = defaultPrinterAsync.value;
+      final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
       final pdfData = buildPdfData(
@@ -324,8 +325,8 @@ class _DialogPrintMenu extends HookConsumerWidget {
         return false;
       }
 
-      if (defaultPrinterAsync.value == null) {
-        showErrorSnackBar(context, message: 'No default printer configured');
+      if (selectedPrinterAsync.value == null) {
+        showErrorSnackBar(context, message: 'No printer selected');
         return false;
       }
 

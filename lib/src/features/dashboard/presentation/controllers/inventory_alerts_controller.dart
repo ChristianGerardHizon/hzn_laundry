@@ -17,11 +17,9 @@ part 'inventory_alerts_controller.g.dart';
 /// - vw_near_expiration_lots
 @riverpod
 Future<InventoryAlertsSummary> inventoryAlertsSummary(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final pb = ref.read(pocketbaseProvider);
   final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
-  final branchFilter =
-      branchId != null ? 'branch = "$branchId"' : null;
 
   // Query all 4 views in parallel for best performance
   final results = await Future.wait([

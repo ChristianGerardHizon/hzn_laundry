@@ -13,7 +13,7 @@
 # ready/pickedUp, or logs were trimmed), falls back to postedDate/created.
 #
 # Usage:
-#   PB_URL=https://hizonelaundry.hznsystems.com \
+#   PB_URL=https://hznlaundry.hznsystems.com \
 #   PB_EMAIL=test@test.com \
 #   PB_PASSWORD=yourpassword \
 #   bash backfill_processed_date.sh
@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-PB_URL="${PB_URL:-http://127.0.0.1:8090}"
+PB_URL="${PB_URL:-http://127.0.0.1:8088}"
 PB_EMAIL="${PB_EMAIL:-}"
 PB_PASSWORD="${PB_PASSWORD:-}"
 

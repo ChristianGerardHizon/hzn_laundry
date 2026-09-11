@@ -29,6 +29,12 @@ class Product with ProductMappable {
     this.trackByLot = false,
     this.quantityUnitId,
     this.quantityUnit,
+    this.isConsumable = false,
+    this.countsTowardMaterialCost = false,
+    this.usageMin = 0,
+    this.usageMax,
+    this.usageStep,
+    this.defaultUsage,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -88,6 +94,24 @@ class Product with ProductMappable {
 
   /// Quantity unit (expanded from FK).
   final QuantityUnit? quantityUnit;
+
+  /// Whether this product is a house consumable (detergent, fabcon, etc.).
+  final bool isConsumable;
+
+  /// Whether selling this product as an add-on increases material usage/cost.
+  final bool countsTowardMaterialCost;
+
+  /// Minimum usage quantity on an order (never negative).
+  final num usageMin;
+
+  /// Maximum usage quantity on an order. Null means no cap.
+  final num? usageMax;
+
+  /// Stepper increment. Null or 0 means 1.
+  final num? usageStep;
+
+  /// Default usage when a recipe prefills this product.
+  final num? defaultUsage;
 
   /// Soft delete flag.
   final bool isDeleted;
@@ -197,5 +221,22 @@ class Product with ProductMappable {
     // Fallback for products without a quantity unit
     final isPlural = qty != 1;
     return '${qty.toInt()} ${isPlural ? "pcs" : "pc"}';
+  }
+
+  /// Minimum usage quantity, floored at 0.
+  num get effectiveUsageMin => usageMin < 0 ? 0 : usageMin;
+
+  /// Stepper increment for usage controls.
+  num get effectiveUsageStep {
+    final step = usageStep;
+    if (step == null || step <= 0) return 1;
+    return step;
+  }
+
+  /// Default usage for prefill, clamped to min.
+  num get effectiveDefaultUsage {
+    final value = defaultUsage ?? effectiveUsageMin;
+    if (value < effectiveUsageMin) return effectiveUsageMin;
+    return value;
   }
 }
