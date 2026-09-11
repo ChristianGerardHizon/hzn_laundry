@@ -4,7 +4,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
-import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../domain/inventory_report.dart';
@@ -25,10 +24,10 @@ abstract class ReportsRepository {
   FutureEither<SalesReport> getSalesReport({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchFilter,
   });
 
-  FutureEither<InventoryReport> getInventoryReport({String? branchId});
+  FutureEither<InventoryReport> getInventoryReport({String? filter});
 }
 
 @Riverpod(keepAlive: true)
@@ -43,22 +42,14 @@ class ReportsRepositoryImpl implements ReportsRepository {
 
   RecordService get _products => _pb.collection(PocketBaseCollections.products);
 
-  /// Returns a PocketBase filter for branch on view collections.
-  static String? _branchViewFilter(String? branchId) {
-    if (branchId == null) return null;
-    return 'branch = "$branchId"';
-  }
-
   @override
   FutureEither<SalesReport> getSalesReport({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchFilter,
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final branchFilter = _branchViewFilter(branchId);
-
         // Query views in parallel for best performance
         final results = await Future.wait([
           _pb.collection(PocketBaseCollections.vwSalesDailySummary).getFullList(filter: branchFilter),
@@ -168,12 +159,9 @@ class ReportsRepositoryImpl implements ReportsRepository {
   }
 
   @override
-  FutureEither<InventoryReport> getInventoryReport({String? branchId}) async {
+  FutureEither<InventoryReport> getInventoryReport({String? filter}) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = branchId != null
-            ? PBFilters.forBranch(branchId).build()
-            : null;
         final products = await _products.getFullList(
           expand: 'category',
           filter: filter,

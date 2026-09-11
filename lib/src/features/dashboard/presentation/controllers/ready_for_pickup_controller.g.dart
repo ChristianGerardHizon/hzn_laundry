@@ -48,7 +48,7 @@ final class ReadyForPickupSalesProvider extends $FunctionalProvider<
 }
 
 String _$readyForPickupSalesHash() =>
-    r'6c32b53214fe8d0c995557b04b4b93284de46302';
+    r'5a340044801ae021e96569634634c97f4a0e3296';
 
 /// Summary of ready-for-pickup sales with paid/unpaid counts.
 

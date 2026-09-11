@@ -144,3 +144,14 @@ NavItem? navItemFor(NavId id, List<NavItem> items) {
   }
   return null;
 }
+
+/// Items whose [NavItem.label] contains [query] (case-insensitive).
+///
+/// Empty/whitespace [query] returns an empty list so callers show normal nav.
+List<NavItem> filterNavItemsByQuery(List<NavItem> items, String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return const [];
+  return items
+      .where((item) => item.label.toLowerCase().contains(q))
+      .toList(growable: false);
+}

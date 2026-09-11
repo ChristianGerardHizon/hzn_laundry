@@ -46,6 +46,7 @@ class OrderUsageSection extends StatelessWidget {
     required this.onChanged,
     this.onCopyLast,
     this.copyLastEnabled = false,
+    this.showHeader = true,
   });
 
   final List<OrderUsageDraft> drafts;
@@ -55,6 +56,7 @@ class OrderUsageSection extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback? onCopyLast;
   final bool copyLastEnabled;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -64,24 +66,26 @@ class OrderUsageSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Consumables used',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+        if (showHeader) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Consumables used',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            if (onCopyLast != null)
-              TextButton(
-                onPressed: enabled && copyLastEnabled ? onCopyLast : null,
-                child: const Text('Copy last recipe'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
+              if (onCopyLast != null)
+                TextButton(
+                  onPressed: enabled && copyLastEnabled ? onCopyLast : null,
+                  child: const Text('Copy last recipe'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
         ...drafts.map(
           (draft) => _UsageStepperRow(
             draft: draft,

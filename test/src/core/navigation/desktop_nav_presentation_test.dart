@@ -133,5 +133,33 @@ void main() {
         isFalse,
       );
     });
+
+    group('filterNavItemsByQuery', () {
+      final items = buildAllNavItems((key) => switch (key) {
+            'dashboard' => 'Dashboard',
+            'customers' => 'Customers',
+            'employees' => 'Employees',
+            'reports' => 'Reports',
+            _ => key,
+          });
+
+      test('empty or whitespace query returns empty list', () {
+        expect(filterNavItemsByQuery(items, ''), isEmpty);
+        expect(filterNavItemsByQuery(items, '   '), isEmpty);
+      });
+
+      test('matches case-insensitively by label contains', () {
+        final results = filterNavItemsByQuery(items, 'EMP');
+
+        expect(
+          results.map((item) => item.id),
+          [NavId.employees],
+        );
+      });
+
+      test('returns empty list when nothing matches', () {
+        expect(filterNavItemsByQuery(items, 'xyz'), isEmpty);
+      });
+    });
   });
 }

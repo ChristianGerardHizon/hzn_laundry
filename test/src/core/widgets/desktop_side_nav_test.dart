@@ -24,9 +24,20 @@ void main() {
         _ => key,
       });
 
+  Finder navScrollable() => find.descendant(
+        of: find
+            .descendant(
+              of: find.byType(DesktopSideNav),
+              matching: find.byType(ListView),
+            )
+            .first,
+        matching: find.byType(Scrollable),
+      );
+
   Widget buildHarness({
     required List<NavItem> visibleItems,
     int selectedIndex = 0,
+    ValueChanged<int>? onDestinationSelected,
   }) {
     final router = GoRouter(
       initialLocation: '/',
@@ -38,7 +49,7 @@ void main() {
             height: 1200,
             child: DesktopSideNav(
               selectedIndex: selectedIndex,
-              onDestinationSelected: (_) {},
+              onDestinationSelected: onDestinationSelected ?? (_) {},
               visibleItems: visibleItems,
             ),
           ),
@@ -76,20 +87,14 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('System'),
       48,
-      scrollable: find.descendant(
-        of: find.byType(DesktopSideNav),
-        matching: find.byType(Scrollable),
-      ),
+      scrollable: navScrollable(),
     );
     expect(find.text('System'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Administration'),
       48,
-      scrollable: find.descendant(
-        of: find.byType(DesktopSideNav),
-        matching: find.byType(Scrollable),
-      ),
+      scrollable: navScrollable(),
     );
     expect(find.text('People'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
@@ -142,6 +147,11 @@ void main() {
     await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Reports'),
+      48,
+      scrollable: navScrollable(),
+    );
     expect(find.text('Reports'), findsOneWidget);
     expect(find.text('Employees'), findsOneWidget);
   });
@@ -158,6 +168,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Employees'), findsOneWidget);
+  });
+
+  testWidgets('shows search field when expanded', (tester) async {
+    await tester.pumpWidget(buildHarness(visibleItems: allItems));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search pages'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('search filters destinations and shows overlay', (tester) async {
+    int? tappedIndex;
+
+    await tester.pumpWidget(
+      buildHarness(
+        visibleItems: allItems,
+        onDestinationSelected: (index) => tappedIndex = index,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'cust');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search results'), findsOneWidget);
+    expect(find.text('Customers'), findsWidgets);
+    // Nav list stays underneath the compact results popover.
+    expect(find.text('Shortcuts'), findsOneWidget);
+
+    await tester.tap(find.text('Customers').last);
+    await tester.pumpAndSettle();
+
+    expect(tappedIndex, allItems.indexWhere((i) => i.id == NavId.customers));
+    expect(find.text('Search results'), findsNothing);
+  });
+
+  testWidgets('collapse hides search field', (tester) async {
+    await tester.pumpWidget(buildHarness(visibleItems: allItems));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'cust');
+    await tester.pumpAndSettle();
+    expect(find.text('Search results'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Collapse navigation'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Search pages'), findsNothing);
+    expect(find.text('Search results'), findsNothing);
   });
 }
 

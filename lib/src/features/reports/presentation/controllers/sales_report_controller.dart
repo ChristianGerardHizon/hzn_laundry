@@ -11,13 +11,13 @@ part 'sales_report_controller.g.dart';
 @riverpod
 Future<SalesReport> salesReport(Ref ref) async {
   final period = ref.watch(reportPeriodControllerProvider);
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final repository = ref.read(reportsRepositoryProvider);
 
   final result = await repository.getSalesReport(
     startDate: period.startDate,
     endDate: period.endDate,
-    branchId: branchId,
+    branchFilter: branchFilter,
   );
 
   return result.fold(

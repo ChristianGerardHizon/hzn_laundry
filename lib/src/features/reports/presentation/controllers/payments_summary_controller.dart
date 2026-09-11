@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../pos/data/repositories/payment_repository.dart';
 import '../../../pos/domain/payment_method.dart';
 import '../../../pos/domain/payment_type.dart';
@@ -13,13 +15,17 @@ part 'payments_summary_controller.g.dart';
 @riverpod
 Future<List<PaymentsDailySummaryEntry>> paymentsSummary(Ref ref) async {
   final dateRange = ref.watch(paymentsDateRangeControllerProvider);
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchScope = PBFilters.forBranchOrOrganization(
+    branchId: ref.watch(currentBranchIdProvider),
+    organizationId: ref.watch(currentOrganizationIdProvider),
+    branchField: 'sale.branch',
+  );
   final repository = ref.read(paymentRepositoryProvider);
 
   final result = await repository.getForDateRange(
     startDate: dateRange.start,
     endDate: dateRange.end,
-    branchId: branchId,
+    branchScope: branchScope,
   );
 
   return result.fold(

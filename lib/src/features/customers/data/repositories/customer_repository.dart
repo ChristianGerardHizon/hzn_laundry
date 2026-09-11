@@ -33,7 +33,7 @@ abstract class CustomerRepository {
   FutureEither<List<Customer>> fetchForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   });
 
   /// Searches customers by name or phone.
@@ -197,17 +197,14 @@ class CustomerRepositoryImpl implements CustomerRepository {
   FutureEither<List<Customer>> fetchForDateRange({
     required DateTime startDate,
     required DateTime endDate,
-    String? branchId,
+    String? branchScope,
   }) async {
     return TaskEither.tryCatch(
       () async {
-        var filter = PBFilter().between('created', startDate, endDate);
-        if (branchId != null && branchId.isNotEmpty) {
-          filter = filter.relation('branch', branchId);
-        }
+        final filter = PBFilter().between('created', startDate, endDate);
 
         final records = await _collection.getFullList(
-          filter: filter.build(),
+          filter: PBFilters.combine(filter.build(), branchScope),
           sort: '-created',
         );
         return records.map(_toEntity).toList();

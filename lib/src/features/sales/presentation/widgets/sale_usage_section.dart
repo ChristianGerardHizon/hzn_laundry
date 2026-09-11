@@ -13,8 +13,8 @@ import '../controllers/sale_consumable_usages_provider.dart';
 import 'order_usage_section.dart';
 
 /// Order-detail consumable usage. Shown when the org flag is on and the
-/// user can view usage. Editing is allowed at any order status with
-/// `usage.edit`.
+/// user can view usage. Editing requires pressing the edit control first
+/// (`usage.edit`).
 class SaleUsageSection extends HookConsumerWidget {
   const SaleUsageSection({
     super.key,
@@ -27,6 +27,7 @@ class SaleUsageSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final usageEnabled =
         ref.watch(consumableUsageEnabledProvider).value ?? false;
     final role = ref.watch(currentUserRoleProvider).value;
@@ -46,6 +47,7 @@ class SaleUsageSection extends HookConsumerWidget {
     final records = useState<List<SaleConsumableUsage>>([]);
     final hydratedSaleId = useRef<String?>(null);
     final isSaving = useState(false);
+    final isEditing = useState(false);
 
     useEffect(() {
       final usages = usagesAsync.asData?.value;
@@ -68,6 +70,7 @@ class SaleUsageSection extends HookConsumerWidget {
           ),
       ];
       hydratedSaleId.value = saleId;
+      isEditing.value = false;
       return null;
     }, [saleId, usagesAsync]);
 
@@ -101,61 +104,125 @@ class SaleUsageSection extends HookConsumerWidget {
 
     return Padding(
       padding: EdgeInsets.only(bottom: compact ? 12 : 16),
-      child: usagesAsync.when(
-        loading: () => const Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Consumables used',
+            style: theme.textTheme.titleMedium,
           ),
-        ),
-        error: (error, _) => Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Error loading usage: $error'),
-          ),
-        ),
-        data: (usages) {
-          if (usages.isEmpty) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Consumables used',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                const Card(
+          const SizedBox(height: 8),
+          usagesAsync.when(
+            loading: () => const Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
+            error: (error, _) => Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Error loading usage: $error'),
+              ),
+            ),
+            data: (usages) {
+              if (usages.isEmpty) {
+                return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(16),
                     child: Text('No consumables recorded'),
                   ),
-                ),
-              ],
-            );
-          }
+                );
+              }
 
-          return Card(
-            child: Padding(
-              padding: EdgeInsets.all(compact ? 12 : 16),
-              child: OrderUsageSection(
-                drafts: drafts.value,
-                enabled: !isSaving.value,
-                canEdit: canEdit,
-                showCost: showCost,
-                onChanged: () {
-                  drafts.value = [...drafts.value];
-                  // Persist the row whose quantity most recently changed.
-                  for (var i = 0; i < drafts.value.length; i++) {
-                    if (i >= records.value.length) continue;
-                    if (drafts.value[i].quantity != records.value[i].quantity) {
-                      persist(i);
-                    }
-                  }
-                },
-              ),
-            ),
-          );
-        },
+              if (!isEditing.value) {
+                return Card(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: drafts.value.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final draft = drafts.value[index];
+                      final unit =
+                          draft.product.quantityUnit?.shortPlural ?? '';
+                      final qty = draft.quantity ?? 0;
+                      final qtyLabel =
+                          unit.isEmpty ? '$qty' : '$qty $unit';
+
+                      return ListTile(
+                        dense: compact,
+                        title: Text(draft.product.name),
+                        subtitle: showCost
+                            ? Text(
+                                '₱${(qty * draft.product.unitCost).toStringAsFixed(2)}',
+                              )
+                            : null,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              qtyLabel,
+                              style: theme.textTheme.titleSmall,
+                            ),
+                            if (canEdit) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.edit_outlined,
+                                size: 16,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ],
+                        ),
+                        onTap: canEdit
+                            ? () => isEditing.value = true
+                            : null,
+                      );
+                    },
+                  ),
+                );
+              }
+
+              return Card(
+                child: Padding(
+                  padding: EdgeInsets.all(compact ? 12 : 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: isSaving.value
+                              ? null
+                              : () => isEditing.value = false,
+                          child: const Text('Done'),
+                        ),
+                      ),
+                      OrderUsageSection(
+                        drafts: drafts.value,
+                        enabled: !isSaving.value,
+                        canEdit: canEdit,
+                        showCost: showCost,
+                        showHeader: false,
+                        onChanged: () {
+                          drafts.value = [...drafts.value];
+                          for (var i = 0; i < drafts.value.length; i++) {
+                            if (i >= records.value.length) continue;
+                            if (drafts.value[i].quantity !=
+                                records.value[i].quantity) {
+                              persist(i);
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

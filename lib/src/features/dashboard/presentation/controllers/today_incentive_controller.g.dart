@@ -56,4 +56,4 @@ final class TodayIncentiveSummaryProvider extends $FunctionalProvider<
 }
 
 String _$todayIncentiveSummaryHash() =>
-    r'a126ee8ada90cdb45b769a71578dfdc8faa4a73c';
+    r'188b59f8733c7cc42c9599d612dcfa831bc82de5';

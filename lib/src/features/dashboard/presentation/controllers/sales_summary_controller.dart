@@ -28,7 +28,8 @@ part 'sales_summary_controller.g.dart';
 /// - Outstanding: remaining balance for orders created on the effective date
 @Riverpod(keepAlive: true)
 Future<SalesSummaryData> salesSummary(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final salesBranchFilter = ref.watch(currentBranchScopeClauseProvider);
+  final paymentBranchFilter = ref.watch(currentSaleBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
@@ -36,10 +37,6 @@ Future<SalesSummaryData> salesSummary(Ref ref) async {
   final dayEnd = dayStart.add(const Duration(days: 1));
   final startUtc = dayStart.toPocketBaseUtc();
   final endUtc = dayEnd.toPocketBaseUtc();
-
-  final salesBranchFilter = branchId != null ? ' && branch = "$branchId"' : '';
-  final paymentBranchFilter =
-      branchId != null ? ' && sale.branch = "$branchId"' : '';
 
   final todaySalesFilter =
       "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$salesBranchFilter";

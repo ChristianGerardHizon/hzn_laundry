@@ -49,4 +49,4 @@ final class PaymentsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$paymentsSummaryHash() => r'dc7a975b9cab58a6797dae1c75248064708b1644';
+String _$paymentsSummaryHash() => r'd8f31ebd3571aab29855ccc928f6de54c9158902';

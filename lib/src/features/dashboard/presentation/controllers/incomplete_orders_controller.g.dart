@@ -52,4 +52,4 @@ final class IncompleteOrdersProvider extends $FunctionalProvider<
   }
 }
 
-String _$incompleteOrdersHash() => r'f1128c4833736d0fc8f69b9a3a56a918d7a16297';
+String _$incompleteOrdersHash() => r'7545f79d3705b32a0ef744c48fc9dee1d8de21ef';

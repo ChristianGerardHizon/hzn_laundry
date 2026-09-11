@@ -278,6 +278,42 @@ class _SaleDetailContent extends HookConsumerWidget {
                     _buildOrderStatusCard(context, ref),
                     const SizedBox(height: 16),
 
+                    // Total Card
+                    Card(
+                      color: theme.colorScheme.primaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                            Text(
+                              currencyFormat.format(sale.totalAmount),
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Builder(builder: (_) {
+                      final totalPaid =
+                          ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+                      return _buildRecordPaymentButton(
+                        context,
+                        ref,
+                        balanceDue: sale.totalAmount - totalPaid,
+                        canEditPayments: canEdit,
+                      );
+                    }),
+
                     // Services Section
                     serviceItemsAsync.when(
                       loading: () => const SizedBox.shrink(),
@@ -403,31 +439,6 @@ class _SaleDetailContent extends HookConsumerWidget {
 
                     SaleUsageSection(saleId: sale.id),
 
-                    // Total Card
-                    Card(
-                      color: theme.colorScheme.primaryContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total',
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            Text(
-                              currencyFormat.format(sale.totalAmount),
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
                     // Incentive Card (only for ready/picked up orders)
                     if (sale.orderStatus == OrderStatus.ready ||
                         sale.orderStatus == OrderStatus.pickedUp) ...[
@@ -447,6 +458,51 @@ class _SaleDetailContent extends HookConsumerWidget {
             // Activity tab
             _SaleActivityTab(saleId: sale.id),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordPaymentButton(
+    BuildContext context,
+    WidgetRef ref, {
+    required num balanceDue,
+    required bool canEditPayments,
+  }) {
+    if (sale.status.toLowerCase() == 'voided') {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () async {
+            final result = await showRecordPaymentDialog(
+              context,
+              sale: sale,
+              balanceDue: balanceDue,
+              canEditDate: canEditPayments,
+            );
+            if (result == true) {
+              ref.invalidate(saleProvider(sale.id));
+              ref.invalidate(salePaymentsProvider(sale.id));
+            }
+          },
+          icon: const Icon(Icons.add),
+          label: const Text(
+            'Record Payment',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.green.shade600,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
+          ),
         ),
       ),
     );
@@ -1497,41 +1553,6 @@ class _SaleDetailContent extends HookConsumerWidget {
                             ],
                           );
                         },
-                      ),
-                    ],
-
-                    // Record payment button
-                    if (sale.status.toLowerCase() != 'voided') ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () async {
-                            final result = await showRecordPaymentDialog(
-                              context,
-                              sale: sale,
-                              balanceDue: balanceDue,
-                              canEditDate: canEditPayments,
-                            );
-                            if (result == true) {
-                              ref.invalidate(saleProvider(sale.id));
-                              ref.invalidate(salePaymentsProvider(sale.id));
-                            }
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text(
-                            'Record Payment',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.green.shade600,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                        ),
                       ),
                     ],
                   ],

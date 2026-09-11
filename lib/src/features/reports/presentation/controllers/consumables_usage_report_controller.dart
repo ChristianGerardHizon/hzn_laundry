@@ -1,6 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../dashboard/domain/consumables_usage_summary.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../pos/data/repositories/sale_consumable_usage_repository.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -12,12 +14,15 @@ part 'consumables_usage_report_controller.g.dart';
 @riverpod
 Future<ConsumablesUsageSummaryData> consumablesUsageReport(Ref ref) async {
   final dateRange = ref.watch(consumablesUsageDateRangeControllerProvider);
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchScope = PBFilters.forBranchOrOrganization(
+    branchId: ref.watch(currentBranchIdProvider),
+    organizationId: ref.watch(currentOrganizationIdProvider),
+  );
   final salesResult =
       await ref.read(salesRepositoryProvider).getSalesForDateRange(
             startDate: dateRange.start,
             endDate: dateRange.end,
-            branchId: branchId,
+            branchScope: branchScope,
           );
 
   final sales = salesResult.fold((failure) => throw failure, (list) => list);

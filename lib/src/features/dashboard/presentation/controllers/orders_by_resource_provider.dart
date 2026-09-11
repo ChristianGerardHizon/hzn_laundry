@@ -106,7 +106,7 @@ Future<OrdersByResourceData> ordersByResource(
   Ref ref,
   OrdersByResourceFilter filter,
 ) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final saleBranchClause = ref.watch(currentSaleBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
@@ -132,12 +132,7 @@ Future<OrdersByResourceData> ordersByResource(
   }
 
   var pbFilter =
-      "sale.status != 'voided' && sale.orderStatus != 'pickedUp' && $dateFilter";
-
-  // Branch filter
-  if (branchId != null) {
-    pbFilter += ' && sale.branch = "$branchId"';
-  }
+      "sale.status != 'voided' && sale.orderStatus != 'pickedUp' && $dateFilter$saleBranchClause";
 
   // Machine/storage filter
   if (filter.machineId != null) {

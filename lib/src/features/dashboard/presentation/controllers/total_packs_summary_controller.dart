@@ -15,7 +15,7 @@ part 'total_packs_summary_controller.g.dart';
 /// Only orders with packs > 0 appear in the breakdown list.
 @Riverpod(keepAlive: true)
 Future<TotalPacksSummary> totalPacksSummary(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final now = ref.watch(dashboardEffectiveDateProvider);
@@ -23,8 +23,6 @@ Future<TotalPacksSummary> totalPacksSummary(Ref ref) async {
   final dayEnd = dayStart.add(const Duration(days: 1));
   final startUtc = dayStart.toPocketBaseUtc();
   final endUtc = dayEnd.toPocketBaseUtc();
-
-  final branchFilter = branchId != null ? ' && branch = "$branchId"' : '';
   final filter =
       "status != 'voided' && postedDate >= '$startUtc' && postedDate < '$endUtc'$branchFilter";
 

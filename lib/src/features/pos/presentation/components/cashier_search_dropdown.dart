@@ -260,8 +260,7 @@ class _SearchResultsList extends StatelessWidget {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return [];
 
-    final branchId = ref.read(currentBranchIdProvider);
-    final branchClause = branchId != null ? 'branch = "$branchId"' : null;
+    final branchClause = ref.read(currentBranchIdsFilterProvider);
 
     try {
       final pb = ref.read(pocketbaseProvider);

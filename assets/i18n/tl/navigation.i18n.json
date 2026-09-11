@@ -32,5 +32,8 @@
     "allBranches": "Lahat ng Sangay",
     "posUnavailableAllBranches": "Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.",
     "createUnavailableAllBranches": "Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.",
-    "activities": "Mga Aktibidad"
+    "activities": "Mga Aktibidad",
+    "searchNavHint": "Maghanap ng mga pahina",
+    "searchResults": "Mga resulta ng paghahanap",
+    "noSearchResults": "Walang resulta"
 }

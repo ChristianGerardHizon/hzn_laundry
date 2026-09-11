@@ -53,7 +53,7 @@ final class UserEntityCacheProvider
   }
 }
 
-String _$userEntityCacheHash() => r'0f65b5d3f035bc6a1e234b22863964eadb99772e';
+String _$userEntityCacheHash() => r'ee3a867a8d4ba1e91206c33faa1d48a956aac547';
 
 /// In-memory cache for single user entities.
 ///

@@ -492,6 +492,15 @@ class TranslationsNavigationEn {
 
 	/// en: 'Activities'
 	String get activities => 'Activities';
+
+	/// en: 'Search pages'
+	String get searchNavHint => 'Search pages';
+
+	/// en: 'Search results'
+	String get searchResults => 'Search results';
+
+	/// en: 'No results'
+	String get noSearchResults => 'No results';
 }
 
 // Path: organizations
@@ -978,6 +987,9 @@ extension on Translations {
 			'navigation.posUnavailableAllBranches' => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.',
 			'navigation.createUnavailableAllBranches' => 'This action requires a specific branch. Choose a branch before continuing.',
 			'navigation.activities' => 'Activities',
+			'navigation.searchNavHint' => 'Search pages',
+			'navigation.searchResults' => 'Search results',
+			'navigation.noSearchResults' => 'No results',
 			'organizations.title' => 'Organizations',
 			'organizations.create' => 'Create Organization',
 			'organizations.yourOrganizations' => 'Organizations you\'re in',

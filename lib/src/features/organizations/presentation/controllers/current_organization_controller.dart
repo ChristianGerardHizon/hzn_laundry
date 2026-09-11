@@ -3,10 +3,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/storage/secure_storage_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
-import '../../../pos/presentation/cart_controller.dart';
 import '../../data/repositories/organization_membership_repository.dart';
 import '../../domain/organization.dart';
 import '../../domain/organization_membership.dart';
+import 'organization_scope_refresh.dart';
 
 part 'current_organization_controller.g.dart';
 
@@ -120,7 +120,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     await _persistOrganization(id);
     ref.invalidateSelf();
     await future;
-    ref.invalidate(cartControllerProvider);
+    invalidateOrganizationScopedProviders(ref);
   }
 
   Future<void> refresh() async {

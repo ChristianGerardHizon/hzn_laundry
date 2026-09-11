@@ -200,10 +200,64 @@ String? currentBranchId(Ref ref) {
 
 /// Convenience provider for branch filter string.
 ///
-/// Returns a filter string like `branch = "id"` or null if All Branches / none.
+/// - Specific branch: `branch = "id" && isDeleted = false`
+/// - All Branches + current org: `branch.organization = "orgId"`
+/// - No org selected: null
 @Riverpod(keepAlive: true)
 String? currentBranchFilter(Ref ref) {
   final branchId = ref.watch(currentBranchIdProvider);
-  if (branchId == null) return null;
-  return PBFilters.forBranch(branchId).build();
+  final orgId = ref.watch(currentOrganizationIdProvider);
+  if (branchId != null && branchId.isNotEmpty) {
+    return PBFilters.forBranch(branchId).build();
+  }
+  if (orgId != null && orgId.isNotEmpty) {
+    return PBFilters.forOrganization(orgId);
+  }
+  return null;
+}
+
+/// Same scope as [currentBranchFilter] but without soft-delete, for appending
+/// to existing filter strings (` && …`).
+@Riverpod(keepAlive: true)
+String currentBranchScopeClause(Ref ref) {
+  final branchId = ref.watch(currentBranchIdProvider);
+  final orgId = ref.watch(currentOrganizationIdProvider);
+  final scope = PBFilters.forBranchOrOrganization(
+    branchId: branchId,
+    organizationId: orgId,
+  );
+  if (scope == null || scope.isEmpty) return '';
+  return ' && $scope';
+}
+
+/// Payment / nested-sale scope: `sale.branch = "id"` or
+/// `sale.branch.organization = "orgId"`.
+@Riverpod(keepAlive: true)
+String currentSaleBranchScopeClause(Ref ref) {
+  final branchId = ref.watch(currentBranchIdProvider);
+  final orgId = ref.watch(currentOrganizationIdProvider);
+  final scope = PBFilters.forBranchOrOrganization(
+    branchId: branchId,
+    organizationId: orgId,
+    branchField: 'sale.branch',
+  );
+  if (scope == null || scope.isEmpty) return '';
+  return ' && $scope';
+}
+
+/// Flat branch-id filter for SQL views (no relation traversal).
+///
+/// - Specific branch: `branch = "id"`
+/// - All Branches: `(branch = "a" || branch = "b" || …)` for current org
+@Riverpod(keepAlive: true)
+String? currentBranchIdsFilter(Ref ref) {
+  final branchId = ref.watch(currentBranchIdProvider);
+  if (branchId != null && branchId.isNotEmpty) {
+    return 'branch = "$branchId"';
+  }
+  // Rebuild when org changes even if branch stays null (All → All).
+  ref.watch(currentOrganizationIdProvider);
+  final branches =
+      ref.watch(branchesControllerProvider).asData?.value ?? const [];
+  return PBFilters.forBranchIds(branches.map((b) => b.id));
 }

@@ -54,4 +54,4 @@ final class TodaysNewCustomersCountProvider
 }
 
 String _$todaysNewCustomersCountHash() =>
-    r'7e15097e522dbc4064416ff348742f9b639d2e19';
+    r'9925e69aae51d7c251480f2f2204efeda18d8d1d';

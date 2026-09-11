@@ -15,14 +15,12 @@ part 'top_selling_controller.g.dart';
 /// and returns the top 5.
 @Riverpod(keepAlive: true)
 Future<List<TopSellingItem>> topSellingProducts(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final records = await pb
       .collection(PocketBaseCollections.vwTopSellingProducts)
-      .getFullList(
-        filter: branchId != null ? 'branch = "$branchId"' : null,
-      );
+      .getFullList(filter: branchFilter);
 
   return _aggregateAndSort(
     records,
@@ -38,14 +36,12 @@ Future<List<TopSellingItem>> topSellingProducts(Ref ref) async {
 /// and returns the top 5.
 @Riverpod(keepAlive: true)
 Future<List<TopSellingItem>> topSellingServices(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
   final records = await pb
       .collection(PocketBaseCollections.vwTopSellingServices)
-      .getFullList(
-        filter: branchId != null ? 'branch = "$branchId"' : null,
-      );
+      .getFullList(filter: branchFilter);
 
   return _aggregateAndSort(
     records,

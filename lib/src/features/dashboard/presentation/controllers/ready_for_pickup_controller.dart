@@ -29,13 +29,11 @@ class ReadyForPickupSummary {
 /// Sorted by most recent first.
 @riverpod
 Future<List<Sale>> readyForPickupSales(Ref ref) async {
-  final branchId = ref.watch(currentBranchIdProvider);
+  final branchClause = ref.watch(currentBranchScopeClauseProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  var filter = "orderStatus = '${OrderStatus.ready.name}'";
-  if (branchId != null) {
-    filter = '$filter && branch = "$branchId"';
-  }
+  final filter =
+      "orderStatus = '${OrderStatus.ready.name}'$branchClause";
 
   final records = await pb.collection(PocketBaseCollections.sales).getFullList(
         filter: filter,

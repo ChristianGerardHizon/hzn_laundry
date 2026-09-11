@@ -95,7 +95,7 @@ final class CurrentOrganizationControllerProvider
 }
 
 String _$currentOrganizationControllerHash() =>
-    r'35af2b145111ef9c4668b6238e47948d7683469d';
+    r'fddf1381bca167ccc9f2a84a47e8d9556949aadc';
 
 abstract class _$CurrentOrganizationController
     extends $AsyncNotifier<Organization?> {

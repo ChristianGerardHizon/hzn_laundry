@@ -58,4 +58,4 @@ final class TotalPacksSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$totalPacksSummaryHash() => r'a79fbde1e30884a6c19b9d1424234fe70f68920d';
+String _$totalPacksSummaryHash() => r'd087e92acb3eb4dcd3ee4f96b4eb4946e52e4f4a';

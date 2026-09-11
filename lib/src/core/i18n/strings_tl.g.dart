@@ -228,6 +228,9 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get posUnavailableAllBranches => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.';
 	@override String get createUnavailableAllBranches => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.';
 	@override String get activities => 'Mga Aktibidad';
+	@override String get searchNavHint => 'Maghanap ng mga pahina';
+	@override String get searchResults => 'Mga resulta ng paghahanap';
+	@override String get noSearchResults => 'Walang resulta';
 }
 
 // Path: organizations
@@ -506,6 +509,9 @@ extension on TranslationsTl {
 			'navigation.posUnavailableAllBranches' => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.',
 			'navigation.createUnavailableAllBranches' => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.',
 			'navigation.activities' => 'Mga Aktibidad',
+			'navigation.searchNavHint' => 'Maghanap ng mga pahina',
+			'navigation.searchResults' => 'Mga resulta ng paghahanap',
+			'navigation.noSearchResults' => 'Walang resulta',
 			'organizations.title' => 'Mga Organisasyon',
 			'organizations.create' => 'Gumawa ng Organisasyon',
 			'organizations.yourOrganizations' => 'Mga organisasyon mo',

@@ -857,7 +857,6 @@ class _PaymentChip extends StatelessWidget {
 
 const _kpiSpacing = 8.0;
 const _kpiMinCardWidth = 168.0;
-const _kpiMaxCardWidth = 220.0;
 
 ({int cols, double cardWidth}) _kpiGridLayout({
   required double maxWidth,
@@ -867,19 +866,24 @@ const _kpiMaxCardWidth = 220.0;
     return (cols: 1, cardWidth: 0);
   }
 
-  final int cols;
   final isMobileWidth = maxWidth < Breakpoints.mobile;
-  if (isMobileWidth) {
-    cols = itemCount >= 2 ? 2 : 1;
-  } else {
-    cols = ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
-        .floor()
-        .clamp(1, itemCount);
+  var cols = isMobileWidth
+      ? (itemCount >= 2 ? 2 : 1)
+      : ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
+          .floor()
+          .clamp(1, itemCount);
+
+  // Prefer an even grid (e.g. 3×2 over 5+1) so the last row isn't sparse.
+  if (!isMobileWidth && itemCount > cols && itemCount % cols != 0) {
+    for (var c = cols - 1; c >= 2; c--) {
+      if (itemCount % c == 0) {
+        cols = c;
+        break;
+      }
+    }
   }
 
-  final stretched = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
-  final cardWidth =
-      isMobileWidth ? stretched : stretched.clamp(0.0, _kpiMaxCardWidth);
+  final cardWidth = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
   return (cols: cols, cardWidth: cardWidth);
 }
 

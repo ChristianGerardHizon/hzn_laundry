@@ -91,7 +91,13 @@ class OrderIncentiveEntry {
 Future<EmployeeReportData> employeeReport(Ref ref) async {
   final dateRange = ref.watch(employeeReportDateRangeControllerProvider);
   final branchId = ref.watch(currentBranchIdProvider);
-  return _buildEmployeeReport(ref, dateRange: dateRange, branchId: branchId);
+  final branchScope = ref.watch(currentBranchIdsFilterProvider);
+  return _buildEmployeeReport(
+    ref,
+    dateRange: dateRange,
+    branchId: branchId,
+    branchScope: branchScope,
+  );
 }
 
 /// Fetches salary report data for the selected month and period.
@@ -101,12 +107,14 @@ Future<EmployeeReportData> salaryReport(Ref ref) async {
   final period = ref.watch(salaryPeriodControllerProvider);
   final dateRange = monthController.dateRangeForPeriod(period);
   final branchId = ref.watch(currentBranchIdProvider);
+  final branchScope = ref.watch(currentBranchIdsFilterProvider);
   // Watch the month state so provider rebuilds on change
   ref.watch(salaryMonthControllerProvider);
   return _buildEmployeeReport(
     ref,
     dateRange: dateRange,
     branchId: branchId,
+    branchScope: branchScope,
     period: period,
   );
 }
@@ -116,6 +124,7 @@ Future<EmployeeReportData> _buildEmployeeReport(
   Ref ref, {
   required DateTimeRange dateRange,
   required String? branchId,
+  required String? branchScope,
   SalaryPeriod period = SalaryPeriod.fullMonth,
 }) async {
   final employeeRepo = ref.read(employeeRepositoryProvider);
@@ -133,7 +142,7 @@ Future<EmployeeReportData> _buildEmployeeReport(
     salesRepo.getSaleServiceTotals(
       startDate: dateRange.start,
       endDate: dateRange.end,
-      branchId: branchId,
+      branchScope: branchScope,
       filterByProcessedDate: true,
     ), // 1 or 2
     attendanceRepo.fetchAllInDateRange(

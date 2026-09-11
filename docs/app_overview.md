@@ -623,6 +623,8 @@ lib/src/
 
 ---
 
+| Sep 11 | Org-scoped All Branches | Switching organizations no longer leaks the previous org's data: All Branches means all branches of the *selected* organization, and org switch clears tenant keepAlive caches |
+| Sep 11 | Order details Total + Record Payment | Sale/order details show Total and Record Payment directly below Order Status so they are visible without scrolling past services and add-ons |
 | Sep 10 | OTP + Google login + black splash | Password login kept; email OTP and web Google OAuth via PocketBase; invite-only OAuth hook; black HTML/Flutter splash with rotating verbs; gyms-style login atmosphere |
 | Sep 10 | Org/branch URL routing | Authenticated routes use `/{orgSlug}/{branchSlug}/…` (dashboard at `/dashboard`); navigate with `goScoped`/`pushScoped`; org/branch switchers update the URL; slug fields on organizations and branches |
 | Sep 04 | Consumable usage | Per-org Features (including `consumableUsage`); house-chemical recipes on services; Create Order / order-detail usage; dashboard Consumables used KPI and Reports tab |
@@ -656,7 +658,7 @@ lib/src/
 | Aug 17 | Products list across branches | Products list rule now allows any logged-in user to list products; the app still filters by the selected branch, so admins switching branches (e.g. Hi-Zone → Magsaysay) can see that branch's catalog |
 | Aug 15 | Branch-scoped customers | Customers (members) belong to the branch they were created on; list/search/create follow the current branch. Existing customers were assigned from their most recent sale. Customer detail can transfer a member to another branch |
 | Aug 03 | Web Thermal Print Guard | Disabled thermal printing on web (Bluetooth discovery, test print, auto-print, claim-sheet print actions); PDF preview/print remains available |
-| Aug 03 | All Branches Mode | Admins can select All Branches in the branch switcher to view unfiltered data across features; Cashier/POS shows a blurred overlay warning until a specific branch is chosen |
+| Aug 03 | All Branches Mode | Admins can select All Branches in the branch switcher to view data across all branches of the *current* organization; Cashier/POS shows a blurred overlay warning until a specific branch is chosen |
 | Aug 03 | Network Health | Polls PocketBase `/api/health` for online/poor/offline status; logo circular border is green (connected), amber (poor, ≥1s latency), or red (no connection) on nav rail, drawer, and login |
 | Jun 07 | Machine Load | Added machine size (small/large) and per-machine weight→load rules (customizable, non-linear tiers) managed under System → Machines, with a "copy rules to same type/size" action. When assigning machines to an order, entering weight (kg) auto-computes the load count from the matching rule, still overridable manually; weights are stored on the sale service item |
 | Jun 06 | Fix Report Date Grouping | Fixed vw_sales_daily_summary and vw_sales_by_customer to group by PHT date (UTC+8) — orders created 12:00–7:59 AM PHT were appearing in the previous day's report |
