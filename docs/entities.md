@@ -647,7 +647,7 @@ House-chemical quantity recorded on a sale. Separate from `saleItems` (add-on re
 | `saleId` | String (FK) | Yes | Parent Sale |
 | `productId` | String (FK) | Yes | Product |
 | `productName` | String | Yes | Product name snapshot |
-| `quantity` | num | Yes | Quantity used |
+| `quantity` | num | Yes | Quantity used (0 allowed) |
 | `unitLabel` | String | No | Unit snapshot |
 | `unitCost` | num | Yes | Unit cost snapshot (default 0) |
 | `cost` | num | Yes | `quantity × unitCost` snapshot |
