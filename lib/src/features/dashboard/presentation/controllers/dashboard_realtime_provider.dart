@@ -135,11 +135,13 @@ Raw<void> dashboardRealtime(Ref ref) {
     // Unsubscribe from all subscriptions at once. This avoids individual
     // per-collection unsubscribe calls that fail with "Missing or invalid
     // client id" when the SSE connection is already closed.
-    try {
-      pb.realtime.unsubscribe();
-    } catch (e) {
-      debugPrint('[DASHBOARD_REALTIME] Failed to unsubscribe: $e');
-    }
+    // unsubscribe() returns Future<void> — handle async errors so web SSE
+    // abort/cancel noise does not pause the debugger as an uncaught exception.
+    unawaited(
+      pb.realtime.unsubscribe().catchError((Object e) {
+        debugPrint('[DASHBOARD_REALTIME] Failed to unsubscribe: $e');
+      }),
+    );
   });
 }
 
