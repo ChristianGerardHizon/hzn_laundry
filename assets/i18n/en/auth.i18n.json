@@ -28,7 +28,7 @@
     "continueButton": "Continue",
     "changeEmail": "Change email",
     "signInWithEmailCode": "Sign in with email code",
-    "backToPasswordLogin": "Back to password login",
+    "signInWithPassword": "Sign in with password",
     "sendLoginCode": "Send code",
     "verifyLoginCode": "Verify code",
     "enterLoginCode": "Login code",

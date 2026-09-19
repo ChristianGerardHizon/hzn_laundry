@@ -190,7 +190,7 @@ Device-specific settings only (this tablet/phone/desktop).
 ### Authentication (`/login`)
 
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
-- Login page (`/login`) — email step, then password or email OTP code; Google OAuth on web only
+- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web only
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
 - Session management
@@ -337,7 +337,7 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 
 ### Authentication
 - Splash Screen (`/splash`) — black warming-up verbs
-- Login Screen (`/login`) — password, email OTP code, Google (web)
+- Login Screen (`/login`) — email OTP (default), password optional, Google (web)
 - Forgot Password (`/forgot-password`)
 
 ### Main Navigation
@@ -623,6 +623,7 @@ lib/src/
 
 ---
 
+| Sep 19 | OTP-first login | Login defaults to email OTP after Continue; password remains an optional secondary path |
 | Sep 11 | Org-scoped All Branches | Switching organizations no longer leaks the previous org's data: All Branches means all branches of the *selected* organization, and org switch clears tenant keepAlive caches |
 | Sep 11 | Order details Total + Record Payment | Sale/order details show Total and Record Payment directly below Order Status so they are visible without scrolling past services and add-ons |
 | Sep 10 | OTP + Google login + black splash | Password login kept; email OTP and web Google OAuth via PocketBase; invite-only OAuth hook; black HTML/Flutter splash with rotating verbs; gyms-style login atmosphere |

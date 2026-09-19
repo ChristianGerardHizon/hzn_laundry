@@ -83,7 +83,7 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get continueButton => 'Magpatuloy';
 	@override String get changeEmail => 'Palitan ang email';
 	@override String get signInWithEmailCode => 'Mag-sign in gamit ang email code';
-	@override String get backToPasswordLogin => 'Bumalik sa password login';
+	@override String get signInWithPassword => 'Mag-sign in gamit ang password';
 	@override String get sendLoginCode => 'Ipadala ang code';
 	@override String get verifyLoginCode => 'I-verify ang code';
 	@override String get enterLoginCode => 'Login code';
@@ -400,7 +400,7 @@ extension on TranslationsTl {
 			'auth.continueButton' => 'Magpatuloy',
 			'auth.changeEmail' => 'Palitan ang email',
 			'auth.signInWithEmailCode' => 'Mag-sign in gamit ang email code',
-			'auth.backToPasswordLogin' => 'Bumalik sa password login',
+			'auth.signInWithPassword' => 'Mag-sign in gamit ang password',
 			'auth.sendLoginCode' => 'Ipadala ang code',
 			'auth.verifyLoginCode' => 'I-verify ang code',
 			'auth.enterLoginCode' => 'Login code',

@@ -130,8 +130,8 @@ class TranslationsAuthEn {
 	/// en: 'Sign in with email code'
 	String get signInWithEmailCode => 'Sign in with email code';
 
-	/// en: 'Back to password login'
-	String get backToPasswordLogin => 'Back to password login';
+	/// en: 'Sign in with password'
+	String get signInWithPassword => 'Sign in with password';
 
 	/// en: 'Send code'
 	String get sendLoginCode => 'Send code';
@@ -878,7 +878,7 @@ extension on Translations {
 			'auth.continueButton' => 'Continue',
 			'auth.changeEmail' => 'Change email',
 			'auth.signInWithEmailCode' => 'Sign in with email code',
-			'auth.backToPasswordLogin' => 'Back to password login',
+			'auth.signInWithPassword' => 'Sign in with password',
 			'auth.sendLoginCode' => 'Send code',
 			'auth.verifyLoginCode' => 'Verify code',
 			'auth.enterLoginCode' => 'Login code',
