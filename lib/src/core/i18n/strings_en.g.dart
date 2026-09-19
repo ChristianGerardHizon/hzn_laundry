@@ -384,6 +384,21 @@ class TranslationsFieldsEn {
 
 	/// en: 'Category'
 	String get category => 'Category';
+
+	/// en: 'Payment Filters'
+	String get paymentFilters => 'Payment Filters';
+
+	/// en: 'Paid'
+	String get paid => 'Paid';
+
+	/// en: 'Unpaid'
+	String get unpaid => 'Unpaid';
+
+	/// en: 'Cash'
+	String get cash => 'Cash';
+
+	/// en: 'GCash/Bank'
+	String get gcashBank => 'GCash/Bank';
 }
 
 // Path: navigation
@@ -933,6 +948,11 @@ extension on Translations {
 			'fields.notes' => 'Notes',
 			'fields.description' => 'Description',
 			'fields.category' => 'Category',
+			'fields.paymentFilters' => 'Payment Filters',
+			'fields.paid' => 'Paid',
+			'fields.unpaid' => 'Unpaid',
+			'fields.cash' => 'Cash',
+			'fields.gcashBank' => 'GCash/Bank',
 			'navigation.shortcuts' => 'Shortcuts',
 			'navigation.categories' => 'Categories',
 			'navigation.showMore' => 'Show more',

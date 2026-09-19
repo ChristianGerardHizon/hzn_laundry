@@ -58,9 +58,10 @@ class SortDialog extends HookWidget {
     return DialogCloseHandler(
       child: ConstrainedDialogContent(
         maxWidth: DialogConstraints.compactMaxWidth,
+        shrinkWrap: true,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
@@ -78,17 +79,13 @@ class SortDialog extends HookWidget {
                 ],
               ),
             ),
-
-            const SizedBox(height: 8),
-
-            // Content
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Sort direction toggle
                     Text(
                       t.sort.direction,
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -114,10 +111,7 @@ class SortDialog extends HookWidget {
                         isDescending.value = selection.first;
                       },
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Sort field selection
                     Text(
                       t.sort.sortBy,
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -125,7 +119,6 @@ class SortDialog extends HookWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     RadioGroup<String>(
                       groupValue: selectedField.value,
                       onChanged: (value) {
@@ -150,8 +143,6 @@ class SortDialog extends HookWidget {
                 ),
               ),
             ),
-
-            // Footer buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
               child: Row(
@@ -191,6 +182,7 @@ void showSortDialog({
   showConstrainedDialog(
     context: context,
     maxWidth: DialogConstraints.compactMaxWidth,
+    shrinkWrap: true,
     builder: (context) => SortDialog(
       title: title,
       fields: fields,

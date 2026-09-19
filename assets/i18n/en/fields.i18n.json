@@ -14,5 +14,10 @@
     "paymentRef": "Payment Reference",
     "notes": "Notes",
     "description": "Description",
-    "category": "Category"
+    "category": "Category",
+    "paymentFilters": "Payment Filters",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "cash": "Cash",
+    "gcashBank": "GCash/Bank"
 }

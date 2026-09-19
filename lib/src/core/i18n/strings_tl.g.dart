@@ -186,6 +186,11 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	@override String get notes => 'Mga Tala';
 	@override String get description => 'Paglalarawan';
 	@override String get category => 'Kategorya';
+	@override String get paymentFilters => 'Mga Filter ng Bayad';
+	@override String get paid => 'Bayad';
+	@override String get unpaid => 'Hindi Bayad';
+	@override String get cash => 'Cash';
+	@override String get gcashBank => 'GCash/Bank';
 }
 
 // Path: navigation
@@ -469,6 +474,11 @@ extension on TranslationsTl {
 			'fields.notes' => 'Mga Tala',
 			'fields.description' => 'Paglalarawan',
 			'fields.category' => 'Kategorya',
+			'fields.paymentFilters' => 'Mga Filter ng Bayad',
+			'fields.paid' => 'Bayad',
+			'fields.unpaid' => 'Hindi Bayad',
+			'fields.cash' => 'Cash',
+			'fields.gcashBank' => 'GCash/Bank',
 			'navigation.shortcuts' => 'Mga Shortcut',
 			'navigation.categories' => 'Mga Kategorya',
 			'navigation.showMore' => 'Magpakita pa',
