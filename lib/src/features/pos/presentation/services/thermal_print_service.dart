@@ -46,10 +46,10 @@ class PrintFailure extends PrintResult {
 
 /// Which copy of the order receipt to print.
 enum OrderReceiptCopy {
-  /// Full customer claim sheet (optionally followed by service stubs).
+  /// Full customer claim sheet (optionally followed by a store copy).
   customer,
 
-  /// Two compact service stubs only (no customer copy).
+  /// Full store claim sheet (large customer name + STORE COPY marker).
   store,
 }
 
@@ -163,9 +163,9 @@ class ThermalPrintService extends _$ThermalPrintService {
 
   /// Prints an order claim sheet (without a full Sale object).
   ///
-  /// [copyType] selects customer sheet vs stubs-only.
-  /// When [includeStubs] is true with a customer copy, two service stubs are
-  /// appended in the same job with ESC/POS cuts between sections.
+  /// [copyType] selects customer vs store sheet.
+  /// When [includeStoreCopy] is true with a customer copy, a store sheet is
+  /// appended in the same job with an ESC/POS cut between sections.
   Future<PrintResult> printOrderReceipt({
     required PrinterConfig printer,
     required String customerName,
@@ -174,7 +174,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     required String unitLabel,
     required double totalAmount,
     OrderReceiptCopy copyType = OrderReceiptCopy.customer,
-    bool includeStubs = false,
+    bool includeStoreCopy = false,
     String? businessName,
     String? branchAddress,
     String? contactNumber,
@@ -203,7 +203,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       customerPhone: customerPhone,
       specialInstructions: specialInstructions,
       copyType: copyType,
-      includeStubs: includeStubs,
+      includeStoreCopy: includeStoreCopy,
       claimSheetNumber: claimSheetNumber,
       orderDate: orderDate,
       readyForPickupAt: readyForPickupAt,
@@ -798,50 +798,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     return bytes;
   }
 
-  /// Compact service stub (printed twice with a cut after each).
-  List<int> _appendServiceStub(
-    Generator generator,
-    List<int> bytes, {
-    required String businessName,
-    required String customerName,
-    required String serviceName,
-    String? branchAddress,
-    String? customerPhone,
-  }) {
-    bytes += generator.text(
-      businessName,
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-      ),
-    );
-    if (branchAddress != null && branchAddress.isNotEmpty) {
-      bytes += generator.text(
-        branchAddress,
-        styles: const PosStyles(align: PosAlign.center),
-      );
-    }
-
-    bytes += generator.emptyLines(1);
-    bytes += generator.text('Customer: $customerName');
-    if (customerPhone != null && customerPhone.isNotEmpty) {
-      bytes += generator.text('Phone: $customerPhone');
-    }
-
-    bytes += generator.emptyLines(1);
-    bytes += generator.text(
-      'Type of Service: $serviceName',
-      styles: const PosStyles(
-        align: PosAlign.center,
-        bold: true,
-      ),
-    );
-
-    return _appendFeedAndCut(generator, bytes);
-  }
-
-  /// Customer claim sheet body matching the Soybean-style layout.
-  List<int> _appendCustomerClaimSheet(
+  /// Full claim sheet body (customer or store copy).
+  List<int> _appendOrderClaimSheet(
     Generator generator,
     List<int> bytes, {
     required String customerName,
@@ -849,6 +807,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     required double quantity,
     required double totalAmount,
     required String businessName,
+    bool storeCopy = false,
     String? branchAddress,
     String? contactNumber,
     String? cashierName,
@@ -887,7 +846,19 @@ class ThermalPrintService extends _$ThermalPrintService {
     if (cashierName != null && cashierName.isNotEmpty) {
       bytes += generator.text('Cashier: $cashierName');
     }
-    bytes += generator.text('Customer: $customerName');
+    if (storeCopy) {
+      bytes += generator.text(
+        customerName,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
+    } else {
+      bytes += generator.text('Customer: $customerName');
+    }
     if (customerPhone != null && customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: $customerPhone');
     }
@@ -993,12 +964,21 @@ class ThermalPrintService extends _$ThermalPrintService {
       bytes += generator.text('Notes: $specialInstructions');
     }
 
-    bytes = _appendDivider(generator, bytes);
-    bytes += generator.text(
-      'Ready For Pickup:',
-      styles: const PosStyles(align: PosAlign.center),
-    );
-    if (readyForPickupAt != null) {
+    if (storeCopy) {
+      bytes = _appendDivider(generator, bytes);
+      bytes += generator.text(
+        'STORE COPY',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      );
+    } else if (readyForPickupAt != null) {
+      bytes = _appendDivider(generator, bytes);
+      bytes += generator.text(
+        'Ready For Pickup:',
+        styles: const PosStyles(align: PosAlign.center),
+      );
       bytes += generator.text(
         DateFormat('M/d/yyyy h:mm a').format(readyForPickupAt),
         styles: const PosStyles(align: PosAlign.center),
@@ -1170,9 +1150,9 @@ class ThermalPrintService extends _$ThermalPrintService {
 
   /// Generates order claim sheet bytes.
   ///
-  /// Customer copy: Soybean-style receipt with BIR disclaimer, then optional
-  /// cuts + two service stubs when [includeStubs] is true.
-  /// Store copy: two service stubs only.
+  /// Customer copy: full receipt with BIR disclaimer; when [includeStoreCopy]
+  /// is true, a store sheet is appended after a cut.
+  /// Store copy: same full receipt with large customer name + STORE COPY.
   Future<List<int>> _generateOrderReceiptBytes({
     required String customerName,
     required String serviceName,
@@ -1181,7 +1161,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     required PrinterPaperWidth paperWidth,
     required String businessName,
     required OrderReceiptCopy copyType,
-    bool includeStubs = false,
+    bool includeStoreCopy = false,
     String? branchAddress,
     String? contactNumber,
     String? cashierName,
@@ -1199,43 +1179,33 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     List<int> bytes = [];
 
-    final printCustomer = copyType == OrderReceiptCopy.customer;
-    final printStubs =
-        copyType == OrderReceiptCopy.store || includeStubs;
-
-    if (printCustomer) {
-      bytes = _appendCustomerClaimSheet(
-        generator,
-        bytes,
-        customerName: customerName,
-        serviceName: serviceName,
-        quantity: quantity,
-        totalAmount: totalAmount,
-        businessName: businessName,
-        branchAddress: branchAddress,
-        contactNumber: contactNumber,
-        cashierName: cashierName,
-        customerPhone: customerPhone,
-        specialInstructions: specialInstructions,
-        claimSheetNumber: claimSheetNumber,
-        orderDate: orderDate,
-        readyForPickupAt: readyForPickupAt,
-        addOnItems: addOnItems,
-      );
-    }
-
-    if (printStubs) {
-      for (var i = 0; i < 2; i++) {
-        bytes = _appendServiceStub(
+    List<int> appendSheet({required bool storeCopy}) => _appendOrderClaimSheet(
           generator,
           bytes,
-          businessName: businessName,
-          branchAddress: branchAddress,
           customerName: customerName,
-          customerPhone: customerPhone,
           serviceName: serviceName,
+          quantity: quantity,
+          totalAmount: totalAmount,
+          businessName: businessName,
+          storeCopy: storeCopy,
+          branchAddress: branchAddress,
+          contactNumber: contactNumber,
+          cashierName: cashierName,
+          customerPhone: customerPhone,
+          specialInstructions: specialInstructions,
+          claimSheetNumber: claimSheetNumber,
+          orderDate: orderDate,
+          readyForPickupAt: readyForPickupAt,
+          addOnItems: addOnItems,
         );
+
+    if (copyType == OrderReceiptCopy.customer) {
+      bytes = appendSheet(storeCopy: false);
+      if (includeStoreCopy) {
+        bytes = appendSheet(storeCopy: true);
       }
+    } else {
+      bytes = appendSheet(storeCopy: true);
     }
 
     return bytes;

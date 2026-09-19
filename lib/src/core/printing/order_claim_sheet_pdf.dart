@@ -80,9 +80,7 @@ Future<Uint8List> buildOrderClaimSheetPdfBytes(
     pw.Page(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(40),
-      build: (context) => data.storeCopy
-          ? _buildStoreCopyContent(data)
-          : _buildCustomerCopyContent(data),
+      build: (context) => _buildClaimSheetContent(data),
     ),
   );
   return pdf.save();
@@ -107,7 +105,7 @@ Future<void> previewOrderClaimSheetPdf({
   );
 }
 
-pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
+pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
   final amountFormat = NumberFormat('#,##0.00');
   final dateStr = DateFormat('M/d/yyyy').format(data.createdDate);
   final timeStr = DateFormat('h:mm a').format(data.createdDate);
@@ -122,6 +120,9 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
       : data.quantity.toStringAsFixed(1);
   final itemCount = data.quantity.round() +
       data.addOnItems.fold<int>(0, (sum, item) => sum + item.quantity.toInt());
+
+  final showReadyForPickup =
+      !data.storeCopy && data.readyForPickupAt != null;
 
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -138,7 +139,19 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
       ),
       if (data.cashierName != null && data.cashierName!.isNotEmpty)
         pw.Text('Cashier: ${data.cashierName}'),
-      pw.Text('Customer: ${data.customerName}'),
+      if (data.storeCopy)
+        pw.Center(
+          child: pw.Text(
+            data.customerName,
+            style: pw.TextStyle(
+              fontSize: 24,
+              fontWeight: pw.FontWeight.bold,
+            ),
+            textAlign: pw.TextAlign.center,
+          ),
+        )
+      else
+        pw.Text('Customer: ${data.customerName}'),
       if (data.customerPhone != null && data.customerPhone!.isNotEmpty)
         pw.Text('Phone: ${data.customerPhone}'),
       if (data.claimSheetNumber != null && data.claimSheetNumber!.isNotEmpty)
@@ -184,16 +197,28 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
         pw.SizedBox(height: 8),
         pw.Text('Notes: ${data.specialInstructions}'),
       ],
-      pw.SizedBox(height: 10),
-      pw.Divider(borderStyle: pw.BorderStyle.dashed),
-      pw.SizedBox(height: 8),
-      pw.Center(child: pw.Text('Ready For Pickup:')),
-      if (data.readyForPickupAt != null)
+      if (data.storeCopy) ...[
+        pw.SizedBox(height: 10),
+        pw.Divider(borderStyle: pw.BorderStyle.dashed),
+        pw.SizedBox(height: 8),
+        pw.Center(
+          child: pw.Text(
+            'STORE COPY',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+      ] else if (showReadyForPickup) ...[
+        pw.SizedBox(height: 10),
+        pw.Divider(borderStyle: pw.BorderStyle.dashed),
+        pw.SizedBox(height: 8),
+        pw.Center(child: pw.Text('Ready For Pickup:')),
         pw.Center(
           child: pw.Text(
             DateFormat('M/d/yyyy h:mm a').format(data.readyForPickupAt!),
           ),
         ),
+      ],
       pw.SizedBox(height: 10),
       pw.Divider(borderStyle: pw.BorderStyle.dashed),
       pw.SizedBox(height: 8),
@@ -239,51 +264,6 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
       ),
       pw.SizedBox(height: 12),
       ..._disclaimerLines(),
-    ],
-  );
-}
-
-/// Two compact service stubs (matches thermal store copy).
-pw.Widget _buildStoreCopyContent(OrderClaimSheetPdfData data) {
-  return pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-    children: [
-      _serviceStub(data),
-      pw.SizedBox(height: 24),
-      pw.Divider(borderStyle: pw.BorderStyle.dashed),
-      pw.Center(
-        child: pw.Text(
-          'cut',
-          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-        ),
-      ),
-      pw.Divider(borderStyle: pw.BorderStyle.dashed),
-      pw.SizedBox(height: 24),
-      _serviceStub(data),
-    ],
-  );
-}
-
-pw.Widget _serviceStub(OrderClaimSheetPdfData data) {
-  return pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      ..._businessHeader(data, largeName: false),
-      pw.SizedBox(height: 8),
-      pw.Text('Customer: ${data.customerName}'),
-      if (data.customerPhone != null && data.customerPhone!.isNotEmpty)
-        pw.Text('Phone: ${data.customerPhone}'),
-      pw.SizedBox(height: 12),
-      pw.Center(
-        child: pw.Text(
-          'Type of Service: ${data.serviceName}',
-          style: pw.TextStyle(
-            fontSize: 14,
-            fontWeight: pw.FontWeight.bold,
-          ),
-          textAlign: pw.TextAlign.center,
-        ),
-      ),
     ],
   );
 }

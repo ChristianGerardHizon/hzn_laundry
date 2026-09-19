@@ -2091,7 +2091,7 @@ class _PrintMenuButton extends HookConsumerWidget {
 
     Future<PrintResult?> sendPrint({
       required OrderReceiptCopy copyType,
-      bool includeStubs = false,
+      bool includeStoreCopy = false,
     }) {
       final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
@@ -2110,7 +2110,7 @@ class _PrintMenuButton extends HookConsumerWidget {
         totalAmount: pdfData.totalAmount,
         claimSheetNumber: pdfData.claimSheetNumber,
         copyType: copyType,
-        includeStubs: includeStubs,
+        includeStoreCopy: includeStoreCopy,
         businessName: pdfData.businessName,
         branchAddress: pdfData.branchAddress,
         contactNumber: pdfData.contactNumber,
@@ -2144,7 +2144,7 @@ class _PrintMenuButton extends HookConsumerWidget {
 
     Future<void> printCopy({
       required OrderReceiptCopy copyType,
-      bool includeStubs = false,
+      bool includeStoreCopy = false,
     }) async {
       if (!ensureCanPrint()) return;
 
@@ -2152,18 +2152,18 @@ class _PrintMenuButton extends HookConsumerWidget {
       try {
         final result = await sendPrint(
           copyType: copyType,
-          includeStubs: includeStubs,
+          includeStoreCopy: includeStoreCopy,
         );
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
           showErrorSnackBar(context, message: result.message);
         } else {
-          final label = includeStubs
-              ? 'Claim sheet + service stubs'
+          final label = includeStoreCopy
+              ? 'Customer + store claim sheets'
               : copyType == OrderReceiptCopy.customer
                   ? 'Claim sheet'
-                  : 'Service stubs';
+                  : 'Store claim sheet';
           showSuccessSnackBar(context, message: '$label printed');
         }
       } finally {
@@ -2174,7 +2174,7 @@ class _PrintMenuButton extends HookConsumerWidget {
     Future<void> printBothCopies() async {
       await printCopy(
         copyType: OrderReceiptCopy.customer,
-        includeStubs: true,
+        includeStoreCopy: true,
       );
     }
 
@@ -2240,8 +2240,7 @@ class _PrintMenuButton extends HookConsumerWidget {
               value: 'preview_store',
               child: ListTile(
                 leading: Icon(Icons.picture_as_pdf_outlined),
-                title: Text('Preview Claim Sheet (Store)'),
-                subtitle: Text('Service stubs'),
+                title: Text('Preview Store Copy'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
@@ -2260,7 +2259,7 @@ class _PrintMenuButton extends HookConsumerWidget {
                 child: ListTile(
                   leading: Icon(Icons.print),
                   title: Text('Print All'),
-                  subtitle: Text('Claim sheet + stubs'),
+                  subtitle: Text('Customer + store copies'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -2278,8 +2277,7 @@ class _PrintMenuButton extends HookConsumerWidget {
                 value: 'print_store',
                 child: ListTile(
                   leading: Icon(Icons.local_laundry_service),
-                  title: Text('Print Service Stubs'),
-                  subtitle: Text('Two tags with cut'),
+                  title: Text('Print Store Copy'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),

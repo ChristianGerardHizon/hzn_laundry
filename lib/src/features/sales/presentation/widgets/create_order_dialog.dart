@@ -2892,7 +2892,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
       final printService = ref.read(thermalPrintServiceProvider.notifier);
       final header = receiptHeader();
 
-      // Single job: customer claim sheet, optionally + 2 service stubs with cuts.
+      // Single job: customer claim sheet, optionally + store copy with cut.
       final result = await printService.printOrderReceipt(
         printer: printer,
         customerName: customer.name,
@@ -2901,7 +2901,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         unitLabel: unitLabel,
         totalAmount: estimatedTotal,
         copyType: OrderReceiptCopy.customer,
-        includeStubs: printStoreCopy.value,
+        includeStoreCopy: printStoreCopy.value,
         claimSheetNumber: claimSheetNumber,
         businessName: header.businessName,
         branchAddress: header.branchAddress,
@@ -2928,7 +2928,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
 
       if (showSuccessMessage) {
         final msg = printStoreCopy.value
-            ? 'Printed: claim sheet + service stubs'
+            ? 'Printed: customer + store claim sheets'
             : 'Claim sheet printed';
         showSuccessSnackBar(context, message: msg, useRootMessenger: false);
       }
@@ -2990,8 +2990,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                     value: 'preview_store',
                     child: ListTile(
                       leading: Icon(Icons.picture_as_pdf_outlined),
-                      title: Text('Preview Claim Sheet (Store)'),
-                      subtitle: Text('Service stubs'),
+                      title: Text('Preview Store Copy'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -3128,8 +3127,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
             child: CheckboxListTile(
               value: printStoreCopy.value,
               onChanged: (v) => printStoreCopy.value = v ?? true,
-              title: const Text('Print service stubs'),
-              subtitle: const Text('Two tags cut after the claim sheet'),
+              title: const Text('Print store copy'),
+              subtitle: const Text('Second claim sheet after customer copy'),
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
