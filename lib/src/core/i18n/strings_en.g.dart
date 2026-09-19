@@ -313,6 +313,9 @@ class TranslationsFailuresEn {
 	/// en: 'No account for this Google email. Ask an admin to create your user first.'
 	String get googleNoAccount => 'No account for this Google email. Ask an admin to create your user first.';
 
+	/// en: 'No account for this email. Ask an admin to create your user first.'
+	String get otpNoAccount => 'No account for this email. Ask an admin to create your user first.';
+
 	/// en: 'Could not start Google sign-in. Please try again.'
 	String get googleSignInFailed => 'Could not start Google sign-in. Please try again.';
 
@@ -933,6 +936,7 @@ extension on Translations {
 			'failures.invalidCredentials' => 'Invalid email or password.',
 			'failures.invalidLoginCode' => 'Invalid or expired login code.',
 			'failures.googleNoAccount' => 'No account for this Google email. Ask an admin to create your user first.',
+			'failures.otpNoAccount' => 'No account for this email. Ask an admin to create your user first.',
 			'failures.googleSignInFailed' => 'Could not start Google sign-in. Please try again.',
 			'failures.accountDisabled' => 'Your account has been disabled.',
 			'failures.emailNotVerified' => 'Please verify your email address.',

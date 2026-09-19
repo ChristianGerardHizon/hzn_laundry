@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/routing/pending_redirect_provider.dart';
 import '../../data/auth_repository.dart';
@@ -99,9 +100,8 @@ class AuthController extends _$AuthController {
   }
 
   /// Requests an email OTP. Does not change global auth loading state.
-  Future<String?> requestOtp(String email) async {
-    final result = await _repository.requestOtp(email);
-    return result.fold((_) => null, (otpId) => otpId);
+  FutureEither<String> requestOtp(String email) {
+    return _repository.requestOtp(email);
   }
 
   /// Logs in with an email OTP id and code.

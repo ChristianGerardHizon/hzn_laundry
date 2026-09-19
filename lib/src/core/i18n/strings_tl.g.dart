@@ -156,6 +156,7 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get invalidCredentials => 'Di-wastong email o password.';
 	@override String get invalidLoginCode => 'Di-wasto o expired na login code.';
 	@override String get googleNoAccount => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.';
+	@override String get otpNoAccount => 'Walang account para sa email na ito. Magpa-create muna sa admin.';
 	@override String get googleSignInFailed => 'Hindi masimulan ang Google sign-in. Subukan ulit.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
@@ -455,6 +456,7 @@ extension on TranslationsTl {
 			'failures.invalidCredentials' => 'Di-wastong email o password.',
 			'failures.invalidLoginCode' => 'Di-wasto o expired na login code.',
 			'failures.googleNoAccount' => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.',
+			'failures.otpNoAccount' => 'Walang account para sa email na ito. Magpa-create muna sa admin.',
 			'failures.googleSignInFailed' => 'Hindi masimulan ang Google sign-in. Subukan ulit.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',

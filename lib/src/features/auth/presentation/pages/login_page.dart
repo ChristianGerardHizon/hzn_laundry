@@ -141,29 +141,38 @@ class LoginPage extends HookConsumerWidget {
 
       errorMessage.value = null;
       isSendingOtp.value = true;
-      final id = await ref
+      final result = await ref
           .read(authControllerProvider.notifier)
           .requestOtp(targetEmail);
       isSendingOtp.value = false;
       if (!context.mounted) return;
 
-      if (id == null || id.isEmpty) {
-        errorMessage.value = t.auth.loginCodeSendFailed;
-        return;
-      }
-
-      authMethod.value = _AuthMethod.otp;
-      otpId.value = id;
-      cooldownSeconds.value = kLoginOtpResendCooldown.inSeconds;
+      result.fold(
+        (failure) {
+          errorMessage.value = loginErrorMessage(failure);
+          if (!isResend) {
+            loginStep.value = _LoginStep.email;
+            clearOtpState();
+          }
+        },
+        (id) {
+          if (!isResend) {
+            goToAuthStep(targetEmail);
+          }
+          authMethod.value = _AuthMethod.otp;
+          otpId.value = id;
+          cooldownSeconds.value = kLoginOtpResendCooldown.inSeconds;
+        },
+      );
     }
 
-    void handleContinue() {
+    Future<void> handleContinue() async {
       if (formKey.currentState?.saveAndValidate() ?? false) {
         final value =
             (formKey.currentState!.value['email'] as String?)?.trim() ?? '';
         if (value.isEmpty) return;
-        goToAuthStep(value);
-        handleSendOtp(isResend: false);
+        email.value = value;
+        await handleSendOtp(isResend: false);
       }
     }
 
