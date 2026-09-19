@@ -981,15 +981,118 @@ class SaleAssignmentInfoCard extends StatelessWidget {
 }
 
 /// Wraps [SaleHighlightBanner] with balance-due data from the payments provider.
-class _SaleHighlightBannerWithBalance extends ConsumerWidget {
+///
+/// Tapping the banner opens a menu to change [Sale.orderStatus].
+class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
   const _SaleHighlightBannerWithBalance({required this.sale});
 
   final Sale sale;
+
+  static IconData _statusIcon(OrderStatus status) => switch (status) {
+        OrderStatus.pending => Icons.schedule,
+        OrderStatus.processing => Icons.autorenew,
+        OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.pickedUp => Icons.local_shipping,
+      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final totalPaid = ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
     final balanceDue = sale.totalAmount - totalPaid;
+    final isUpdating = useState(false);
+    final statusLower = sale.status.toLowerCase();
+    final canChangeStatus =
+        statusLower != 'refunded' && statusLower != 'voided';
+
+    Future<void> updateOrderStatus(OrderStatus status) async {
+      if (status == sale.orderStatus || isUpdating.value) return;
+
+      if (status == OrderStatus.processing) {
+        final serviceItems =
+            await ref.read(saleServiceItemsProvider(sale.id).future);
+        if (serviceItems.isNotEmpty && context.mounted) {
+          final result = await showAssignMachinesDialog(
+            context,
+            serviceItems: serviceItems,
+          );
+          if (result == null || !context.mounted) return;
+        }
+      } else if (status == OrderStatus.ready) {
+        final prepared = await prepareOrderForReadyStatus(
+          context: context,
+          ref: ref,
+          saleId: sale.id,
+          sale: sale,
+        );
+        if (!prepared || !context.mounted) return;
+      }
+
+      if (!context.mounted) return;
+
+      isUpdating.value = true;
+      final result = await ref
+          .read(salesRepositoryProvider)
+          .updateOrderStatus(sale.id, status);
+      isUpdating.value = false;
+
+      if (!context.mounted) return;
+
+      result.fold(
+        (failure) => showErrorSnackBar(context, message: failure.messageString),
+        (_) {
+          ref.invalidate(saleProvider(sale.id));
+          ref.invalidate(saleServiceItemsProvider(sale.id));
+          ref.invalidate(kanbanSalesProvider);
+          ref.invalidate(notPickedUpCountProvider);
+          ref.invalidate(todayCountProvider);
+          ref.invalidate(backlogPendingCountProvider);
+        },
+      );
+    }
+
+    Future<void> showStatusMenu() async {
+      if (isUpdating.value) return;
+
+      final box = context.findRenderObject() as RenderBox?;
+      if (box == null) return;
+      final overlay =
+          Overlay.of(context).context.findRenderObject() as RenderBox?;
+      if (overlay == null) return;
+
+      final position = RelativeRect.fromRect(
+        Rect.fromPoints(
+          box.localToGlobal(Offset.zero, ancestor: overlay),
+          box.localToGlobal(box.size.bottomRight(Offset.zero),
+              ancestor: overlay),
+        ),
+        Offset.zero & overlay.size,
+      );
+
+      final selected = await showMenu<OrderStatus>(
+        context: context,
+        position: position,
+        items: OrderStatus.values
+            .map(
+              (status) => PopupMenuItem<OrderStatus>(
+                value: status,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_statusIcon(status)),
+                  title: Text(status.displayName),
+                  trailing: status == sale.orderStatus
+                      ? const Icon(Icons.check, size: 18)
+                      : null,
+                ),
+              ),
+            )
+            .toList(),
+      );
+
+      if (selected != null && context.mounted) {
+        await updateOrderStatus(selected);
+      }
+    }
 
     return SaleHighlightBanner(
       orderStatus: sale.orderStatus,
@@ -997,6 +1100,7 @@ class _SaleHighlightBannerWithBalance extends ConsumerWidget {
       saleStatus: sale.status,
       paymentStatus: sale.paymentStatus,
       balanceDue: balanceDue,
+      onTap: canChangeStatus ? showStatusMenu : null,
     );
   }
 }

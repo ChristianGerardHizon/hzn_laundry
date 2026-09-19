@@ -21,6 +21,7 @@ class SaleHighlightBanner extends StatelessWidget {
     required this.saleStatus,
     this.paymentStatus = PaymentStatus.unpaid,
     this.balanceDue,
+    this.onTap,
   });
 
   final OrderStatus orderStatus;
@@ -29,12 +30,16 @@ class SaleHighlightBanner extends StatelessWidget {
   final PaymentStatus paymentStatus;
   final num? balanceDue;
 
+  /// When set, the banner is tappable (e.g. to change order status).
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final highlight = _getHighlight();
+    final interactive = onTap != null;
 
-    return Container(
+    final content = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -96,12 +101,14 @@ class SaleHighlightBanner extends StatelessWidget {
                             theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        highlight.secondaryInfo!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: highlight.secondaryColor ??
-                              theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          highlight.secondaryInfo!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: highlight.secondaryColor ??
+                                theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -110,7 +117,24 @@ class SaleHighlightBanner extends StatelessWidget {
               ],
             ),
           ),
+          if (interactive)
+            Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: highlight.color.withValues(alpha: 0.7),
+            ),
         ],
+      ),
+    );
+
+    if (!interactive) return content;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: content,
       ),
     );
   }
