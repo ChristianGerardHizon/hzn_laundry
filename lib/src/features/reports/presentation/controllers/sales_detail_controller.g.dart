@@ -8,40 +8,52 @@ part of 'sales_detail_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Fetches all sales within the selected date range for the Orders report tab.
+/// Paginated orders for the Orders report tab.
 
-@ProviderFor(salesDetail)
-final salesDetailProvider = SalesDetailProvider._();
+@ProviderFor(SalesDetailController)
+final salesDetailControllerProvider = SalesDetailControllerProvider._();
 
-/// Fetches all sales within the selected date range for the Orders report tab.
-
-final class SalesDetailProvider extends $FunctionalProvider<
-        AsyncValue<List<Sale>>, List<Sale>, FutureOr<List<Sale>>>
-    with $FutureModifier<List<Sale>>, $FutureProvider<List<Sale>> {
-  /// Fetches all sales within the selected date range for the Orders report tab.
-  SalesDetailProvider._()
+/// Paginated orders for the Orders report tab.
+final class SalesDetailControllerProvider extends $AsyncNotifierProvider<
+    SalesDetailController, PaginatedState<Sale>> {
+  /// Paginated orders for the Orders report tab.
+  SalesDetailControllerProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
-          name: r'salesDetailProvider',
+          name: r'salesDetailControllerProvider',
           isAutoDispose: true,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
 
   @override
-  String debugGetCreateSourceHash() => _$salesDetailHash();
+  String debugGetCreateSourceHash() => _$salesDetailControllerHash();
 
   @$internal
   @override
-  $FutureProviderElement<List<Sale>> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<Sale>> create(Ref ref) {
-    return salesDetail(ref);
-  }
+  SalesDetailController create() => SalesDetailController();
 }
 
-String _$salesDetailHash() => r'0e521f24e65b4c86d14600f1339c0cb54a6b7c4a';
+String _$salesDetailControllerHash() =>
+    r'010584196d50f742ca1a62c4374e56c76a743468';
+
+/// Paginated orders for the Orders report tab.
+
+abstract class _$SalesDetailController
+    extends $AsyncNotifier<PaginatedState<Sale>> {
+  FutureOr<PaginatedState<Sale>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref
+        as $Ref<AsyncValue<PaginatedState<Sale>>, PaginatedState<Sale>>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<AsyncValue<PaginatedState<Sale>>, PaginatedState<Sale>>,
+        AsyncValue<PaginatedState<Sale>>,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

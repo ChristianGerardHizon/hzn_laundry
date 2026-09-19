@@ -10,6 +10,7 @@ import '../controllers/payments_report_controller.dart';
 import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
+import '../controllers/sales_detail_summary_controller.dart';
 import '../widgets/views/attendance_report_view.dart';
 import '../widgets/views/consumables_usage_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
@@ -30,10 +31,12 @@ class ReportsPage extends HookConsumerWidget {
       switch (tabController.index) {
         case 0:
           ref.invalidate(paymentsSummaryProvider);
-          ref.invalidate(paymentsReportProvider);
+          ref.invalidate(paymentsReportControllerProvider);
         case 1:
-          ref.invalidate(salesDetailProvider);
+          ref.invalidate(salesDetailSummaryProvider);
+          ref.invalidate(salesDetailControllerProvider);
         case 2:
+          ref.invalidate(salesByCustomerRawProvider);
           ref.invalidate(salesByCustomerProvider);
         case 3:
           ref.invalidate(newCustomersReportProvider);

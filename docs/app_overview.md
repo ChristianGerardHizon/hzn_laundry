@@ -34,6 +34,7 @@ Staff records, attendance, and payroll deductions. Employees belong to the curre
 #### Reports (`/reports`)
 Sales and payroll reporting.
 
+- Sales (payments) and Orders tabs: KPIs from daily summary views first; detail rows paginated (infinite scroll)
 - Sales summaries by period (daily/weekly/monthly, via `ReportPeriod`)
 - Salary/payroll reports by pay period (via `SalaryPeriod`), incorporating employee deductions
 - Consumables tab: house-chemical usage by product for the selected period (voided/refunded excluded); material cost only with `usage.cost.view`
@@ -622,6 +623,7 @@ lib/src/
 
 ---
 
+| Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
 | Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |
 | Sep 19 | Org-scoped employees | Employees belong to an organization with optional multi-branch assignment (empty = all branches). Lists and salary/attendance reports filter by current org and branch |
 | Sep 19 | Remove incentives | Removed unused incentives feature (reports tab, branch tiers, dashboard/sale UI, `incentiveTiers` collection, and related permissions) |

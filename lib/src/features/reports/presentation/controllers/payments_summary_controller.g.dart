@@ -8,12 +8,12 @@ part of 'payments_summary_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Fetches aggregated payment summary from non-voided payment records.
+/// Fetches aggregated payment summary from [vw_payments_daily_summary].
 
 @ProviderFor(paymentsSummary)
 final paymentsSummaryProvider = PaymentsSummaryProvider._();
 
-/// Fetches aggregated payment summary from non-voided payment records.
+/// Fetches aggregated payment summary from [vw_payments_daily_summary].
 
 final class PaymentsSummaryProvider extends $FunctionalProvider<
         AsyncValue<List<PaymentsDailySummaryEntry>>,
@@ -22,7 +22,7 @@ final class PaymentsSummaryProvider extends $FunctionalProvider<
     with
         $FutureModifier<List<PaymentsDailySummaryEntry>>,
         $FutureProvider<List<PaymentsDailySummaryEntry>> {
-  /// Fetches aggregated payment summary from non-voided payment records.
+  /// Fetches aggregated payment summary from [vw_payments_daily_summary].
   PaymentsSummaryProvider._()
       : super(
           from: null,
@@ -49,4 +49,4 @@ final class PaymentsSummaryProvider extends $FunctionalProvider<
   }
 }
 
-String _$paymentsSummaryHash() => r'd8f31ebd3571aab29855ccc928f6de54c9158902';
+String _$paymentsSummaryHash() => r'4fd51e13f2602b1f3c02eb97136ec76d9f367bf1';

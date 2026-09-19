@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -6,13 +8,18 @@ import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../../core/foundation/paginated_state.dart';
+import '../../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../../../core/widgets/end_of_list_indicator.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../../pos/domain/payment_status.dart';
 import '../../../../pos/domain/sale.dart';
+import '../../../domain/orders_report_summary.dart';
 import '../../controllers/sales_detail_controller.dart';
 import '../../controllers/sales_detail_date_range_controller.dart';
+import '../../controllers/sales_detail_summary_controller.dart';
 import '../charts/line_chart_widget.dart';
 import '../report_search_bar.dart';
 
@@ -25,9 +32,9 @@ String _shortOrderNumber(String receiptNumber) {
   return receiptNumber;
 }
 
-/// View displaying a detailed list of orders within a date range.
+/// View displaying orders within a date range.
 ///
-/// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
+/// KPIs load from the daily summary view + count queries; rows load page-by-page.
 class SalesDetailView extends HookConsumerWidget {
   const SalesDetailView({super.key});
 
@@ -48,24 +55,57 @@ class SalesDetailView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final salesAsync = ref.watch(salesDetailProvider);
+    final summaryAsync = ref.watch(salesDetailSummaryProvider);
+    final detailAsync = ref.watch(salesDetailControllerProvider);
     final dateRange = ref.watch(salesDetailDateRangeControllerProvider);
     final searchController = useTextEditingController();
-    final searchQuery = useListenableSelector(
-      searchController,
-      () => searchController.text,
-    );
     final searchFields = useState(_defaultSearchKeys);
 
-    return salesAsync.when(
-      data: (sales) => _buildContent(
+    useEffect(() {
+      searchController.clear();
+      return null;
+    }, [dateRange]);
+
+    final detailState = detailAsync.asData?.value;
+    final scrollController = useInfiniteScroll(
+      onLoadMore: () =>
+          ref.read(salesDetailControllerProvider.notifier).loadMore(),
+      hasMore: detailState?.hasMore ?? false,
+      isLoading: detailState?.isLoadingMore ?? false,
+    );
+
+    useEffect(() {
+      Timer? timer;
+      void listener() {
+        timer?.cancel();
+        timer = Timer(const Duration(milliseconds: 350), () {
+          final query = searchController.text.trim();
+          final notifier = ref.read(salesDetailControllerProvider.notifier);
+          if (query.isEmpty) {
+            notifier.clearSearch();
+          } else {
+            notifier.search(query, fields: searchFields.value.toList());
+          }
+        });
+      }
+
+      searchController.addListener(listener);
+      return () {
+        timer?.cancel();
+        searchController.removeListener(listener);
+      };
+    }, [searchFields.value]);
+
+    return summaryAsync.when(
+      data: (summary) => _buildContent(
         context,
         ref,
-        sales,
+        summary,
+        detailAsync,
         dateRange,
         searchController: searchController,
-        searchQuery: searchQuery,
         searchFields: searchFields,
+        scrollController: scrollController,
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
@@ -80,88 +120,146 @@ class SalesDetailView extends HookConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    List<Sale> sales,
+    OrdersReportSummary summary,
+    AsyncValue<PaginatedState<Sale>> detailAsync,
     DateTimeRange dateRange, {
     required TextEditingController searchController,
-    required String searchQuery,
     required ValueNotifier<Set<String>> searchFields,
+    required ScrollController scrollController,
   }) {
     final isMobile = Breakpoints.isMobile(context);
-    final totalRevenue =
-        sales.fold<num>(0, (sum, s) => sum + s.totalAmount);
-    final paidCount = sales.where((s) => s.isPaid).length;
-    final unpaidCount = sales.where((s) => !s.isPaid).length;
+    final detailState = detailAsync.asData?.value;
+    final sales = detailState?.items ?? const <Sale>[];
+    final detailLoading = detailAsync.isLoading && detailState == null;
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(salesDetailProvider);
+        ref.invalidate(salesDetailSummaryProvider);
+        ref.invalidate(salesDetailControllerProvider);
       },
-      child: SingleChildScrollView(
+      child: CustomScrollView(
+        controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(isMobile ? 12 : 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDateRangeRow(context, ref, dateRange),
-            const SizedBox(height: 12),
-            _buildKpiSection(
-              context,
-              totalRevenue: totalRevenue,
-              totalOrders: sales.length,
-              paidCount: paidCount,
-              unpaidCount: unpaidCount,
-              isMobile: isMobile,
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 12 : 16,
+              isMobile ? 12 : 16,
+              isMobile ? 12 : 16,
+              0,
             ),
-            const SizedBox(height: 16),
-            _buildOrdersByDayChart(context, sales),
-            const SizedBox(height: 16),
-            ReportSearchBar(
-              fields: _searchFields,
-              selectedKeys: searchFields.value,
-              controller: searchController,
-              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildDateRangeRow(context, ref, dateRange),
+                const SizedBox(height: 12),
+                _buildKpiSection(
+                  context,
+                  totalRevenue: summary.totalRevenue,
+                  totalOrders: summary.totalOrders,
+                  paidCount: summary.paidCount,
+                  unpaidCount: summary.unpaidCount,
+                  isMobile: isMobile,
+                ),
+                const SizedBox(height: 16),
+                _buildRevenueByDayChart(context, summary.revenueByDay),
+                const SizedBox(height: 16),
+                ReportSearchBar(
+                  fields: _searchFields,
+                  selectedKeys: searchFields.value,
+                  controller: searchController,
+                  onSelectedKeysChanged: (keys) {
+                    searchFields.value = keys;
+                    final query = searchController.text.trim();
+                    if (query.isNotEmpty) {
+                      ref
+                          .read(salesDetailControllerProvider.notifier)
+                          .search(query, fields: keys.toList());
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                if (!detailLoading)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      detailState != null
+                          ? '${detailState.totalItems} orders'
+                          : '',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+              ]),
             ),
-            const SizedBox(height: 12),
-            Builder(builder: (context) {
-              final filtered =
-                  _filterSales(sales, searchQuery, searchFields.value);
-              if (isMobile) {
-                return _buildMobileOrdersList(context, filtered);
-              }
-              return _buildDesktopOrdersTable(context, filtered);
-            }),
-          ],
-        ),
+          ),
+          if (detailLoading)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (detailAsync.hasError)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    Failure.displayErrorMessage(detailAsync.error),
+                  ),
+                ),
+              ),
+            )
+          else if (sales.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16),
+                child: _buildEmptyState(context),
+              ),
+            )
+          else if (isMobile)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index >= sales.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    }
+                    return _buildMobileOrderCard(context, sales[index]);
+                  },
+                  childCount:
+                      sales.length + (detailState?.isLoadingMore == true ? 1 : 0),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildDesktopOrdersTable(context, sales),
+              ),
+            ),
+          if (detailState != null && sales.isNotEmpty)
+            SliverToBoxAdapter(
+              child: EndOfListIndicator(
+                isLoadingMore: detailState.isLoadingMore,
+                hasReachedEnd: detailState.hasReachedEnd,
+              ),
+            ),
+        ],
       ),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Search filtering
-  // ---------------------------------------------------------------------------
-
-  List<Sale> _filterSales(
-    List<Sale> sales,
-    String query,
-    Set<String> activeKeys,
-  ) {
-    if (query.isEmpty) return sales;
-    final q = query.toLowerCase();
-    return sales.where((s) {
-      for (final key in activeKeys) {
-        final matches = switch (key) {
-          'receipt' => s.receiptNumber.toLowerCase().contains(q),
-          'customer' => (s.customerName ?? '').toLowerCase().contains(q),
-          'amount' => _currencyFormat.format(s.totalAmount).contains(q),
-          'status' => s.status.toLowerCase().contains(q),
-          'orderStatus' =>
-            s.orderStatus.displayName.toLowerCase().contains(q),
-          _ => false,
-        };
-        if (matches) return true;
-      }
-      return false;
-    }).toList();
   }
 
   Widget _buildDateRangeRow(
@@ -234,22 +332,17 @@ class SalesDetailView extends HookConsumerWidget {
     }
   }
 
-  Widget _buildOrdersByDayChart(BuildContext context, List<Sale> sales) {
-    final dailyCounts = <DateTime, int>{};
-    for (final sale in sales) {
-      final postedDate = sale.postedDate;
-      if (postedDate == null) continue;
-      final day = DateTime(postedDate.year, postedDate.month, postedDate.day);
-      dailyCounts[day] = (dailyCounts[day] ?? 0) + 1;
-    }
+  Widget _buildRevenueByDayChart(
+    BuildContext context,
+    Map<DateTime, num> revenueByDay,
+  ) {
+    if (revenueByDay.isEmpty) return const SizedBox.shrink();
 
-    if (dailyCounts.isEmpty) return const SizedBox.shrink();
-
-    final sortedDays = dailyCounts.keys.toList()..sort();
+    final sortedDays = revenueByDay.keys.toList()..sort();
     final spots = sortedDays.asMap().entries.map((entry) {
       return FlSpot(
         entry.key.toDouble(),
-        dailyCounts[entry.value]!.toDouble(),
+        revenueByDay[entry.value]!.toDouble(),
       );
     }).toList();
     final xLabels =
@@ -259,10 +352,12 @@ class SalesDetailView extends HookConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: LineChartWidget(
-          title: 'Orders per Day',
+          title: 'Revenue per Day',
           spots: spots,
           xLabels: xLabels,
           lineColor: Colors.blue,
+          yAxisFormatter: (value) =>
+              _currencyFormat.format(value).replaceAll('.00', ''),
           height: 220,
         ),
       ),
@@ -288,7 +383,6 @@ class SalesDetailView extends HookConsumerWidget {
     ];
 
     if (isMobile) {
-      // 2x2 grid on mobile
       return Column(
         children: [
           Row(
@@ -338,7 +432,6 @@ class SalesDetailView extends HookConsumerWidget {
       );
     }
 
-    // Desktop: single row
     return Row(
       children: cards
           .expand((c) => [
@@ -358,59 +451,36 @@ class SalesDetailView extends HookConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Desktop: DataTable
-  // ---------------------------------------------------------------------------
-
   Widget _buildDesktopOrdersTable(BuildContext context, List<Sale> sales) {
-    if (sales.isEmpty) return _buildEmptyState(context);
-
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              '${sales.length} orders',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                columnSpacing: 24,
+                headingRowHeight: 44,
+                dataRowMinHeight: 40,
+                dataRowMaxHeight: 48,
+                columns: const [
+                  DataColumn(label: Text('Receipt #')),
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Amount'), numeric: true),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Order Status')),
+                  DataColumn(label: Text('Paid')),
+                  DataColumn(label: Text('Picked Up')),
+                  DataColumn(label: Text('Created')),
+                  DataColumn(label: Text('')),
+                ],
+                rows: sales.map((sale) => _buildDataRow(context, sale)).toList(),
+              ),
             ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    columnSpacing: 24,
-                    headingRowHeight: 44,
-                    dataRowMinHeight: 40,
-                    dataRowMaxHeight: 48,
-                    columns: const [
-                      DataColumn(label: Text('Receipt #')),
-                      DataColumn(label: Text('Customer')),
-                      DataColumn(label: Text('Amount'), numeric: true),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Order Status')),
-                      DataColumn(label: Text('Paid')),
-                      DataColumn(label: Text('Picked Up')),
-                      DataColumn(label: Text('Created')),
-                      DataColumn(label: Text('')),
-                    ],
-                    rows: sales
-                        .map((sale) => _buildDataRow(context, sale))
-                        .toList(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -420,9 +490,7 @@ class SalesDetailView extends HookConsumerWidget {
 
     return DataRow(
       cells: [
-        DataCell(Text(
-          _shortOrderNumber(sale.receiptNumber),
-        )),
+        DataCell(Text(_shortOrderNumber(sale.receiptNumber))),
         DataCell(Text(sale.customerName ?? '—')),
         DataCell(Text(_currencyFormat.format(sale.totalAmount))),
         DataCell(_buildStatusChip(context, sale.status)),
@@ -446,7 +514,9 @@ class SalesDetailView extends HookConsumerWidget {
               : '—',
         )),
         DataCell(Text(
-          sale.postedDate != null ? _dateTimeFormat.format(sale.postedDate!) : '—',
+          sale.postedDate != null
+              ? _dateTimeFormat.format(sale.postedDate!)
+              : '—',
         )),
         DataCell(
           IconButton(
@@ -456,30 +526,6 @@ class SalesDetailView extends HookConsumerWidget {
             onPressed: () => SaleDetailRoute(id: sale.id).goScoped(context),
           ),
         ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Mobile: card list
-  // ---------------------------------------------------------------------------
-
-  Widget _buildMobileOrdersList(BuildContext context, List<Sale> sales) {
-    if (sales.isEmpty) return _buildEmptyState(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            '${sales.length} orders',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ),
-        ...sales.map((sale) => _buildMobileOrderCard(context, sale)),
       ],
     );
   }
@@ -504,7 +550,6 @@ class SalesDetailView extends HookConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Customer name
               if (sale.customerName != null &&
                   sale.customerName!.isNotEmpty) ...[
                 Row(
@@ -530,7 +575,6 @@ class SalesDetailView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 4),
               ],
-              // Short order # + payment badge
               Row(
                 children: [
                   Text(
@@ -545,7 +589,6 @@ class SalesDetailView extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              // Status chips
               Row(
                 children: [
                   _buildStatusChip(context, sale.status),
@@ -562,7 +605,6 @@ class SalesDetailView extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              // Amount + time
               Row(
                 children: [
                   Text(
@@ -592,10 +634,6 @@ class SalesDetailView extends HookConsumerWidget {
     final local = dateTime.toLocal();
     return DateFormat('h:mm a').format(local);
   }
-
-  // ---------------------------------------------------------------------------
-  // Shared helpers
-  // ---------------------------------------------------------------------------
 
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
@@ -648,7 +686,6 @@ class SalesDetailView extends HookConsumerWidget {
   }
 }
 
-/// Lightweight chip that avoids Material Chip's extra padding.
 class _MiniChip extends StatelessWidget {
   const _MiniChip({required this.label, required this.color});
 

@@ -92,6 +92,7 @@ class SalesByCustomerView extends HookConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
+        ref.invalidate(salesByCustomerRawProvider);
         ref.invalidate(salesByCustomerProvider);
       },
       child: SingleChildScrollView(

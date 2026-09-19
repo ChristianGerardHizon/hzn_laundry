@@ -9,6 +9,7 @@ import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../reports/domain/orders_report_summary.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../domain/order_status.dart';
@@ -66,6 +67,13 @@ abstract class SalesRepository {
 
   /// Fetches all sales within a date range.
   FutureEither<List<Sale>> getSalesForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  });
+
+  /// Lightweight order KPIs + daily revenue for the Orders report tab.
+  FutureEither<OrdersReportSummary> getOrdersReportSummary({
     required DateTime startDate,
     required DateTime endDate,
     String? branchScope,
@@ -490,6 +498,71 @@ class SalesRepositoryImpl implements SalesRepository {
           sort: '-postedDate',
         );
         return records.map(_toSaleEntity).toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrdersReportSummary> getOrdersReportSummary({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final dateFilter = PBFilter()
+            .notEquals('status', 'voided')
+            .between('postedDate', startDate, endDate)
+            .build();
+        final baseFilter = PBFilters.combine(dateFilter, branchScope);
+
+        final totalFuture =
+            _sales.getList(page: 1, perPage: 1, filter: baseFilter);
+        final paidFuture = _sales.getList(
+          page: 1,
+          perPage: 1,
+          filter: PBFilters.combine(baseFilter, 'isPaid = true'),
+        );
+        final viewFuture = _pb
+            .collection(PocketBaseCollections.vwSalesDailySummary)
+            .getFullList(filter: branchScope);
+
+        final totalResult = await totalFuture;
+        final paidResult = await paidFuture;
+        final viewRecords = await viewFuture;
+
+        final totalOrders = totalResult.totalItems;
+        final paidCount = paidResult.totalItems;
+        final unpaidCount =
+            (totalOrders - paidCount).clamp(0, totalOrders);
+
+        final startDay =
+            DateTime(startDate.year, startDate.month, startDate.day);
+        final endDay = DateTime(endDate.year, endDate.month, endDate.day);
+
+        num totalRevenue = 0;
+        final revenueByDay = <DateTime, num>{};
+
+        for (final record in viewRecords) {
+          final dateStr = record.getStringValue('sale_date');
+          final parsed = DateTime.tryParse(dateStr)?.toLocal();
+          if (parsed == null) continue;
+          final day = DateTime(parsed.year, parsed.month, parsed.day);
+          if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+
+          final revenue = record.getDoubleValue('total_revenue');
+          totalRevenue += revenue;
+          revenueByDay[day] = (revenueByDay[day] ?? 0) + revenue;
+        }
+
+        return OrdersReportSummary(
+          totalRevenue: totalRevenue,
+          totalOrders: totalOrders,
+          paidCount: paidCount,
+          unpaidCount: unpaidCount,
+          revenueByDay: revenueByDay,
+        );
       },
       Failure.handle,
     ).run();

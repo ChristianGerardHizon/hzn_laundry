@@ -1,3 +1,4 @@
+import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
@@ -8,27 +9,30 @@ import 'sales_by_customer_date_range_controller.dart';
 
 part 'sales_by_customer_controller.g.dart';
 
-/// Fetches sales by customer from the [vw_sales_by_customer] view.
+/// Raw daily rows from [vw_sales_by_customer] for the current branch scope.
 ///
-/// Uses branch filter on the query, then filters by date range in Dart
-/// (view date fields are JSON type, not filterable via PB date operators).
-@riverpod
-Future<List<CustomerSalesEntry>> salesByCustomer(Ref ref) async {
-  final dateRange = ref.watch(salesByCustomerDateRangeControllerProvider);
+/// Kept alive so changing the date range does not re-download the full view.
+@Riverpod(keepAlive: true)
+Future<List<RecordModel>> salesByCustomerRaw(Ref ref) async {
   final branchFilter = ref.watch(currentBranchIdsFilterProvider);
   final pb = ref.read(pocketbaseProvider);
 
-  final records = await pb
+  return pb
       .collection(PocketBaseCollections.vwSalesByCustomer)
       .getFullList(filter: branchFilter);
+}
 
-  // Filter by date range in Dart
+/// Aggregates cached view rows into per-customer totals for the selected range.
+@riverpod
+Future<List<CustomerSalesEntry>> salesByCustomer(Ref ref) async {
+  final dateRange = ref.watch(salesByCustomerDateRangeControllerProvider);
+  final records = await ref.watch(salesByCustomerRawProvider.future);
+
   final startDay = DateTime(
       dateRange.start.year, dateRange.start.month, dateRange.start.day);
   final endDay =
       DateTime(dateRange.end.year, dateRange.end.month, dateRange.end.day);
 
-  // The view is grouped per customer per day — filter then re-aggregate
   final map =
       <String, ({String name, int count, num total, num paid, int paidCount})>{};
 
