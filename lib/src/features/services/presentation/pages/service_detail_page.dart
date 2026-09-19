@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
@@ -182,7 +184,7 @@ class ServiceDetailPage extends HookConsumerWidget {
         appBar: AppBar(
           automaticallyImplyLeading: !isTablet,
         ),
-        body: Center(child: Text('Error: $error')),
+        body: ErrorState.fromError(error),
       ),
     );
   }
@@ -352,7 +354,7 @@ class _PriceTiersCard extends ConsumerWidget {
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
               error: (error, _) => Text(
-                'Error loading tiers: $error',
+                Failure.displayErrorMessage(error),
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../domain/employee.dart';
@@ -119,11 +120,11 @@ class _AttendanceDialog extends HookConsumerWidget {
             },
             loading: () =>
                 const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('Error: $error')),
+            error: (error, _) => ErrorState.fromError(error),
           ),
           loading: () =>
               const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
+          error: (error, _) => ErrorState.fromError(error),
         ),
       ),
       actions: [

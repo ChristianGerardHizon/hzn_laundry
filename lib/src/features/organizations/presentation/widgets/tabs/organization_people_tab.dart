@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/form_feedback.dart';
@@ -74,7 +75,7 @@ class OrganizationPeopleTab extends HookConsumerWidget {
           const SizedBox(height: 8),
           rolesAsync.when(
             loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Text('$e'),
+            error: (e, _) => Text(Failure.displayErrorMessage(e)),
             data: (roles) => _InviteForm(
               orgId: organizationId,
               roles: roles,

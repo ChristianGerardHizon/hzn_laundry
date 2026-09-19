@@ -3,11 +3,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../../core/widgets/state/error_state.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
@@ -71,20 +73,9 @@ class SaleDetailPage extends ConsumerWidget {
                   onPressed: () => const SalesHistoryRoute().goScoped(context),
                 ),
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error loading sale: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(saleProvider(saleId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        body: ErrorState.fromError(
+          error,
+          onRetry: () => ref.invalidate(saleProvider(saleId)),
         ),
       ),
       data: (sale) {
@@ -377,7 +368,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                         ),
                         error: (error, _) => Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Text('Error loading add ons: $error'),
+                          child: Text(Failure.displayErrorMessage(error)),
                         ),
                         data: (items) => items.isEmpty
                             ? const Padding(
@@ -1028,7 +1019,7 @@ class _SaleDetailContent extends HookConsumerWidget {
               ),
               error: (error, _) => Padding(
                 padding: const EdgeInsets.all(8),
-                child: Text('Error loading payments: $error'),
+                child: Text(Failure.displayErrorMessage(error)),
               ),
               data: (payments) {
                 // Calculate totals from active payments only.
@@ -2300,7 +2291,7 @@ class _SaleActivityTab extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48),
                 const SizedBox(height: 16),
-                Text('Error loading activity: $error'),
+                Text(Failure.displayErrorMessage(error)),
                 const SizedBox(height: 16),
                 FilledButton.tonal(
                   onPressed: () =>

@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:pocketbase/pocketbase.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
@@ -169,7 +170,7 @@ class CustomerDetailPage extends HookConsumerWidget {
       ),
       error: (error, stack) => Scaffold(
         appBar: AppBar(automaticallyImplyLeading: !isTablet),
-        body: Center(child: Text('Error: $error')),
+        body: ErrorState.fromError(error),
       ),
     );
   }

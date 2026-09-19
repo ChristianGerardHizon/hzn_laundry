@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
@@ -35,7 +36,7 @@ class AttendanceReportView extends ConsumerWidget {
       error: (error, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Error loading report: $error'),
+          child: Text(Failure.displayErrorMessage(error)),
         ),
       ),
     );

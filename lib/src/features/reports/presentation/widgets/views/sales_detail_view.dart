@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
@@ -70,7 +71,7 @@ class SalesDetailView extends HookConsumerWidget {
       error: (error, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Error loading orders: $error'),
+          child: Text(Failure.displayErrorMessage(error)),
         ),
       ),
     );

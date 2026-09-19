@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
@@ -122,7 +123,7 @@ class SaleDetailDialog extends HookConsumerWidget {
                       children: [
                         const Icon(Icons.error_outline, size: 48),
                         const SizedBox(height: 16),
-                        Text('Error: $error'),
+                        Text(Failure.displayErrorMessage(error)),
                         const SizedBox(height: 16),
                         FilledButton.tonal(
                           onPressed: () => ref.invalidate(saleProvider(saleId)),

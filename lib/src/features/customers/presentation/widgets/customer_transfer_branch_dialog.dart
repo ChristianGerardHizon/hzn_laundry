@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -143,7 +144,7 @@ class CustomerTransferBranchDialog extends HookConsumerWidget {
       ),
       error: (error, _) => AlertDialog(
         title: const Text('Transfer Branch'),
-        content: Text('Failed to load branches: $error'),
+        content: Text('Failed to load branches: ${Failure.displayErrorMessage(error)}'),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),

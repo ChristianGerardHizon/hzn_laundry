@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../domain/app_theme_mode.dart';
 import '../controllers/theme_controller.dart';
@@ -21,20 +22,7 @@ class ThemeSettingsPanel extends HookConsumerWidget {
       ),
       body: themeModeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text('Error: $error'),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(error),
         data: (currentMode) => ListView(
           padding: const EdgeInsets.all(16),
           children: [

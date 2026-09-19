@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -187,7 +188,7 @@ class _LoadRulesSection extends ConsumerWidget {
           ),
           error: (error, _) => Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Error: $error'),
+            child: Text(Failure.displayErrorMessage(error)),
           ),
           data: (rules) {
             if (rules.isEmpty) {

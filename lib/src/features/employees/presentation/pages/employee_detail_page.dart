@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -138,7 +139,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
       ),
       error: (error, stack) => Scaffold(
         appBar: AppBar(automaticallyImplyLeading: !isTablet),
-        body: Center(child: Text('Error: $error')),
+        body: ErrorState.fromError(error),
       ),
     );
   }

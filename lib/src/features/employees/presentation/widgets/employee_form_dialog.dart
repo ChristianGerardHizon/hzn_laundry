@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/hooks/use_form_dirty_guard.dart';
 import '../../../../core/i18n/strings.g.dart';
@@ -274,7 +275,7 @@ class EmployeeFormDialog extends HookConsumerWidget {
                             child: LinearProgressIndicator(),
                           ),
                           error: (error, _) => Text(
-                            'Failed to load branches: $error',
+                            'Failed to load branches: ${Failure.displayErrorMessage(error)}',
                             style: TextStyle(
                               color: theme.colorScheme.error,
                             ),

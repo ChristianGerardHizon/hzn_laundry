@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/utils/currency_format.dart';
 import '../../domain/pos_group.dart';
@@ -26,7 +27,7 @@ class CashierGroupDetailPanel extends ConsumerWidget {
 
     return groupsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error: $error')),
+      error: (error, _) => ErrorState.fromError(error),
       data: (groups) {
         final group = groups.cast<PosGroup?>().firstWhere(
               (g) => g?.id == groupId,

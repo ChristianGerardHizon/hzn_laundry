@@ -15,35 +15,32 @@ sealed class Failure with FailureMappable {
 
   const Failure(this.message, this.stackTrace, this.identifier);
 
-  String get messageString {
-    final error = message;
-    var returnMessage = 'Something went wrong';
+  /// Short user-facing copy. Never includes stack traces or raw exception dumps.
+  String get messageString => displayErrorMessage(message);
 
+  /// Resolves any thrown/[Failure] value to a short UI string.
+  static String displayErrorMessage(Object? error) {
+    if (error == null) return 'Something went wrong';
+    if (error is Failure) return displayErrorMessage(error.message);
     if (error is ClientException) {
-      final defaultMessage = 'Server Request has failed';
-      final data = error.response;
-      returnMessage = data['message'] ?? defaultMessage;
+      final msg = error.response['message']?.toString();
+      if (msg != null && msg.isNotEmpty) return msg;
+      return 'Server request has failed';
     }
-
-    if (error is JsonUnsupportedObjectError) {
-      returnMessage = 'Unsupported Object';
-    }
-
-    if (error is GenericFailure) {
-      final defaultMessage = 'Generic Failure';
-      final data = error.message;
-      returnMessage = data ?? defaultMessage;
-    }
-
+    if (error is JsonUnsupportedObjectError) return 'Unsupported object';
     if (error is String) {
-      returnMessage = error;
+      final trimmed = error.trim();
+      if (trimmed.isEmpty) return 'Something went wrong';
+      // Reject dumps that look like exception/stack traces
+      if (trimmed.contains('ClientException') ||
+          trimmed.contains('stackTrace') ||
+          trimmed.contains('\n#') ||
+          trimmed.startsWith('Error: GenericFailure')) {
+        return 'Something went wrong';
+      }
+      return trimmed;
     }
-
-    if (error is Failure) {
-      returnMessage = error.message;
-    }
-
-    return returnMessage;
+    return 'Something went wrong';
   }
 
   static const fromMap = FailureMapper.fromMap;
