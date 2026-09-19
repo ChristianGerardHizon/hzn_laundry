@@ -36,6 +36,7 @@ import '../../../services/presentation/controllers/service_consumable_recipes_pr
 import '../../../services/presentation/controllers/service_price_tiers_provider.dart';
 import '../../../services/presentation/controllers/services_controller.dart';
 import '../../../settings/data/repositories/feature_flag_repository.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -2721,6 +2722,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final org = ref.watch(currentOrganizationControllerProvider).value;
     final hasSelectedPrinter = selectedPrinterAsync.value != null;
     final canThermalPrint = isThermalPrintingSupported && hasSelectedPrinter;
 
@@ -2740,8 +2742,27 @@ class _OrderSuccessPage extends HookConsumerWidget {
             ))
         .toList();
 
+    ({String? businessName, String? branchAddress, String? contactNumber})
+        receiptHeader() {
+      final branch = branchAsync.value;
+      final orgName = org?.name;
+      final businessName =
+          (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
+      final branchAddress = (branch?.address.isNotEmpty == true)
+          ? branch!.address
+          : org?.address;
+      final contactNumber = (branch?.contactNumber.isNotEmpty == true)
+          ? branch!.contactNumber
+          : org?.contactNumber;
+      return (
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
+      );
+    }
+
     OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
       return OrderClaimSheetPdfData(
         customerName: customer.name,
         serviceName: service.name,
@@ -2750,9 +2771,9 @@ class _OrderSuccessPage extends HookConsumerWidget {
         totalAmount: estimatedTotal,
         createdDate: orderDate,
         storeCopy: storeCopy,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: specialInstructions,
         claimSheetNumber: claimSheetNumber,
@@ -2802,41 +2823,10 @@ class _OrderSuccessPage extends HookConsumerWidget {
 
       isPrinting.value = true;
       final printService = ref.read(thermalPrintServiceProvider.notifier);
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
 
-      // Print store copy first (compact machine tag) so staff can start work
-      if (printStoreCopy.value) {
-        final storeResult = await printService.printOrderReceipt(
-          printer: printer,
-          customerName: customer.name,
-          serviceName: service.name,
-          quantity: quantity,
-          unitLabel: unitLabel,
-          totalAmount: estimatedTotal,
-          copyType: OrderReceiptCopy.store,
-          claimSheetNumber: claimSheetNumber,
-          businessName: currentBranch?.name,
-          branchAddress: currentBranch?.address,
-          contactNumber: currentBranch?.contactNumber,
-          cashierName: currentAuth?.user.name,
-          specialInstructions: specialInstructions,
-          addOnItems: addOnSaleItems,
-        );
-
-        if (storeResult is PrintFailure) {
-          isPrinting.value = false;
-          if (context.mounted) {
-            showErrorSnackBar(context,
-                message: storeResult.message, useRootMessenger: false);
-          }
-          return;
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      // Print customer copy (full receipt)
-      final customerResult = await printService.printOrderReceipt(
+      // Single job: customer claim sheet, optionally + 2 service stubs with cuts.
+      final result = await printService.printOrderReceipt(
         printer: printer,
         customerName: customer.name,
         serviceName: service.name,
@@ -2844,35 +2834,33 @@ class _OrderSuccessPage extends HookConsumerWidget {
         unitLabel: unitLabel,
         totalAmount: estimatedTotal,
         copyType: OrderReceiptCopy.customer,
+        includeStubs: printStoreCopy.value,
         claimSheetNumber: claimSheetNumber,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customer.phone,
         specialInstructions: specialInstructions,
+        orderDate: orderDate,
         addOnItems: addOnSaleItems,
       );
-
-      if (customerResult is PrintFailure) {
-        isPrinting.value = false;
-        if (context.mounted) {
-          showErrorSnackBar(
-            context,
-            message: printStoreCopy.value
-                ? 'Claim sheet printed (customer copy failed)'
-                : customerResult.message,
-            useRootMessenger: false,
-          );
-        }
-        return;
-      }
 
       isPrinting.value = false;
       if (!context.mounted) return;
 
+      if (result is PrintFailure) {
+        showErrorSnackBar(
+          context,
+          message: result.message,
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       if (showSuccessMessage) {
         final msg = printStoreCopy.value
-            ? 'Printed: store + customer claim sheets'
+            ? 'Printed: claim sheet + service stubs'
             : 'Claim sheet printed';
         showSuccessSnackBar(context, message: msg, useRootMessenger: false);
       }
@@ -2935,7 +2923,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                     child: ListTile(
                       leading: Icon(Icons.picture_as_pdf_outlined),
                       title: Text('Preview Claim Sheet (Store)'),
-                      subtitle: Text('Machine tag'),
+                      subtitle: Text('Service stubs'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -3064,8 +3052,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
             child: CheckboxListTile(
               value: printStoreCopy.value,
               onChanged: (v) => printStoreCopy.value = v ?? true,
-              title: const Text('Print store claim sheet'),
-              subtitle: const Text('Prints a compact tag for machines'),
+              title: const Text('Print service stubs'),
+              subtitle: const Text('Two tags cut after the claim sheet'),
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,

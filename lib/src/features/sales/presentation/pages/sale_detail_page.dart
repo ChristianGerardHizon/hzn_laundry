@@ -27,6 +27,8 @@ import '../../../settings/presentation/controllers/current_branch_controller.dar
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../customers/presentation/controllers/customer_provider.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
@@ -2021,6 +2023,30 @@ class _PrintMenuButton extends HookConsumerWidget {
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    final customerId = sale.customerId;
+    final customerPhone = (customerId != null && customerId.isNotEmpty)
+        ? ref.watch(customerProvider(customerId)).value?.phone
+        : null;
+
+    ({String? businessName, String? branchAddress, String? contactNumber})
+        receiptHeader() {
+      final branch = branchAsync.value;
+      final orgName = org?.name;
+      final businessName =
+          (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
+      final branchAddress = (branch?.address.isNotEmpty == true)
+          ? branch!.address
+          : org?.address;
+      final contactNumber = (branch?.contactNumber.isNotEmpty == true)
+          ? branch!.contactNumber
+          : org?.contactNumber;
+      return (
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
+      );
+    }
 
     OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
       final serviceItems =
@@ -2030,7 +2056,7 @@ class _PrintMenuButton extends HookConsumerWidget {
       final service = firstService?.service;
       final unitLabel = service?.quantityUnit?.shortPlural ??
           (service?.weightBased == true ? 'KG' : 'PCS');
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
 
       return OrderClaimSheetPdfData(
         customerName: sale.customerName ?? 'Walk-in',
@@ -2040,9 +2066,9 @@ class _PrintMenuButton extends HookConsumerWidget {
         totalAmount: sale.totalAmount.toDouble(),
         createdDate: sale.postedDate ?? DateTime.now(),
         storeCopy: storeCopy,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
         specialInstructions: sale.notes,
         claimSheetNumber: sale.receiptNumber,
@@ -2050,7 +2076,10 @@ class _PrintMenuButton extends HookConsumerWidget {
       );
     }
 
-    Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
+    Future<PrintResult?> sendPrint({
+      required OrderReceiptCopy copyType,
+      bool includeStubs = false,
+    }) {
       final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
@@ -2068,11 +2097,14 @@ class _PrintMenuButton extends HookConsumerWidget {
         totalAmount: pdfData.totalAmount,
         claimSheetNumber: pdfData.claimSheetNumber,
         copyType: copyType,
+        includeStubs: includeStubs,
         businessName: pdfData.businessName,
         branchAddress: pdfData.branchAddress,
         contactNumber: pdfData.contactNumber,
         cashierName: pdfData.cashierName,
+        customerPhone: customerPhone,
         specialInstructions: pdfData.specialInstructions,
+        orderDate: pdfData.createdDate,
         addOnItems: pdfData.addOnItems,
       );
     }
@@ -2096,20 +2128,28 @@ class _PrintMenuButton extends HookConsumerWidget {
       return true;
     }
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
+    Future<void> printCopy({
+      required OrderReceiptCopy copyType,
+      bool includeStubs = false,
+    }) async {
       if (!ensureCanPrint()) return;
 
       isPrinting.value = true;
       try {
-        final result = await sendPrint(copyType);
+        final result = await sendPrint(
+          copyType: copyType,
+          includeStubs: includeStubs,
+        );
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
           showErrorSnackBar(context, message: result.message);
         } else {
-          final label = copyType == OrderReceiptCopy.customer
-              ? 'Claim sheet'
-              : 'Claim sheet (store)';
+          final label = includeStubs
+              ? 'Claim sheet + service stubs'
+              : copyType == OrderReceiptCopy.customer
+                  ? 'Claim sheet'
+                  : 'Service stubs';
           showSuccessSnackBar(context, message: '$label printed');
         }
       } finally {
@@ -2118,37 +2158,10 @@ class _PrintMenuButton extends HookConsumerWidget {
     }
 
     Future<void> printBothCopies() async {
-      if (!ensureCanPrint()) return;
-
-      isPrinting.value = true;
-      try {
-        final storeResult = await sendPrint(OrderReceiptCopy.store);
-        if (!context.mounted) return;
-        if (storeResult is PrintFailure) {
-          showErrorSnackBar(context, message: storeResult.message);
-          return;
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (!context.mounted) return;
-
-        final customerResult = await sendPrint(OrderReceiptCopy.customer);
-        if (!context.mounted) return;
-        if (customerResult is PrintFailure) {
-          showErrorSnackBar(
-            context,
-            message: 'Claim sheet printed (customer copy failed)',
-          );
-          return;
-        }
-
-        showSuccessSnackBar(
-          context,
-          message: 'Printed: store + customer claim sheets',
-        );
-      } finally {
-        if (context.mounted) isPrinting.value = false;
-      }
+      await printCopy(
+        copyType: OrderReceiptCopy.customer,
+        includeStubs: true,
+      );
     }
 
     Future<void> previewCopy({required bool storeCopy}) async {
@@ -2175,9 +2188,9 @@ class _PrintMenuButton extends HookConsumerWidget {
     Future<void> handlePrintMenuSelection(String value) async {
       switch (value) {
         case 'print_customer':
-          await printCopy(OrderReceiptCopy.customer);
+          await printCopy(copyType: OrderReceiptCopy.customer);
         case 'print_store':
-          await printCopy(OrderReceiptCopy.store);
+          await printCopy(copyType: OrderReceiptCopy.store);
         case 'print_all':
           await printBothCopies();
       }
@@ -2214,7 +2227,7 @@ class _PrintMenuButton extends HookConsumerWidget {
               child: ListTile(
                 leading: Icon(Icons.picture_as_pdf_outlined),
                 title: Text('Preview Claim Sheet (Store)'),
-                subtitle: Text('Machine tag'),
+                subtitle: Text('Service stubs'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
@@ -2233,7 +2246,7 @@ class _PrintMenuButton extends HookConsumerWidget {
                 child: ListTile(
                   leading: Icon(Icons.print),
                   title: Text('Print All'),
-                  subtitle: Text('Store + customer'),
+                  subtitle: Text('Claim sheet + stubs'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -2251,8 +2264,8 @@ class _PrintMenuButton extends HookConsumerWidget {
                 value: 'print_store',
                 child: ListTile(
                   leading: Icon(Icons.local_laundry_service),
-                  title: Text('Print Claim Sheet (Store)'),
-                  subtitle: Text('Machine tag'),
+                  title: Text('Print Service Stubs'),
+                  subtitle: Text('Two tags with cut'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
