@@ -226,6 +226,8 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
 	@override String get allBranches => 'Lahat ng Sangay';
+	@override String get switchingBranch => 'Pinapalitan ang sangay…';
+	@override String switchingToBranch({required Object name}) => 'Lumilipat sa ${name}…';
 	@override String get posUnavailableAllBranches => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.';
 	@override String get createUnavailableAllBranches => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.';
 	@override String get activities => 'Mga Aktibidad';
@@ -498,6 +500,8 @@ extension on TranslationsTl {
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',
 			'navigation.allBranches' => 'Lahat ng Sangay',
+			'navigation.switchingBranch' => 'Pinapalitan ang sangay…',
+			'navigation.switchingToBranch' => ({required Object name}) => 'Lumilipat sa ${name}…',
 			'navigation.posUnavailableAllBranches' => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.',
 			'navigation.createUnavailableAllBranches' => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.',
 			'navigation.activities' => 'Mga Aktibidad',

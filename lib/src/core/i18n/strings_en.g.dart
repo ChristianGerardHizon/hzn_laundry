@@ -487,6 +487,12 @@ class TranslationsNavigationEn {
 	/// en: 'All Branches'
 	String get allBranches => 'All Branches';
 
+	/// en: 'Switching branch…'
+	String get switchingBranch => 'Switching branch…';
+
+	/// en: 'Switching to $name…'
+	String switchingToBranch({required Object name}) => 'Switching to ${name}…';
+
 	/// en: 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.'
 	String get posUnavailableAllBranches => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.';
 
@@ -958,6 +964,8 @@ extension on Translations {
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'No Branch',
 			'navigation.allBranches' => 'All Branches',
+			'navigation.switchingBranch' => 'Switching branch…',
+			'navigation.switchingToBranch' => ({required Object name}) => 'Switching to ${name}…',
 			'navigation.posUnavailableAllBranches' => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.',
 			'navigation.createUnavailableAllBranches' => 'This action requires a specific branch. Choose a branch before continuing.',
 			'navigation.activities' => 'Activities',

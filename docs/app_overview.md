@@ -622,6 +622,7 @@ lib/src/
 
 ---
 
+| Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |
 | Sep 19 | Org-scoped employees | Employees belong to an organization with optional multi-branch assignment (empty = all branches). Lists and salary/attendance reports filter by current org and branch |
 | Sep 19 | Remove incentives | Removed unused incentives feature (reports tab, branch tiers, dashboard/sale UI, `incentiveTiers` collection, and related permissions) |
 | Sep 19 | OTP-first login | Login defaults to email OTP after Continue; password remains an optional secondary path |
@@ -635,7 +636,7 @@ lib/src/
 | Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)
 | Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |
 | Sep 03 | Org create setup dialog | Create Organization is a stepper dialog (details, first branch, optional invites, review). The org is created only when required setup is submitted, in one server transaction with the first branch. |
-| Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 3 seconds when switching organizations |
+| Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 2 seconds when switching organizations |
 | Sep 03 | Desktop side nav | Firebase-style expandable sidebar at ≥900px (`DesktopSideNav`): Dashboard, Shortcuts, hover/tap category flyouts, System/Logout, session collapse. Tablet 600–899px still uses `TabletNavRail` |
 | Sep 03 | Multi-tenant organizations | Organizations, memberships, and invites; Management rename of the old admin section; org switcher for multi-org users; email+password auth with `reset-password.html` |
 | Sep 03 | Docs Cleanup | Removed leftover vet-clinic template content (Patients/Appointments/Treatments/Messages) from app_overview.md, replaced with accurate feature/navigation/domain-model docs matching the current laundry app |

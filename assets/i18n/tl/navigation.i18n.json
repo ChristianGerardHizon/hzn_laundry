@@ -30,6 +30,8 @@
     "account": "Account",
     "noBranch": "Walang Sangay",
     "allBranches": "Lahat ng Sangay",
+    "switchingBranch": "Pinapalitan ang sangay…",
+    "switchingToBranch(name)": "Lumilipat sa $name…",
     "posUnavailableAllBranches": "Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.",
     "createUnavailableAllBranches": "Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.",
     "activities": "Mga Aktibidad",

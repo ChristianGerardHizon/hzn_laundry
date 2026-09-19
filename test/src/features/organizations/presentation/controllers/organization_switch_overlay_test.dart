@@ -36,7 +36,7 @@ void main() {
         expect(
             container.read(organizationSwitchOverlayProvider).active, isTrue);
         expect(
-          container.read(organizationSwitchOverlayProvider).organizationName,
+          container.read(organizationSwitchOverlayProvider).targetName,
           'Acme',
         );
 
