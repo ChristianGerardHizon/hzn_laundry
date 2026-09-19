@@ -303,6 +303,11 @@ class _SaleDetailContent extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 16),
 
+                    // Payment Status & History Card
+                    _buildPaymentCard(context, ref, paymentsAsync,
+                        currencyFormat, canEdit, canVoidPayments),
+                    const SizedBox(height: 16),
+
                     Builder(builder: (_) {
                       final totalPaid =
                           ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
@@ -438,10 +443,6 @@ class _SaleDetailContent extends HookConsumerWidget {
                     const SizedBox(height: 16),
 
                     SaleUsageSection(saleId: sale.id),
-
-                    // Payment Status & History Card
-                    _buildPaymentCard(context, ref, paymentsAsync,
-                        currencyFormat, canEdit, canVoidPayments),
                   ],
                 ),
               ),
