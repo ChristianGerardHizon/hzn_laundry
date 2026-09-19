@@ -191,6 +191,8 @@ class SalesRepositoryImpl implements SalesRepository {
           'notes': sale.notes,
           'postedDate':
               (postedDate ?? DateTime.now()).toUtc().toIso8601String(),
+          if (sale.readyForPickupAt != null)
+            'readyForPickupAt': sale.readyForPickupAt!.toUtc().toIso8601String(),
         };
         final saleRecord = await _sales.create(body: saleBody);
 

@@ -222,6 +222,17 @@ class _SaleDetailContent extends HookConsumerWidget {
                                               .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
+                                      if (sale.readyForPickupAt != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -2070,9 +2081,11 @@ class _PrintMenuButton extends HookConsumerWidget {
         branchAddress: header.branchAddress,
         contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customerPhone,
         specialInstructions: sale.notes,
         claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
+        readyForPickupAt: sale.readyForPickupAt,
       );
     }
 
@@ -2106,6 +2119,7 @@ class _PrintMenuButton extends HookConsumerWidget {
         specialInstructions: pdfData.specialInstructions,
         orderDate: pdfData.createdDate,
         addOnItems: pdfData.addOnItems,
+        readyForPickupAt: pdfData.readyForPickupAt,
       );
     }
 

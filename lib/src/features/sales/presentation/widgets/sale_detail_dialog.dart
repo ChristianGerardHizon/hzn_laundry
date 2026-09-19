@@ -308,9 +308,11 @@ class _DialogPrintMenu extends HookConsumerWidget {
         branchAddress: header.branchAddress,
         contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customerPhone,
         specialInstructions: sale.notes,
         claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
+        readyForPickupAt: sale.readyForPickupAt,
       );
     }
 
@@ -344,6 +346,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
         specialInstructions: pdfData.specialInstructions,
         orderDate: pdfData.createdDate,
         addOnItems: pdfData.addOnItems,
+        readyForPickupAt: pdfData.readyForPickupAt,
       );
     }
 

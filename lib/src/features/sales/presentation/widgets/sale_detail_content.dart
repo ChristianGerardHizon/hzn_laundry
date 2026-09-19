@@ -160,6 +160,15 @@ class _SaleHeaderCard extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (sale.readyForPickupAt != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

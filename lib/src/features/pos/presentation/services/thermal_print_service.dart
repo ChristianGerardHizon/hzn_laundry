@@ -183,6 +183,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? specialInstructions,
     String? claimSheetNumber,
     DateTime? orderDate,
+    DateTime? readyForPickupAt,
     List<SaleItem> addOnItems = const [],
   }) async {
     if (!printer.hasAddress) {
@@ -205,6 +206,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       includeStubs: includeStubs,
       claimSheetNumber: claimSheetNumber,
       orderDate: orderDate,
+      readyForPickupAt: readyForPickupAt,
       addOnItems: addOnItems,
     );
 
@@ -854,6 +856,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? specialInstructions,
     String? claimSheetNumber,
     DateTime? orderDate,
+    DateTime? readyForPickupAt,
     List<SaleItem> addOnItems = const [],
   }) {
     final amountFormat = NumberFormat('#,##0.00');
@@ -975,7 +978,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       PosColumn(text: '$itemCount Item (s)', width: 5),
       PosColumn(text: '', width: 1),
       PosColumn(
-        text: 'Sale Total',
+        text: 'Total',
         width: 3,
         styles: const PosStyles(align: PosAlign.right),
       ),
@@ -995,10 +998,12 @@ class ThermalPrintService extends _$ThermalPrintService {
       'Ready For Pickup:',
       styles: const PosStyles(align: PosAlign.center),
     );
-    bytes += generator.text(
-      dateStr,
-      styles: const PosStyles(align: PosAlign.center),
-    );
+    if (readyForPickupAt != null) {
+      bytes += generator.text(
+        DateFormat('M/d/yyyy h:mm a').format(readyForPickupAt),
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
 
     bytes = _appendDivider(generator, bytes);
     bytes += generator.text(
@@ -1184,6 +1189,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? specialInstructions,
     String? claimSheetNumber,
     DateTime? orderDate,
+    DateTime? readyForPickupAt,
     List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
@@ -1213,6 +1219,7 @@ class ThermalPrintService extends _$ThermalPrintService {
         specialInstructions: specialInstructions,
         claimSheetNumber: claimSheetNumber,
         orderDate: orderDate,
+        readyForPickupAt: readyForPickupAt,
         addOnItems: addOnItems,
       );
     }

@@ -231,6 +231,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
     // Tracks whether order was created → show success page
     final orderCreated = useState(false);
     final createdReceiptNumber = useState<String?>(null);
+    final createdReadyForPickupAt = useState<DateTime?>(null);
 
     // Loyalty promo redemption
     final selectedPromoRedemption = useState<CustomerPromo?>(null);
@@ -414,6 +415,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
       final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity);
       final userNotes =
           formKey.currentState?.fields['specialInstructions']?.value as String?;
+      final readyForPickupAt = formKey
+          .currentState?.fields['readyForPickupAt']?.value as DateTime?;
 
       // Append loyalty info to notes
       String? notes = userNotes;
@@ -439,6 +442,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
         customerId: customer.id,
         customerName: customer.name,
         notes: notes,
+        readyForPickupAt: readyForPickupAt,
       );
 
       final serviceItem = SaleServiceItem(
@@ -516,6 +520,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
           orderCreated.value = true;
           createdReceiptNumber.value = createdSale.receiptNumber;
+          createdReadyForPickupAt.value = createdSale.readyForPickupAt;
         },
       );
     }
@@ -569,6 +574,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
           estimatedTotal: estimatedTotal,
           productItems: productItems.value,
           claimSheetNumber: createdReceiptNumber.value,
+          readyForPickupAt: createdReadyForPickupAt.value,
         ),
       );
     }
@@ -706,6 +712,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
                         copyLastEnabled: !isCopyingLast.value,
                       ),
                     ],
+                    const SizedBox(height: 20),
+
+                    // Ready for pickup (optional)
+                    _ReadyForPickupField(
+                      enabled: !isSaving.value,
+                      onChanged: () => isDirty.value = true,
+                    ),
                     const SizedBox(height: 20),
 
                     // Special instructions
@@ -1899,6 +1912,56 @@ class _TierBreakdown extends HookWidget {
   }
 }
 
+// ── Ready for pickup ─────────────────────────────────────────────────────────
+
+class _ReadyForPickupField extends StatelessWidget {
+  const _ReadyForPickupField({
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ready for Pickup',
+          style:
+              theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        FormBuilderDateTimePicker(
+          name: 'readyForPickupAt',
+          enabled: enabled,
+          inputType: InputType.both,
+          format: DateFormat('MMM dd, yyyy hh:mm a'),
+          decoration: InputDecoration(
+            hintText: 'Optional',
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+            prefixIcon: const Icon(Icons.event_available),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+          onChanged: (_) => onChanged(),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Special instructions ─────────────────────────────────────────────────────
 
 class _SpecialInstructionsField extends StatelessWidget {
@@ -2700,6 +2763,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     this.specialInstructions,
     this.productItems = const [],
     this.claimSheetNumber,
+    this.readyForPickupAt,
   });
 
   final Customer customer;
@@ -2710,6 +2774,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final String? specialInstructions;
   final List<_OrderProductItem> productItems;
   final String? claimSheetNumber;
+  final DateTime? readyForPickupAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2775,9 +2840,11 @@ class _OrderSuccessPage extends HookConsumerWidget {
         branchAddress: header.branchAddress,
         contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customer.phone,
         specialInstructions: specialInstructions,
         claimSheetNumber: claimSheetNumber,
         addOnItems: addOnSaleItems,
+        readyForPickupAt: readyForPickupAt,
       );
     }
 
@@ -2844,6 +2911,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
         specialInstructions: specialInstructions,
         orderDate: orderDate,
         addOnItems: addOnSaleItems,
+        readyForPickupAt: readyForPickupAt,
       );
 
       isPrinting.value = false;
@@ -3004,6 +3072,14 @@ class _OrderSuccessPage extends HookConsumerWidget {
                   const SizedBox(height: 12),
                   _buildDetailRow(
                       context, 'Date', dateFormat.format(orderDate)),
+                  if (readyForPickupAt != null) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      context,
+                      'Ready for pickup',
+                      dateFormat.format(readyForPickupAt!),
+                    ),
+                  ],
                   if (specialInstructions != null &&
                       specialInstructions!.isNotEmpty) ...[
                     const SizedBox(height: 12),

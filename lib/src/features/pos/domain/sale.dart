@@ -26,6 +26,7 @@ class Sale with SaleMappable {
     this.customerName,
     this.notes,
     this.postedDate,
+    this.readyForPickupAt,
     this.created,
     this.updated,
   });
@@ -74,6 +75,9 @@ class Sale with SaleMappable {
 
   /// Business/transaction date (editable).
   final DateTime? postedDate;
+
+  /// Optional promised ready-for-pickup date/time.
+  final DateTime? readyForPickupAt;
 
   /// Creation timestamp.
   final DateTime? created;
