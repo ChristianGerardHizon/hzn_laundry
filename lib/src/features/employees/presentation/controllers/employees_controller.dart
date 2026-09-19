@@ -1,5 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/employee_repository.dart';
 import '../../domain/employee.dart';
 
@@ -10,9 +13,24 @@ part 'employees_controller.g.dart';
 class EmployeesController extends _$EmployeesController {
   EmployeeRepository get _repository => ref.read(employeeRepositoryProvider);
 
+  String? get _scopeFilter {
+    return PBFilters.forEmployeeOrgAndBranch(
+      organizationId: ref.read(currentOrganizationIdProvider),
+      branchId: ref.read(currentBranchIdProvider),
+    );
+  }
+
   @override
   Future<List<Employee>> build() async {
-    final result = await _repository.fetchAll();
+    final orgId = ref.watch(currentOrganizationIdProvider);
+    final branchId = ref.watch(currentBranchIdProvider);
+    final filter = PBFilters.forEmployeeOrgAndBranch(
+      organizationId: orgId,
+      branchId: branchId,
+    );
+    if (filter == null) return [];
+
+    final result = await _repository.fetchAll(filter: filter);
 
     return result.fold(
       (failure) => throw failure,
@@ -25,7 +43,13 @@ class EmployeesController extends _$EmployeesController {
     _repository.invalidateCache();
     state = const AsyncLoading();
 
-    final result = await _repository.fetchAll();
+    final filter = _scopeFilter;
+    if (filter == null) {
+      state = const AsyncData([]);
+      return;
+    }
+
+    final result = await _repository.fetchAll(filter: filter);
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),

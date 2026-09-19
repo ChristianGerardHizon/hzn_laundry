@@ -168,4 +168,4 @@ final class AttendanceReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$attendanceReportHash() => r'3f66e5a9e3cacb3c27dfe7cf653ec2c507a61812';
+String _$attendanceReportHash() => r'428b5f46214171e9f095372a521d729d0990bdc6';

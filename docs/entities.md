@@ -760,18 +760,27 @@ Storage locations (shelves, racks) for laundry items.
 
 ### Employee
 
-A staff member of the laundry business (distinct from `User` — an Employee is a payroll/attendance subject, not necessarily an app login).
+A staff member of the laundry business (distinct from `User` — an Employee is a payroll/attendance subject, not necessarily an app login). Scoped to an organization, with optional multi-branch assignment.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | Employee name |
+| `organization` | String (FK) | Yes | FK to Organization (tenant) |
+| `branches` | List\<String\> (FK) | No | Multi-relation to Branch; empty = all branches in the organization |
 | `baseSalary` | num | No | Base salary amount (default 0) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `employees`
+
+**Relationships:** `organization` -> Organization; `branches` -> Branch (many, optional).
+
+**Scoping:**
+- List/search/create are filtered by the current organization.
+- When a specific branch is selected, employees assigned to that branch (or with empty `branches`) are shown.
+- In All Branches mode, all employees in the current organization are shown.
 
 ### EmployeeAttendance
 

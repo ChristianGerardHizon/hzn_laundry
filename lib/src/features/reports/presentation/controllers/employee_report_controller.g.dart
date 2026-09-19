@@ -49,4 +49,4 @@ final class SalaryReportProvider extends $FunctionalProvider<
   }
 }
 
-String _$salaryReportHash() => r'f86ed779ee8005448d842e57f73b49367999642c';
+String _$salaryReportHash() => r'4e421943d8b86f125ec92e376d2203a095a11d92';

@@ -136,6 +136,8 @@ class EmployeeRepositoryImpl implements EmployeeRepository {
         final body = <String, dynamic>{
           'name': employee.name,
           'baseSalary': employee.baseSalary,
+          'organization': employee.organizationId,
+          'branches': employee.branchIds,
           'isDeleted': false,
         };
 
@@ -154,6 +156,8 @@ class EmployeeRepositoryImpl implements EmployeeRepository {
         final body = <String, dynamic>{
           'name': employee.name,
           'baseSalary': employee.baseSalary,
+          'organization': employee.organizationId,
+          'branches': employee.branchIds,
         };
 
         final record = await _collection.update(employee.id, body: body);

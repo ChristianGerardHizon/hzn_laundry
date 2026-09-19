@@ -8,7 +8,9 @@ import '../../../employees/data/repositories/employee_repository.dart';
 import '../../../employees/domain/employee.dart';
 import '../../../employees/domain/employee_attendance.dart';
 import '../../../employees/domain/employee_deduction.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import 'salary_month_controller.dart';
 
 part 'employee_report_controller.g.dart';
@@ -48,9 +50,9 @@ Future<EmployeeReportData> salaryReport(Ref ref) async {
   final dateRange = monthController.dateRangeForPeriod(period);
   // Watch the month state so provider rebuilds on change
   ref.watch(salaryMonthControllerProvider);
-  // Branch scope kept watched so salary report refreshes on branch switch.
+  // Branch/org scope so salary report refreshes on switch.
+  ref.watch(currentOrganizationIdProvider);
   ref.watch(currentBranchIdProvider);
-  ref.watch(currentBranchIdsFilterProvider);
   return _buildEmployeeReport(
     ref,
     dateRange: dateRange,
@@ -68,8 +70,16 @@ Future<EmployeeReportData> _buildEmployeeReport(
   final attendanceRepo = ref.read(employeeAttendanceRepositoryProvider);
   final deductionRepo = ref.read(employeeDeductionRepositoryProvider);
 
+  final employeeFilter = PBFilters.forEmployeeOrgAndBranch(
+    organizationId: ref.read(currentOrganizationIdProvider),
+    branchId: ref.read(currentBranchIdProvider),
+  );
+  if (employeeFilter == null) {
+    return const EmployeeReportData(entries: []);
+  }
+
   final results = await Future.wait([
-    employeeRepo.fetchAll(),
+    employeeRepo.fetchAll(filter: employeeFilter),
     attendanceRepo.fetchAllInDateRange(
       startDate: dateRange.start,
       endDate: dateRange.end,

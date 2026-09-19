@@ -6,11 +6,13 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../settings/presentation/controllers/branches_controller.dart';
 import '../controllers/employee_provider.dart';
 import '../controllers/employees_controller.dart';
 import '../widgets/employee_attendance_tab.dart';
 import '../widgets/employee_deductions_tab.dart';
 import '../widgets/employee_form_dialog.dart';
+import '../../domain/employee.dart';
 
 /// Employee detail page showing employee information and attendance.
 class EmployeeDetailPage extends HookConsumerWidget {
@@ -114,6 +116,10 @@ class EmployeeDetailPage extends HookConsumerWidget {
                             label: 'Base Salary',
                             value: currencyFormat.format(employee.baseSalary),
                           ),
+                          _InfoRow(
+                            label: 'Branches',
+                            value: _branchAssignmentLabel(ref, employee),
+                          ),
                         ],
                       ),
                     ),
@@ -178,6 +184,19 @@ class EmployeeDetailPage extends HookConsumerWidget {
         }
       }
     }
+  }
+
+  String _branchAssignmentLabel(WidgetRef ref, Employee employee) {
+    if (employee.isAssignedToAllBranches) return 'All branches';
+    final branches =
+        ref.watch(branchesControllerProvider).asData?.value ?? const [];
+    final byId = {for (final b in branches) b.id: b.name};
+    final names = employee.branchIds
+        .map((id) => byId[id])
+        .whereType<String>()
+        .toList();
+    if (names.isEmpty) return employee.branchIds.join(', ');
+    return names.join(', ');
   }
 }
 
