@@ -167,9 +167,6 @@ abstract class Permissions {
   static const settingsView = 'settings.view';
   static const settingsEdit = 'settings.edit';
 
-  // Incentive permissions
-  static const incentiveView = 'incentive.view';
-
   // Dashboard permissions
   static const dashboardDateOverride = 'dashboard.dateOverride';
 
@@ -210,7 +207,6 @@ abstract class Permissions {
     'Roles': [rolesView, rolesCreate, rolesEdit, rolesDelete],
     'Branches': [branchesView, branchesCreate, branchesEdit, branchesDelete],
     'Settings': [settingsView, settingsEdit],
-    'Incentive': [incentiveView],
     'Dashboard': [dashboardDateOverride],
     'Organizations': [organizationsCreate],
     'Organization Members': [membersManage],
@@ -625,15 +621,6 @@ abstract class Permissions {
         category: 'Settings',
         description: 'Modify system settings',
         icon: Icons.edit,
-      ),
-      // Incentive
-      const Permission(
-        key: incentiveView,
-        name: 'View Incentive',
-        category: 'Incentive',
-        description:
-            "View today's incentive KPI and incentive breakdown on the dashboard",
-        icon: Icons.payments,
       ),
       // Dashboard
       const Permission(

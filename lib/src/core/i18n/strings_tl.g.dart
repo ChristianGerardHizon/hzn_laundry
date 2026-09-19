@@ -287,16 +287,6 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get onboardingComplete => 'Handa na ang organisasyon';
 	@override String get operatingHours => 'Mga oras ng operasyon';
 	@override String get cutOffTime => 'Cut-off time';
-	@override String get incentiveTiers => 'Mga incentive tier';
-	@override String get addTier => 'Magdagdag ng tier';
-	@override String get incentiveTiersHint => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.';
-	@override String get atLeastOneTier => 'Kailangan ng kahit isang incentive tier.';
-	@override String tierLabel({required Object n}) => 'Tier ${n}';
-	@override String get tierMin => 'Min';
-	@override String get tierMax => 'Max';
-	@override String get tierIncentive => 'Incentive';
-	@override String get tierNoLimit => 'Walang limit';
-	@override String get removeTier => 'Alisin ang tier';
 	@override String get addInvite => 'Idagdag ang imbitasyon';
 	@override String get noInvitesQueued => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.';
 	@override String get queuedInvites => 'Mga naka-queue na imbitasyon';
@@ -560,16 +550,6 @@ extension on TranslationsTl {
 			'organizations.onboardingComplete' => 'Handa na ang organisasyon',
 			'organizations.operatingHours' => 'Mga oras ng operasyon',
 			'organizations.cutOffTime' => 'Cut-off time',
-			'organizations.incentiveTiers' => 'Mga incentive tier',
-			'organizations.addTier' => 'Magdagdag ng tier',
-			'organizations.incentiveTiersHint' => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.',
-			'organizations.atLeastOneTier' => 'Kailangan ng kahit isang incentive tier.',
-			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
-			'organizations.tierMin' => 'Min',
-			'organizations.tierMax' => 'Max',
-			'organizations.tierIncentive' => 'Incentive',
-			'organizations.tierNoLimit' => 'Walang limit',
-			'organizations.removeTier' => 'Alisin ang tier',
 			'organizations.addInvite' => 'Idagdag ang imbitasyon',
 			'organizations.noInvitesQueued' => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.',
 			'organizations.queuedInvites' => 'Mga naka-queue na imbitasyon',

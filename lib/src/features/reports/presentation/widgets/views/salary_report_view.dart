@@ -407,12 +407,6 @@ class SalaryReportView extends HookConsumerWidget {
         Colors.blue,
       ),
       _KpiData(
-        'Incentive',
-        _currencyFormat.format(data.totalIncentive),
-        Icons.trending_up,
-        Colors.green,
-      ),
-      _KpiData(
         'Deductions',
         _currencyFormat.format(data.totalDeductions),
         Icons.money_off,
@@ -456,13 +450,7 @@ class SalaryReportView extends HookConsumerWidget {
                     icon: cards[2].icon,
                     color: cards[2].color)),
             const SizedBox(width: 8),
-            Expanded(
-                child: KpiCard(
-                    compact: true,
-                    title: cards[3].title,
-                    value: cards[3].value,
-                    icon: cards[3].icon,
-                    color: cards[3].color)),
+            const Expanded(child: SizedBox.shrink()),
           ]),
         ],
       );
@@ -501,11 +489,6 @@ class SalaryReportView extends HookConsumerWidget {
             _TotalRow(
               label: 'Total Base Salary',
               value: _currencyFormat.format(data.totalBaseSalary),
-              theme: theme,
-            ),
-            _TotalRow(
-              label: 'Total Incentive',
-              value: _currencyFormat.format(data.totalIncentive),
               theme: theme,
             ),
             _TotalRow(
@@ -652,12 +635,6 @@ class _EmployeeBreakdownCard extends HookWidget {
                     label: 'Base: ${currencyFormat.format(e.baseSalary)}',
                     color: Colors.blue,
                   ),
-                  if (e.incentiveAmount > 0)
-                    _MiniChip(
-                      label:
-                          '+${currencyFormat.format(e.incentiveAmount)}',
-                      color: Colors.green,
-                    ),
                   if (e.deductionAmount > 0)
                     _MiniChip(
                       label:
@@ -690,13 +667,6 @@ class _EmployeeBreakdownCard extends HookWidget {
                   value: currencyFormat.format(e.baseSalary),
                   theme: theme,
                 ),
-                if (e.incentiveAmount > 0)
-                  _BreakdownRow(
-                    label: 'Incentive (${e.daysPresent} days)',
-                    value: currencyFormat.format(e.incentiveAmount),
-                    theme: theme,
-                    valueColor: Colors.green,
-                  ),
 
                 // Deductions section
                 if (e.deductions.isNotEmpty) ...[

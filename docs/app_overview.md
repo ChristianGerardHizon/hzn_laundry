@@ -305,14 +305,13 @@ Printers are stored on the device (secure storage), not in PocketBase. The lefto
 | `employeeAttendances` | Clock in/out records |
 | `employeeDeductions` | Payroll deductions per employee |
 
-#### Promos & Misc (5 collections)
+#### Promos & Misc (4 collections)
 | Collection | Description |
 |------------|-------------|
 | `promos` | Loyalty/promo campaigns |
 | `customerPromos` | Customer promo redemptions |
 | `quantityUnits` | Units of measure (e.g. kg, pc) |
 | `activityLogs` | Audit log of create/update/delete actions |
-| `incentiveTiers` | Employee incentive tier definitions |
 
 #### Workflow settings (1 collection)
 | Collection | Description |
@@ -623,6 +622,7 @@ lib/src/
 
 ---
 
+| Sep 19 | Remove incentives | Removed unused incentives feature (reports tab, branch tiers, dashboard/sale UI, `incentiveTiers` collection, and related permissions) |
 | Sep 19 | OTP-first login | Login defaults to email OTP after Continue; password remains an optional secondary path |
 | Sep 11 | Org-scoped All Branches | Switching organizations no longer leaks the previous org's data: All Branches means all branches of the *selected* organization, and org switch clears tenant keepAlive caches |
 | Sep 11 | Order details Total + Record Payment | Sale/order details show Total and Record Payment directly below Order Status so they are visible without scrolling past services and add-ons |

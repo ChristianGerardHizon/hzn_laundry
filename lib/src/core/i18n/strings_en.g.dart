@@ -652,36 +652,6 @@ class TranslationsOrganizationsEn {
 	/// en: 'Cut-off Time'
 	String get cutOffTime => 'Cut-off Time';
 
-	/// en: 'Incentive Tiers'
-	String get incentiveTiers => 'Incentive Tiers';
-
-	/// en: 'Add Tier'
-	String get addTier => 'Add Tier';
-
-	/// en: 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier's incentive is used.'
-	String get incentiveTiersHint => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.';
-
-	/// en: 'At least one incentive tier is required.'
-	String get atLeastOneTier => 'At least one incentive tier is required.';
-
-	/// en: 'Tier $n'
-	String tierLabel({required Object n}) => 'Tier ${n}';
-
-	/// en: 'Min'
-	String get tierMin => 'Min';
-
-	/// en: 'Max'
-	String get tierMax => 'Max';
-
-	/// en: 'Incentive'
-	String get tierIncentive => 'Incentive';
-
-	/// en: 'No limit'
-	String get tierNoLimit => 'No limit';
-
-	/// en: 'Remove tier'
-	String get removeTier => 'Remove tier';
-
 	/// en: 'Add invite'
 	String get addInvite => 'Add invite';
 
@@ -1040,16 +1010,6 @@ extension on Translations {
 			'organizations.onboardingComplete' => 'Organization is ready',
 			'organizations.operatingHours' => 'Operating Hours',
 			'organizations.cutOffTime' => 'Cut-off Time',
-			'organizations.incentiveTiers' => 'Incentive Tiers',
-			'organizations.addTier' => 'Add Tier',
-			'organizations.incentiveTiersHint' => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.',
-			'organizations.atLeastOneTier' => 'At least one incentive tier is required.',
-			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
-			'organizations.tierMin' => 'Min',
-			'organizations.tierMax' => 'Max',
-			'organizations.tierIncentive' => 'Incentive',
-			'organizations.tierNoLimit' => 'No limit',
-			'organizations.removeTier' => 'Remove tier',
 			'organizations.addInvite' => 'Add invite',
 			'organizations.noInvitesQueued' => 'No invites queued. You can skip this step.',
 			'organizations.queuedInvites' => 'Queued invites',

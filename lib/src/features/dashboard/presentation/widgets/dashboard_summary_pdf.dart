@@ -9,7 +9,6 @@ import '../../domain/consumables_usage_summary.dart';
 import '../../domain/loads_summary.dart';
 import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
-import '../controllers/today_incentive_controller.dart';
 
 /// A single line row inside a breakdown section of the dashboard PDF.
 class _PdfLine {
@@ -210,21 +209,6 @@ List<_PdfLine> _mapTotalSalesLines(List<SalesSummaryItem> items) {
   }).toList();
 }
 
-/// Maps incentive order entries to PDF lines.
-List<_PdfLine> _mapIncentiveLines(List<TodayOrderIncentiveEntry> orders) {
-  return orders.map((order) {
-    final receipt = _shortReceipt(order.receiptNumber);
-    final name = order.customerName ?? 'Walk-in';
-    final backlog = order.isBacklog ? '  [Backlog]' : '';
-    return _PdfLine(
-      title: '$name  ·  $receipt$backlog',
-      subtitle: 'Service: ${_pesoPdf.format(order.servicePrice)}',
-      trailing: _statusLabel(order.orderStatus),
-      amount: order.incentive,
-    );
-  }).toList();
-}
-
 /// Maps consumable usage breakdown items to PDF lines.
 List<_PdfLine> _mapConsumableLines(
   List<ConsumableUsageBreakdownItem> items, {
@@ -290,7 +274,7 @@ List<_PdfLine> _mapLoadsLines(List<LoadsOrderEntry> orders) {
 }
 
 /// Serializable payload for a single-section breakdown PDF (e.g. just
-/// "Total Sales" or just "Today's Incentive").
+/// "Total Sales").
 class DashboardSectionPdfPayload {
   DashboardSectionPdfPayload({
     required this.sectionTitle,
@@ -366,26 +350,6 @@ class DashboardSectionPdfPayload {
       lines: _mapTotalSalesLines(items),
       emptyText: emptyText,
       salesFooter: _SalesFooterTotals.fromItems(items),
-    );
-  }
-
-  /// Builds the payload for the incentive breakdown section.
-  factory DashboardSectionPdfPayload.fromIncentive({
-    required TodayIncentiveSummary incentive,
-    required String? businessName,
-    required DateTime reportDate,
-    required DateTime generatedAt,
-    required bool isDateOverridden,
-  }) {
-    return DashboardSectionPdfPayload(
-      sectionTitle: "Today's Incentive",
-      businessName: businessName,
-      reportDate: reportDate,
-      generatedAt: generatedAt,
-      isDateOverridden: isDateOverridden,
-      total: incentive.totalIncentive,
-      lines: _mapIncentiveLines(incentive.orders),
-      emptyText: 'No qualifying orders.',
     );
   }
 
@@ -582,58 +546,46 @@ class DashboardSummaryPdfPayload {
     required this.reportDate,
     required this.generatedAt,
     required this.isDateOverridden,
-    required this.includeIncentive,
     required this.totalSales,
     required this.totalPaymentsReceived,
     required this.totalOutstanding,
-    required this.totalIncentive,
     required this.salesLines,
     required this.paymentLines,
     required this.outstandingLines,
-    required this.incentiveLines,
   });
 
   final String? businessName;
   final DateTime reportDate;
   final DateTime generatedAt;
   final bool isDateOverridden;
-  final bool includeIncentive;
 
   final num totalSales;
   final num totalPaymentsReceived;
   final num totalOutstanding;
-  final num totalIncentive;
 
   final List<_PdfLine> salesLines;
   final List<_PdfLine> paymentLines;
   final List<_PdfLine> outstandingLines;
-  final List<_PdfLine> incentiveLines;
 
   /// Builds the payload from the dashboard summary models.
   factory DashboardSummaryPdfPayload.fromData({
     required SalesSummaryData summary,
-    required TodayIncentiveSummary incentive,
     required String? businessName,
     required DateTime reportDate,
     required DateTime generatedAt,
     required bool isDateOverridden,
-    required bool includeIncentive,
   }) {
     return DashboardSummaryPdfPayload(
       businessName: businessName,
       reportDate: reportDate,
       generatedAt: generatedAt,
       isDateOverridden: isDateOverridden,
-      includeIncentive: includeIncentive,
       totalSales: summary.totalSales,
       totalPaymentsReceived: summary.totalPaymentsReceived,
       totalOutstanding: summary.totalOutstanding,
-      totalIncentive: incentive.totalIncentive,
       salesLines: _mapSalesLines(summary.salesItems),
       paymentLines: _mapSalesLines(summary.paymentItems),
       outstandingLines: _mapSalesLines(summary.outstandingItems),
-      incentiveLines:
-          includeIncentive ? _mapIncentiveLines(incentive.orders) : const [],
     );
   }
 }
@@ -704,9 +656,6 @@ Future<Uint8List> buildDashboardSummaryPdf(
             payload.totalPaymentsReceived, 'No payments for this day.'),
         _buildSection('Outstanding', payload.outstandingLines,
             payload.totalOutstanding, 'No outstanding balances.'),
-        if (payload.includeIncentive)
-          _buildSection('Today\'s Incentive', payload.incentiveLines,
-              payload.totalIncentive, 'No qualifying orders.'),
       ],
     ),
   );
@@ -761,9 +710,6 @@ pw.Widget _buildTotalsGrid(DashboardSummaryPdfPayload payload) {
         '${payload.paymentLines.length} entries'),
     _totalCard('Outstanding', payload.totalOutstanding,
         '${payload.outstandingLines.length} pending'),
-    if (payload.includeIncentive)
-      _totalCard('Today\'s Incentive', payload.totalIncentive,
-          '${payload.incentiveLines.length} qualifying'),
   ];
 
   return pw.Row(

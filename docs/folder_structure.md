@@ -865,7 +865,7 @@ features/
 │
 ├── dashboard/                  # Home dashboard
 │
-├── settings/                  # Device printers/appearance; POS groups, incentive tiers, feature flags
+├── settings/                  # Device printers/appearance; POS groups, feature flags
 │
 ├── auth/                      # Login, session state
 │

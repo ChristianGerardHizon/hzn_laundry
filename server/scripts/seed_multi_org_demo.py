@@ -378,8 +378,6 @@ def main() -> int:
             "address": "123 Sunrise Ave, QC",
             "contactNumber": "09171234567",
             "organization": sunrise["id"],
-            "incentiveAmount": 5,
-            "incentivePerServiceItems": 200,
         },
         "branch Sunrise Main",
     )
@@ -418,8 +416,6 @@ def main() -> int:
             "address": "99 Hidden St, Manila",
             "contactNumber": "09179876543",
             "organization": private["id"],
-            "incentiveAmount": 5,
-            "incentivePerServiceItems": 200,
         },
         "branch Private HQ",
     )

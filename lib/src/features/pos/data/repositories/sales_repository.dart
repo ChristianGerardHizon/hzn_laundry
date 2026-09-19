@@ -79,13 +79,6 @@ abstract class SalesRepository {
     bool filterByProcessedDate = false,
   });
 
-  /// Fetches optimized rows used by dashboard today incentive calculations.
-  FutureEither<List<RecordModel>> getTodayIncentiveRows({
-    required DateTime startDate,
-    required DateTime endDate,
-    String? branchScope,
-  });
-
   /// Fetches all sales for a specific customer.
   FutureEither<List<Sale>> getSalesByCustomer(String customerId);
 
@@ -514,8 +507,6 @@ class SalesRepositoryImpl implements SalesRepository {
         final filter = PBFilter();
 
         if (filterByProcessedDate) {
-          // Attribute incentives to the day the order was first processed
-          // (status changed to ready/pickedUp), stamped by the hook.
           filter.between('processedDate', startDate, endDate);
         } else {
           // Default: filter by postedDate; fall back to created for older records.
@@ -532,29 +523,6 @@ class SalesRepositoryImpl implements SalesRepository {
             .getFullList(
               filter: PBFilters.combine(filter.build(), branchScope),
               sort: filterByProcessedDate ? '-processedDate' : '-postedDate',
-            );
-        return records;
-      },
-      Failure.handle,
-    ).run();
-  }
-
-  @override
-  FutureEither<List<RecordModel>> getTodayIncentiveRows({
-    required DateTime startDate,
-    required DateTime endDate,
-    String? branchScope,
-  }) async {
-    return TaskEither.tryCatch(
-      () async {
-        final filter =
-            PBFilter().between('effectiveProcessedDate', startDate, endDate);
-
-        final records = await _pb
-            .collection(PocketBaseCollections.vwSaleServiceTotals)
-            .getFullList(
-              filter: PBFilters.combine(filter.build(), branchScope),
-              sort: '-effectiveProcessedDate',
             );
         return records;
       },
