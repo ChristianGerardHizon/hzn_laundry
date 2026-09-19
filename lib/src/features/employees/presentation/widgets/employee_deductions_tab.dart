@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../domain/deduction_type.dart';
@@ -106,7 +107,7 @@ class EmployeeDeductionsTab extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => ErrorState.fromError(error),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () =>

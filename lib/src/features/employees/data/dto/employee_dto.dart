@@ -13,6 +13,8 @@ class EmployeeDto with EmployeeDtoMappable {
   final String collectionId;
   final String collectionName;
   final String name;
+  final String organizationId;
+  final List<String> branchIds;
   final num baseSalary;
   final bool isDeleted;
   final String? created;
@@ -23,6 +25,8 @@ class EmployeeDto with EmployeeDtoMappable {
     required this.collectionId,
     required this.collectionName,
     required this.name,
+    this.organizationId = '',
+    this.branchIds = const [],
     this.baseSalary = 0,
     this.isDeleted = false,
     this.created,
@@ -36,6 +40,8 @@ class EmployeeDto with EmployeeDtoMappable {
       collectionId: record.collectionId,
       collectionName: record.collectionName,
       name: record.getStringValue('name'),
+      organizationId: record.getStringValue('organization'),
+      branchIds: record.getListValue<String>('branches'),
       baseSalary: record.get<num>('baseSalary'),
       isDeleted: record.get<bool>('isDeleted'),
       created: record.get<String>('created'),
@@ -48,6 +54,8 @@ class EmployeeDto with EmployeeDtoMappable {
     return Employee(
       id: id,
       name: name,
+      organizationId: organizationId,
+      branchIds: branchIds,
       baseSalary: baseSalary,
       isDeleted: isDeleted,
       created: parseToLocal(created),

@@ -11,15 +11,12 @@ import '../../domain/loads_summary.dart';
 import '../../domain/packs_summary.dart';
 import '../../domain/sales_summary.dart';
 import '../controllers/dashboard_date_override_provider.dart';
-import '../controllers/today_incentive_controller.dart';
 import 'dashboard_summary_pdf.dart';
 
 /// Print/export-to-PDF icon button for a single dashboard breakdown section.
 ///
 /// Lives inside a breakdown modal header (Total Sales, Payments Received,
-/// Outstanding, or Today's Incentive) and prints ONLY that section's list.
-///
-/// Provide exactly one of [salesItems] (with [sectionTitle]) or [incentive].
+/// Outstanding, etc.) and prints ONLY that section's list.
 class DashboardSectionPrintButton extends ConsumerWidget {
   const DashboardSectionPrintButton.sales({
     super.key,
@@ -27,21 +24,7 @@ class DashboardSectionPrintButton extends ConsumerWidget {
     required List<SalesSummaryItem> this.salesItems,
     required num this.total,
     this.color,
-  })  : incentive = null,
-        addOns = null,
-        consumables = null,
-        showConsumableCost = false,
-        loads = null,
-        packs = null;
-
-  const DashboardSectionPrintButton.incentive({
-    super.key,
-    required TodayIncentiveSummary this.incentive,
-    this.color,
-  })  : sectionTitle = "Today's Incentive",
-        salesItems = null,
-        total = null,
-        addOns = null,
+  })  : addOns = null,
         consumables = null,
         showConsumableCost = false,
         loads = null,
@@ -54,7 +37,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = 'Add-ons Sold',
         salesItems = null,
         total = null,
-        incentive = null,
         consumables = null,
         showConsumableCost = false,
         loads = null,
@@ -68,7 +50,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = 'Consumables used',
         salesItems = null,
         total = null,
-        incentive = null,
         addOns = null,
         loads = null,
         packs = null;
@@ -80,7 +61,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = 'Loads',
         salesItems = null,
         total = null,
-        incentive = null,
         addOns = null,
         consumables = null,
         showConsumableCost = false,
@@ -93,7 +73,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   })  : sectionTitle = 'Total Packs',
         salesItems = null,
         total = null,
-        incentive = null,
         addOns = null,
         consumables = null,
         showConsumableCost = false,
@@ -102,7 +81,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
   final String sectionTitle;
   final List<SalesSummaryItem>? salesItems;
   final num? total;
-  final TodayIncentiveSummary? incentive;
   final AddOnsSummaryData? addOns;
   final ConsumablesUsageSummaryData? consumables;
   final bool showConsumableCost;
@@ -126,15 +104,6 @@ class DashboardSectionPrintButton extends ConsumerWidget {
         context: context,
         message: 'Generating $sectionTitle...',
         preload: () async {
-          if (incentive != null) {
-            return DashboardSectionPdfPayload.fromIncentive(
-              incentive: incentive!,
-              businessName: branch?.name,
-              reportDate: reportDate,
-              generatedAt: DateTime.now(),
-              isDateOverridden: isOverridden,
-            );
-          }
           if (addOns != null) {
             return DashboardSectionPdfPayload.fromAddOns(
               summary: addOns!,

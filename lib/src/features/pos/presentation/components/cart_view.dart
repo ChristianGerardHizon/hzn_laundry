@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/utils/currency_format.dart';
 import '../../../services/domain/cart_service_item.dart';
@@ -19,7 +20,7 @@ class CartView extends ConsumerWidget {
 
     return cartAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
+      error: (error, _) => ErrorState.fromError(error),
       data: (cartState) {
         final cartItems = cartState.items;
         final serviceItems = cartState.serviceItems;

@@ -8,15 +8,15 @@ part of 'current_organization_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Keep-alive flag for the organization-switch full-screen overlay.
+/// Keep-alive flag for the org/branch-switch full-screen overlay.
 
 @ProviderFor(OrganizationSwitchOverlay)
 final organizationSwitchOverlayProvider = OrganizationSwitchOverlayProvider._();
 
-/// Keep-alive flag for the organization-switch full-screen overlay.
+/// Keep-alive flag for the org/branch-switch full-screen overlay.
 final class OrganizationSwitchOverlayProvider extends $NotifierProvider<
     OrganizationSwitchOverlay, OrganizationSwitchOverlayState> {
-  /// Keep-alive flag for the organization-switch full-screen overlay.
+  /// Keep-alive flag for the org/branch-switch full-screen overlay.
   OrganizationSwitchOverlayProvider._()
       : super(
           from: null,
@@ -46,9 +46,9 @@ final class OrganizationSwitchOverlayProvider extends $NotifierProvider<
 }
 
 String _$organizationSwitchOverlayHash() =>
-    r'38154d334b86c90a817339b5206a6d9352861eb5';
+    r'6f38e20341da4911cc3115161a5ef33ea6b7d881';
 
-/// Keep-alive flag for the organization-switch full-screen overlay.
+/// Keep-alive flag for the org/branch-switch full-screen overlay.
 
 abstract class _$OrganizationSwitchOverlay
     extends $Notifier<OrganizationSwitchOverlayState> {

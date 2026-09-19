@@ -10,9 +10,9 @@ import '../controllers/payments_report_controller.dart';
 import '../controllers/payments_summary_controller.dart';
 import '../controllers/sales_by_customer_controller.dart';
 import '../controllers/sales_detail_controller.dart';
+import '../controllers/sales_detail_summary_controller.dart';
 import '../widgets/views/attendance_report_view.dart';
 import '../widgets/views/consumables_usage_report_view.dart';
-import '../widgets/views/incentive_report_view.dart';
 import '../widgets/views/new_customers_view.dart';
 import '../widgets/views/salary_report_view.dart';
 import '../widgets/views/sales_by_customer_view.dart';
@@ -25,16 +25,18 @@ class ReportsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabController = useTabController(initialLength: 8);
+    final tabController = useTabController(initialLength: 7);
 
     void refreshCurrentTab() {
       switch (tabController.index) {
         case 0:
           ref.invalidate(paymentsSummaryProvider);
-          ref.invalidate(paymentsReportProvider);
+          ref.invalidate(paymentsReportControllerProvider);
         case 1:
-          ref.invalidate(salesDetailProvider);
+          ref.invalidate(salesDetailSummaryProvider);
+          ref.invalidate(salesDetailControllerProvider);
         case 2:
+          ref.invalidate(salesByCustomerRawProvider);
           ref.invalidate(salesByCustomerProvider);
         case 3:
           ref.invalidate(newCustomersReportProvider);
@@ -43,8 +45,6 @@ class ReportsPage extends HookConsumerWidget {
         case 5:
           ref.invalidate(salaryReportProvider);
         case 6:
-          ref.invalidate(employeeReportProvider);
-        case 7:
           ref.invalidate(consumablesUsageReportProvider);
       }
     }
@@ -89,10 +89,6 @@ class ReportsPage extends HookConsumerWidget {
               text: 'Salary',
             ),
             Tab(
-              icon: Icon(Icons.payments),
-              text: 'Incentives',
-            ),
-            Tab(
               icon: Icon(Icons.science_outlined),
               text: 'Consumables',
             ),
@@ -108,7 +104,6 @@ class ReportsPage extends HookConsumerWidget {
           NewCustomersView(),
           AttendanceReportView(),
           SalaryReportView(),
-          IncentiveReportView(),
           ConsumablesUsageReportView(),
         ],
       ),

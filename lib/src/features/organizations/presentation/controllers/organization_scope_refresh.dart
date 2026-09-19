@@ -33,24 +33,29 @@ import '../../../users/presentation/controllers/user_roles_controller.dart';
 ///
 /// Call after the current organization id has been persisted and reloaded so
 /// All Branches / list screens cannot keep showing the previous org's data.
+///
+/// Uses [ProviderContainer.invalidate] (not [Ref.invalidate]) because this runs
+/// from an ancestor of org-scoped providers; Ref.invalidate would trip
+/// Riverpod's circular-dependency assert in debug.
 void invalidateOrganizationScopedProviders(Ref ref) {
-  invalidateAllDashboardProviders(ref.invalidate);
+  final invalidate = ref.container.invalidate;
+  invalidateAllDashboardProviders(invalidate);
 
-  ref.invalidate(cartControllerProvider);
-  ref.invalidate(customersControllerProvider);
-  ref.invalidate(paginatedSalesControllerProvider);
-  ref.invalidate(paginatedProductsControllerProvider);
-  ref.invalidate(servicesControllerProvider);
-  ref.invalidate(promosControllerProvider);
-  ref.invalidate(employeesControllerProvider);
-  ref.invalidate(paginatedUsersControllerProvider);
-  ref.invalidate(userRolesControllerProvider);
-  ref.invalidate(machinesControllerProvider);
-  ref.invalidate(storageLocationsControllerProvider);
-  ref.invalidate(printerConfigsControllerProvider);
-  ref.invalidate(posGroupsControllerProvider);
-  ref.invalidate(productCategoriesControllerProvider);
-  ref.invalidate(quantityUnitsControllerProvider);
+  invalidate(cartControllerProvider);
+  invalidate(customersControllerProvider);
+  invalidate(paginatedSalesControllerProvider);
+  invalidate(paginatedProductsControllerProvider);
+  invalidate(servicesControllerProvider);
+  invalidate(promosControllerProvider);
+  invalidate(employeesControllerProvider);
+  invalidate(paginatedUsersControllerProvider);
+  invalidate(userRolesControllerProvider);
+  invalidate(machinesControllerProvider);
+  invalidate(storageLocationsControllerProvider);
+  invalidate(printerConfigsControllerProvider);
+  invalidate(posGroupsControllerProvider);
+  invalidate(productCategoriesControllerProvider);
+  invalidate(quantityUnitsControllerProvider);
 
   ref.read(customerRepositoryProvider).invalidateCache();
   ref.read(productRepositoryProvider).invalidateCache();

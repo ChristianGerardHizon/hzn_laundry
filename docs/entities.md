@@ -45,7 +45,7 @@ This document contains all entities (domain models) in the project with their fi
 | Settings | PrinterConfig | *(device storage)* | Configured thermal printer on this device (Bluetooth/network) |
 | Settings | PosGroup | `posGroups` | Named product/service group shown on the cashier page |
 | Settings | PosGroupItem | `posGroupItems` | Product or service assigned to a PosGroup |
-| Settings | IncentiveTier | `incentiveTiers` | Branch incentive-per-service-price tiers |
+| Settings | Branch | `branches` | Physical locations within an organization |
 | Settings | FeatureFlag | `featureFlags` | Organization workflow toggles (Management → Settings) |
 | Public | CustomerHistory | *(derived, no collection)* | Read-only customer + sales summary for the public order-status page |
 | Version | AppConfig | *(external `versions` service)* | App update/minimum-version gate |
@@ -90,7 +90,7 @@ CartItem/            SaleItem/SaleServiceItem,
 CartServiceItem      OrderStatusHistory, Payment
 ```
 
-`Employee`, `ActivityLog`, `PrinterConfig`, `PosGroup`/`PosGroupItem`, `IncentiveTier`, and `FeatureFlag` are omitted from the diagram for clarity — see their sections below for relationships.
+`Employee`, `ActivityLog`, `PrinterConfig`, `PosGroup`/`PosGroupItem`, and `FeatureFlag` are omitted from the diagram for clarity — see their sections below for relationships.
 
 ---
 
@@ -148,7 +148,7 @@ Role definitions with permissions.
 
 **Seeded Roles:** `Admin` (full access, `system.admin`), `Manager`, `Cashier`, `Attendant` — see `server/pb_migrations/1774000001_seed_user_roles.js`.
 
-**Permission categories** (`lib/src/features/users/domain/user_role.dart`): Customers, Products, Services, Inventory, Sales, Payments, Machines, Storages, Employees, Attendance, Reports, Users, Roles, Branches, Settings, Incentive, Dashboard, Organizations (`organizations.create`), Organization Members (`members.manage`), Usage (`usage.view` / `usage.edit` / `usage.cost.view`), System — each with `.view`/`.create`/`.edit`/`.delete` keys as applicable, plus the blanket `system.admin` key.
+**Permission categories** (`lib/src/features/users/domain/user_role.dart`): Customers, Products, Services, Inventory, Sales, Payments, Machines, Storages, Employees, Attendance, Reports, Users, Roles, Branches, Settings, Dashboard, Organizations (`organizations.create`), Organization Members (`members.manage`), Usage (`usage.view` / `usage.edit` / `usage.cost.view`), System — each with `.view`/`.create`/`.edit`/`.delete` keys as applicable, plus the blanket `system.admin` key.
 
 ---
 
@@ -166,8 +166,6 @@ Business branches or locations.
 | `organizationId` | String (FK) | Yes | FK to Organization |
 | `operatingHours` | String | No | e.g. "Mon-Sat 8:00 AM - 5:00 PM" |
 | `cutOffTime` | String | No | Cut-off time for accepting new orders |
-| `incentiveAmount` | num | No | Incentive amount earned per threshold, in pesos (default 5) |
-| `incentivePerServiceItems` | num | No | Service price threshold to earn the incentive (default 200) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
@@ -176,13 +174,13 @@ Business branches or locations.
 
 **Relationships:** `organizationId` -> Organization (required after backfill).
 
-**Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup, IncentiveTier (most of these treat `branch` as optional — unassigned records remain visible to all branches).
+**Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup (most of these treat `branch` as optional — unassigned records remain visible to all branches).
 
 ---
 
 ### Organization
 
-Multi-tenant laundry business. Collection writes go through custom hooks (`POST /api/organizations`, `PATCH /api/organizations/{id}`), not raw collection REST. `POST /api/organizations` requires a first branch (and optional invites) and creates the org, Admin membership, branch, incentive tiers, and queued invites in one transaction.
+Multi-tenant laundry business. Collection writes go through custom hooks (`POST /api/organizations`, `PATCH /api/organizations/{id}`), not raw collection REST. `POST /api/organizations` requires a first branch (and optional invites) and creates the org, Admin membership, branch, and queued invites in one transaction.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -582,6 +580,7 @@ A finalized transaction/receipt.
 | `customerName` | String | No | Customer name snapshot |
 | `notes` | String | No | Internal notes |
 | `postedDate` | DateTime | No | Editable business/transaction date |
+| `readyForPickupAt` | DateTime | No | Optional promised ready-for-pickup date/time |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
@@ -762,18 +761,27 @@ Storage locations (shelves, racks) for laundry items.
 
 ### Employee
 
-A staff member of the laundry business (distinct from `User` — an Employee is a payroll/attendance subject, not necessarily an app login).
+A staff member of the laundry business (distinct from `User` — an Employee is a payroll/attendance subject, not necessarily an app login). Scoped to an organization, with optional multi-branch assignment.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | PocketBase record ID |
 | `name` | String | Yes | Employee name |
+| `organization` | String (FK) | Yes | FK to Organization (tenant) |
+| `branches` | List\<String\> (FK) | No | Multi-relation to Branch; empty = all branches in the organization |
 | `baseSalary` | num | No | Base salary amount (default 0) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `employees`
+
+**Relationships:** `organization` -> Organization; `branches` -> Branch (many, optional).
+
+**Scoping:**
+- List/search/create are filtered by the current organization.
+- When a specific branch is selected, employees assigned to that branch (or with empty `branches`) are shown.
+- In All Branches mode, all employees in the current organization are shown.
 
 ### EmployeeAttendance
 
@@ -937,23 +945,6 @@ A product or service assigned to a PosGroup — a many-to-many junction.
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `posGroupItems`
-
-### IncentiveTier
-
-Defines the incentive earned for a service price falling within a range, per branch.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | String | Yes | PocketBase record ID |
-| `branch` | String (FK) | Yes | FK to Branch |
-| `minAmount` | num | Yes | Minimum service price for this tier (inclusive) |
-| `maxAmount` | num | No | Maximum service price (inclusive); null = no upper limit |
-| `incentiveAmount` | num | Yes | Incentive earned when price falls in this tier |
-| `sortOrder` | int | No | Display order (default 0) |
-| `created` | DateTime | No | Creation timestamp |
-| `updated` | DateTime | No | Last update timestamp |
-
-**Collection:** `incentiveTiers`
 
 ### FeatureFlag
 

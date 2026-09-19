@@ -71,7 +71,7 @@ class DashboardPage extends ConsumerWidget {
               const _MobileDashboardHeader(),
               const SizedBox(height: 8),
 
-              // Sales Summary Section (collapsible) — includes incentive KPI
+              // Sales Summary Section (collapsible)
               const SalesSummarySection(),
               const SizedBox(height: 12),
 

@@ -6,7 +6,7 @@ import '../../features/settings/domain/branch.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../i18n/strings.g.dart';
-import '../routing/router_utils.dart';
+import '../routing/routes/dashboard.routes.dart';
 import 'nav_permissions.dart';
 
 /// Branch switcher widget for the sidebar/drawer and app branch bar.
@@ -68,9 +68,8 @@ class BranchSwitcher extends ConsumerWidget {
                 compact: compact,
                 onChanged: (value) {
                   final routerState = GoRouterState.of(context);
-                  final isScoped =
-                      routerState.pathParameters['orgSlug'] != null;
-                  final currentLocation = routerState.uri.path;
+                  final orgSlug = routerState.pathParameters['orgSlug'];
+                  final t = Translations.of(context);
                   final targetSlug = value == kAllBranchesSentinel
                       ? allBranchesSlug
                       : branches
@@ -82,22 +81,20 @@ class BranchSwitcher extends ConsumerWidget {
                           ?.slug;
                   final notifier =
                       ref.read(currentBranchControllerProvider.notifier);
-                  final future = value == kAllBranchesSentinel
-                      ? notifier.switchToAllBranches()
-                      : notifier.switchBranch(value);
-                  future.then((_) {
-                    if (!context.mounted ||
-                        !isScoped ||
-                        targetSlug == null) {
-                      return;
-                    }
-                    context.go(
-                      RouterUtils.replaceScopeSegment(
-                        currentLocation,
-                        branchSlug: targetSlug,
-                      ),
+
+                  // Start overlay + persist; do not await so we can navigate
+                  // under the loader immediately.
+                  if (value == kAllBranchesSentinel) {
+                    notifier.switchToAllBranches(
+                      displayName: t.navigation.allBranches,
                     );
-                  });
+                  } else {
+                    notifier.switchBranch(value);
+                  }
+
+                  if (orgSlug != null && targetSlug != null) {
+                    context.go('/$orgSlug/$targetSlug${DashboardRoute.path}');
+                  }
                 },
               );
             },

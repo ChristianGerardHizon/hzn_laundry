@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../users/domain/user_role.dart';
@@ -95,7 +96,7 @@ class EmployeeAttendanceTab extends HookConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error: $error')),
+      error: (error, _) => ErrorState.fromError(error),
     );
   }
 

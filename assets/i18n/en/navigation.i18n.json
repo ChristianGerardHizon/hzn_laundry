@@ -30,6 +30,8 @@
     "account": "Account",
     "noBranch": "No Branch",
     "allBranches": "All Branches",
+    "switchingBranch": "Switching branch…",
+    "switchingToBranch(name)": "Switching to $name…",
     "posUnavailableAllBranches": "Cashier is not available when All Branches is selected. Choose a specific branch to continue.",
     "createUnavailableAllBranches": "This action requires a specific branch. Choose a branch before continuing.",
     "activities": "Activities",

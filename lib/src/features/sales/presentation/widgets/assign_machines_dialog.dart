@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../machines/domain/machine.dart';
@@ -133,7 +134,7 @@ class AssignMachinesDialog extends HookConsumerWidget {
                 height: 100,
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (error, _) => Text('Error loading machines: $error'),
+              error: (error, _) => Text(Failure.displayErrorMessage(error)),
               data: (machines) {
                 if (machines.isEmpty) {
                   return Padding(

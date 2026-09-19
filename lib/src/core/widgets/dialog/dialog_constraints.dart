@@ -23,13 +23,22 @@ abstract class DialogConstraints {
   ///
   /// On mobile or fullScreen, uses minimal padding (8dp).
   /// On tablet/desktop, calculates horizontal padding to center the dialog.
+  /// When [shrinkWrap] is true, always uses comfortable inset (never edge-to-edge).
   static EdgeInsets getInsetPadding(
     BuildContext context, {
     double maxWidth = defaultMaxWidth,
     bool fullScreen = false,
+    bool shrinkWrap = false,
   }) {
     final size = MediaQuery.sizeOf(context);
     final isMobile = size.width < Breakpoints.mobile;
+
+    if (shrinkWrap) {
+      return EdgeInsets.symmetric(
+        horizontal: isMobile ? 24 : ((size.width - maxWidth) / 2).clamp(16.0, double.infinity),
+        vertical: isMobile ? 48 : 24,
+      );
+    }
 
     if (isMobile || fullScreen) {
       return const EdgeInsets.all(8);
@@ -63,23 +72,38 @@ class ConstrainedDialogContent extends StatelessWidget {
     required this.child,
     this.maxWidth = DialogConstraints.defaultMaxWidth,
     this.fullScreen = false,
+    this.shrinkWrap = false,
   });
 
   /// The dialog content to wrap.
   final Widget child;
 
   /// Maximum width for the dialog on tablet/desktop.
-  /// Ignored when [fullScreen] is true or on mobile.
+  /// Ignored when [fullScreen] is true or on mobile (unless [shrinkWrap]).
   final double maxWidth;
 
   /// Forces full-screen mode regardless of screen size.
   /// Use for complex forms with many fields.
   final bool fullScreen;
 
+  /// Size to content instead of expanding to full screen.
+  /// Use for short filter/sort dialogs with few options.
+  final bool shrinkWrap;
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final isMobile = size.width < Breakpoints.mobile;
+
+    if (shrinkWrap) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth.clamp(0, size.width - 16),
+          maxHeight: size.height * 0.85,
+        ),
+        child: child,
+      );
+    }
 
     if (fullScreen || isMobile) {
       // Full screen mode
@@ -121,6 +145,7 @@ Future<T?> showConstrainedDialog<T>({
   required BuildContext context,
   required Widget Function(BuildContext) builder,
   bool fullScreen = false,
+  bool shrinkWrap = false,
   double maxWidth = DialogConstraints.defaultMaxWidth,
   bool barrierDismissible = false,
   bool useRootNavigator = true,
@@ -134,6 +159,7 @@ Future<T?> showConstrainedDialog<T>({
         context,
         maxWidth: maxWidth,
         fullScreen: fullScreen,
+        shrinkWrap: shrinkWrap,
       ),
       clipBehavior: Clip.antiAlias,
       child: builder(context),

@@ -303,4 +303,18 @@ abstract class PBFilters {
     if (branchId == null || branchId.isEmpty) return null;
     return '(branch = "$branchId" || branch = "" || branch = null)';
   }
+
+  /// Employees for [organizationId], optionally narrowed to [branchId].
+  ///
+  /// Empty `branches` on the record means all branches in the org.
+  /// Returns null when [organizationId] is missing.
+  static String? forEmployeeOrgAndBranch({
+    required String? organizationId,
+    String? branchId,
+  }) {
+    if (organizationId == null || organizationId.isEmpty) return null;
+    final org = 'organization = "$organizationId"';
+    if (branchId == null || branchId.isEmpty) return org;
+    return '$org && (branches.id ?= "$branchId" || branches.id = "")';
+  }
 }

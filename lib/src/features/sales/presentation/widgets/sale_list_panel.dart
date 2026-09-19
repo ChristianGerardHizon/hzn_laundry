@@ -9,6 +9,7 @@ import '../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/end_of_list_indicator.dart';
 import '../../../../core/widgets/sort/sort_dialog.dart';
+import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../controllers/paginated_sales_controller.dart';
 import '../controllers/sale_search_controller.dart';
@@ -57,7 +58,8 @@ class SaleListPanel extends HookConsumerWidget {
 
     // Watch providers
     final searchFields = ref.watch(saleSearchFieldsProvider);
-    final activeFieldCount = searchFields.length;
+    final paymentFilters = ref.watch(salePaymentFiltersControllerProvider);
+    final activeFieldCount = searchFields.length + paymentFilters.activeCount;
     final paginatedController =
         ref.read(paginatedSalesControllerProvider.notifier);
     final sortConfig = ref.watch(saleSortControllerProvider);
@@ -77,6 +79,7 @@ class SaleListPanel extends HookConsumerWidget {
       searchController.clear();
       searchText.value = '';
       ref.read(saleSearchFieldsProvider.notifier).reset();
+      ref.read(salePaymentFiltersControllerProvider.notifier).reset();
       paginatedController.clearSearch();
     }
 
@@ -153,20 +156,11 @@ class SaleListPanel extends HookConsumerWidget {
                   final sale = paginatedState.items[index];
                   final isSelected = sale.id == selectedId;
 
+                  final paymentColor = sale.paymentStatus == PaymentStatus.paid
+                      ? Colors.green
+                      : Colors.amber;
+
                   return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        sale.customerDisplay != null
-                            ? Icons.person
-                            : Icons.receipt,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                     title: Text(
                       sale.customerDisplay ?? _shortOrderNumber(sale.receiptNumber),
                       style: TextStyle(
@@ -175,16 +169,29 @@ class SaleListPanel extends HookConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"} • ${sale.paymentStatus.displayName}',
+                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"}',
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          currencyFormat.format(sale.totalAmount),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              currencyFormat.format(sale.totalAmount),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              sale.paymentStatus.displayName,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: paymentColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(width: 8),
                         SaleStatusChip(status: sale.status),

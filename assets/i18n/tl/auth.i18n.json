@@ -28,7 +28,7 @@
     "continueButton": "Magpatuloy",
     "changeEmail": "Palitan ang email",
     "signInWithEmailCode": "Mag-sign in gamit ang email code",
-    "backToPasswordLogin": "Bumalik sa password login",
+    "signInWithPassword": "Mag-sign in gamit ang password",
     "sendLoginCode": "Ipadala ang code",
     "verifyLoginCode": "I-verify ang code",
     "enterLoginCode": "Login code",

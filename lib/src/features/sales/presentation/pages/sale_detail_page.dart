@@ -3,11 +3,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../../core/widgets/state/error_state.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
@@ -25,6 +27,8 @@ import '../../../settings/presentation/controllers/current_branch_controller.dar
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../customers/presentation/controllers/customer_provider.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
 import '../controllers/sale_service_items_provider.dart';
@@ -71,20 +75,9 @@ class SaleDetailPage extends ConsumerWidget {
                   onPressed: () => const SalesHistoryRoute().goScoped(context),
                 ),
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error loading sale: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(saleProvider(saleId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        body: ErrorState.fromError(
+          error,
+          onRetry: () => ref.invalidate(saleProvider(saleId)),
         ),
       ),
       data: (sale) {
@@ -229,6 +222,17 @@ class _SaleDetailContent extends HookConsumerWidget {
                                               .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
+                                      if (sale.readyForPickupAt != null) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -303,6 +307,11 @@ class _SaleDetailContent extends HookConsumerWidget {
                     ),
                     const SizedBox(height: 16),
 
+                    // Payment Status & History Card
+                    _buildPaymentCard(context, ref, paymentsAsync,
+                        currencyFormat, canEdit, canVoidPayments),
+                    const SizedBox(height: 16),
+
                     Builder(builder: (_) {
                       final totalPaid =
                           ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
@@ -372,7 +381,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                         ),
                         error: (error, _) => Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Text('Error loading add ons: $error'),
+                          child: Text(Failure.displayErrorMessage(error)),
                         ),
                         data: (items) => items.isEmpty
                             ? const Padding(
@@ -438,18 +447,6 @@ class _SaleDetailContent extends HookConsumerWidget {
                     const SizedBox(height: 16),
 
                     SaleUsageSection(saleId: sale.id),
-
-                    // Incentive Card (only for ready/picked up orders)
-                    if (sale.orderStatus == OrderStatus.ready ||
-                        sale.orderStatus == OrderStatus.pickedUp) ...[
-                      _buildIncentiveCard(
-                          context, ref, serviceItemsAsync, currencyFormat),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Payment Status & History Card
-                    _buildPaymentCard(context, ref, paymentsAsync,
-                        currencyFormat, canEdit, canVoidPayments),
                   ],
                 ),
               ),
@@ -954,100 +951,6 @@ class _SaleDetailContent extends HookConsumerWidget {
     }
   }
 
-  Widget _buildIncentiveCard(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<SaleServiceItem>> serviceItemsAsync,
-    NumberFormat currencyFormat,
-  ) {
-    final theme = Theme.of(context);
-    final branchId = ref.watch(currentBranchIdProvider);
-    final branchAsync =
-        branchId != null ? ref.watch(branchProvider(branchId)) : null;
-
-    return serviceItemsAsync.when(
-      data: (serviceItems) {
-        if (serviceItems.isEmpty) return const SizedBox.shrink();
-
-        final branchData = branchAsync?.value;
-        if (branchData == null) return const SizedBox.shrink();
-
-        final incentiveAmount = branchData.incentiveAmount;
-        final perServicePrice = branchData.incentivePerServiceItems;
-
-        if (perServicePrice <= 0) return const SizedBox.shrink();
-
-        // Sum of all service item subtotals
-        final totalServicePrice = serviceItems.fold<num>(
-          0,
-          (sum, item) => sum + item.subtotal,
-        );
-
-        // Calculate incentive: floor(totalServicePrice / perServicePrice) * incentiveAmount
-        final multiplier = (totalServicePrice / perServicePrice).floor();
-        final totalIncentive = multiplier * incentiveAmount;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.payments,
-                      size: 20,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Incentive',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _IncentiveRow(
-                  label: 'Total Service Price',
-                  value: currencyFormat.format(totalServicePrice),
-                ),
-                _IncentiveRow(
-                  label: 'Rate',
-                  value:
-                      '${currencyFormat.format(incentiveAmount)} per ${currencyFormat.format(perServicePrice)}',
-                ),
-                const Divider(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Incentive',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      currencyFormat.format(totalIncentive),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
   Widget _buildPaymentCard(
     BuildContext context,
     WidgetRef ref,
@@ -1129,7 +1032,7 @@ class _SaleDetailContent extends HookConsumerWidget {
               ),
               error: (error, _) => Padding(
                 padding: const EdgeInsets.all(8),
-                child: Text('Error loading payments: $error'),
+                child: Text(Failure.displayErrorMessage(error)),
               ),
               data: (payments) {
                 // Calculate totals from active payments only.
@@ -2131,6 +2034,30 @@ class _PrintMenuButton extends HookConsumerWidget {
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    final customerId = sale.customerId;
+    final customerPhone = (customerId != null && customerId.isNotEmpty)
+        ? ref.watch(customerProvider(customerId)).value?.phone
+        : null;
+
+    ({String? businessName, String? branchAddress, String? contactNumber})
+        receiptHeader() {
+      final branch = branchAsync.value;
+      final orgName = org?.name;
+      final businessName =
+          (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
+      final branchAddress = (branch?.address.isNotEmpty == true)
+          ? branch!.address
+          : org?.address;
+      final contactNumber = (branch?.contactNumber.isNotEmpty == true)
+          ? branch!.contactNumber
+          : org?.contactNumber;
+      return (
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
+      );
+    }
 
     OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
       final serviceItems =
@@ -2140,7 +2067,7 @@ class _PrintMenuButton extends HookConsumerWidget {
       final service = firstService?.service;
       final unitLabel = service?.quantityUnit?.shortPlural ??
           (service?.weightBased == true ? 'KG' : 'PCS');
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
 
       return OrderClaimSheetPdfData(
         customerName: sale.customerName ?? 'Walk-in',
@@ -2150,17 +2077,22 @@ class _PrintMenuButton extends HookConsumerWidget {
         totalAmount: sale.totalAmount.toDouble(),
         createdDate: sale.postedDate ?? DateTime.now(),
         storeCopy: storeCopy,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customerPhone,
         specialInstructions: sale.notes,
         claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
+        readyForPickupAt: sale.readyForPickupAt,
       );
     }
 
-    Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
+    Future<PrintResult?> sendPrint({
+      required OrderReceiptCopy copyType,
+      bool includeStoreCopy = false,
+    }) {
       final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
@@ -2178,12 +2110,16 @@ class _PrintMenuButton extends HookConsumerWidget {
         totalAmount: pdfData.totalAmount,
         claimSheetNumber: pdfData.claimSheetNumber,
         copyType: copyType,
+        includeStoreCopy: includeStoreCopy,
         businessName: pdfData.businessName,
         branchAddress: pdfData.branchAddress,
         contactNumber: pdfData.contactNumber,
         cashierName: pdfData.cashierName,
+        customerPhone: customerPhone,
         specialInstructions: pdfData.specialInstructions,
+        orderDate: pdfData.createdDate,
         addOnItems: pdfData.addOnItems,
+        readyForPickupAt: pdfData.readyForPickupAt,
       );
     }
 
@@ -2206,20 +2142,28 @@ class _PrintMenuButton extends HookConsumerWidget {
       return true;
     }
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
+    Future<void> printCopy({
+      required OrderReceiptCopy copyType,
+      bool includeStoreCopy = false,
+    }) async {
       if (!ensureCanPrint()) return;
 
       isPrinting.value = true;
       try {
-        final result = await sendPrint(copyType);
+        final result = await sendPrint(
+          copyType: copyType,
+          includeStoreCopy: includeStoreCopy,
+        );
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
           showErrorSnackBar(context, message: result.message);
         } else {
-          final label = copyType == OrderReceiptCopy.customer
-              ? 'Claim sheet'
-              : 'Claim sheet (store)';
+          final label = includeStoreCopy
+              ? 'Customer + store claim sheets'
+              : copyType == OrderReceiptCopy.customer
+                  ? 'Claim sheet'
+                  : 'Store claim sheet';
           showSuccessSnackBar(context, message: '$label printed');
         }
       } finally {
@@ -2228,37 +2172,10 @@ class _PrintMenuButton extends HookConsumerWidget {
     }
 
     Future<void> printBothCopies() async {
-      if (!ensureCanPrint()) return;
-
-      isPrinting.value = true;
-      try {
-        final storeResult = await sendPrint(OrderReceiptCopy.store);
-        if (!context.mounted) return;
-        if (storeResult is PrintFailure) {
-          showErrorSnackBar(context, message: storeResult.message);
-          return;
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (!context.mounted) return;
-
-        final customerResult = await sendPrint(OrderReceiptCopy.customer);
-        if (!context.mounted) return;
-        if (customerResult is PrintFailure) {
-          showErrorSnackBar(
-            context,
-            message: 'Claim sheet printed (customer copy failed)',
-          );
-          return;
-        }
-
-        showSuccessSnackBar(
-          context,
-          message: 'Printed: store + customer claim sheets',
-        );
-      } finally {
-        if (context.mounted) isPrinting.value = false;
-      }
+      await printCopy(
+        copyType: OrderReceiptCopy.customer,
+        includeStoreCopy: true,
+      );
     }
 
     Future<void> previewCopy({required bool storeCopy}) async {
@@ -2285,9 +2202,9 @@ class _PrintMenuButton extends HookConsumerWidget {
     Future<void> handlePrintMenuSelection(String value) async {
       switch (value) {
         case 'print_customer':
-          await printCopy(OrderReceiptCopy.customer);
+          await printCopy(copyType: OrderReceiptCopy.customer);
         case 'print_store':
-          await printCopy(OrderReceiptCopy.store);
+          await printCopy(copyType: OrderReceiptCopy.store);
         case 'print_all':
           await printBothCopies();
       }
@@ -2323,8 +2240,7 @@ class _PrintMenuButton extends HookConsumerWidget {
               value: 'preview_store',
               child: ListTile(
                 leading: Icon(Icons.picture_as_pdf_outlined),
-                title: Text('Preview Claim Sheet (Store)'),
-                subtitle: Text('Machine tag'),
+                title: Text('Preview Store Copy'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
@@ -2343,7 +2259,7 @@ class _PrintMenuButton extends HookConsumerWidget {
                 child: ListTile(
                   leading: Icon(Icons.print),
                   title: Text('Print All'),
-                  subtitle: Text('Store + customer'),
+                  subtitle: Text('Customer + store copies'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -2361,8 +2277,7 @@ class _PrintMenuButton extends HookConsumerWidget {
                 value: 'print_store',
                 child: ListTile(
                   leading: Icon(Icons.local_laundry_service),
-                  title: Text('Print Claim Sheet (Store)'),
-                  subtitle: Text('Machine tag'),
+                  title: Text('Print Store Copy'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -2370,33 +2285,6 @@ class _PrintMenuButton extends HookConsumerWidget {
             ],
           ),
       ],
-    );
-  }
-}
-
-class _IncentiveRow extends StatelessWidget {
-  const _IncentiveRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Text(value, style: theme.textTheme.bodyMedium),
-        ],
-      ),
     );
   }
 }
@@ -2428,7 +2316,7 @@ class _SaleActivityTab extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48),
                 const SizedBox(height: 16),
-                Text('Error loading activity: $error'),
+                Text(Failure.displayErrorMessage(error)),
                 const SizedBox(height: 16),
                 FilledButton.tonal(
                   onPressed: () =>

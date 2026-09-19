@@ -107,6 +107,12 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     _$postedDate,
     opt: true,
   );
+  static String? _$readyForPickupAt(SaleDto v) => v.readyForPickupAt;
+  static const Field<SaleDto, String> _f$readyForPickupAt = Field(
+    'readyForPickupAt',
+    _$readyForPickupAt,
+    opt: true,
+  );
   static String? _$created(SaleDto v) => v.created;
   static const Field<SaleDto, String> _f$created = Field(
     'created',
@@ -139,6 +145,7 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     #customerName: _f$customerName,
     #notes: _f$notes,
     #postedDate: _f$postedDate,
+    #readyForPickupAt: _f$readyForPickupAt,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -162,6 +169,7 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
       customerName: data.dec(_f$customerName),
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
+      readyForPickupAt: data.dec(_f$readyForPickupAt),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -242,6 +250,7 @@ abstract class SaleDtoCopyWith<$R, $In extends SaleDto, $Out>
     String? customerName,
     String? notes,
     String? postedDate,
+    String? readyForPickupAt,
     String? created,
     String? updated,
   });
@@ -275,6 +284,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     Object? customerName = $none,
     Object? notes = $none,
     Object? postedDate = $none,
+    Object? readyForPickupAt = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -296,6 +306,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
       if (customerName != $none) #customerName: customerName,
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
+      if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -319,6 +330,7 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     customerName: data.get(#customerName, or: $value.customerName),
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
+    readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

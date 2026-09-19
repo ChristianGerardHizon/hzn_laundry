@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
@@ -75,7 +76,7 @@ class OrganizationsPage extends HookConsumerWidget {
       ),
       body: orgAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => ErrorState.fromError(e),
         data: (_) {
           if (memberships.isEmpty && pendingInvites.value.isEmpty) {
             return Center(

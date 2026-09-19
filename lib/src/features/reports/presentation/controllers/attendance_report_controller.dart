@@ -6,6 +6,9 @@ import '../../../employees/data/repositories/employee_attendance_repository.dart
 import '../../../employees/data/repositories/employee_repository.dart';
 import '../../../employees/domain/employee.dart';
 import '../../../employees/domain/employee_attendance.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 
 part 'attendance_report_controller.g.dart';
 
@@ -92,13 +95,27 @@ class AttendanceReportData {
 Future<AttendanceReportData> attendanceReport(Ref ref) async {
   final dateRange = ref.watch(attendanceReportDateRangeControllerProvider);
   final employeeFilter = ref.watch(attendanceReportEmployeeFilterProvider);
+  ref.watch(currentOrganizationIdProvider);
+  ref.watch(currentBranchIdProvider);
 
   final employeeRepo = ref.read(employeeRepositoryProvider);
   final attendanceRepo = ref.read(employeeAttendanceRepositoryProvider);
 
+  final scopeFilter = PBFilters.forEmployeeOrgAndBranch(
+    organizationId: ref.read(currentOrganizationIdProvider),
+    branchId: ref.read(currentBranchIdProvider),
+  );
+  if (scopeFilter == null) {
+    return AttendanceReportData(
+      summaries: const [],
+      allAttendance: const [],
+      dateRange: dateRange,
+    );
+  }
+
   // Fetch employees and attendance in parallel
   final results = await Future.wait([
-    employeeRepo.fetchAll(),
+    employeeRepo.fetchAll(filter: scopeFilter),
     attendanceRepo.fetchAllInDateRange(
       startDate: dateRange.start,
       endDate: dateRange.end,

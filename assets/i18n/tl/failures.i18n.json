@@ -12,6 +12,7 @@
     "invalidCredentials": "Di-wastong email o password.",
     "invalidLoginCode": "Di-wasto o expired na login code.",
     "googleNoAccount": "Walang account para sa Google email na ito. Magpa-create muna sa admin.",
+    "otpNoAccount": "Walang account para sa email na ito. Magpa-create muna sa admin.",
     "googleSignInFailed": "Hindi masimulan ang Google sign-in. Subukan ulit.",
     "accountDisabled": "Ang iyong account ay na-disable.",
     "emailNotVerified": "Pakiverify ang iyong email address.",

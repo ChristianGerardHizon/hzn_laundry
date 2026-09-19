@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../widgets/form_feedback.dart';
 import '../../../features/machines/presentation/controllers/machines_controller.dart';
@@ -409,23 +410,12 @@ class _ManagementUsersListPage extends ConsumerWidget {
       ),
       body: paginatedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => ref
                     .read(paginatedUsersControllerProvider.notifier)
                     .refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      ),
         data: (paginatedState) => UserListPanel(
           paginatedState: paginatedState,
           selectedId: null,
@@ -464,22 +454,11 @@ class _ManagementRolesListPage extends ConsumerWidget {
       ),
       body: rolesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () =>
                     ref.read(userRolesControllerProvider.notifier).refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      ),
         data: (roles) => UserRoleListPanel(
           roles: roles,
           selectedId: null,
@@ -553,16 +532,7 @@ class _RoleDetailWrapper extends ConsumerWidget {
       ),
       error: (error, stack) => Scaffold(
         appBar: AppBar(),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-            ],
-          ),
-        ),
+        body: ErrorState.fromError(error),
       ),
       data: (roles) {
         final role = roles.cast().firstWhere(
@@ -776,22 +746,11 @@ class _ManagementBranchesListPage extends ConsumerWidget {
       ),
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () =>
                     ref.read(branchesControllerProvider.notifier).refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      ),
         data: (branches) {
           if (branches.isEmpty) {
             return Center(
@@ -1166,22 +1125,11 @@ class _ManagementMachinesListPage extends ConsumerWidget {
       ),
       body: machinesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () =>
                     ref.read(machinesControllerProvider.notifier).refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      ),
         data: (machines) {
           if (machines.isEmpty) {
             return Center(
@@ -1274,23 +1222,12 @@ class _ManagementStoragesListPage extends ConsumerWidget {
       ),
       body: storagesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => ref
                     .read(storageLocationsControllerProvider.notifier)
                     .refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      ),
         data: (storages) {
           if (storages.isEmpty) {
             return Center(
@@ -1608,21 +1545,10 @@ class _ManagementProductCategoriesListPage extends ConsumerWidget {
       ),
       body: categoriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (categories) {
           if (categories.isEmpty) {
             return Center(
@@ -1758,21 +1684,10 @@ class _ManagementQuantityUnitsListPage extends ConsumerWidget {
       ),
       body: unitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (units) {
           if (units.isEmpty) {
             return Center(

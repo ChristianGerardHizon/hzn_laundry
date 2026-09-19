@@ -36,6 +36,7 @@ import '../../../services/presentation/controllers/service_consumable_recipes_pr
 import '../../../services/presentation/controllers/service_price_tiers_provider.dart';
 import '../../../services/presentation/controllers/services_controller.dart';
 import '../../../settings/data/repositories/feature_flag_repository.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -230,6 +231,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
     // Tracks whether order was created → show success page
     final orderCreated = useState(false);
     final createdReceiptNumber = useState<String?>(null);
+    final createdReadyForPickupAt = useState<DateTime?>(null);
 
     // Loyalty promo redemption
     final selectedPromoRedemption = useState<CustomerPromo?>(null);
@@ -413,6 +415,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
       final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity);
       final userNotes =
           formKey.currentState?.fields['specialInstructions']?.value as String?;
+      final readyForPickupAt = formKey
+          .currentState?.fields['readyForPickupAt']?.value as DateTime?;
 
       // Append loyalty info to notes
       String? notes = userNotes;
@@ -438,6 +442,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
         customerId: customer.id,
         customerName: customer.name,
         notes: notes,
+        readyForPickupAt: readyForPickupAt,
       );
 
       final serviceItem = SaleServiceItem(
@@ -515,6 +520,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
           orderCreated.value = true;
           createdReceiptNumber.value = createdSale.receiptNumber;
+          createdReadyForPickupAt.value = createdSale.readyForPickupAt;
         },
       );
     }
@@ -568,6 +574,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
           estimatedTotal: estimatedTotal,
           productItems: productItems.value,
           claimSheetNumber: createdReceiptNumber.value,
+          readyForPickupAt: createdReadyForPickupAt.value,
         ),
       );
     }
@@ -705,6 +712,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
                         copyLastEnabled: !isCopyingLast.value,
                       ),
                     ],
+                    const SizedBox(height: 20),
+
+                    // Ready for pickup (optional)
+                    _ReadyForPickupField(
+                      enabled: !isSaving.value,
+                      onChanged: () => isDirty.value = true,
+                    ),
                     const SizedBox(height: 20),
 
                     // Special instructions
@@ -1898,6 +1912,56 @@ class _TierBreakdown extends HookWidget {
   }
 }
 
+// ── Ready for pickup ─────────────────────────────────────────────────────────
+
+class _ReadyForPickupField extends StatelessWidget {
+  const _ReadyForPickupField({
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ready for Pickup',
+          style:
+              theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        FormBuilderDateTimePicker(
+          name: 'readyForPickupAt',
+          enabled: enabled,
+          inputType: InputType.both,
+          format: DateFormat('MMM dd, yyyy hh:mm a'),
+          decoration: InputDecoration(
+            hintText: 'Optional',
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
+            prefixIcon: const Icon(Icons.event_available),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+          onChanged: (_) => onChanged(),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Special instructions ─────────────────────────────────────────────────────
 
 class _SpecialInstructionsField extends StatelessWidget {
@@ -2699,6 +2763,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     this.specialInstructions,
     this.productItems = const [],
     this.claimSheetNumber,
+    this.readyForPickupAt,
   });
 
   final Customer customer;
@@ -2709,6 +2774,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final String? specialInstructions;
   final List<_OrderProductItem> productItems;
   final String? claimSheetNumber;
+  final DateTime? readyForPickupAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2721,6 +2787,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final org = ref.watch(currentOrganizationControllerProvider).value;
     final hasSelectedPrinter = selectedPrinterAsync.value != null;
     final canThermalPrint = isThermalPrintingSupported && hasSelectedPrinter;
 
@@ -2740,8 +2807,27 @@ class _OrderSuccessPage extends HookConsumerWidget {
             ))
         .toList();
 
+    ({String? businessName, String? branchAddress, String? contactNumber})
+        receiptHeader() {
+      final branch = branchAsync.value;
+      final orgName = org?.name;
+      final businessName =
+          (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
+      final branchAddress = (branch?.address.isNotEmpty == true)
+          ? branch!.address
+          : org?.address;
+      final contactNumber = (branch?.contactNumber.isNotEmpty == true)
+          ? branch!.contactNumber
+          : org?.contactNumber;
+      return (
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
+      );
+    }
+
     OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
       return OrderClaimSheetPdfData(
         customerName: customer.name,
         serviceName: service.name,
@@ -2750,13 +2836,15 @@ class _OrderSuccessPage extends HookConsumerWidget {
         totalAmount: estimatedTotal,
         createdDate: orderDate,
         storeCopy: storeCopy,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customer.phone,
         specialInstructions: specialInstructions,
         claimSheetNumber: claimSheetNumber,
         addOnItems: addOnSaleItems,
+        readyForPickupAt: readyForPickupAt,
       );
     }
 
@@ -2802,41 +2890,10 @@ class _OrderSuccessPage extends HookConsumerWidget {
 
       isPrinting.value = true;
       final printService = ref.read(thermalPrintServiceProvider.notifier);
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
 
-      // Print store copy first (compact machine tag) so staff can start work
-      if (printStoreCopy.value) {
-        final storeResult = await printService.printOrderReceipt(
-          printer: printer,
-          customerName: customer.name,
-          serviceName: service.name,
-          quantity: quantity,
-          unitLabel: unitLabel,
-          totalAmount: estimatedTotal,
-          copyType: OrderReceiptCopy.store,
-          claimSheetNumber: claimSheetNumber,
-          businessName: currentBranch?.name,
-          branchAddress: currentBranch?.address,
-          contactNumber: currentBranch?.contactNumber,
-          cashierName: currentAuth?.user.name,
-          specialInstructions: specialInstructions,
-          addOnItems: addOnSaleItems,
-        );
-
-        if (storeResult is PrintFailure) {
-          isPrinting.value = false;
-          if (context.mounted) {
-            showErrorSnackBar(context,
-                message: storeResult.message, useRootMessenger: false);
-          }
-          return;
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      // Print customer copy (full receipt)
-      final customerResult = await printService.printOrderReceipt(
+      // Single job: customer claim sheet, optionally + store copy with cut.
+      final result = await printService.printOrderReceipt(
         printer: printer,
         customerName: customer.name,
         serviceName: service.name,
@@ -2844,35 +2901,34 @@ class _OrderSuccessPage extends HookConsumerWidget {
         unitLabel: unitLabel,
         totalAmount: estimatedTotal,
         copyType: OrderReceiptCopy.customer,
+        includeStoreCopy: printStoreCopy.value,
         claimSheetNumber: claimSheetNumber,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customer.phone,
         specialInstructions: specialInstructions,
+        orderDate: orderDate,
         addOnItems: addOnSaleItems,
+        readyForPickupAt: readyForPickupAt,
       );
-
-      if (customerResult is PrintFailure) {
-        isPrinting.value = false;
-        if (context.mounted) {
-          showErrorSnackBar(
-            context,
-            message: printStoreCopy.value
-                ? 'Claim sheet printed (customer copy failed)'
-                : customerResult.message,
-            useRootMessenger: false,
-          );
-        }
-        return;
-      }
 
       isPrinting.value = false;
       if (!context.mounted) return;
 
+      if (result is PrintFailure) {
+        showErrorSnackBar(
+          context,
+          message: result.message,
+          useRootMessenger: false,
+        );
+        return;
+      }
+
       if (showSuccessMessage) {
         final msg = printStoreCopy.value
-            ? 'Printed: store + customer claim sheets'
+            ? 'Printed: customer + store claim sheets'
             : 'Claim sheet printed';
         showSuccessSnackBar(context, message: msg, useRootMessenger: false);
       }
@@ -2934,8 +2990,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
                     value: 'preview_store',
                     child: ListTile(
                       leading: Icon(Icons.picture_as_pdf_outlined),
-                      title: Text('Preview Claim Sheet (Store)'),
-                      subtitle: Text('Machine tag'),
+                      title: Text('Preview Store Copy'),
                       contentPadding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                     ),
@@ -3016,6 +3071,14 @@ class _OrderSuccessPage extends HookConsumerWidget {
                   const SizedBox(height: 12),
                   _buildDetailRow(
                       context, 'Date', dateFormat.format(orderDate)),
+                  if (readyForPickupAt != null) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailRow(
+                      context,
+                      'Ready for pickup',
+                      dateFormat.format(readyForPickupAt!),
+                    ),
+                  ],
                   if (specialInstructions != null &&
                       specialInstructions!.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -3064,8 +3127,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
             child: CheckboxListTile(
               value: printStoreCopy.value,
               onChanged: (v) => printStoreCopy.value = v ?? true,
-              title: const Text('Print store claim sheet'),
-              subtitle: const Text('Prints a compact tag for machines'),
+              title: const Text('Print store copy'),
+              subtitle: const Text('Second claim sheet after customer copy'),
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,

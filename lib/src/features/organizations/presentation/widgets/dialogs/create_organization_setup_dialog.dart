@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
@@ -48,9 +49,6 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
     final orgDraft = useState<_OrgDraft?>(null);
     final branchDraft = useState<_BranchDraft?>(null);
     final queuedInvites = useState<List<OrganizationSetupInvite>>(const []);
-    final tiers = useState<List<_TierEntry>>([
-      const _TierEntry(minAmount: 0, maxAmount: 200, incentiveAmount: 5),
-    ]);
 
     final rolesAsync = ref.watch(userRolesControllerProvider);
 
@@ -66,11 +64,7 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
     bool isDirty() {
       if (formHasValue(orgFormKey) || formHasValue(branchFormKey)) return true;
       if (queuedInvites.value.isNotEmpty) return true;
-      if (tiers.value.length != 1) return true;
-      final tier = tiers.value.first;
-      return tier.minAmount != 0 ||
-          tier.maxAmount != 200 ||
-          tier.incentiveAmount != 5;
+      return false;
     }
 
     Future<bool> confirmDiscard(BuildContext ctx) async {
@@ -144,13 +138,6 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
           }
           return false;
         }
-        if (tiers.value.isEmpty) {
-          showFormErrorDialog(
-            context,
-            errors: [t.organizations.atLeastOneTier],
-          );
-          return false;
-        }
         branchDraft.value = readBranchDraft();
         return true;
       }
@@ -166,14 +153,8 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
       }
       final branchValid =
           branchFormKey.currentState?.saveAndValidate() ?? false;
-      if (!branchValid || tiers.value.isEmpty) {
+      if (!branchValid) {
         step.value = 1;
-        if (tiers.value.isEmpty) {
-          showFormErrorDialog(
-            context,
-            errors: [t.organizations.atLeastOneTier],
-          );
-        }
         return;
       }
       final org = readOrgDraft();
@@ -195,17 +176,6 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
               operatingHours:
                   branch.operatingHours.isEmpty ? null : branch.operatingHours,
               cutOffTime: branch.cutOffTime.isEmpty ? null : branch.cutOffTime,
-              incentiveAmount: tiers.value.first.incentiveAmount,
-              incentivePerServiceItems: tiers.value.first.maxAmount ?? 200,
-              tiers: tiers.value
-                  .map(
-                    (tier) => OrganizationSetupTier(
-                      minAmount: tier.minAmount,
-                      maxAmount: tier.maxAmount,
-                      incentiveAmount: tier.incentiveAmount,
-                    ),
-                  )
-                  .toList(),
             ),
             invites: queuedInvites.value,
           );
@@ -312,13 +282,11 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                     _BranchStep(
                       formKey: branchFormKey,
                       enabled: !isSaving.value,
-                      tiers: tiers.value,
-                      onTiersChanged: (value) => tiers.value = value,
                     ),
                     rolesAsync.when(
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('$e')),
+                      error: (e, _) => ErrorState.fromError(e),
                       data: (roles) => _InviteStep(
                         formKey: inviteFormKey,
                         roles: roles,
@@ -546,18 +514,13 @@ class _BranchStep extends StatelessWidget {
   const _BranchStep({
     required this.formKey,
     required this.enabled,
-    required this.tiers,
-    required this.onTiersChanged,
   });
 
   final GlobalKey<FormBuilderState> formKey;
   final bool enabled;
-  final List<_TierEntry> tiers;
-  final ValueChanged<List<_TierEntry>> onTiersChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final t = Translations.of(context);
 
     return FormBuilder(
@@ -626,73 +589,6 @@ class _BranchStep extends StatelessWidget {
               prefixIcon: const Icon(Icons.timer_off),
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  t.organizations.incentiveTiers,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: enabled
-                    ? () {
-                        final current = List<_TierEntry>.from(tiers);
-                        final lastMax = current.isNotEmpty
-                            ? (current.last.maxAmount ?? 0)
-                            : 0;
-                        current.add(
-                          _TierEntry(
-                            minAmount: lastMax,
-                            maxAmount: lastMax + 200,
-                            incentiveAmount: (current.isNotEmpty
-                                    ? current.last.incentiveAmount
-                                    : 0) +
-                                5,
-                          ),
-                        );
-                        onTiersChanged(current);
-                      }
-                    : null,
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(t.organizations.addTier),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            t.organizations.incentiveTiersHint,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...tiers.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final tier = entry.value;
-            return _IncentiveTierRow(
-              key: ValueKey('setup_tier_$idx'),
-              index: idx,
-              tier: tier,
-              enabled: enabled,
-              onChanged: (updated) {
-                final current = List<_TierEntry>.from(tiers);
-                current[idx] = updated;
-                onTiersChanged(current);
-              },
-              onRemove: tiers.length > 1
-                  ? () {
-                      final current = List<_TierEntry>.from(tiers);
-                      current.removeAt(idx);
-                      onTiersChanged(current);
-                    }
-                  : null,
-            );
-          }),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -887,163 +783,6 @@ class _ReviewStep extends StatelessWidget {
           subtitle: Text(t.organizations.reviewInviteCount(n: inviteCount)),
         ),
       ],
-    );
-  }
-}
-
-class _TierEntry {
-  const _TierEntry({
-    required this.minAmount,
-    this.maxAmount,
-    required this.incentiveAmount,
-  });
-
-  final num minAmount;
-  final num? maxAmount;
-  final num incentiveAmount;
-
-  _TierEntry copyWith({
-    num? minAmount,
-    num? maxAmount,
-    bool clearMaxAmount = false,
-    num? incentiveAmount,
-  }) {
-    return _TierEntry(
-      minAmount: minAmount ?? this.minAmount,
-      maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
-      incentiveAmount: incentiveAmount ?? this.incentiveAmount,
-    );
-  }
-}
-
-class _IncentiveTierRow extends HookWidget {
-  const _IncentiveTierRow({
-    super.key,
-    required this.index,
-    required this.tier,
-    required this.enabled,
-    required this.onChanged,
-    this.onRemove,
-  });
-
-  final int index;
-  final _TierEntry tier;
-  final bool enabled;
-  final ValueChanged<_TierEntry> onChanged;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = Translations.of(context);
-
-    final minController =
-        useTextEditingController(text: tier.minAmount.toStringAsFixed(0));
-    final maxController = useTextEditingController(
-      text: tier.maxAmount?.toStringAsFixed(0) ?? '',
-    );
-    final amountController =
-        useTextEditingController(text: tier.incentiveAmount.toStringAsFixed(0));
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    t.organizations.tierLabel(n: index + 1),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (onRemove != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      onPressed: enabled ? onRemove : null,
-                      visualDensity: VisualDensity.compact,
-                      tooltip: t.organizations.removeTier,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: minController,
-                      decoration: InputDecoration(
-                        labelText: t.organizations.tierMin,
-                        prefixText: '₱ ',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        onChanged(
-                            tier.copyWith(minAmount: num.tryParse(v) ?? 0));
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: maxController,
-                      decoration: InputDecoration(
-                        labelText: t.organizations.tierMax,
-                        prefixText: '₱ ',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        hintText: t.organizations.tierNoLimit,
-                        hintStyle: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        if (v.isEmpty) {
-                          onChanged(tier.copyWith(clearMaxAmount: true));
-                        } else {
-                          onChanged(
-                            tier.copyWith(maxAmount: num.tryParse(v) ?? 0),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: amountController,
-                      decoration: InputDecoration(
-                        labelText: t.organizations.tierIncentive,
-                        prefixText: '₱ ',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        onChanged(
-                          tier.copyWith(incentiveAmount: num.tryParse(v) ?? 0),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

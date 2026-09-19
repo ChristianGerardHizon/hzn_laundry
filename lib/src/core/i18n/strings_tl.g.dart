@@ -83,7 +83,7 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get continueButton => 'Magpatuloy';
 	@override String get changeEmail => 'Palitan ang email';
 	@override String get signInWithEmailCode => 'Mag-sign in gamit ang email code';
-	@override String get backToPasswordLogin => 'Bumalik sa password login';
+	@override String get signInWithPassword => 'Mag-sign in gamit ang password';
 	@override String get sendLoginCode => 'Ipadala ang code';
 	@override String get verifyLoginCode => 'I-verify ang code';
 	@override String get enterLoginCode => 'Login code';
@@ -156,6 +156,7 @@ class _TranslationsFailuresTl implements TranslationsFailuresEn {
 	@override String get invalidCredentials => 'Di-wastong email o password.';
 	@override String get invalidLoginCode => 'Di-wasto o expired na login code.';
 	@override String get googleNoAccount => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.';
+	@override String get otpNoAccount => 'Walang account para sa email na ito. Magpa-create muna sa admin.';
 	@override String get googleSignInFailed => 'Hindi masimulan ang Google sign-in. Subukan ulit.';
 	@override String get accountDisabled => 'Ang iyong account ay na-disable.';
 	@override String get emailNotVerified => 'Pakiverify ang iyong email address.';
@@ -185,6 +186,11 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	@override String get notes => 'Mga Tala';
 	@override String get description => 'Paglalarawan';
 	@override String get category => 'Kategorya';
+	@override String get paymentFilters => 'Mga Filter ng Bayad';
+	@override String get paid => 'Bayad';
+	@override String get unpaid => 'Hindi Bayad';
+	@override String get cash => 'Cash';
+	@override String get gcashBank => 'GCash/Bank';
 }
 
 // Path: navigation
@@ -225,6 +231,8 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
 	@override String get allBranches => 'Lahat ng Sangay';
+	@override String get switchingBranch => 'Pinapalitan ang sangay…';
+	@override String switchingToBranch({required Object name}) => 'Lumilipat sa ${name}…';
 	@override String get posUnavailableAllBranches => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.';
 	@override String get createUnavailableAllBranches => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.';
 	@override String get activities => 'Mga Aktibidad';
@@ -286,16 +294,6 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get onboardingComplete => 'Handa na ang organisasyon';
 	@override String get operatingHours => 'Mga oras ng operasyon';
 	@override String get cutOffTime => 'Cut-off time';
-	@override String get incentiveTiers => 'Mga incentive tier';
-	@override String get addTier => 'Magdagdag ng tier';
-	@override String get incentiveTiersHint => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.';
-	@override String get atLeastOneTier => 'Kailangan ng kahit isang incentive tier.';
-	@override String tierLabel({required Object n}) => 'Tier ${n}';
-	@override String get tierMin => 'Min';
-	@override String get tierMax => 'Max';
-	@override String get tierIncentive => 'Incentive';
-	@override String get tierNoLimit => 'Walang limit';
-	@override String get removeTier => 'Alisin ang tier';
 	@override String get addInvite => 'Idagdag ang imbitasyon';
 	@override String get noInvitesQueued => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.';
 	@override String get queuedInvites => 'Mga naka-queue na imbitasyon';
@@ -400,7 +398,7 @@ extension on TranslationsTl {
 			'auth.continueButton' => 'Magpatuloy',
 			'auth.changeEmail' => 'Palitan ang email',
 			'auth.signInWithEmailCode' => 'Mag-sign in gamit ang email code',
-			'auth.backToPasswordLogin' => 'Bumalik sa password login',
+			'auth.signInWithPassword' => 'Mag-sign in gamit ang password',
 			'auth.sendLoginCode' => 'Ipadala ang code',
 			'auth.verifyLoginCode' => 'I-verify ang code',
 			'auth.enterLoginCode' => 'Login code',
@@ -455,6 +453,7 @@ extension on TranslationsTl {
 			'failures.invalidCredentials' => 'Di-wastong email o password.',
 			'failures.invalidLoginCode' => 'Di-wasto o expired na login code.',
 			'failures.googleNoAccount' => 'Walang account para sa Google email na ito. Magpa-create muna sa admin.',
+			'failures.otpNoAccount' => 'Walang account para sa email na ito. Magpa-create muna sa admin.',
 			'failures.googleSignInFailed' => 'Hindi masimulan ang Google sign-in. Subukan ulit.',
 			'failures.accountDisabled' => 'Ang iyong account ay na-disable.',
 			'failures.emailNotVerified' => 'Pakiverify ang iyong email address.',
@@ -475,6 +474,11 @@ extension on TranslationsTl {
 			'fields.notes' => 'Mga Tala',
 			'fields.description' => 'Paglalarawan',
 			'fields.category' => 'Kategorya',
+			'fields.paymentFilters' => 'Mga Filter ng Bayad',
+			'fields.paid' => 'Bayad',
+			'fields.unpaid' => 'Hindi Bayad',
+			'fields.cash' => 'Cash',
+			'fields.gcashBank' => 'GCash/Bank',
 			'navigation.shortcuts' => 'Mga Shortcut',
 			'navigation.categories' => 'Mga Kategorya',
 			'navigation.showMore' => 'Magpakita pa',
@@ -506,6 +510,8 @@ extension on TranslationsTl {
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',
 			'navigation.allBranches' => 'Lahat ng Sangay',
+			'navigation.switchingBranch' => 'Pinapalitan ang sangay…',
+			'navigation.switchingToBranch' => ({required Object name}) => 'Lumilipat sa ${name}…',
 			'navigation.posUnavailableAllBranches' => 'Hindi available ang Cashier kapag naka-select ang Lahat ng Sangay. Pumili muna ng partikular na sangay.',
 			'navigation.createUnavailableAllBranches' => 'Kailangan ng partikular na sangay para sa aksyong ito. Pumili muna ng sangay.',
 			'navigation.activities' => 'Mga Aktibidad',
@@ -558,16 +564,6 @@ extension on TranslationsTl {
 			'organizations.onboardingComplete' => 'Handa na ang organisasyon',
 			'organizations.operatingHours' => 'Mga oras ng operasyon',
 			'organizations.cutOffTime' => 'Cut-off time',
-			'organizations.incentiveTiers' => 'Mga incentive tier',
-			'organizations.addTier' => 'Magdagdag ng tier',
-			'organizations.incentiveTiersHint' => 'Incentive base sa sakop ng presyo ng serbisyo. Kung lumampas sa huling tier, gagamitin ang incentive ng huling tier.',
-			'organizations.atLeastOneTier' => 'Kailangan ng kahit isang incentive tier.',
-			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
-			'organizations.tierMin' => 'Min',
-			'organizations.tierMax' => 'Max',
-			'organizations.tierIncentive' => 'Incentive',
-			'organizations.tierNoLimit' => 'Walang limit',
-			'organizations.removeTier' => 'Alisin ang tier',
 			'organizations.addInvite' => 'Idagdag ang imbitasyon',
 			'organizations.noInvitesQueued' => 'Walang naka-queue na imbitasyon. Puwede mong laktawan ang hakbang na ito.',
 			'organizations.queuedInvites' => 'Mga naka-queue na imbitasyon',

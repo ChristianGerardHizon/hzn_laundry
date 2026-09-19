@@ -239,55 +239,12 @@ function parseSetupBranch(body) {
     throw new BadRequestError("branch contactNumber is required");
   }
 
-  var rawTiers = branch.tiers;
-  if (!Array.isArray(rawTiers) || rawTiers.length < 1) {
-    throw new BadRequestError("at least one incentive tier is required");
-  }
-
-  var tiers = [];
-  var i;
-  for (i = 0; i < rawTiers.length; i++) {
-    var tier = rawTiers[i] || {};
-    var minAmount = Number(tier.minAmount);
-    var incentiveAmount = Number(tier.incentiveAmount);
-    if (isNaN(minAmount) || minAmount < 0) {
-      throw new BadRequestError("tier minAmount must be a number >= 0");
-    }
-    if (isNaN(incentiveAmount) || incentiveAmount < 0) {
-      throw new BadRequestError("tier incentiveAmount must be a number >= 0");
-    }
-    var maxAmount = 0;
-    if (tier.maxAmount !== undefined && tier.maxAmount !== null && tier.maxAmount !== "") {
-      maxAmount = Number(tier.maxAmount);
-      if (isNaN(maxAmount) || maxAmount < 0) {
-        throw new BadRequestError("tier maxAmount must be a number >= 0");
-      }
-    }
-    tiers.push({
-      minAmount: minAmount,
-      maxAmount: maxAmount,
-      incentiveAmount: incentiveAmount
-    });
-  }
-
-  var incentiveAmount = Number(branch.incentiveAmount);
-  if (isNaN(incentiveAmount) || incentiveAmount < 0) {
-    incentiveAmount = tiers[0].incentiveAmount;
-  }
-  var incentivePerServiceItems = Number(branch.incentivePerServiceItems);
-  if (isNaN(incentivePerServiceItems) || incentivePerServiceItems < 0) {
-    incentivePerServiceItems = tiers[0].maxAmount || 200;
-  }
-
   return {
     name: name,
     address: address,
     contactNumber: contactNumber,
     operatingHours: trimStr(branch.operatingHours),
-    cutOffTime: trimStr(branch.cutOffTime),
-    incentiveAmount: incentiveAmount,
-    incentivePerServiceItems: incentivePerServiceItems,
-    tiers: tiers
+    cutOffTime: trimStr(branch.cutOffTime)
   };
 }
 
@@ -394,23 +351,8 @@ function createOrganization(e) {
     branchRecord.set("organization", org.id);
     branchRecord.set("operatingHours", branch.operatingHours);
     branchRecord.set("cutOffTime", branch.cutOffTime);
-    branchRecord.set("incentiveAmount", branch.incentiveAmount);
-    branchRecord.set("incentivePerServiceItems", branch.incentivePerServiceItems);
     branchRecord.set("isDeleted", false);
     txApp.save(branchRecord);
-
-    var tiersCollection = txApp.findCollectionByNameOrId("incentiveTiers");
-    var t;
-    for (t = 0; t < branch.tiers.length; t++) {
-      var tier = branch.tiers[t];
-      var tierRecord = new Record(tiersCollection);
-      tierRecord.set("branch", branchRecord.id);
-      tierRecord.set("minAmount", tier.minAmount);
-      tierRecord.set("maxAmount", tier.maxAmount);
-      tierRecord.set("incentiveAmount", tier.incentiveAmount);
-      tierRecord.set("sortOrder", t);
-      txApp.save(tierRecord);
-    }
 
     if (invites.length > 0) {
       var invitesCollection = txApp.findCollectionByNameOrId("organizationInvites");

@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../customers/presentation/controllers/customer_provider.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
@@ -122,7 +125,7 @@ class SaleDetailDialog extends HookConsumerWidget {
                       children: [
                         const Icon(Icons.error_outline, size: 48),
                         const SizedBox(height: 16),
-                        Text('Error: $error'),
+                        Text(Failure.displayErrorMessage(error)),
                         const SizedBox(height: 16),
                         FilledButton.tonal(
                           onPressed: () => ref.invalidate(saleProvider(saleId)),
@@ -257,8 +260,32 @@ class _DialogPrintMenu extends HookConsumerWidget {
     final currentAuth = ref.watch(currentAuthProvider);
     final branchId = ref.watch(currentBranchIdProvider);
     final branchAsync = ref.watch(branchProvider(branchId ?? ''));
+    final org = ref.watch(currentOrganizationControllerProvider).value;
     final serviceItemsAsync = ref.watch(saleServiceItemsProvider(saleId));
     final saleItemsAsync = ref.watch(saleItemsProvider(saleId));
+    final customerId = sale.customerId;
+    final customerPhone = (customerId != null && customerId.isNotEmpty)
+        ? ref.watch(customerProvider(customerId)).value?.phone
+        : null;
+
+    ({String? businessName, String? branchAddress, String? contactNumber})
+        receiptHeader() {
+      final branch = branchAsync.value;
+      final orgName = org?.name;
+      final businessName =
+          (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
+      final branchAddress = (branch?.address.isNotEmpty == true)
+          ? branch!.address
+          : org?.address;
+      final contactNumber = (branch?.contactNumber.isNotEmpty == true)
+          ? branch!.contactNumber
+          : org?.contactNumber;
+      return (
+        businessName: businessName,
+        branchAddress: branchAddress,
+        contactNumber: contactNumber,
+      );
+    }
 
     OrderClaimSheetPdfData buildPdfData({required bool storeCopy}) {
       final serviceItems = serviceItemsAsync.value ?? [];
@@ -267,7 +294,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
       final service = firstService?.service;
       final unitLabel = service?.quantityUnit?.shortPlural ??
           (service?.weightBased == true ? 'KG' : 'PCS');
-      final currentBranch = branchAsync.value;
+      final header = receiptHeader();
 
       return OrderClaimSheetPdfData(
         customerName: sale.customerName ?? 'Walk-in',
@@ -277,17 +304,22 @@ class _DialogPrintMenu extends HookConsumerWidget {
         totalAmount: sale.totalAmount.toDouble(),
         createdDate: sale.postedDate ?? DateTime.now(),
         storeCopy: storeCopy,
-        businessName: currentBranch?.name,
-        branchAddress: currentBranch?.address,
-        contactNumber: currentBranch?.contactNumber,
+        businessName: header.businessName,
+        branchAddress: header.branchAddress,
+        contactNumber: header.contactNumber,
         cashierName: currentAuth?.user.name,
+        customerPhone: customerPhone,
         specialInstructions: sale.notes,
         claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
+        readyForPickupAt: sale.readyForPickupAt,
       );
     }
 
-    Future<PrintResult?> sendPrint(OrderReceiptCopy copyType) {
+    Future<PrintResult?> sendPrint({
+      required OrderReceiptCopy copyType,
+      bool includeStoreCopy = false,
+    }) {
       final printer = selectedPrinterAsync.value;
       if (printer == null) return Future.value(null);
 
@@ -305,12 +337,16 @@ class _DialogPrintMenu extends HookConsumerWidget {
         totalAmount: pdfData.totalAmount,
         claimSheetNumber: pdfData.claimSheetNumber,
         copyType: copyType,
+        includeStoreCopy: includeStoreCopy,
         businessName: pdfData.businessName,
         branchAddress: pdfData.branchAddress,
         contactNumber: pdfData.contactNumber,
         cashierName: pdfData.cashierName,
+        customerPhone: customerPhone,
         specialInstructions: pdfData.specialInstructions,
+        orderDate: pdfData.createdDate,
         addOnItems: pdfData.addOnItems,
+        readyForPickupAt: pdfData.readyForPickupAt,
       );
     }
 
@@ -333,20 +369,28 @@ class _DialogPrintMenu extends HookConsumerWidget {
       return true;
     }
 
-    Future<void> printCopy(OrderReceiptCopy copyType) async {
+    Future<void> printCopy({
+      required OrderReceiptCopy copyType,
+      bool includeStoreCopy = false,
+    }) async {
       if (!ensureCanPrint()) return;
 
       isPrinting.value = true;
       try {
-        final result = await sendPrint(copyType);
+        final result = await sendPrint(
+          copyType: copyType,
+          includeStoreCopy: includeStoreCopy,
+        );
         if (!context.mounted) return;
 
         if (result is PrintFailure) {
           showErrorSnackBar(context, message: result.message);
         } else {
-          final label = copyType == OrderReceiptCopy.customer
-              ? 'Claim sheet'
-              : 'Claim sheet (store)';
+          final label = includeStoreCopy
+              ? 'Customer + store claim sheets'
+              : copyType == OrderReceiptCopy.customer
+                  ? 'Claim sheet'
+                  : 'Store claim sheet';
           showSuccessSnackBar(context, message: '$label printed');
         }
       } finally {
@@ -355,37 +399,10 @@ class _DialogPrintMenu extends HookConsumerWidget {
     }
 
     Future<void> printBothCopies() async {
-      if (!ensureCanPrint()) return;
-
-      isPrinting.value = true;
-      try {
-        final storeResult = await sendPrint(OrderReceiptCopy.store);
-        if (!context.mounted) return;
-        if (storeResult is PrintFailure) {
-          showErrorSnackBar(context, message: storeResult.message);
-          return;
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (!context.mounted) return;
-
-        final customerResult = await sendPrint(OrderReceiptCopy.customer);
-        if (!context.mounted) return;
-        if (customerResult is PrintFailure) {
-          showErrorSnackBar(
-            context,
-            message: 'Claim sheet printed (customer copy failed)',
-          );
-          return;
-        }
-
-        showSuccessSnackBar(
-          context,
-          message: 'Printed: store + customer claim sheets',
-        );
-      } finally {
-        if (context.mounted) isPrinting.value = false;
-      }
+      await printCopy(
+        copyType: OrderReceiptCopy.customer,
+        includeStoreCopy: true,
+      );
     }
 
     Future<void> previewCopy({required bool storeCopy}) async {
@@ -412,9 +429,9 @@ class _DialogPrintMenu extends HookConsumerWidget {
     Future<void> handlePrintMenuSelection(String value) async {
       switch (value) {
         case 'print_customer':
-          await printCopy(OrderReceiptCopy.customer);
+          await printCopy(copyType: OrderReceiptCopy.customer);
         case 'print_store':
-          await printCopy(OrderReceiptCopy.store);
+          await printCopy(copyType: OrderReceiptCopy.store);
         case 'print_all':
           await printBothCopies();
       }
@@ -454,8 +471,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
               value: 'preview_store',
               child: ListTile(
                 leading: Icon(Icons.picture_as_pdf_outlined),
-                title: Text('Preview Claim Sheet (Store)'),
-                subtitle: Text('Machine tag'),
+                title: Text('Preview Store Copy'),
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),
@@ -476,7 +492,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
                 child: ListTile(
                   leading: Icon(Icons.print),
                   title: Text('Print All'),
-                  subtitle: Text('Store + customer'),
+                  subtitle: Text('Customer + store copies'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -494,8 +510,7 @@ class _DialogPrintMenu extends HookConsumerWidget {
                 value: 'print_store',
                 child: ListTile(
                   leading: Icon(Icons.local_laundry_service),
-                  title: Text('Print Claim Sheet (Store)'),
-                  subtitle: Text('Machine tag'),
+                  title: Text('Print Store Copy'),
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                 ),

@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../../core/foundation/paginated_state.dart';
+import '../../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../../../core/widgets/end_of_list_indicator.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../../pos/domain/payment_method.dart';
 import '../../../../pos/domain/payment_type.dart';
@@ -29,7 +35,7 @@ String _shortOrderNumber(String receiptNumber) {
 
 /// View displaying payments received within the selected report period.
 ///
-/// Adapts layout between mobile (card list) and tablet/desktop (DataTable).
+/// KPIs load from the daily summary view; payment rows load page-by-page.
 class SalesReportView extends HookConsumerWidget {
   const SalesReportView({super.key});
 
@@ -51,37 +57,63 @@ class SalesReportView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(paymentsSummaryProvider);
-    final detailAsync = ref.watch(paymentsReportProvider);
+    final detailAsync = ref.watch(paymentsReportControllerProvider);
     final dateRange = ref.watch(paymentsDateRangeControllerProvider);
     final searchController = useTextEditingController();
-    final searchQuery = useListenableSelector(
-      searchController,
-      () => searchController.text,
-    );
     final searchFields = useState(_defaultSearchKeys);
 
-    // Wait for summary first (lightweight); detail may still be loading
+    useEffect(() {
+      searchController.clear();
+      return null;
+    }, [dateRange]);
+
+    final detailState = detailAsync.asData?.value;
+    final scrollController = useInfiniteScroll(
+      onLoadMore: () =>
+          ref.read(paymentsReportControllerProvider.notifier).loadMore(),
+      hasMore: detailState?.hasMore ?? false,
+      isLoading: detailState?.isLoadingMore ?? false,
+    );
+
+    useEffect(() {
+      Timer? timer;
+      void listener() {
+        timer?.cancel();
+        timer = Timer(const Duration(milliseconds: 350), () {
+          final query = searchController.text.trim();
+          final notifier =
+              ref.read(paymentsReportControllerProvider.notifier);
+          if (query.isEmpty) {
+            notifier.clearSearch();
+          } else {
+            notifier.search(query, fields: searchFields.value.toList());
+          }
+        });
+      }
+
+      searchController.addListener(listener);
+      return () {
+        timer?.cancel();
+        searchController.removeListener(listener);
+      };
+    }, [searchFields.value]);
+
     return summaryAsync.when(
       data: (summary) => _buildContent(
         context,
         ref,
         summary,
-        detailAsync.when(
-                data: (entries) => entries,
-                loading: () => <PaymentReportEntry>[],
-                error: (_, __) => <PaymentReportEntry>[],
-              ),
-        detailAsync.isLoading,
+        detailAsync,
         dateRange,
         searchController: searchController,
-        searchQuery: searchQuery,
         searchFields: searchFields,
+        scrollController: scrollController,
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Error loading payments: $error'),
+          child: Text(Failure.displayErrorMessage(error)),
         ),
       ),
     );
@@ -91,16 +123,14 @@ class SalesReportView extends HookConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<PaymentsDailySummaryEntry> summary,
-    List<PaymentReportEntry> detailEntries,
-    bool detailLoading,
+    AsyncValue<PaginatedState<PaymentReportEntry>> detailAsync,
     DateTimeRange dateRange, {
     required TextEditingController searchController,
-    required String searchQuery,
     required ValueNotifier<Set<String>> searchFields,
+    required ScrollController scrollController,
   }) {
     final isMobile = Breakpoints.isMobile(context);
 
-    // Aggregate KPIs from the view summary
     num totalCollected = 0;
     num totalRefunded = 0;
     int paymentCount = 0;
@@ -117,7 +147,6 @@ class SalesReportView extends HookConsumerWidget {
       methodTotals[s.paymentMethod] =
           (methodTotals[s.paymentMethod] ?? 0) + s.totalAmount;
 
-      // For chart: net per day
       final day = DateTime(s.date.year, s.date.month, s.date.day);
       final amount = s.paymentType == PaymentType.refund
           ? -s.totalAmount
@@ -126,94 +155,143 @@ class SalesReportView extends HookConsumerWidget {
     }
 
     final netCollected = totalCollected - totalRefunded;
+    final detailState = detailAsync.asData?.value;
+    final entries = detailState?.items ?? const <PaymentReportEntry>[];
+    final detailLoading = detailAsync.isLoading && detailState == null;
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(paymentsSummaryProvider);
-        ref.invalidate(paymentsReportProvider);
+        ref.invalidate(paymentsReportControllerProvider);
       },
-      child: SingleChildScrollView(
+      child: CustomScrollView(
+        controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(isMobile ? 12 : 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDateRangeRow(context, ref, dateRange),
-            const SizedBox(height: 12),
-            _buildKpiSection(
-              context,
-              netCollected: netCollected,
-              totalCollected: totalCollected,
-              totalRefunded: totalRefunded,
-              paymentCount: paymentCount,
-              isMobile: isMobile,
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 12 : 16,
+              isMobile ? 12 : 16,
+              isMobile ? 12 : 16,
+              0,
             ),
-            const SizedBox(height: 16),
-            _buildRevenueByDayChart(context, dailyTotals),
-            const SizedBox(height: 16),
-            if (methodTotals.isNotEmpty) ...[
-              _buildMethodBreakdown(context, methodTotals),
-              const SizedBox(height: 16),
-            ],
-            ReportSearchBar(
-              fields: _searchFields,
-              selectedKeys: searchFields.value,
-              controller: searchController,
-              onSelectedKeysChanged: (keys) => searchFields.value = keys,
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildDateRangeRow(context, ref, dateRange),
+                const SizedBox(height: 12),
+                _buildKpiSection(
+                  context,
+                  netCollected: netCollected,
+                  totalCollected: totalCollected,
+                  totalRefunded: totalRefunded,
+                  paymentCount: paymentCount,
+                  isMobile: isMobile,
+                ),
+                const SizedBox(height: 16),
+                _buildRevenueByDayChart(context, dailyTotals),
+                const SizedBox(height: 16),
+                if (methodTotals.isNotEmpty) ...[
+                  _buildMethodBreakdown(context, methodTotals),
+                  const SizedBox(height: 16),
+                ],
+                ReportSearchBar(
+                  fields: _searchFields,
+                  selectedKeys: searchFields.value,
+                  controller: searchController,
+                  onSelectedKeysChanged: (keys) {
+                    searchFields.value = keys;
+                    final query = searchController.text.trim();
+                    if (query.isNotEmpty) {
+                      ref
+                          .read(paymentsReportControllerProvider.notifier)
+                          .search(query, fields: keys.toList());
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                if (!detailLoading)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      detailState != null
+                          ? '${detailState.totalItems} payments'
+                          : '',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+              ]),
             ),
-            const SizedBox(height: 12),
-            if (detailLoading)
-              const Center(child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              ))
-            else
-              Builder(builder: (context) {
-                final filtered = _filterEntries(
-                    detailEntries, searchQuery, searchFields.value);
-                if (isMobile) {
-                  return _buildMobilePaymentsList(context, filtered);
-                }
-                return _buildDesktopPaymentsTable(context, filtered);
-              }),
-          ],
-        ),
+          ),
+          if (detailLoading)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (detailAsync.hasError)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    Failure.displayErrorMessage(detailAsync.error),
+                  ),
+                ),
+              ),
+            )
+          else if (entries.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16),
+                child: _buildEmptyState(context),
+              ),
+            )
+          else if (isMobile)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    if (index >= entries.length) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    }
+                    return _buildMobilePaymentCard(context, entries[index]);
+                  },
+                  childCount: entries.length +
+                      (detailState?.isLoadingMore == true ? 1 : 0),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildDesktopPaymentsTable(context, entries),
+              ),
+            ),
+          if (detailState != null && entries.isNotEmpty)
+            SliverToBoxAdapter(
+              child: EndOfListIndicator(
+                isLoadingMore: detailState.isLoadingMore,
+                hasReachedEnd: detailState.hasReachedEnd,
+              ),
+            ),
+        ],
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Search filtering
-  // ---------------------------------------------------------------------------
-
-  List<PaymentReportEntry> _filterEntries(
-    List<PaymentReportEntry> entries,
-    String query,
-    Set<String> activeKeys,
-  ) {
-    if (query.isEmpty) return entries;
-    final q = query.toLowerCase();
-    return entries.where((e) {
-      for (final key in activeKeys) {
-        final matches = switch (key) {
-          'receipt' => e.receiptNumber.toLowerCase().contains(q),
-          'customer' => (e.customerName ?? '').toLowerCase().contains(q),
-          'amount' => _currencyFormat.format(e.payment.amount).contains(q),
-          'reference' =>
-            (e.payment.paymentRef ?? '').toLowerCase().contains(q),
-          'method' =>
-            e.payment.paymentMethod.displayName.toLowerCase().contains(q),
-          _ => false,
-        };
-        if (matches) return true;
-      }
-      return false;
-    }).toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Date range picker
-  // ---------------------------------------------------------------------------
 
   Widget _buildDateRangeRow(
     BuildContext context,
@@ -285,10 +363,6 @@ class SalesReportView extends HookConsumerWidget {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Revenue by day chart
-  // ---------------------------------------------------------------------------
-
   Widget _buildRevenueByDayChart(
     BuildContext context,
     Map<DateTime, num> dailyTotals,
@@ -320,10 +394,6 @@ class SalesReportView extends HookConsumerWidget {
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // KPI cards
-  // ---------------------------------------------------------------------------
 
   Widget _buildKpiSection(
     BuildContext context, {
@@ -403,10 +473,6 @@ class SalesReportView extends HookConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Payment method breakdown
-  // ---------------------------------------------------------------------------
-
   Widget _buildMethodBreakdown(
     BuildContext context,
     Map<PaymentMethod, num> methodTotals,
@@ -462,61 +528,38 @@ class SalesReportView extends HookConsumerWidget {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Desktop: DataTable
-  // ---------------------------------------------------------------------------
-
   Widget _buildDesktopPaymentsTable(
     BuildContext context,
     List<PaymentReportEntry> entries,
   ) {
-    if (entries.isEmpty) return _buildEmptyState(context);
-
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              '${entries.length} payments',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                columnSpacing: 24,
+                headingRowHeight: 44,
+                dataRowMinHeight: 40,
+                dataRowMaxHeight: 48,
+                columns: const [
+                  DataColumn(label: Text('Date')),
+                  DataColumn(label: Text('Receipt #')),
+                  DataColumn(label: Text('Customer')),
+                  DataColumn(label: Text('Amount'), numeric: true),
+                  DataColumn(label: Text('Method')),
+                  DataColumn(label: Text('Type')),
+                  DataColumn(label: Text('Reference')),
+                  DataColumn(label: Text('')),
+                ],
+                rows: entries.map((e) => _buildDataRow(context, e)).toList(),
+              ),
             ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    columnSpacing: 24,
-                    headingRowHeight: 44,
-                    dataRowMinHeight: 40,
-                    dataRowMaxHeight: 48,
-                    columns: const [
-                      DataColumn(label: Text('Date')),
-                      DataColumn(label: Text('Receipt #')),
-                      DataColumn(label: Text('Customer')),
-                      DataColumn(label: Text('Amount'), numeric: true),
-                      DataColumn(label: Text('Method')),
-                      DataColumn(label: Text('Type')),
-                      DataColumn(label: Text('Reference')),
-                      DataColumn(label: Text('')),
-                    ],
-                    rows: entries
-                        .map((e) => _buildDataRow(context, e))
-                        .toList(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -557,33 +600,6 @@ class SalesReportView extends HookConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Mobile: card list
-  // ---------------------------------------------------------------------------
-
-  Widget _buildMobilePaymentsList(
-    BuildContext context,
-    List<PaymentReportEntry> entries,
-  ) {
-    if (entries.isEmpty) return _buildEmptyState(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            '${entries.length} payments',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ),
-        ...entries.map((e) => _buildMobilePaymentCard(context, e)),
-      ],
-    );
-  }
-
   Widget _buildMobilePaymentCard(
     BuildContext context,
     PaymentReportEntry entry,
@@ -604,7 +620,6 @@ class SalesReportView extends HookConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: amount + type chip
               Row(
                 children: [
                   Expanded(
@@ -620,7 +635,6 @@ class SalesReportView extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              // Receipt + customer
               Row(
                 children: [
                   if (entry.receiptNumber.isNotEmpty) ...[
@@ -646,7 +660,6 @@ class SalesReportView extends HookConsumerWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              // Bottom row: method + date
               Row(
                 children: [
                   Icon(methodIcon, size: 14, color: methodColor),
@@ -684,10 +697,6 @@ class SalesReportView extends HookConsumerWidget {
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Shared helpers
-  // ---------------------------------------------------------------------------
 
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);

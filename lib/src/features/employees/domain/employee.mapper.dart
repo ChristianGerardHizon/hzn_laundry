@@ -25,6 +25,20 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
   static const Field<Employee, String> _f$id = Field('id', _$id);
   static String _$name(Employee v) => v.name;
   static const Field<Employee, String> _f$name = Field('name', _$name);
+  static String _$organizationId(Employee v) => v.organizationId;
+  static const Field<Employee, String> _f$organizationId = Field(
+    'organizationId',
+    _$organizationId,
+    opt: true,
+    def: '',
+  );
+  static List<String> _$branchIds(Employee v) => v.branchIds;
+  static const Field<Employee, List<String>> _f$branchIds = Field(
+    'branchIds',
+    _$branchIds,
+    opt: true,
+    def: const [],
+  );
   static num _$baseSalary(Employee v) => v.baseSalary;
   static const Field<Employee, num> _f$baseSalary = Field(
     'baseSalary',
@@ -56,6 +70,8 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
   final MappableFields<Employee> fields = const {
     #id: _f$id,
     #name: _f$name,
+    #organizationId: _f$organizationId,
+    #branchIds: _f$branchIds,
     #baseSalary: _f$baseSalary,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
@@ -66,6 +82,8 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
     return Employee(
       id: data.dec(_f$id),
       name: data.dec(_f$name),
+      organizationId: data.dec(_f$organizationId),
+      branchIds: data.dec(_f$branchIds),
       baseSalary: data.dec(_f$baseSalary),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
@@ -130,9 +148,12 @@ extension EmployeeValueCopy<$R, $Out> on ObjectCopyWith<$R, Employee, $Out> {
 
 abstract class EmployeeCopyWith<$R, $In extends Employee, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get branchIds;
   $R call({
     String? id,
     String? name,
+    String? organizationId,
+    List<String>? branchIds,
     num? baseSalary,
     bool? isDeleted,
     DateTime? created,
@@ -150,9 +171,18 @@ class _EmployeeCopyWithImpl<$R, $Out>
   late final ClassMapperBase<Employee> $mapper =
       EmployeeMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get branchIds =>
+      ListCopyWith(
+        $value.branchIds,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(branchIds: v),
+      );
+  @override
   $R call({
     String? id,
     String? name,
+    String? organizationId,
+    List<String>? branchIds,
     num? baseSalary,
     bool? isDeleted,
     Object? created = $none,
@@ -161,6 +191,8 @@ class _EmployeeCopyWithImpl<$R, $Out>
     FieldCopyWithData({
       if (id != null) #id: id,
       if (name != null) #name: name,
+      if (organizationId != null) #organizationId: organizationId,
+      if (branchIds != null) #branchIds: branchIds,
       if (baseSalary != null) #baseSalary: baseSalary,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
@@ -171,6 +203,8 @@ class _EmployeeCopyWithImpl<$R, $Out>
   Employee $make(CopyWithData data) => Employee(
     id: data.get(#id, or: $value.id),
     name: data.get(#name, or: $value.name),
+    organizationId: data.get(#organizationId, or: $value.organizationId),
+    branchIds: data.get(#branchIds, or: $value.branchIds),
     baseSalary: data.get(#baseSalary, or: $value.baseSalary),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),

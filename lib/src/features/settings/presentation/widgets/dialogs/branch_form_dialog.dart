@@ -11,7 +11,6 @@ import '../../../../../core/utils/slugify.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
-import '../../../data/repositories/incentive_tier_repository.dart';
 import '../../../domain/branch.dart';
 import '../../controllers/branches_controller.dart';
 import '../../../../organizations/presentation/controllers/current_organization_controller.dart';
@@ -35,7 +34,6 @@ class BranchFormDialog extends HookConsumerWidget {
     final theme = Theme.of(context);
     final t = Translations.of(context);
 
-    // Form key
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final dirtyGuard = useFormDirtyGuard(
       formKey: formKey,
@@ -47,62 +45,11 @@ class BranchFormDialog extends HookConsumerWidget {
               'contactNumber': branch!.contactNumber,
               'operatingHours': branch!.operatingHours ?? '',
               'cutOffTime': branch!.cutOffTime ?? '',
-              'incentiveAmount': branch!.incentiveAmount.toString(),
-              'incentivePerServiceItems':
-                  branch!.incentivePerServiceItems.toString(),
             }
           : null,
     );
 
-    // UI state
     final isSaving = useState(false);
-
-    // Incentive tiers state
-    final tiers = useState<List<_TierEntry>>([]);
-    final tiersLoaded = useState(false);
-
-    // Load existing tiers when editing
-    useEffect(() {
-      if (isEditing && !tiersLoaded.value) {
-        ref
-            .read(incentiveTierRepositoryProvider)
-            .fetchForBranch(branch!.id)
-            .then((result) {
-          result.fold(
-            (_) {},
-            (list) {
-              if (list.isEmpty) {
-                // Migrate from flat fields: create a default tier
-                tiers.value = [
-                  _TierEntry(
-                    minAmount: 0,
-                    maxAmount: branch!.incentivePerServiceItems,
-                    incentiveAmount: branch!.incentiveAmount,
-                  ),
-                ];
-              } else {
-                tiers.value = list
-                    .map((t) => _TierEntry(
-                          id: t.id,
-                          minAmount: t.minAmount,
-                          maxAmount: t.maxAmount,
-                          incentiveAmount: t.incentiveAmount,
-                        ))
-                    .toList();
-              }
-              tiersLoaded.value = true;
-            },
-          );
-        });
-      } else if (!isEditing && !tiersLoaded.value) {
-        // Default tier for new branch
-        tiers.value = [
-          const _TierEntry(minAmount: 0, maxAmount: 200, incentiveAmount: 5),
-        ];
-        tiersLoaded.value = true;
-      }
-      return null;
-    }, [isEditing]);
 
     Future<void> handleSave() async {
       final isValid = formKey.currentState!.saveAndValidate();
@@ -114,14 +61,6 @@ class BranchFormDialog extends HookConsumerWidget {
         if (errorMessages.isNotEmpty) {
           showFormErrorDialog(context, errors: errorMessages);
         }
-        return;
-      }
-
-      if (tiers.value.isEmpty) {
-        showFormErrorDialog(
-          context,
-          errors: ['At least one incentive tier is required.'],
-        );
         return;
       }
 
@@ -152,16 +91,13 @@ class BranchFormDialog extends HookConsumerWidget {
         cutOffTime: _nullIfEmpty(values['cutOffTime'] as String?),
       );
 
-      bool success;
-      if (isEditing) {
-        success = await ref
-            .read(branchesControllerProvider.notifier)
-            .updateBranch(branchData);
-      } else {
-        success = await ref
-            .read(branchesControllerProvider.notifier)
-            .createBranch(branchData);
-      }
+      final success = isEditing
+          ? await ref
+              .read(branchesControllerProvider.notifier)
+              .updateBranch(branchData)
+          : await ref
+              .read(branchesControllerProvider.notifier)
+              .createBranch(branchData);
 
       if (!success) {
         if (context.mounted) {
@@ -172,30 +108,6 @@ class BranchFormDialog extends HookConsumerWidget {
           );
         }
         return;
-      }
-
-      // Save tiers
-      final branchId = isEditing
-          ? branch!.id
-          : ref.read(branchesControllerProvider).value?.last.id ?? '';
-
-      if (branchId.isNotEmpty) {
-        final tierData = tiers.value
-            .asMap()
-            .entries
-            .map((e) => IncentiveTierData(
-                  id: e.value.id,
-                  minAmount: e.value.minAmount,
-                  maxAmount: e.value.maxAmount,
-                  incentiveAmount: e.value.incentiveAmount,
-                  sortOrder: e.key,
-                ))
-            .toList();
-
-        await ref.read(incentiveTierRepositoryProvider).replaceTiers(
-              branchId: branchId,
-              tiers: tierData,
-            );
       }
 
       if (context.mounted) {
@@ -219,7 +131,6 @@ class BranchFormDialog extends HookConsumerWidget {
         child: ConstrainedDialogContent(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(
@@ -267,10 +178,7 @@ class BranchFormDialog extends HookConsumerWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Content
               Expanded(
                 child: FormBuilder(
                   key: formKey,
@@ -280,8 +188,6 @@ class BranchFormDialog extends HookConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 16),
-
-                        // Name field
                         FormBuilderTextField(
                           name: 'name',
                           initialValue: branch?.name,
@@ -303,7 +209,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           },
                         ),
                         const SizedBox(height: 16),
-
                         FormBuilderTextField(
                           name: 'slug',
                           initialValue: branch?.slug,
@@ -334,8 +239,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-
-                        // Address field
                         FormBuilderTextField(
                           name: 'address',
                           initialValue: branch?.address,
@@ -353,8 +256,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-
-                        // Contact number field
                         FormBuilderTextField(
                           name: 'contactNumber',
                           initialValue: branch?.contactNumber,
@@ -372,8 +273,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-
-                        // Operating hours field
                         FormBuilderTextField(
                           name: 'operatingHours',
                           initialValue: branch?.operatingHours,
@@ -387,8 +286,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
-
-                        // Cut-off time field
                         FormBuilderTextField(
                           name: 'cutOffTime',
                           initialValue: branch?.cutOffTime,
@@ -401,87 +298,6 @@ class BranchFormDialog extends HookConsumerWidget {
                           enabled: !isSaving.value,
                           textInputAction: TextInputAction.next,
                         ),
-                        const SizedBox(height: 24),
-
-                        // Incentive tiers section
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Incentive Tiers',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: isSaving.value
-                                  ? null
-                                  : () {
-                                      final currentTiers =
-                                          List<_TierEntry>.from(tiers.value);
-                                      final lastMax = currentTiers.isNotEmpty
-                                          ? (currentTiers.last.maxAmount ?? 0)
-                                          : 0;
-                                      currentTiers.add(_TierEntry(
-                                        minAmount: lastMax,
-                                        maxAmount: lastMax + 200,
-                                        incentiveAmount:
-                                            (currentTiers.isNotEmpty
-                                                    ? currentTiers
-                                                        .last.incentiveAmount
-                                                    : 0) +
-                                                5,
-                                      ));
-                                      tiers.value = currentTiers;
-                                    },
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text('Add Tier'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Tier list
-                        if (!tiersLoaded.value)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        else
-                          ...tiers.value.asMap().entries.map((entry) {
-                            final idx = entry.key;
-                            final tier = entry.value;
-                            return _IncentiveTierRow(
-                              key: ValueKey('tier_$idx'),
-                              index: idx,
-                              tier: tier,
-                              enabled: !isSaving.value,
-                              onChanged: (updated) {
-                                final currentTiers =
-                                    List<_TierEntry>.from(tiers.value);
-                                currentTiers[idx] = updated;
-                                tiers.value = currentTiers;
-                              },
-                              onRemove: tiers.value.length > 1
-                                  ? () {
-                                      final currentTiers =
-                                          List<_TierEntry>.from(tiers.value);
-                                      currentTiers.removeAt(idx);
-                                      tiers.value = currentTiers;
-                                    }
-                                  : null,
-                            );
-                          }),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -523,162 +339,4 @@ void showBranchFormDialog(
       organizationId: organizationId,
     ),
   );
-}
-
-/// Internal data class for a tier row in the form.
-class _TierEntry {
-  const _TierEntry({
-    this.id,
-    required this.minAmount,
-    this.maxAmount,
-    required this.incentiveAmount,
-  });
-
-  final String? id;
-  final num minAmount;
-  final num? maxAmount;
-  final num incentiveAmount;
-
-  _TierEntry copyWith({
-    num? minAmount,
-    num? maxAmount,
-    bool clearMaxAmount = false,
-    num? incentiveAmount,
-  }) {
-    return _TierEntry(
-      id: id,
-      minAmount: minAmount ?? this.minAmount,
-      maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
-      incentiveAmount: incentiveAmount ?? this.incentiveAmount,
-    );
-  }
-}
-
-/// A single tier row in the incentive tiers form.
-class _IncentiveTierRow extends HookWidget {
-  const _IncentiveTierRow({
-    super.key,
-    required this.index,
-    required this.tier,
-    required this.enabled,
-    required this.onChanged,
-    this.onRemove,
-  });
-
-  final int index;
-  final _TierEntry tier;
-  final bool enabled;
-  final ValueChanged<_TierEntry> onChanged;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final minController =
-        useTextEditingController(text: tier.minAmount.toStringAsFixed(0));
-    final maxController = useTextEditingController(
-        text: tier.maxAmount?.toStringAsFixed(0) ?? '');
-    final amountController =
-        useTextEditingController(text: tier.incentiveAmount.toStringAsFixed(0));
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Tier ${index + 1}',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (onRemove != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      onPressed: enabled ? onRemove : null,
-                      visualDensity: VisualDensity.compact,
-                      tooltip: 'Remove tier',
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: minController,
-                      decoration: const InputDecoration(
-                        labelText: 'Min',
-                        prefixText: '\u20B1 ',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        final val = num.tryParse(v) ?? 0;
-                        onChanged(tier.copyWith(minAmount: val));
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: maxController,
-                      decoration: InputDecoration(
-                        labelText: 'Max',
-                        prefixText: '\u20B1 ',
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        hintText: 'No limit',
-                        hintStyle: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        if (v.isEmpty) {
-                          onChanged(tier.copyWith(clearMaxAmount: true));
-                        } else {
-                          final val = num.tryParse(v) ?? 0;
-                          onChanged(tier.copyWith(maxAmount: val));
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: amountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Incentive',
-                        prefixText: '\u20B1 ',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      enabled: enabled,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        final val = num.tryParse(v) ?? 0;
-                        onChanged(tier.copyWith(incentiveAmount: val));
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

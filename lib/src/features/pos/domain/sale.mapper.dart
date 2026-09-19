@@ -102,6 +102,12 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$postedDate,
     opt: true,
   );
+  static DateTime? _$readyForPickupAt(Sale v) => v.readyForPickupAt;
+  static const Field<Sale, DateTime> _f$readyForPickupAt = Field(
+    'readyForPickupAt',
+    _$readyForPickupAt,
+    opt: true,
+  );
   static DateTime? _$created(Sale v) => v.created;
   static const Field<Sale, DateTime> _f$created = Field(
     'created',
@@ -132,6 +138,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #customerName: _f$customerName,
     #notes: _f$notes,
     #postedDate: _f$postedDate,
+    #readyForPickupAt: _f$readyForPickupAt,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -153,6 +160,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
       customerName: data.dec(_f$customerName),
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
+      readyForPickupAt: data.dec(_f$readyForPickupAt),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -220,6 +228,7 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     String? customerName,
     String? notes,
     DateTime? postedDate,
+    DateTime? readyForPickupAt,
     DateTime? created,
     DateTime? updated,
   });
@@ -249,6 +258,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     Object? customerName = $none,
     Object? notes = $none,
     Object? postedDate = $none,
+    Object? readyForPickupAt = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -268,6 +278,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
       if (customerName != $none) #customerName: customerName,
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
+      if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -289,6 +300,7 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     customerName: data.get(#customerName, or: $value.customerName),
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
+    readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );
