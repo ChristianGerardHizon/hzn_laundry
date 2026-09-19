@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../domain/sale_consumable_usage.dart';
@@ -14,6 +15,14 @@ part 'sale_consumable_usage_repository.g.dart';
 abstract class SaleConsumableUsageRepository {
   FutureEither<List<SaleConsumableUsage>> fetchForSale(String saleId);
   FutureEither<List<SaleConsumableUsage>> fetchForSales(List<String> saleIds);
+
+  /// Usages for sales in [startDate]–[endDate], excluding voided/refunded sales.
+  FutureEither<List<SaleConsumableUsage>> fetchForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  });
+
   FutureEither<SaleConsumableUsage> create(SaleConsumableUsage usage);
   FutureEither<SaleConsumableUsage> update(SaleConsumableUsage usage);
   FutureEither<void> delete(String id);
@@ -61,9 +70,45 @@ class SaleConsumableUsageRepositoryImpl
     return TaskEither.tryCatch(
       () async {
         if (saleIds.isEmpty) return const <SaleConsumableUsage>[];
-        final filter = saleIds.map((id) => 'sale = "$id"').join(' || ');
+
+        // Batch OR filters to avoid oversized query strings.
+        const batchSize = 40;
+        final all = <SaleConsumableUsage>[];
+        for (var i = 0; i < saleIds.length; i += batchSize) {
+          final batch = saleIds.skip(i).take(batchSize).toList();
+          final filter = batch.map((id) => 'sale = "$id"').join(' || ');
+          final records = await _collection.getFullList(
+            filter: '($filter)',
+            expand: 'product,product.quantityUnit',
+          );
+          all.addAll(records.map(_toEntity));
+        }
+        return all;
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<SaleConsumableUsage>> fetchForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final dateFilter = PBFilter()
+            .between('sale.postedDate', startDate, endDate)
+            .build();
+        final statusFilter =
+            'sale.status != "voided" && sale.status != "refunded"';
+        final filter = PBFilters.combine(
+          PBFilters.combine(dateFilter, statusFilter),
+          branchScope,
+        );
+
         final records = await _collection.getFullList(
-          filter: '($filter)',
+          filter: filter,
           expand: 'product,product.quantityUnit',
         );
         return records.map(_toEntity).toList();

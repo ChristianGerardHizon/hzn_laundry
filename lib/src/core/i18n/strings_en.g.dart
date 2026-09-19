@@ -130,8 +130,8 @@ class TranslationsAuthEn {
 	/// en: 'Sign in with email code'
 	String get signInWithEmailCode => 'Sign in with email code';
 
-	/// en: 'Back to password login'
-	String get backToPasswordLogin => 'Back to password login';
+	/// en: 'Sign in with password'
+	String get signInWithPassword => 'Sign in with password';
 
 	/// en: 'Send code'
 	String get sendLoginCode => 'Send code';
@@ -313,6 +313,9 @@ class TranslationsFailuresEn {
 	/// en: 'No account for this Google email. Ask an admin to create your user first.'
 	String get googleNoAccount => 'No account for this Google email. Ask an admin to create your user first.';
 
+	/// en: 'No account for this email. Ask an admin to create your user first.'
+	String get otpNoAccount => 'No account for this email. Ask an admin to create your user first.';
+
 	/// en: 'Could not start Google sign-in. Please try again.'
 	String get googleSignInFailed => 'Could not start Google sign-in. Please try again.';
 
@@ -381,6 +384,21 @@ class TranslationsFieldsEn {
 
 	/// en: 'Category'
 	String get category => 'Category';
+
+	/// en: 'Payment Filters'
+	String get paymentFilters => 'Payment Filters';
+
+	/// en: 'Paid'
+	String get paid => 'Paid';
+
+	/// en: 'Unpaid'
+	String get unpaid => 'Unpaid';
+
+	/// en: 'Cash'
+	String get cash => 'Cash';
+
+	/// en: 'GCash/Bank'
+	String get gcashBank => 'GCash/Bank';
 }
 
 // Path: navigation
@@ -483,6 +501,12 @@ class TranslationsNavigationEn {
 
 	/// en: 'All Branches'
 	String get allBranches => 'All Branches';
+
+	/// en: 'Switching branch…'
+	String get switchingBranch => 'Switching branch…';
+
+	/// en: 'Switching to $name…'
+	String switchingToBranch({required Object name}) => 'Switching to ${name}…';
 
 	/// en: 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.'
 	String get posUnavailableAllBranches => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.';
@@ -648,36 +672,6 @@ class TranslationsOrganizationsEn {
 
 	/// en: 'Cut-off Time'
 	String get cutOffTime => 'Cut-off Time';
-
-	/// en: 'Incentive Tiers'
-	String get incentiveTiers => 'Incentive Tiers';
-
-	/// en: 'Add Tier'
-	String get addTier => 'Add Tier';
-
-	/// en: 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier's incentive is used.'
-	String get incentiveTiersHint => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.';
-
-	/// en: 'At least one incentive tier is required.'
-	String get atLeastOneTier => 'At least one incentive tier is required.';
-
-	/// en: 'Tier $n'
-	String tierLabel({required Object n}) => 'Tier ${n}';
-
-	/// en: 'Min'
-	String get tierMin => 'Min';
-
-	/// en: 'Max'
-	String get tierMax => 'Max';
-
-	/// en: 'Incentive'
-	String get tierIncentive => 'Incentive';
-
-	/// en: 'No limit'
-	String get tierNoLimit => 'No limit';
-
-	/// en: 'Remove tier'
-	String get removeTier => 'Remove tier';
 
 	/// en: 'Add invite'
 	String get addInvite => 'Add invite';
@@ -878,7 +872,7 @@ extension on Translations {
 			'auth.continueButton' => 'Continue',
 			'auth.changeEmail' => 'Change email',
 			'auth.signInWithEmailCode' => 'Sign in with email code',
-			'auth.backToPasswordLogin' => 'Back to password login',
+			'auth.signInWithPassword' => 'Sign in with password',
 			'auth.sendLoginCode' => 'Send code',
 			'auth.verifyLoginCode' => 'Verify code',
 			'auth.enterLoginCode' => 'Login code',
@@ -933,6 +927,7 @@ extension on Translations {
 			'failures.invalidCredentials' => 'Invalid email or password.',
 			'failures.invalidLoginCode' => 'Invalid or expired login code.',
 			'failures.googleNoAccount' => 'No account for this Google email. Ask an admin to create your user first.',
+			'failures.otpNoAccount' => 'No account for this email. Ask an admin to create your user first.',
 			'failures.googleSignInFailed' => 'Could not start Google sign-in. Please try again.',
 			'failures.accountDisabled' => 'Your account has been disabled.',
 			'failures.emailNotVerified' => 'Please verify your email address.',
@@ -953,6 +948,11 @@ extension on Translations {
 			'fields.notes' => 'Notes',
 			'fields.description' => 'Description',
 			'fields.category' => 'Category',
+			'fields.paymentFilters' => 'Payment Filters',
+			'fields.paid' => 'Paid',
+			'fields.unpaid' => 'Unpaid',
+			'fields.cash' => 'Cash',
+			'fields.gcashBank' => 'GCash/Bank',
 			'navigation.shortcuts' => 'Shortcuts',
 			'navigation.categories' => 'Categories',
 			'navigation.showMore' => 'Show more',
@@ -984,6 +984,8 @@ extension on Translations {
 			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'No Branch',
 			'navigation.allBranches' => 'All Branches',
+			'navigation.switchingBranch' => 'Switching branch…',
+			'navigation.switchingToBranch' => ({required Object name}) => 'Switching to ${name}…',
 			'navigation.posUnavailableAllBranches' => 'Cashier is not available when All Branches is selected. Choose a specific branch to continue.',
 			'navigation.createUnavailableAllBranches' => 'This action requires a specific branch. Choose a branch before continuing.',
 			'navigation.activities' => 'Activities',
@@ -1036,16 +1038,6 @@ extension on Translations {
 			'organizations.onboardingComplete' => 'Organization is ready',
 			'organizations.operatingHours' => 'Operating Hours',
 			'organizations.cutOffTime' => 'Cut-off Time',
-			'organizations.incentiveTiers' => 'Incentive Tiers',
-			'organizations.addTier' => 'Add Tier',
-			'organizations.incentiveTiersHint' => 'Incentive earned based on service price range. If service price exceeds the last tier, the last tier\'s incentive is used.',
-			'organizations.atLeastOneTier' => 'At least one incentive tier is required.',
-			'organizations.tierLabel' => ({required Object n}) => 'Tier ${n}',
-			'organizations.tierMin' => 'Min',
-			'organizations.tierMax' => 'Max',
-			'organizations.tierIncentive' => 'Incentive',
-			'organizations.tierNoLimit' => 'No limit',
-			'organizations.removeTier' => 'Remove tier',
 			'organizations.addInvite' => 'Add invite',
 			'organizations.noInvitesQueued' => 'No invites queued. You can skip this step.',
 			'organizations.queuedInvites' => 'Queued invites',

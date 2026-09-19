@@ -15,7 +15,6 @@ import 'incomplete_orders_controller.dart';
 import 'loads_summary_controller.dart';
 import 'new_customers_controller.dart';
 import 'sales_summary_controller.dart';
-import 'today_incentive_controller.dart';
 import 'todays_sales_controller.dart';
 import 'top_selling_controller.dart';
 import 'total_packs_summary_controller.dart';
@@ -51,7 +50,6 @@ Raw<void> dashboardRealtime(Ref ref) {
       ref.invalidate(salesSummaryProvider);
       ref.invalidate(totalPacksSummaryProvider);
       ref.invalidate(todaySalesSummaryProvider);
-      ref.invalidate(todayIncentiveSummaryProvider);
       ref.invalidate(addOnsSummaryProvider);
       ref.invalidate(loadsSummaryProvider);
       ref.invalidate(incompleteOrdersProvider);

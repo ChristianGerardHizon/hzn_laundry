@@ -111,3 +111,61 @@ abstract class _$SaleSearchFields extends $Notifier<Set<String>> {
     element.handleCreate(ref, build);
   }
 }
+
+/// Provider for paid / unpaid / payment-method list filters.
+
+@ProviderFor(SalePaymentFiltersController)
+final salePaymentFiltersControllerProvider =
+    SalePaymentFiltersControllerProvider._();
+
+/// Provider for paid / unpaid / payment-method list filters.
+final class SalePaymentFiltersControllerProvider extends $NotifierProvider<
+    SalePaymentFiltersController, SalePaymentFilters> {
+  /// Provider for paid / unpaid / payment-method list filters.
+  SalePaymentFiltersControllerProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'salePaymentFiltersControllerProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$salePaymentFiltersControllerHash();
+
+  @$internal
+  @override
+  SalePaymentFiltersController create() => SalePaymentFiltersController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SalePaymentFilters value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SalePaymentFilters>(value),
+    );
+  }
+}
+
+String _$salePaymentFiltersControllerHash() =>
+    r'0eb278f7306eadc8a18ee14101e415ad8dac321d';
+
+/// Provider for paid / unpaid / payment-method list filters.
+
+abstract class _$SalePaymentFiltersController
+    extends $Notifier<SalePaymentFilters> {
+  SalePaymentFilters build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<SalePaymentFilters, SalePaymentFilters>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<SalePaymentFilters, SalePaymentFilters>,
+        SalePaymentFilters,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

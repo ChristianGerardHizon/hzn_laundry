@@ -14,5 +14,10 @@
     "paymentRef": "Reference ng Bayad",
     "notes": "Mga Tala",
     "description": "Paglalarawan",
-    "category": "Kategorya"
+    "category": "Kategorya",
+    "paymentFilters": "Mga Filter ng Bayad",
+    "paid": "Bayad",
+    "unpaid": "Hindi Bayad",
+    "cash": "Cash",
+    "gcashBank": "GCash/Bank"
 }

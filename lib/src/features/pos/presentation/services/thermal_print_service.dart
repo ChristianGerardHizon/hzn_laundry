@@ -46,10 +46,10 @@ class PrintFailure extends PrintResult {
 
 /// Which copy of the order receipt to print.
 enum OrderReceiptCopy {
-  /// Full receipt for the customer with business info and totals.
+  /// Full customer claim sheet (optionally followed by a store copy).
   customer,
 
-  /// Compact tag for the store — large customer name for machine identification.
+  /// Full store claim sheet (large customer name + STORE COPY marker).
   store,
 }
 
@@ -161,10 +161,11 @@ class ThermalPrintService extends _$ThermalPrintService {
     return _printBytes(printer, bytes);
   }
 
-  /// Prints an order receipt (without a full Sale object).
+  /// Prints an order claim sheet (without a full Sale object).
   ///
-  /// [copyType] controls the label printed: customer copy (default) or store copy.
-  /// The store copy has a large customer name header for machine identification.
+  /// [copyType] selects customer vs store sheet.
+  /// When [includeStoreCopy] is true with a customer copy, a store sheet is
+  /// appended in the same job with an ESC/POS cut between sections.
   Future<PrintResult> printOrderReceipt({
     required PrinterConfig printer,
     required String customerName,
@@ -173,12 +174,16 @@ class ThermalPrintService extends _$ThermalPrintService {
     required String unitLabel,
     required double totalAmount,
     OrderReceiptCopy copyType = OrderReceiptCopy.customer,
+    bool includeStoreCopy = false,
     String? businessName,
     String? branchAddress,
     String? contactNumber,
     String? cashierName,
+    String? customerPhone,
     String? specialInstructions,
     String? claimSheetNumber,
+    DateTime? orderDate,
+    DateTime? readyForPickupAt,
     List<SaleItem> addOnItems = const [],
   }) async {
     if (!printer.hasAddress) {
@@ -189,16 +194,19 @@ class ThermalPrintService extends _$ThermalPrintService {
       customerName: customerName,
       serviceName: serviceName,
       quantity: quantity,
-      unitLabel: unitLabel,
       totalAmount: totalAmount,
       paperWidth: printer.paperWidth,
       businessName: businessName ?? '',
       branchAddress: branchAddress,
       contactNumber: contactNumber,
       cashierName: cashierName,
+      customerPhone: customerPhone,
       specialInstructions: specialInstructions,
       copyType: copyType,
+      includeStoreCopy: includeStoreCopy,
       claimSheetNumber: claimSheetNumber,
+      orderDate: orderDate,
+      readyForPickupAt: readyForPickupAt,
       addOnItems: addOnItems,
     );
 
@@ -692,58 +700,22 @@ class ThermalPrintService extends _$ThermalPrintService {
     return bytes;
   }
 
-  /// All text-size multipliers supported by [PosTextSize], smallest first.
-  static const List<PosTextSize> _posTextSizes = [
-    PosTextSize.size1,
-    PosTextSize.size2,
-    PosTextSize.size3,
-    PosTextSize.size4,
-    PosTextSize.size5,
-    PosTextSize.size6,
-    PosTextSize.size7,
-    PosTextSize.size8,
-  ];
-
-  /// The largest `GS !` text-size multiplier this hardware (Vozy G80, a
-  /// generic ESC/POS-compatible 80mm printer) actually honors.
-  ///
-  /// The ESC/POS spec allows up to 8x magnification in each dimension, but
-  /// hardware testing on the real unit showed anything above 4x is
-  /// silently ignored — the byte is accepted without error, it just keeps
-  /// rendering at 4x. This is common on cheap clone controllers that only
-  /// implement a subset of the spec.
-  static const PosTextSize _maxReliableTextSize = PosTextSize.size4;
-
-  /// Picks the largest text-size multiplier — never exceeding
-  /// [_maxReliableTextSize] — that still keeps [text] on a single
-  /// physical line for the given [maxCharsPerLine], so short customer
-  /// names print as big as this printer reliably supports while long
-  /// ones don't wrap into unplanned extra lines.
-  PosTextSize _largestFittingTextSize(String text, int maxCharsPerLine) {
-    final length = text.isEmpty ? 1 : text.length;
-    for (final size in _posTextSizes.reversed) {
-      if (size.value > _maxReliableTextSize.value) continue;
-      if (maxCharsPerLine ~/ size.value >= length) {
-        return size;
-      }
-    }
-    return PosTextSize.size1;
-  }
-
   List<int> _appendBusinessHeader(
     Generator generator,
     List<int> bytes, {
     required String businessName,
     String? branchAddress,
     String? contactNumber,
+    String dividerChar = '=',
+    bool largeName = true,
   }) {
     bytes += generator.text(
       businessName,
-      styles: const PosStyles(
+      styles: PosStyles(
         align: PosAlign.center,
         bold: true,
-        height: PosTextSize.size2,
-        width: PosTextSize.size2,
+        height: largeName ? PosTextSize.size2 : PosTextSize.size1,
+        width: largeName ? PosTextSize.size2 : PosTextSize.size1,
       ),
     );
 
@@ -756,12 +728,12 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     if (contactNumber != null && contactNumber.isNotEmpty) {
       bytes += generator.text(
-        'Tel: $contactNumber',
+        contactNumber,
         styles: const PosStyles(align: PosAlign.center),
       );
     }
 
-    bytes = _appendDivider(generator, bytes, ch: '=');
+    bytes = _appendDivider(generator, bytes, ch: dividerChar);
     return bytes;
   }
 
@@ -791,6 +763,251 @@ class ThermalPrintService extends _$ThermalPrintService {
       );
     }
     return bytes;
+  }
+
+  String _truncate(String text, int maxLen) {
+    if (text.length <= maxLen) return text;
+    if (maxLen <= 2) return text.substring(0, maxLen);
+    return '${text.substring(0, maxLen - 2)}..';
+  }
+
+  List<int> _appendFeedAndCut(Generator generator, List<int> bytes) {
+    bytes += generator.feed(_autoCut ? 2 : 4);
+    if (_autoCut) bytes += generator.cut();
+    return bytes;
+  }
+
+  List<int> _appendTicketBarcode(
+    Generator generator,
+    List<int> bytes,
+    String? ticketNumber,
+  ) {
+    if (ticketNumber == null || ticketNumber.isEmpty) return bytes;
+    try {
+      // CODE128 type B: printable ASCII including hyphens in ticket numbers.
+      final barcode = Barcode.code128('{B$ticketNumber'.split(''));
+      bytes += generator.barcode(
+        barcode,
+        height: 60,
+        width: 2,
+        textPos: BarcodeText.below,
+      );
+    } catch (_) {
+      // Skip barcode if the printer profile rejects the payload.
+    }
+    return bytes;
+  }
+
+  /// Full claim sheet body (customer or store copy).
+  List<int> _appendOrderClaimSheet(
+    Generator generator,
+    List<int> bytes, {
+    required String customerName,
+    required String serviceName,
+    required double quantity,
+    required double totalAmount,
+    required String businessName,
+    bool storeCopy = false,
+    String? branchAddress,
+    String? contactNumber,
+    String? cashierName,
+    String? customerPhone,
+    String? specialInstructions,
+    String? claimSheetNumber,
+    DateTime? orderDate,
+    DateTime? readyForPickupAt,
+    List<SaleItem> addOnItems = const [],
+  }) {
+    final amountFormat = NumberFormat('#,##0.00');
+    final now = orderDate ?? DateTime.now();
+    final dateStr = DateFormat('M/d/yyyy').format(now);
+    final timeStr = DateFormat('h:mm a').format(now);
+
+    bytes = _appendBusinessHeader(
+      generator,
+      bytes,
+      businessName: businessName,
+      branchAddress: branchAddress,
+      contactNumber: contactNumber,
+      dividerChar: '-',
+      largeName: true,
+    );
+
+    // Date left / Time right
+    bytes += generator.row([
+      PosColumn(text: 'Date: $dateStr', width: 6),
+      PosColumn(
+        text: 'Time: $timeStr',
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]);
+
+    if (cashierName != null && cashierName.isNotEmpty) {
+      bytes += generator.text('Cashier: $cashierName');
+    }
+    if (storeCopy) {
+      bytes += generator.text(
+        customerName,
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size2,
+        ),
+      );
+    } else {
+      bytes += generator.text('Customer: $customerName');
+    }
+    if (customerPhone != null && customerPhone.isNotEmpty) {
+      bytes += generator.text('Phone: $customerPhone');
+    }
+    if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
+      bytes += generator.text('Ticket #: $claimSheetNumber');
+    }
+
+    bytes = _appendDivider(generator, bytes);
+
+    // Description | QTY | Price | Total
+    bytes += generator.row([
+      PosColumn(
+        text: 'Description',
+        width: 5,
+        styles: const PosStyles(bold: true),
+      ),
+      PosColumn(
+        text: 'QTY',
+        width: 2,
+        styles: const PosStyles(bold: true, align: PosAlign.center),
+      ),
+      PosColumn(
+        text: 'Price',
+        width: 2,
+        styles: const PosStyles(bold: true, align: PosAlign.right),
+      ),
+      PosColumn(
+        text: 'Total',
+        width: 3,
+        styles: const PosStyles(bold: true, align: PosAlign.right),
+      ),
+    ]);
+    bytes = _appendDivider(generator, bytes);
+
+    final addOnsTotal =
+        addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+    final serviceSubtotal = totalAmount - addOnsTotal;
+    final unitPrice = quantity > 0 ? serviceSubtotal / quantity : serviceSubtotal;
+
+    bytes += generator.row([
+      PosColumn(text: _truncate(serviceName, 14), width: 5),
+      PosColumn(
+        text: quantity == quantity.roundToDouble()
+            ? '${quantity.toInt()}'
+            : quantity.toStringAsFixed(1),
+        width: 2,
+        styles: const PosStyles(align: PosAlign.center),
+      ),
+      PosColumn(
+        text: amountFormat.format(unitPrice),
+        width: 2,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+      PosColumn(
+        text: amountFormat.format(serviceSubtotal),
+        width: 3,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]);
+
+    for (final item in addOnItems) {
+      bytes += generator.row([
+        PosColumn(text: _truncate(item.productName, 14), width: 5),
+        PosColumn(
+          text: '${item.quantity.toInt()}',
+          width: 2,
+          styles: const PosStyles(align: PosAlign.center),
+        ),
+        PosColumn(
+          text: amountFormat.format(item.unitPrice),
+          width: 2,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+        PosColumn(
+          text: amountFormat.format(item.subtotal),
+          width: 3,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
+
+    bytes = _appendDivider(generator, bytes, ch: '=');
+
+    final itemCount = quantity.round() +
+        addOnItems.fold<int>(0, (sum, item) => sum + item.quantity.toInt());
+
+    bytes += generator.row([
+      PosColumn(text: '$itemCount Item (s)', width: 5),
+      PosColumn(text: '', width: 1),
+      PosColumn(
+        text: 'Total',
+        width: 3,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+      PosColumn(
+        text: amountFormat.format(totalAmount),
+        width: 3,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]);
+
+    if (specialInstructions != null && specialInstructions.isNotEmpty) {
+      bytes += generator.text('Notes: $specialInstructions');
+    }
+
+    if (storeCopy) {
+      bytes = _appendDivider(generator, bytes);
+      bytes += generator.text(
+        'STORE COPY',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      );
+    } else if (readyForPickupAt != null) {
+      bytes = _appendDivider(generator, bytes);
+      bytes += generator.text(
+        'Ready For Pickup:',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+      bytes += generator.text(
+        DateFormat('M/d/yyyy h:mm a').format(readyForPickupAt),
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+
+    bytes = _appendDivider(generator, bytes);
+    bytes += generator.text(
+      'Please bring this receipt when picking up your items.',
+      styles: const PosStyles(align: PosAlign.center),
+    );
+    bytes = _appendTicketBarcode(generator, bytes, claimSheetNumber);
+    bytes += generator.text(
+      'Items will be held for free for 7 days.',
+      styles: const PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'Holding fee will apply afterwards.',
+      styles: const PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'Thank you for your business!',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+    );
+
+    bytes = _appendDivider(generator, bytes);
+    bytes = _appendClaimSheetDisclaimer(generator, bytes);
+
+    return _appendFeedAndCut(generator, bytes);
   }
 
   /// Generates receipt bytes for the given sale.
@@ -928,33 +1145,31 @@ class ThermalPrintService extends _$ThermalPrintService {
     bytes = _appendClaimSheetDisclaimer(generator, bytes);
     bytes = _appendDivider(generator, bytes, ch: '=');
 
-    // Feed and optionally cut
-    bytes += generator.feed(_autoCut ? 2 : 4);
-    if (_autoCut) bytes += generator.cut();
-
-    return bytes;
+    return _appendFeedAndCut(generator, bytes);
   }
 
-  /// Generates order receipt bytes (service-based order).
+  /// Generates order claim sheet bytes.
   ///
-  /// [copyType] controls the layout:
-  /// - [OrderReceiptCopy.customer]: Full receipt with business header, totals, thank-you.
-  /// - [OrderReceiptCopy.store]: Compact machine tag with large customer name for
-  ///   easy identification on the laundry machine.
+  /// Customer copy: full receipt with BIR disclaimer; when [includeStoreCopy]
+  /// is true, a store sheet is appended after a cut.
+  /// Store copy: same full receipt with large customer name + STORE COPY.
   Future<List<int>> _generateOrderReceiptBytes({
     required String customerName,
     required String serviceName,
     required double quantity,
-    required String unitLabel,
     required double totalAmount,
     required PrinterPaperWidth paperWidth,
     required String businessName,
     required OrderReceiptCopy copyType,
+    bool includeStoreCopy = false,
     String? branchAddress,
     String? contactNumber,
     String? cashierName,
+    String? customerPhone,
     String? specialInstructions,
     String? claimSheetNumber,
+    DateTime? orderDate,
+    DateTime? readyForPickupAt,
     List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
@@ -962,286 +1177,35 @@ class ThermalPrintService extends _$ThermalPrintService {
         paperWidth == PrinterPaperWidth.mm58 ? PaperSize.mm58 : PaperSize.mm80;
     final generator = Generator(paperSize, profile);
 
-    final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
-    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
-
     List<int> bytes = [];
 
-    if (copyType == OrderReceiptCopy.store) {
-      // ── Store copy — compact machine tag ─────────────────────────────
-      bytes = _appendDivider(generator, bytes, ch: '=');
-      bytes = _appendClaimSheetTitle(generator, bytes, storeCopy: true);
-      if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
-        bytes += generator.text(
-          '$claimSheetNumberLabel $claimSheetNumber',
-          styles: const PosStyles(align: PosAlign.center),
+    List<int> appendSheet({required bool storeCopy}) => _appendOrderClaimSheet(
+          generator,
+          bytes,
+          customerName: customerName,
+          serviceName: serviceName,
+          quantity: quantity,
+          totalAmount: totalAmount,
+          businessName: businessName,
+          storeCopy: storeCopy,
+          branchAddress: branchAddress,
+          contactNumber: contactNumber,
+          cashierName: cashierName,
+          customerPhone: customerPhone,
+          specialInstructions: specialInstructions,
+          claimSheetNumber: claimSheetNumber,
+          orderDate: orderDate,
+          readyForPickupAt: readyForPickupAt,
+          addOnItems: addOnItems,
         );
+
+    if (copyType == OrderReceiptCopy.customer) {
+      bytes = appendSheet(storeCopy: false);
+      if (includeStoreCopy) {
+        bytes = appendSheet(storeCopy: true);
       }
-      bytes = _appendDivider(generator, bytes, ch: '=');
-
-      // Large customer name for easy identification on the machine —
-      // sized to the largest multiplier this printer reliably honors (see
-      // _largestFittingTextSize) so short names print as big as possible
-      // and long ones don't wrap into unplanned extra lines.
-      final upperCustomerName = customerName.toUpperCase();
-      final customerNameSize = _largestFittingTextSize(
-        upperCustomerName,
-        paperWidth.charsPerLine,
-      );
-      bytes += generator.text(
-        upperCustomerName,
-        styles: PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: customerNameSize,
-          width: customerNameSize,
-        ),
-      );
-
-      bytes += generator.emptyLines(1);
-
-      // Service name — large and bold for visibility from a distance
-      bytes += generator.text(
-        serviceName.toUpperCase(),
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-      // Quantity — large for easy reading
-      bytes += generator.text(
-        '${quantity.toStringAsFixed(1)} $unitLabel',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-
-      // ── Price breakdown ──────────────────────────────────────────────
-      bytes = _appendDivider(generator, bytes);
-
-      final storeAddOnsTotal =
-          addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
-      final storeServiceSubtotal = totalAmount - storeAddOnsTotal;
-
-      // Service price
-      String storeServiceName = serviceName;
-      if (storeServiceName.length > 16) {
-        storeServiceName = '${storeServiceName.substring(0, 14)}..';
-      }
-      bytes += generator.row([
-        PosColumn(text: storeServiceName, width: 8),
-        PosColumn(
-          text: currencyFormat.format(storeServiceSubtotal),
-          width: 4,
-          styles: const PosStyles(align: PosAlign.right),
-        ),
-      ]);
-
-      // Add-on items
-      if (addOnItems.isNotEmpty) {
-        for (final item in addOnItems) {
-          bytes += generator.row([
-            PosColumn(
-              text: '${item.productName} x${item.quantity.toInt()}',
-              width: 8,
-            ),
-            PosColumn(
-              text: currencyFormat.format(item.subtotal),
-              width: 4,
-              styles: const PosStyles(align: PosAlign.right),
-            ),
-          ]);
-        }
-      }
-
-      bytes = _appendDivider(generator, bytes);
-
-      // Total — large and bold for easy reading
-      bytes += generator.text(
-        'TOTAL',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-        ),
-      );
-      bytes += generator.text(
-        currencyFormat.format(totalAmount),
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-
-      bytes = _appendDivider(generator, bytes);
-
-      // Date & time
-      bytes += generator.text(
-        dateFormat.format(DateTime.now()),
-        styles: const PosStyles(align: PosAlign.center),
-      );
-
-      // Special instructions (important for machine operators)
-      bytes = _appendDivider(generator, bytes);
-      bytes += generator.text(
-        'NOTES:',
-        styles: const PosStyles(bold: true),
-      );
-      bytes += generator.text(
-        (specialInstructions != null && specialInstructions.isNotEmpty)
-            ? specialInstructions
-            : 'No special instructions',
-      );
-
-      bytes = _appendDivider(generator, bytes);
-      bytes = _appendClaimSheetDisclaimer(generator, bytes);
-      bytes = _appendDivider(generator, bytes, ch: '=');
-      bytes += generator.feed(_autoCut ? 2 : 4);
-      if (_autoCut) bytes += generator.cut();
     } else {
-      // ── Customer copy — full claim sheet ──────────────────────────────
-
-      bytes = _appendBusinessHeader(
-        generator,
-        bytes,
-        businessName: businessName,
-        branchAddress: branchAddress,
-        contactNumber: contactNumber,
-      );
-
-      bytes = _appendClaimSheetTitle(generator, bytes);
-
-      if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
-        bytes += generator.text('$claimSheetNumberLabel $claimSheetNumber');
-      }
-
-      bytes += generator.text('Date: ${dateFormat.format(DateTime.now())}');
-
-      if (cashierName != null && cashierName.isNotEmpty) {
-        bytes += generator.text('Cashier: $cashierName');
-      }
-
-      // Customer
-      bytes += generator.text('Customer: $customerName');
-
-      bytes = _appendDivider(generator, bytes);
-
-      // Service details
-      bytes += generator.row([
-        PosColumn(
-          text: 'SERVICE',
-          width: 5,
-          styles: const PosStyles(bold: true),
-        ),
-        PosColumn(
-          text: 'QTY',
-          width: 3,
-          styles: const PosStyles(bold: true, align: PosAlign.center),
-        ),
-        PosColumn(
-          text: 'AMOUNT',
-          width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right),
-        ),
-      ]);
-
-      // Service subtotal excludes add-on prices
-      final addOnsTotal =
-          addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
-      final serviceSubtotal = totalAmount - addOnsTotal;
-
-      String name = serviceName;
-      if (name.length > 13) {
-        name = '${name.substring(0, 11)}..';
-      }
-
-      bytes += generator.row([
-        PosColumn(text: name, width: 5),
-        PosColumn(
-          text: '${quantity.toStringAsFixed(1)} $unitLabel',
-          width: 3,
-          styles: const PosStyles(align: PosAlign.center),
-        ),
-        PosColumn(
-          text: currencyFormat.format(serviceSubtotal),
-          width: 4,
-          styles: const PosStyles(align: PosAlign.right),
-        ),
-      ]);
-
-      // Add-on items — appended as extra rows in the same table, no extra
-      // header/dividers, so the list of dashes doesn't balloon per order.
-      if (addOnItems.isNotEmpty) {
-        bytes += generator.text(
-          'ADD-ONS',
-          styles: const PosStyles(bold: true),
-        );
-
-        for (final item in addOnItems) {
-          String addOnName = item.productName;
-          if (addOnName.length > 13) {
-            addOnName = '${addOnName.substring(0, 11)}..';
-          }
-          bytes += generator.row([
-            PosColumn(text: addOnName, width: 5),
-            PosColumn(
-              text: 'x${item.quantity.toInt()}',
-              width: 3,
-              styles: const PosStyles(align: PosAlign.center),
-            ),
-            PosColumn(
-              text: currencyFormat.format(item.subtotal),
-              width: 4,
-              styles: const PosStyles(align: PosAlign.right),
-            ),
-          ]);
-        }
-      }
-
-      bytes = _appendDivider(generator, bytes);
-
-      // Total — large and bold
-      bytes += generator.text(
-        'TOTAL',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-        ),
-      );
-      bytes += generator.text(
-        currencyFormat.format(totalAmount),
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-
-      bytes = _appendDivider(generator, bytes);
-
-      bytes += generator.text(
-        (specialInstructions != null && specialInstructions.isNotEmpty)
-            ? 'Notes: $specialInstructions'
-            : 'Notes: No special instructions',
-      );
-
-      // Footer
-      bytes += generator.text(
-        'Thank you!',
-        styles: const PosStyles(align: PosAlign.center, bold: true),
-      );
-
-      bytes = _appendClaimSheetDisclaimer(generator, bytes);
-      bytes = _appendDivider(generator, bytes, ch: '=');
-      bytes += generator.feed(_autoCut ? 2 : 4);
-      if (_autoCut) bytes += generator.cut();
+      bytes = appendSheet(storeCopy: true);
     }
 
     return bytes;
@@ -1285,9 +1249,6 @@ class ThermalPrintService extends _$ThermalPrintService {
     );
 
     bytes = _appendDivider(generator, bytes, ch: '=');
-    bytes += generator.feed(_autoCut ? 2 : 4);
-    if (_autoCut) bytes += generator.cut();
-
-    return bytes;
+    return _appendFeedAndCut(generator, bytes);
   }
 }

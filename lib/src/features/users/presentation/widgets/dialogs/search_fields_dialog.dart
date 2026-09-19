@@ -20,9 +20,10 @@ class UserSearchFieldsDialog extends ConsumerWidget {
     return DialogCloseHandler(
       child: ConstrainedDialogContent(
         maxWidth: DialogConstraints.compactMaxWidth,
+        shrinkWrap: true,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
@@ -54,27 +55,20 @@ class UserSearchFieldsDialog extends ConsumerWidget {
                 ],
               ),
             ),
-
-            const SizedBox(height: 8),
-
-            // Content
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 16),
-
                     Text(
                       t.fields.searchFieldsHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Field checkboxes
+                    const SizedBox(height: 8),
                     ...userSearchableFields.map((field) {
                       final isSelected = selectedFields.contains(field);
                       final isLastSelected =
@@ -83,7 +77,7 @@ class UserSearchFieldsDialog extends ConsumerWidget {
                       return CheckboxListTile(
                         value: isSelected,
                         onChanged: isLastSelected
-                            ? null // Can't deselect the last field
+                            ? null
                             : (_) => ref
                                 .read(userSearchFieldsProvider.notifier)
                                 .toggleField(field),
@@ -100,8 +94,6 @@ class UserSearchFieldsDialog extends ConsumerWidget {
                         contentPadding: EdgeInsets.zero,
                       );
                     }),
-
-                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -129,6 +121,7 @@ void showUserSearchFieldsDialog(BuildContext context) {
   showConstrainedDialog(
     context: context,
     maxWidth: DialogConstraints.compactMaxWidth,
+    shrinkWrap: true,
     builder: (context) => const UserSearchFieldsDialog(),
   );
 }

@@ -98,8 +98,6 @@ class BranchRepositoryImpl implements BranchRepository {
           'organization': branch.organizationId,
           'operatingHours': branch.operatingHours,
           'cutOffTime': branch.cutOffTime,
-          'incentiveAmount': branch.incentiveAmount,
-          'incentivePerServiceItems': branch.incentivePerServiceItems,
           'isDeleted': false,
         };
 
@@ -129,8 +127,6 @@ class BranchRepositoryImpl implements BranchRepository {
           'contactNumber': branch.contactNumber,
           'operatingHours': branch.operatingHours,
           'cutOffTime': branch.cutOffTime,
-          'incentiveAmount': branch.incentiveAmount,
-          'incentivePerServiceItems': branch.incentivePerServiceItems,
         };
 
         final record = await _collection.update(branch.id, body: body);

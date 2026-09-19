@@ -3,12 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/constants/constants.dart';
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../reports/domain/payment_report_entry.dart';
+import '../../../reports/domain/payments_summary.dart';
 import '../../domain/payment.dart';
 import '../../domain/payment_method.dart';
 import '../../domain/payment_type.dart';
@@ -59,6 +61,26 @@ abstract class PaymentRepository {
     String? branchScope,
   });
 
+  /// Paginated payments within a date range with sale context.
+  FutureEitherPaginated<PaymentReportEntry> getForDateRangePaginated({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+    String? searchQuery,
+    List<String>? searchFields,
+    int page = 1,
+    int perPage = Pagination.defaultPageSize,
+  });
+
+  /// Daily payment aggregates from [vw_payments_daily_summary] for [branchScope].
+  ///
+  /// Date-filters in Dart because view date fields are JSON (not PB-filterable).
+  FutureEither<List<PaymentsDailySummaryEntry>> getDailySummaryForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  });
+
   /// Deletes a payment and updates the sale's isPaid status.
   FutureEither<void> delete(String id);
 
@@ -78,6 +100,8 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
   RecordService get _payments => _pb.collection(PocketBaseCollections.payments);
   RecordService get _sales => _pb.collection(PocketBaseCollections.sales);
+  RecordService get _paymentsDailySummary =>
+      _pb.collection(PocketBaseCollections.vwPaymentsDailySummary);
 
   Payment _toEntity(RecordModel record) {
     return PaymentDto.fromRecord(record).toEntity(baseUrl: _pb.baseURL);
@@ -204,20 +228,165 @@ class PaymentRepositoryImpl implements PaymentRepository {
           expand: 'sale',
         );
 
-        return records.map((record) {
-          final payment = _toEntity(record);
-          final saleExpanded = record.get<RecordModel?>('expand.sale');
-          return PaymentReportEntry(
-            payment: payment,
-            saleId: payment.saleId,
-            receiptNumber: saleExpanded?.getStringValue('receiptNumber') ?? '',
-            customerName: saleExpanded?.getStringValue('customerName'),
-            saleStatus: saleExpanded?.getStringValue('status') ?? '',
-          );
-        }).toList();
+        return records.map(_toReportEntry).toList();
       },
       Failure.handle,
     ).run();
+  }
+
+  @override
+  FutureEitherPaginated<PaymentReportEntry> getForDateRangePaginated({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+    String? searchQuery,
+    List<String>? searchFields,
+    int page = 1,
+    int perPage = Pagination.defaultPageSize,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final base = PBFilter()
+            .notEquals('sale.status', 'voided')
+            .isFalse('isVoided')
+            .between('postedDate', startDate, endDate);
+
+        String? filter = PBFilters.combine(base.build(), branchScope);
+
+        final query = searchQuery?.trim();
+        if (query != null && query.isNotEmpty && searchFields != null) {
+          final pbFields = searchFields
+              .map(_paymentSearchField)
+              .whereType<String>()
+              .toList();
+          if (pbFields.isNotEmpty) {
+            final searchFilter =
+                PBFilter().searchFields(query, pbFields).build();
+            filter = PBFilters.combine(filter, searchFilter);
+          }
+        }
+
+        final result = await _payments.getList(
+          page: page,
+          perPage: perPage,
+          filter: filter,
+          sort: '-postedDate',
+          expand: 'sale',
+        );
+
+        return PaginatedResult<PaymentReportEntry>(
+          items: result.items.map(_toReportEntry).toList(),
+          page: result.page,
+          totalItems: result.totalItems,
+          totalPages: result.totalPages,
+        );
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<PaymentsDailySummaryEntry>> getDailySummaryForDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? branchScope,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        final records = await _paymentsDailySummary.getFullList(
+          filter: branchScope,
+        );
+
+        final startDay =
+            DateTime(startDate.year, startDate.month, startDate.day);
+        final endDay = DateTime(endDate.year, endDate.month, endDate.day);
+
+        final entries = <PaymentsDailySummaryEntry>[];
+        for (final record in records) {
+          final dateStr =
+              record.get<dynamic>('paymentDate')?.toString() ?? '';
+          final parsed = DateTime.tryParse(dateStr);
+          if (parsed == null) continue;
+
+          final day = DateTime(parsed.year, parsed.month, parsed.day);
+          if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+
+          entries.add(PaymentsDailySummaryEntry(
+            date: day,
+            paymentMethod: _parsePaymentMethod(
+              record.getStringValue('paymentMethod'),
+            ),
+            paymentType: _parsePaymentType(
+              record.getStringValue('paymentType'),
+            ),
+            paymentCount: record.getIntValue('paymentCount'),
+            totalAmount: _readNum(record, 'totalAmount'),
+          ));
+        }
+
+        entries.sort((a, b) => b.date.compareTo(a.date));
+        return entries;
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  PaymentReportEntry _toReportEntry(RecordModel record) {
+    final payment = _toEntity(record);
+    final saleExpanded = record.get<RecordModel?>('expand.sale');
+    return PaymentReportEntry(
+      payment: payment,
+      saleId: payment.saleId,
+      receiptNumber: saleExpanded?.getStringValue('receiptNumber') ?? '',
+      customerName: saleExpanded?.getStringValue('customerName'),
+      saleStatus: saleExpanded?.getStringValue('status') ?? '',
+    );
+  }
+
+  String? _paymentSearchField(String key) => switch (key) {
+        'customer' => 'sale.customerName',
+        'receipt' => 'sale.receiptNumber',
+        'amount' => 'amount',
+        'reference' => 'paymentRef',
+        'method' => 'paymentMethod',
+        _ => null,
+      };
+
+  PaymentMethod _parsePaymentMethod(String method) {
+    switch (method.toLowerCase()) {
+      case 'cash':
+        return PaymentMethod.cash;
+      case 'gcash':
+        return PaymentMethod.gcash;
+      case 'card':
+        return PaymentMethod.card;
+      case 'banktransfer':
+        return PaymentMethod.bankTransfer;
+      case 'check':
+        return PaymentMethod.check;
+      default:
+        return PaymentMethod.cash;
+    }
+  }
+
+  PaymentType _parsePaymentType(String typeStr) {
+    switch (typeStr.toLowerCase()) {
+      case 'payment':
+        return PaymentType.payment;
+      case 'deposit':
+        return PaymentType.deposit;
+      case 'refund':
+        return PaymentType.refund;
+      default:
+        return PaymentType.payment;
+    }
+  }
+
+  num _readNum(RecordModel record, String field) {
+    final raw = record.get<dynamic>(field);
+    if (raw is num) return raw;
+    if (raw is String) return num.tryParse(raw) ?? 0;
+    return record.getDoubleValue(field);
   }
 
   @override

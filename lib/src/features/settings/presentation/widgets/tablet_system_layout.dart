@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
@@ -116,21 +117,10 @@ class _PrinterListWrapper extends ConsumerWidget {
           Expanded(
             child: printersAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48),
-                    const SizedBox(height: 16),
-                    Text('Error: ${error.toString()}'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => controller.refresh(),
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
+              error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
               data: (printers) {
                 if (printers.isEmpty) {
                   return Center(

@@ -52,20 +52,6 @@ class BranchMapper extends ClassMapperBase<Branch> {
     _$cutOffTime,
     opt: true,
   );
-  static num _$incentiveAmount(Branch v) => v.incentiveAmount;
-  static const Field<Branch, num> _f$incentiveAmount = Field(
-    'incentiveAmount',
-    _$incentiveAmount,
-    opt: true,
-    def: 5,
-  );
-  static num _$incentivePerServiceItems(Branch v) => v.incentivePerServiceItems;
-  static const Field<Branch, num> _f$incentivePerServiceItems = Field(
-    'incentivePerServiceItems',
-    _$incentivePerServiceItems,
-    opt: true,
-    def: 200,
-  );
   static bool _$isDeleted(Branch v) => v.isDeleted;
   static const Field<Branch, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -96,8 +82,6 @@ class BranchMapper extends ClassMapperBase<Branch> {
     #organizationId: _f$organizationId,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
-    #incentiveAmount: _f$incentiveAmount,
-    #incentivePerServiceItems: _f$incentivePerServiceItems,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -113,8 +97,6 @@ class BranchMapper extends ClassMapperBase<Branch> {
       organizationId: data.dec(_f$organizationId),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
-      incentiveAmount: data.dec(_f$incentiveAmount),
-      incentivePerServiceItems: data.dec(_f$incentivePerServiceItems),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -176,8 +158,6 @@ abstract class BranchCopyWith<$R, $In extends Branch, $Out>
     String? organizationId,
     String? operatingHours,
     String? cutOffTime,
-    num? incentiveAmount,
-    num? incentivePerServiceItems,
     bool? isDeleted,
     DateTime? created,
     DateTime? updated,
@@ -201,8 +181,6 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     Object? organizationId = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
-    num? incentiveAmount,
-    num? incentivePerServiceItems,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -216,9 +194,6 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
       if (organizationId != $none) #organizationId: organizationId,
       if (operatingHours != $none) #operatingHours: operatingHours,
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
-      if (incentiveAmount != null) #incentiveAmount: incentiveAmount,
-      if (incentivePerServiceItems != null)
-        #incentivePerServiceItems: incentivePerServiceItems,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -234,11 +209,6 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     organizationId: data.get(#organizationId, or: $value.organizationId),
     operatingHours: data.get(#operatingHours, or: $value.operatingHours),
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
-    incentiveAmount: data.get(#incentiveAmount, or: $value.incentiveAmount),
-    incentivePerServiceItems: data.get(
-      #incentivePerServiceItems,
-      or: $value.incentivePerServiceItems,
-    ),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

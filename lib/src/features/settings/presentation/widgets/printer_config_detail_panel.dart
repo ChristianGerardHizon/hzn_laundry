@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
@@ -56,22 +57,9 @@ class PrinterConfigDetailPanel extends ConsumerWidget {
 
     return printersAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load printer',
-              style: theme.textTheme.titleMedium,
-            ),
-          ],
-        ),
+      error: (error, stack) => ErrorState.fromError(
+        error,
+        onRetry: () => ref.invalidate(printerConfigsControllerProvider),
       ),
       data: (printers) {
         PrinterConfig? config;

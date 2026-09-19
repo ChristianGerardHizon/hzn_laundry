@@ -2,9 +2,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/constants/constants.dart';
 import '../../../../core/foundation/paginated_state.dart';
+import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import 'sale_search_controller.dart';
 import 'sale_sort_controller.dart';
 
 part 'paginated_sales_controller.g.dart';
@@ -25,6 +27,12 @@ class PaginatedSalesController extends _$PaginatedSalesController {
   /// Gets the current branch filter.
   String? get _branchFilter => ref.read(currentBranchFilterProvider);
 
+  /// Combines branch + payment filters for list queries.
+  String? get _listFilter => PBFilters.combine(
+        _branchFilter,
+        ref.read(salePaymentFiltersControllerProvider).toPbFilter(),
+      );
+
   @override
   Future<PaginatedState<Sale>> build() async {
     _currentSearchQuery = null;
@@ -35,13 +43,21 @@ class PaginatedSalesController extends _$PaginatedSalesController {
       refresh();
     });
 
+    // Listen to payment filters and refresh (don't watch — avoids clearing search)
+    ref.listen(salePaymentFiltersControllerProvider, (_, __) {
+      refresh();
+    });
+
     final branchFilter = ref.watch(currentBranchFilterProvider);
+    final paymentFilter =
+        ref.read(salePaymentFiltersControllerProvider).toPbFilter();
+    final filter = PBFilters.combine(branchFilter, paymentFilter);
 
     final result = await _repository.fetchPaginated(
       page: 1,
       perPage: Pagination.defaultPageSize,
       sort: _currentSort,
-      filter: branchFilter,
+      filter: filter,
     );
 
     return result.fold(
@@ -83,13 +99,13 @@ class PaginatedSalesController extends _$PaginatedSalesController {
             page: nextPage,
             perPage: Pagination.defaultPageSize,
             sort: _currentSort,
-            filter: _branchFilter,
+            filter: _listFilter,
           )
         : await _repository.fetchPaginated(
             page: nextPage,
             perPage: Pagination.defaultPageSize,
             sort: _currentSort,
-            filter: _branchFilter,
+            filter: _listFilter,
           );
 
     result.fold(
@@ -109,7 +125,7 @@ class PaginatedSalesController extends _$PaginatedSalesController {
     );
   }
 
-  /// Refreshes the list (respects current search, sort, and branch filter).
+  /// Refreshes the list (respects current search, sort, and filters).
   Future<void> refresh() async {
     state = const AsyncValue.loading();
 
@@ -120,13 +136,13 @@ class PaginatedSalesController extends _$PaginatedSalesController {
             page: 1,
             perPage: Pagination.defaultPageSize,
             sort: _currentSort,
-            filter: _branchFilter,
+            filter: _listFilter,
           )
         : await _repository.fetchPaginated(
             page: 1,
             perPage: Pagination.defaultPageSize,
             sort: _currentSort,
-            filter: _branchFilter,
+            filter: _listFilter,
           );
 
     state = result.fold(
@@ -158,7 +174,7 @@ class PaginatedSalesController extends _$PaginatedSalesController {
       page: 1,
       perPage: Pagination.defaultPageSize,
       sort: _currentSort,
-      filter: _branchFilter,
+      filter: _listFilter,
     );
 
     state = result.fold(

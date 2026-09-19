@@ -16,8 +16,6 @@ class Branch with BranchMappable {
     this.organizationId,
     this.operatingHours,
     this.cutOffTime,
-    this.incentiveAmount = 5,
-    this.incentivePerServiceItems = 200,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -46,12 +44,6 @@ class Branch with BranchMappable {
 
   /// Cut-off time for accepting new orders (e.g., "4:30 PM").
   final String? cutOffTime;
-
-  /// Incentive amount earned per service price threshold (in pesos).
-  final num incentiveAmount;
-
-  /// Service price threshold (in pesos) to earn the incentive.
-  final num incentivePerServiceItems;
 
   /// Soft delete flag.
   final bool isDeleted;

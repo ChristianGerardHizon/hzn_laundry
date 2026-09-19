@@ -5,7 +5,6 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/management.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
-import '../../data/repositories/incentive_tier_repository.dart';
 import '../../domain/branch.dart';
 import '../controllers/branches_controller.dart';
 import 'dialogs/branch_form_dialog.dart';
@@ -234,123 +233,8 @@ class _BranchDetailsBody extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Incentive tiers section
-          Text(
-            'Incentive Tiers',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _IncentiveTiersCard(branchId: branch.id),
         ],
       ),
-    );
-  }
-}
-
-/// Card displaying incentive tiers for a branch.
-class _IncentiveTiersCard extends ConsumerWidget {
-  const _IncentiveTiersCard({required this.branchId});
-
-  final String branchId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
-    return FutureBuilder(
-      future:
-          ref.read(incentiveTierRepositoryProvider).fetchForBranch(branchId),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        final tiers = snapshot.data!.fold(
-          (_) => <dynamic>[],
-          (list) => list,
-        );
-
-        if (tiers.isEmpty) {
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'No incentive tiers configured',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Header row
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Service Price Range',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Incentive',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 16),
-                ...tiers.map((tier) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Text(tier.label,
-                                style: theme.textTheme.bodyMedium),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '\u20B1${tier.incentiveAmount.toStringAsFixed(0)}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
-                              textAlign: TextAlign.end,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

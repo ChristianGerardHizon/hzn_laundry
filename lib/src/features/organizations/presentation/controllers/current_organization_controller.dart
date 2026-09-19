@@ -12,21 +12,30 @@ part 'current_organization_controller.g.dart';
 
 const _currentOrganizationStorageKey = 'CURRENT_ORGANIZATION_ID';
 
-/// Whether the full-screen organization-switch loader is showing.
+/// Whether the full-screen org/branch-switch loader is showing.
 class OrganizationSwitchOverlayState {
   const OrganizationSwitchOverlayState({
     this.active = false,
-    this.organizationName,
+    this.targetName,
+    this.organizationLabel,
   });
 
   final bool active;
-  final String? organizationName;
+
+  /// Display name of the org or branch being switched to (message text).
+  final String? targetName;
+
+  /// Organization name for the letter-mark badge (destination org).
+  final String? organizationLabel;
+
+  /// Alias for older call sites / tests.
+  String? get organizationName => targetName;
 }
 
-/// Keep-alive flag for the organization-switch full-screen overlay.
+/// Keep-alive flag for the org/branch-switch full-screen overlay.
 @Riverpod(keepAlive: true)
 class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
-  static const minDuration = Duration(seconds: 3);
+  static const minDuration = Duration(seconds: 2);
 
   @override
   OrganizationSwitchOverlayState build() =>
@@ -35,12 +44,14 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
   /// Shows the overlay until [action] and [minDuration] both complete.
   Future<void> run({
     String? name,
+    String? organizationLabel,
     required Future<void> Function() action,
   }) async {
     if (state.active) return;
     state = OrganizationSwitchOverlayState(
       active: true,
-      organizationName: name,
+      targetName: name,
+      organizationLabel: organizationLabel ?? name,
     );
     try {
       await Future.wait([

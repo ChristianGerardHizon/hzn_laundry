@@ -197,7 +197,16 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
       return otpId;
-    }, Failure.handle).run();
+    }, (error, stackTrace) {
+      if (error is ClientException) {
+        final message = error.response['message']?.toString() ?? '';
+        if (error.statusCode == 400 &&
+            message.toLowerCase().contains('no account')) {
+          return AuthFailure(error, stackTrace, 'otp_no_account');
+        }
+      }
+      return Failure.handle(error, stackTrace);
+    }).run();
   }
 
   @override

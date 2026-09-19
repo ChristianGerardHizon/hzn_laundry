@@ -4,12 +4,17 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/hooks/use_form_dirty_guard.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
+import '../../../settings/domain/branch.dart';
+import '../../../settings/presentation/controllers/branches_controller.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../domain/employee.dart';
 import '../controllers/employees_controller.dart';
 
@@ -46,6 +51,20 @@ class EmployeeFormDialog extends HookConsumerWidget {
     final theme = Theme.of(context);
     final t = Translations.of(context);
 
+    final orgId = ref.watch(currentOrganizationIdProvider);
+    final currentBranchId = ref.watch(currentBranchIdProvider);
+    final branchesAsync = ref.watch(branchesControllerProvider);
+
+    final initialBranchIds = useMemoized(() {
+      if (isEditing) return List<String>.from(employee!.branchIds);
+      if (currentBranchId != null && currentBranchId.isNotEmpty) {
+        return [currentBranchId];
+      }
+      return <String>[];
+    }, [employee?.id, currentBranchId]);
+
+    final selectedBranchIds = useState<List<String>>(initialBranchIds);
+
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final dirtyGuard = useFormDirtyGuard(
       formKey: formKey,
@@ -60,6 +79,14 @@ class EmployeeFormDialog extends HookConsumerWidget {
     final isSaving = useState(false);
 
     Future<void> handleSave() async {
+      if (orgId == null || orgId.isEmpty) {
+        showFormErrorDialog(
+          context,
+          errors: ['Select an organization before saving an employee.'],
+        );
+        return;
+      }
+
       final isValid = formKey.currentState!.saveAndValidate();
 
       if (!isValid) {
@@ -80,6 +107,8 @@ class EmployeeFormDialog extends HookConsumerWidget {
       final employeeData = Employee(
         id: employee?.id ?? '',
         name: (values['name'] as String).trim(),
+        organizationId: isEditing ? employee!.organizationId : orgId,
+        branchIds: selectedBranchIds.value,
         baseSalary: baseSalary,
       );
 
@@ -126,7 +155,6 @@ class EmployeeFormDialog extends HookConsumerWidget {
         child: ConstrainedDialogContent(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: Row(
@@ -177,8 +205,6 @@ class EmployeeFormDialog extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Form
               Expanded(
                 child: FormBuilder(
                   key: formKey,
@@ -223,6 +249,38 @@ class EmployeeFormDialog extends HookConsumerWidget {
                             ),
                           ]),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Assigned Branches',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Leave empty to assign to all branches in this organization.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        branchesAsync.when(
+                          data: (branches) => _BranchFilterChips(
+                            branches: branches,
+                            selectedIds: selectedBranchIds.value,
+                            enabled: !isSaving.value,
+                            onChanged: (ids) =>
+                                selectedBranchIds.value = ids,
+                          ),
+                          loading: () => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: LinearProgressIndicator(),
+                          ),
+                          error: (error, _) => Text(
+                            'Failed to load branches: ${Failure.displayErrorMessage(error)}',
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -240,4 +298,48 @@ class EmployeeFormDialog extends HookConsumerWidget {
     'name': 'Name',
     'baseSalary': 'Base Salary',
   };
+}
+
+class _BranchFilterChips extends StatelessWidget {
+  const _BranchFilterChips({
+    required this.branches,
+    required this.selectedIds,
+    required this.onChanged,
+    required this.enabled,
+  });
+
+  final List<Branch> branches;
+  final List<String> selectedIds;
+  final ValueChanged<List<String>> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (branches.isEmpty) {
+      return const Text('No branches in this organization.');
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: branches.map((branch) {
+        final selected = selectedIds.contains(branch.id);
+        return FilterChip(
+          label: Text(branch.name),
+          selected: selected,
+          onSelected: enabled
+              ? (value) {
+                  final next = List<String>.from(selectedIds);
+                  if (value) {
+                    next.add(branch.id);
+                  } else {
+                    next.remove(branch.id);
+                  }
+                  onChanged(next);
+                }
+              : null,
+        );
+      }).toList(),
+    );
+  }
 }

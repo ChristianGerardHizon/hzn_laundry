@@ -25,6 +25,7 @@ void main() async {
       '--http=$httpAddr',
       '--dir', '$serverDir/pb_data',
       '--hooksDir', '$serverDir/pb_hooks',
+      '--migrationsDir', '$serverDir/pb_migrations',
       '--publicDir', '$serverDir/pb_public',
       '--dev',
     ],

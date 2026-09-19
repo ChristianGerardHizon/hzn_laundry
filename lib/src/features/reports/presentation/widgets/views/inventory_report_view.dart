@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../domain/inventory_report.dart';
@@ -22,7 +23,7 @@ class InventoryReportView extends ConsumerWidget {
       data: (report) => _buildContent(context, report),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
-        child: Text('Error loading inventory report: $error'),
+        child: Text(Failure.displayErrorMessage(error)),
       ),
     );
   }

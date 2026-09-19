@@ -38,7 +38,7 @@ Re-check `ls server/pb_migrations | sort | tail` right before writing — this p
 
 **Rule semantics confirmed in this repo:** `null` = superuser-only; `""` = public (incl. guests); non-empty expression = must match for non-superuser auth records.
 
-1. **`1787100000_created_organizations.js`** — new `organizations` collection (id `pbc_organizations01`). Fields: `name` (text, required), `contactNumber`, `address` (optional text), `onboardingCompletedAt` (date, optional — null means the setup walkthrough isn't finished yet), `isDeleted` (bool, default false), plus standard `created`/`updated` autodate fields (copy the field-block shape from an existing collection like `customers` or `incentiveTiers`). Rules:
+1. **`1787100000_created_organizations.js`** — new `organizations` collection (id `pbc_organizations01`). Fields: `name` (text, required), `contactNumber`, `address` (optional text), `onboardingCompletedAt` (date, optional — null means the setup walkthrough isn't finished yet), `isDeleted` (bool, default false), plus standard `created`/`updated` autodate fields (copy the field-block shape from an existing collection like `customers`). Rules:
    - `listRule`/`viewRule` = `"@request.auth.id != \"\" && organizationMemberships_via_organization.user ?= @request.auth.id"` — visible only to members (back-relation into the new A.2 collection).
    - `createRule`/`updateRule`/`deleteRule` = `null` — writes are hook-mediated only (A.4), same reasoning as hzn_gyms: creating an org must atomically also create the creator's first membership row, which a raw collection rule can't express.
 

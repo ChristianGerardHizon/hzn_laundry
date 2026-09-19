@@ -433,7 +433,6 @@ module.exports = {
         if (changes["address"]) parts.push("address");
         if (changes["contactNumber"]) parts.push("contact number");
         if (changes["operatingHours"]) parts.push("operating hours");
-        if (changes["incentiveAmount"]) parts.push("incentive to " + this.peso(changes["incentiveAmount"]["new"]));
         if (parts.length === 0) parts.push(changedFields.join(", "));
         return "Updated branch '" + (changes["name"] ? changes["name"]["old"] : name) + "' — " + parts.join(", ");
       }

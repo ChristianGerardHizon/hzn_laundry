@@ -23,10 +23,10 @@ A comprehensive Flutter multi-platform laundry management system supporting Andr
 ### Primary Features (Main Navigation)
 
 #### Employees (`/employees`)
-Staff records, attendance, and payroll deductions.
+Staff records, attendance, and payroll deductions. Employees belong to the current organization and can be assigned to one or more branches (empty assignment = all branches in the org).
 
 - **Sub-features**:
-  - Employees list & detail
+  - Employees list & detail (org-scoped; filtered by current branch when set)
   - Attendance tracking (clock in/out records)
   - Deductions (fixed or percentage-based, per employee)
 - **Key Models**: `Employee`, `EmployeeAttendance`, `EmployeeDeduction`
@@ -34,6 +34,7 @@ Staff records, attendance, and payroll deductions.
 #### Reports (`/reports`)
 Sales and payroll reporting.
 
+- Sales (payments) and Orders tabs: KPIs from daily summary views first; detail rows paginated (infinite scroll)
 - Sales summaries by period (daily/weekly/monthly, via `ReportPeriod`)
 - Salary/payroll reports by pay period (via `SalaryPeriod`), incorporating employee deductions
 - Consumables tab: house-chemical usage by product for the selected period (voided/refunded excluded); material cost only with `usage.cost.view`
@@ -190,7 +191,7 @@ Device-specific settings only (this tablet/phone/desktop).
 ### Authentication (`/login`)
 
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
-- Login page (`/login`) — email step, then password or email OTP code; Google OAuth on web only
+- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web only
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
 - Session management
@@ -301,18 +302,17 @@ Printers are stored on the device (secure storage), not in PocketBase. The lefto
 #### Employees Domain (3 collections)
 | Collection | Description |
 |------------|-------------|
-| `employees` | Staff records |
+| `employees` | Staff records (org-scoped; optional multi-branch assignment) |
 | `employeeAttendances` | Clock in/out records |
 | `employeeDeductions` | Payroll deductions per employee |
 
-#### Promos & Misc (5 collections)
+#### Promos & Misc (4 collections)
 | Collection | Description |
 |------------|-------------|
 | `promos` | Loyalty/promo campaigns |
 | `customerPromos` | Customer promo redemptions |
 | `quantityUnits` | Units of measure (e.g. kg, pc) |
 | `activityLogs` | Audit log of create/update/delete actions |
-| `incentiveTiers` | Employee incentive tier definitions |
 
 #### Workflow settings (1 collection)
 | Collection | Description |
@@ -337,7 +337,7 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 
 ### Authentication
 - Splash Screen (`/splash`) — black warming-up verbs
-- Login Screen (`/login`) — password, email OTP code, Google (web)
+- Login Screen (`/login`) — email OTP (default), password optional, Google (web)
 - Forgot Password (`/forgot-password`)
 
 ### Main Navigation
@@ -623,6 +623,13 @@ lib/src/
 
 ---
 
+| Sep 19 | Customer / store claim sheets | Store copy is a full claim sheet (large centered customer name + STORE COPY); customer Ready For Pickup omitted when unset; service stubs removed |
+| Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |
+| Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
+| Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |
+| Sep 19 | Org-scoped employees | Employees belong to an organization with optional multi-branch assignment (empty = all branches). Lists and salary/attendance reports filter by current org and branch |
+| Sep 19 | Remove incentives | Removed unused incentives feature (reports tab, branch tiers, dashboard/sale UI, `incentiveTiers` collection, and related permissions) |
+| Sep 19 | OTP-first login | Login defaults to email OTP after Continue; password remains an optional secondary path |
 | Sep 11 | Org-scoped All Branches | Switching organizations no longer leaks the previous org's data: All Branches means all branches of the *selected* organization, and org switch clears tenant keepAlive caches |
 | Sep 11 | Order details Total + Record Payment | Sale/order details show Total and Record Payment directly below Order Status so they are visible without scrolling past services and add-ons |
 | Sep 10 | OTP + Google login + black splash | Password login kept; email OTP and web Google OAuth via PocketBase; invite-only OAuth hook; black HTML/Flutter splash with rotating verbs; gyms-style login atmosphere |
@@ -633,7 +640,7 @@ lib/src/
 | Sep 03 | Brand logo refresh | App icons, splash, favicon, Play high-res icon, and store feature graphic now use the circular HZN Laundry mark (charcoal + teal, FAST ★ FRESH ★ FOLDED)
 | Sep 03 | Play Internal upload CI | Production Play upload is a required, retryable `upload-play-internal` job. Local `sync_github_secrets.py` pushes keystore, Play JSON, and PocketBase URLs into GitHub secrets |
 | Sep 03 | Org create setup dialog | Create Organization is a stepper dialog (details, first branch, optional invites, review). The org is created only when required setup is submitted, in one server transaction with the first branch. |
-| Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 3 seconds when switching organizations |
+| Sep 03 | Org switch loader | Full-screen overlay covers the authenticated shell (including the desktop sidebar) for at least 2 seconds when switching organizations |
 | Sep 03 | Desktop side nav | Firebase-style expandable sidebar at ≥900px (`DesktopSideNav`): Dashboard, Shortcuts, hover/tap category flyouts, System/Logout, session collapse. Tablet 600–899px still uses `TabletNavRail` |
 | Sep 03 | Multi-tenant organizations | Organizations, memberships, and invites; Management rename of the old admin section; org switcher for multi-org users; email+password auth with `reset-password.html` |
 | Sep 03 | Docs Cleanup | Removed leftover vet-clinic template content (Patients/Appointments/Treatments/Messages) from app_overview.md, replaced with accurate feature/navigation/domain-model docs matching the current laundry app |

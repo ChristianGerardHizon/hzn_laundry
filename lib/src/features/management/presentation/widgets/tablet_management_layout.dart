@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -177,21 +178,10 @@ class _UsersListWrapper extends ConsumerWidget {
       ),
       body: usersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => usersController.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => usersController.refresh(),
+      ),
         data: (paginatedState) => UserListPanel(
           paginatedState: paginatedState,
           selectedId: selectedId,
@@ -219,20 +209,9 @@ class _RolesListWrapper extends ConsumerWidget {
 
     return rolesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 16),
-            Text('Error: ${error.toString()}'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => rolesController.refresh(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => rolesController.refresh(),
       ),
       data: (roles) => UserRoleListPanel(
         roles: roles,
@@ -325,21 +304,10 @@ class _BranchesListWrapper extends HookConsumerWidget {
       ),
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (branches) {
           final filteredBranches = isSearchActive
               ? _filterBranches(branches, appliedQuery.value)
@@ -634,21 +602,10 @@ class _MachinesListWrapper extends HookConsumerWidget {
       ),
       body: machinesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (machines) {
           return Column(
             children: [
@@ -774,21 +731,10 @@ class _StoragesListWrapper extends HookConsumerWidget {
       ),
       body: storagesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (storages) {
           return Column(
             children: [
@@ -905,21 +851,10 @@ class _ProductCategoryListWrapper extends ConsumerWidget {
       ),
       body: categoriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (categories) {
           if (categories.isEmpty) {
             return Center(
@@ -1069,21 +1004,10 @@ class _QuantityUnitListWrapper extends ConsumerWidget {
       ),
       body: unitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (units) {
           if (units.isEmpty) {
             return Center(
@@ -1176,21 +1100,10 @@ class _CashierGroupListWrapper extends ConsumerWidget {
       ),
       body: groupsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text('Error: ${error.toString()}'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => controller.refresh(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => controller.refresh(),
+      ),
         data: (groups) {
           if (groups.isEmpty) {
             return Center(

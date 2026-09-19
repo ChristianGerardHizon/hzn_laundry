@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/customer_repository.dart';
 import '../../domain/customer.dart';
@@ -11,11 +13,18 @@ part 'customers_controller.g.dart';
 class CustomersController extends _$CustomersController {
   CustomerRepository get _repository => ref.read(customerRepositoryProvider);
 
-  String? get _branchFilter => ref.read(currentBranchFilterProvider);
+  /// Branch/org scope without soft-delete — customers have no `isDeleted` field.
+  String? get _branchFilter => PBFilters.forBranchOrOrganization(
+        branchId: ref.read(currentBranchIdProvider),
+        organizationId: ref.read(currentOrganizationIdProvider),
+      );
 
   @override
   Future<List<Customer>> build() async {
-    final filter = ref.watch(currentBranchFilterProvider);
+    final filter = PBFilters.forBranchOrOrganization(
+      branchId: ref.watch(currentBranchIdProvider),
+      organizationId: ref.watch(currentOrganizationIdProvider),
+    );
     final result = await _repository.fetchAll(filter: filter);
 
     return result.fold(

@@ -41,7 +41,7 @@ class LoginPage extends HookConsumerWidget {
     final obscurePassword = useState(true);
     final errorMessage = useState<String?>(null);
     final loginStep = useState(_LoginStep.email);
-    final authMethod = useState(_AuthMethod.password);
+    final authMethod = useState(_AuthMethod.otp);
     final email = useState('');
     final otpId = useState<String?>(null);
     final isSendingOtp = useState(false);
@@ -100,7 +100,7 @@ class LoginPage extends HookConsumerWidget {
     void goToEmailStep() {
       errorMessage.value = null;
       loginStep.value = _LoginStep.email;
-      authMethod.value = _AuthMethod.password;
+      authMethod.value = _AuthMethod.otp;
       clearOtpState();
     }
 
@@ -108,17 +108,8 @@ class LoginPage extends HookConsumerWidget {
       errorMessage.value = null;
       email.value = nextEmail;
       loginStep.value = _LoginStep.auth;
-      authMethod.value = _AuthMethod.password;
+      authMethod.value = _AuthMethod.otp;
       clearOtpState();
-    }
-
-    void handleContinue() {
-      if (formKey.currentState?.saveAndValidate() ?? false) {
-        final value =
-            (formKey.currentState!.value['email'] as String?)?.trim() ?? '';
-        if (value.isEmpty) return;
-        goToAuthStep(value);
-      }
     }
 
     void handleLogin() {
@@ -150,20 +141,39 @@ class LoginPage extends HookConsumerWidget {
 
       errorMessage.value = null;
       isSendingOtp.value = true;
-      final id = await ref
+      final result = await ref
           .read(authControllerProvider.notifier)
           .requestOtp(targetEmail);
       isSendingOtp.value = false;
       if (!context.mounted) return;
 
-      if (id == null || id.isEmpty) {
-        errorMessage.value = t.auth.loginCodeSendFailed;
-        return;
-      }
+      result.fold(
+        (failure) {
+          errorMessage.value = loginErrorMessage(failure);
+          if (!isResend) {
+            loginStep.value = _LoginStep.email;
+            clearOtpState();
+          }
+        },
+        (id) {
+          if (!isResend) {
+            goToAuthStep(targetEmail);
+          }
+          authMethod.value = _AuthMethod.otp;
+          otpId.value = id;
+          cooldownSeconds.value = kLoginOtpResendCooldown.inSeconds;
+        },
+      );
+    }
 
-      authMethod.value = _AuthMethod.otp;
-      otpId.value = id;
-      cooldownSeconds.value = kLoginOtpResendCooldown.inSeconds;
+    Future<void> handleContinue() async {
+      if (formKey.currentState?.saveAndValidate() ?? false) {
+        final value =
+            (formKey.currentState!.value['email'] as String?)?.trim() ?? '';
+        if (value.isEmpty) return;
+        email.value = value;
+        await handleSendOtp(isResend: false);
+      }
     }
 
     Future<void> handleVerifyOtp() async {
@@ -255,6 +265,55 @@ class LoginPage extends HookConsumerWidget {
       );
     }
 
+    Widget emailChip() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: _kBrandGreen.withValues(alpha: isDark ? 0.08 : 0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _kBrandGreen.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _kBrandGreen.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                color: _kBrandGreen,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                email.value,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            TextButton(
+              onPressed: formBusy ? null : goToEmailStep,
+              style: TextButton.styleFrom(
+                foregroundColor: _kBrandGreen,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(44, 44),
+              ),
+              child: Text(t.auth.changeEmail),
+            ),
+          ],
+        ),
+      );
+    }
+
     Widget formBody() {
       if (loginStep.value == _LoginStep.email) {
         return Column(
@@ -321,57 +380,12 @@ class LoginPage extends HookConsumerWidget {
         );
       }
 
-      if (!awaitingCode) {
+      if (authMethod.value == _AuthMethod.password) {
         return Column(
           key: const ValueKey('password'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: _kBrandGreen.withValues(alpha: isDark ? 0.08 : 0.12),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _kBrandGreen.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _kBrandGreen.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.person_outline,
-                      color: _kBrandGreen,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      email.value,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: formBusy ? null : goToEmailStep,
-                    style: TextButton.styleFrom(
-                      foregroundColor: _kBrandGreen,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: const Size(44, 44),
-                    ),
-                    child: Text(t.auth.changeEmail),
-                  ),
-                ],
-              ),
-            ),
+            emailChip(),
             const SizedBox(height: 16),
             // Keeps username+password in one autofill context across steps.
             Offstage(
@@ -456,43 +470,87 @@ class LoginPage extends HookConsumerWidget {
         );
       }
 
+      if (otpId.value != null) {
+        return Column(
+          key: const ValueKey('otp'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FormBuilderTextField(
+              name: 'otpCode',
+              enabled: !formBusy,
+              decoration: InputDecoration(
+                labelText: t.auth.enterLoginCode,
+                prefixIcon: const Icon(Icons.pin_outlined),
+              ),
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              autocorrect: false,
+              enableSuggestions: false,
+              style: const TextStyle(
+                fontSize: 22,
+                letterSpacing: 8,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'monospace',
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              validator: FormBuilderValidators.compose([
+                FormBuilderValidators.required(),
+                FormBuilderValidators.minLength(6),
+                FormBuilderValidators.maxLength(6),
+              ]),
+              onSubmitted: formBusy ? null : (_) => handleVerifyOtp(),
+            ),
+            const SizedBox(height: 20),
+            primaryButton(
+              onPressed: formBusy ? null : handleVerifyOtp,
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: _kInk,
+                      ),
+                    )
+                  : Text(t.auth.verifyLoginCode),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed:
+                  canResend ? () => handleSendOtp(isResend: true) : null,
+              style: TextButton.styleFrom(foregroundColor: _kBrandGreen),
+              child: Text(
+                cooldownSeconds.value > 0
+                    ? t.auth.resendLoginCodeCooldown(
+                        seconds: cooldownSeconds.value,
+                      )
+                    : t.auth.resendLoginCode,
+              ),
+            ),
+            TextButton(
+              onPressed: formBusy ? null : switchToPasswordMethod,
+              child: Text(t.auth.signInWithPassword),
+            ),
+          ],
+        );
+      }
+
+      // OTP selected but code not sent yet (sending or failed).
       return Column(
-        key: const ValueKey('otp'),
+        key: const ValueKey('otp-pending'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FormBuilderTextField(
-            name: 'otpCode',
-            enabled: !formBusy,
-            decoration: InputDecoration(
-              labelText: t.auth.enterLoginCode,
-              prefixIcon: const Icon(Icons.pin_outlined),
-            ),
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            autofillHints: const [AutofillHints.oneTimeCode],
-            autocorrect: false,
-            enableSuggestions: false,
-            style: const TextStyle(
-              fontSize: 22,
-              letterSpacing: 8,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'monospace',
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-            validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(),
-              FormBuilderValidators.minLength(6),
-              FormBuilderValidators.maxLength(6),
-            ]),
-            onSubmitted: formBusy ? null : (_) => handleVerifyOtp(),
-          ),
+          emailChip(),
           const SizedBox(height: 20),
           primaryButton(
-            onPressed: formBusy ? null : handleVerifyOtp,
-            child: isLoading
+            onPressed: formBusy
+                ? null
+                : () => handleSendOtp(isResend: false),
+            child: isSendingOtp.value
                 ? const SizedBox(
                     height: 22,
                     width: 22,
@@ -501,24 +559,12 @@ class LoginPage extends HookConsumerWidget {
                       color: _kInk,
                     ),
                   )
-                : Text(t.auth.verifyLoginCode),
+                : Text(t.auth.sendLoginCode),
           ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed:
-                canResend ? () => handleSendOtp(isResend: true) : null,
-            style: TextButton.styleFrom(foregroundColor: _kBrandGreen),
-            child: Text(
-              cooldownSeconds.value > 0
-                  ? t.auth.resendLoginCodeCooldown(
-                      seconds: cooldownSeconds.value,
-                    )
-                  : t.auth.resendLoginCode,
-            ),
-          ),
+          const SizedBox(height: 12),
           TextButton(
             onPressed: formBusy ? null : switchToPasswordMethod,
-            child: Text(t.auth.backToPasswordLogin),
+            child: Text(t.auth.signInWithPassword),
           ),
         ],
       );

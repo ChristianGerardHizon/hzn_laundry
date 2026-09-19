@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../controllers/employees_controller.dart';
 import '../widgets/employee_list_panel.dart';
@@ -15,21 +16,10 @@ class EmployeesListPage extends ConsumerWidget {
     return employeesAsync.when(
       data: (employees) => EmployeeListPanel(employees: employees),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 16),
-            Text('Error loading employees: $error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(employeesControllerProvider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+      error: (error, _) => ErrorState.fromError(
+        error,
+        onRetry: () => ref.invalidate(employeesControllerProvider),
+      )
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
@@ -122,7 +123,7 @@ class SaleUsageSection extends HookConsumerWidget {
             error: (error, _) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('Error loading usage: $error'),
+                child: Text(Failure.displayErrorMessage(error)),
               ),
             ),
             data: (usages) {

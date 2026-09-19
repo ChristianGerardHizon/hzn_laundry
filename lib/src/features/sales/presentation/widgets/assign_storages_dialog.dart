@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
@@ -137,7 +138,7 @@ class AssignStoragesDialog extends HookConsumerWidget {
                         child: Center(child: CircularProgressIndicator()),
                       ),
                       error: (error, _) =>
-                          Text('Error loading storages: $error'),
+                          Text(Failure.displayErrorMessage(error)),
                       data: (storages) {
                         if (storages.isEmpty) {
                           return Padding(

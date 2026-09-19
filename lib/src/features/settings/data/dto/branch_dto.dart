@@ -20,8 +20,6 @@ class BranchDto with BranchDtoMappable {
   final String? organizationId;
   final String? operatingHours;
   final String? cutOffTime;
-  final num incentiveAmount;
-  final num incentivePerServiceItems;
   final bool isDeleted;
   final String? created;
   final String? updated;
@@ -37,8 +35,6 @@ class BranchDto with BranchDtoMappable {
     this.organizationId,
     this.operatingHours,
     this.cutOffTime,
-    this.incentiveAmount = 5,
-    this.incentivePerServiceItems = 200,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -59,8 +55,6 @@ class BranchDto with BranchDtoMappable {
       organizationId: json['organization'] as String?,
       operatingHours: json['operatingHours'] as String?,
       cutOffTime: json['cutOffTime'] as String?,
-      incentiveAmount: json['incentiveAmount'] as num? ?? 5,
-      incentivePerServiceItems: json['incentivePerServiceItems'] as num? ?? 200,
       isDeleted: json['isDeleted'] as bool? ?? false,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
@@ -78,8 +72,6 @@ class BranchDto with BranchDtoMappable {
       organizationId: organizationId,
       operatingHours: operatingHours,
       cutOffTime: cutOffTime,
-      incentiveAmount: incentiveAmount,
-      incentivePerServiceItems: incentivePerServiceItems,
       isDeleted: isDeleted,
       created: created != null ? DateTime.tryParse(created!) : null,
       updated: updated != null ? DateTime.tryParse(updated!) : null,

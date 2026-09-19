@@ -111,27 +111,42 @@ class CurrentBranchController extends _$CurrentBranchController {
   }
 
   /// Switches to All Branches mode (admin only).
-  Future<void> switchToAllBranches() async {
+  ///
+  /// [displayName] is shown on the switch overlay (e.g. localized "All Branches").
+  Future<void> switchToAllBranches({String? displayName}) async {
     if (!await _checkIsAdmin()) return;
 
-    await _persistBranch(kAllBranchesSentinel);
-    _isAllBranchesMode = true;
-    state = const AsyncData(null);
-
-    ref.invalidate(cartControllerProvider);
+    final orgName =
+        ref.read(currentOrganizationControllerProvider).value?.name;
+    await ref.read(organizationSwitchOverlayProvider.notifier).run(
+          name: displayName,
+          organizationLabel: orgName,
+          action: () async {
+            await _persistBranch(kAllBranchesSentinel);
+            _isAllBranchesMode = true;
+            state = const AsyncData(null);
+            ref.invalidate(cartControllerProvider);
+          },
+        );
   }
 
   /// Switches to a different branch (admin only).
   Future<void> switchBranch(String branchId) async {
     if (!await _checkIsAdmin()) return;
 
-    await _persistBranch(branchId);
-    _isAllBranchesMode = false;
-
     final branch = await _fetchBranch(branchId);
-    state = AsyncData(branch);
-
-    ref.invalidate(cartControllerProvider);
+    final orgName =
+        ref.read(currentOrganizationControllerProvider).value?.name;
+    await ref.read(organizationSwitchOverlayProvider.notifier).run(
+          name: branch?.name,
+          organizationLabel: orgName,
+          action: () async {
+            await _persistBranch(branchId);
+            _isAllBranchesMode = false;
+            state = AsyncData(branch);
+            ref.invalidate(cartControllerProvider);
+          },
+        );
   }
 
   Future<bool> _checkIsAdmin() async {

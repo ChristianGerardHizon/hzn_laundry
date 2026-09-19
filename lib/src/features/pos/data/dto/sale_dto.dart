@@ -27,6 +27,7 @@ class SaleDto with SaleDtoMappable {
   final String? customerName;
   final String? notes;
   final String? postedDate;
+  final String? readyForPickupAt;
   final String? created;
   final String? updated;
 
@@ -48,6 +49,7 @@ class SaleDto with SaleDtoMappable {
     this.customerName,
     this.notes,
     this.postedDate,
+    this.readyForPickupAt,
     this.created,
     this.updated,
   });
@@ -71,6 +73,7 @@ class SaleDto with SaleDtoMappable {
       customerName: record.getStringValue('customerName'),
       notes: record.getStringValue('notes'),
       postedDate: record.get<String>('postedDate'),
+      readyForPickupAt: record.get<String>('readyForPickupAt'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -93,6 +96,7 @@ class SaleDto with SaleDtoMappable {
       customerName: customerName != null && customerName!.isNotEmpty ? customerName : null,
       notes: notes,
       postedDate: parseToLocal(postedDate),
+      readyForPickupAt: parseToLocal(readyForPickupAt),
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

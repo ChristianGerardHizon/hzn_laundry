@@ -24,7 +24,7 @@ function getAppBaseUrl() {
 function getFromEmail() {
   var v = $os.getenv("RESEND_FROM_EMAIL");
   if (!v) {
-    return "HZN Laundry <info@hznlaundry.hznsystems.com>";
+    return "HZN Laundry <noreply@hznsystems.com>";
   }
   return v;
 }

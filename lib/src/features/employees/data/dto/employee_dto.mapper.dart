@@ -35,6 +35,20 @@ class EmployeeDtoMapper extends ClassMapperBase<EmployeeDto> {
   );
   static String _$name(EmployeeDto v) => v.name;
   static const Field<EmployeeDto, String> _f$name = Field('name', _$name);
+  static String _$organizationId(EmployeeDto v) => v.organizationId;
+  static const Field<EmployeeDto, String> _f$organizationId = Field(
+    'organizationId',
+    _$organizationId,
+    opt: true,
+    def: '',
+  );
+  static List<String> _$branchIds(EmployeeDto v) => v.branchIds;
+  static const Field<EmployeeDto, List<String>> _f$branchIds = Field(
+    'branchIds',
+    _$branchIds,
+    opt: true,
+    def: const [],
+  );
   static num _$baseSalary(EmployeeDto v) => v.baseSalary;
   static const Field<EmployeeDto, num> _f$baseSalary = Field(
     'baseSalary',
@@ -68,6 +82,8 @@ class EmployeeDtoMapper extends ClassMapperBase<EmployeeDto> {
     #collectionId: _f$collectionId,
     #collectionName: _f$collectionName,
     #name: _f$name,
+    #organizationId: _f$organizationId,
+    #branchIds: _f$branchIds,
     #baseSalary: _f$baseSalary,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
@@ -80,6 +96,8 @@ class EmployeeDtoMapper extends ClassMapperBase<EmployeeDto> {
       collectionId: data.dec(_f$collectionId),
       collectionName: data.dec(_f$collectionName),
       name: data.dec(_f$name),
+      organizationId: data.dec(_f$organizationId),
+      branchIds: data.dec(_f$branchIds),
       baseSalary: data.dec(_f$baseSalary),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
@@ -147,11 +165,14 @@ extension EmployeeDtoValueCopy<$R, $Out>
 
 abstract class EmployeeDtoCopyWith<$R, $In extends EmployeeDto, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get branchIds;
   $R call({
     String? id,
     String? collectionId,
     String? collectionName,
     String? name,
+    String? organizationId,
+    List<String>? branchIds,
     num? baseSalary,
     bool? isDeleted,
     String? created,
@@ -169,11 +190,20 @@ class _EmployeeDtoCopyWithImpl<$R, $Out>
   late final ClassMapperBase<EmployeeDto> $mapper =
       EmployeeDtoMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get branchIds =>
+      ListCopyWith(
+        $value.branchIds,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(branchIds: v),
+      );
+  @override
   $R call({
     String? id,
     String? collectionId,
     String? collectionName,
     String? name,
+    String? organizationId,
+    List<String>? branchIds,
     num? baseSalary,
     bool? isDeleted,
     Object? created = $none,
@@ -184,6 +214,8 @@ class _EmployeeDtoCopyWithImpl<$R, $Out>
       if (collectionId != null) #collectionId: collectionId,
       if (collectionName != null) #collectionName: collectionName,
       if (name != null) #name: name,
+      if (organizationId != null) #organizationId: organizationId,
+      if (branchIds != null) #branchIds: branchIds,
       if (baseSalary != null) #baseSalary: baseSalary,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
@@ -196,6 +228,8 @@ class _EmployeeDtoCopyWithImpl<$R, $Out>
     collectionId: data.get(#collectionId, or: $value.collectionId),
     collectionName: data.get(#collectionName, or: $value.collectionName),
     name: data.get(#name, or: $value.name),
+    organizationId: data.get(#organizationId, or: $value.organizationId),
+    branchIds: data.get(#branchIds, or: $value.branchIds),
     baseSalary: data.get(#baseSalary, or: $value.baseSalary),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),

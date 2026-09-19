@@ -10,6 +10,8 @@ class Employee with EmployeeMappable {
   const Employee({
     required this.id,
     required this.name,
+    this.organizationId = '',
+    this.branchIds = const [],
     this.baseSalary = 0,
     this.isDeleted = false,
     this.created,
@@ -21,6 +23,12 @@ class Employee with EmployeeMappable {
 
   /// Employee name.
   final String name;
+
+  /// Parent organization ID (tenant).
+  final String organizationId;
+
+  /// Assigned branch IDs. Empty means all branches in [organizationId].
+  final List<String> branchIds;
 
   /// Base salary amount.
   final num baseSalary;
@@ -36,4 +44,7 @@ class Employee with EmployeeMappable {
 
   /// Formatted salary display.
   String get salaryDisplay => '₱${baseSalary.toStringAsFixed(2)}';
+
+  /// Whether this employee is visible at every branch in the org.
+  bool get isAssignedToAllBranches => branchIds.isEmpty;
 }

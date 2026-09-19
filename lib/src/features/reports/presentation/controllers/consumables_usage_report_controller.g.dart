@@ -50,4 +50,4 @@ final class ConsumablesUsageReportProvider extends $FunctionalProvider<
 }
 
 String _$consumablesUsageReportHash() =>
-    r'12ce7e21707534cf0d5c507d08704cf1905dcf4c';
+    r'57a2b495f504eec98397730e12af94d46102f884';

@@ -14,7 +14,6 @@ import 'new_customers_controller.dart';
 import 'orders_by_resource_provider.dart';
 import 'ready_for_pickup_controller.dart';
 import 'sales_summary_controller.dart';
-import 'today_incentive_controller.dart';
 import 'todays_sales_controller.dart';
 import 'top_selling_controller.dart';
 import 'total_packs_summary_controller.dart';
@@ -35,7 +34,6 @@ void invalidateAllDashboardProviders(
   invalidate(incompleteOrdersProvider);
   invalidate(todaySalesProvider);
   invalidate(todaySalesSummaryProvider);
-  invalidate(todayIncentiveSummaryProvider);
   invalidate(topSellingProductsProvider);
   invalidate(topSellingServicesProvider);
   invalidate(todaysNewCustomersCountProvider);
