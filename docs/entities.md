@@ -580,6 +580,7 @@ A finalized transaction/receipt.
 | `customerName` | String | No | Customer name snapshot |
 | `notes` | String | No | Internal notes |
 | `postedDate` | DateTime | No | Editable business/transaction date |
+| `readyForPickupAt` | DateTime | No | Optional promised ready-for-pickup date/time |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 

@@ -623,6 +623,7 @@ lib/src/
 
 ---
 
+| Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |
 | Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
 | Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |
 | Sep 19 | Org-scoped employees | Employees belong to an organization with optional multi-branch assignment (empty = all branches). Lists and salary/attendance reports filter by current org and branch |
