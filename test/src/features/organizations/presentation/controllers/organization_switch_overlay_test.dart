@@ -9,6 +9,8 @@ import 'package:hzn_laundry/src/features/auth/presentation/controllers/auth_cont
 import 'package:hzn_laundry/src/features/organizations/data/repositories/organization_membership_repository.dart';
 import 'package:hzn_laundry/src/features/organizations/domain/organization.dart';
 import 'package:hzn_laundry/src/features/organizations/domain/organization_membership.dart';
+import 'package:hzn_laundry/src/features/dashboard/domain/sales_summary.dart';
+import 'package:hzn_laundry/src/features/dashboard/presentation/controllers/sales_summary_controller.dart';
 import 'package:hzn_laundry/src/features/organizations/presentation/controllers/current_organization_controller.dart';
 import 'package:hzn_laundry/src/core/foundation/type_defs.dart';
 
@@ -146,6 +148,47 @@ void main() {
 
       expect(container.read(organizationSwitchOverlayProvider).active, isFalse);
     });
+
+    test(
+      'selectOrganization invalidates org-scoped descendants without '
+      'CircularDependencyError',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            currentAuthProvider.overrideWithValue(auth),
+            organizationMembershipRepositoryProvider.overrideWithValue(
+              _FakeMembershipRepository(memberships),
+            ),
+            salesSummaryProvider.overrideWith((ref) async {
+              ref.watch(currentOrganizationIdProvider);
+              return const SalesSummaryData(
+                totalSales: 0,
+                totalPaymentsReceived: 0,
+                totalOutstanding: 0,
+                salesItems: [],
+                paymentItems: [],
+                outstandingItems: [],
+              );
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(currentOrganizationControllerProvider.future);
+        // Listen so salesSummary is a descendant of CurrentOrganizationController.
+        container.listen(salesSummaryProvider, (_, __) {});
+        await container.read(salesSummaryProvider.future);
+
+        await container
+            .read(currentOrganizationControllerProvider.notifier)
+            .selectOrganization(orgB.id);
+
+        expect(
+          container.read(currentOrganizationControllerProvider).value?.id,
+          orgB.id,
+        );
+      },
+    );
   });
 }
 
