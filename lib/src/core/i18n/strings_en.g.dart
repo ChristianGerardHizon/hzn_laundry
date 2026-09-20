@@ -747,6 +747,24 @@ class TranslationsOrganizationsEn {
 
 	/// en: 'Open organization Features'
 	String get openFeatures => 'Open organization Features';
+
+	/// en: 'Select organization'
+	String get selectTitle => 'Select organization';
+
+	/// en: 'Choose which organization you want to work in.'
+	String get selectSubtitle => 'Choose which organization you want to work in.';
+
+	/// en: 'Last used'
+	String get lastUsed => 'Last used';
+
+	/// en: 'Super Admin'
+	String get superAdmin => 'Super Admin';
+
+	/// en: 'Super Admin'
+	String get superAdminTitle => 'Super Admin';
+
+	/// en: 'Platform tools that are not tied to a single organization.'
+	String get superAdminSubtitle => 'Platform tools that are not tied to a single organization.';
 }
 
 // Path: sort
@@ -1062,6 +1080,12 @@ extension on Translations {
 			'organizations.featuresReadOnly' => 'Only organization managers can change these features.',
 			'organizations.featuresMoved' => 'Workflow and module toggles now live on the organization Features tab so each organization can configure them separately.',
 			'organizations.openFeatures' => 'Open organization Features',
+			'organizations.selectTitle' => 'Select organization',
+			'organizations.selectSubtitle' => 'Choose which organization you want to work in.',
+			'organizations.lastUsed' => 'Last used',
+			'organizations.superAdmin' => 'Super Admin',
+			'organizations.superAdminTitle' => 'Super Admin',
+			'organizations.superAdminSubtitle' => 'Platform tools that are not tied to a single organization.',
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',

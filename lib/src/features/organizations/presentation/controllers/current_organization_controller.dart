@@ -68,9 +68,18 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
 class CurrentOrganizationController extends _$CurrentOrganizationController {
   List<OrganizationMembership> _memberships = const [];
 
+  /// True when [build] resolved the current org from a valid persisted id.
+  bool _resolvedFromPersistence = false;
+
   List<OrganizationMembership> get memberships => _memberships;
 
   bool get canSwitchOrganization => _memberships.length > 1;
+
+  /// True when the user must pick an org on the post-login selection page.
+  bool get requiresSelection => _memberships.length > 1;
+
+  /// True when secure storage already has a membership the user belongs to.
+  bool get hasPersistedSelection => _resolvedFromPersistence;
 
   List<Organization> switchableOrganizations() {
     return _memberships
@@ -91,6 +100,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     final auth = ref.watch(currentAuthProvider);
     if (auth == null) {
       _memberships = const [];
+      _resolvedFromPersistence = false;
       return null;
     }
 
@@ -101,8 +111,12 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     final memberships =
         result.fold((failure) => throw failure, (value) => value);
     _memberships = memberships;
-    if (memberships.isEmpty) return null;
+    if (memberships.isEmpty) {
+      _resolvedFromPersistence = false;
+      return null;
+    }
     if (memberships.length == 1) {
+      _resolvedFromPersistence = true;
       return memberships.first.organization;
     }
 
@@ -111,6 +125,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
           (m) => m?.organizationId == persistedId,
           orElse: () => null,
         );
+    _resolvedFromPersistence = match != null;
     return (match ?? memberships.first).organization;
   }
 
