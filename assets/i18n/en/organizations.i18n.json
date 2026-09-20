@@ -77,5 +77,21 @@
   "lastUsed": "Last used",
   "superAdmin": "Super Admin",
   "superAdminTitle": "Super Admin",
-  "superAdminSubtitle": "Platform tools that are not tied to a single organization."
+  "superAdminSubtitle": "Platform overview across all organizations.",
+  "platformOverview": "Platform overview",
+  "allOrganizations": "All organizations",
+  "searchOrganizations": "Search organizations",
+  "noOrganizationsYet": "No organizations yet.",
+  "noMatchingOrganizations": "No organizations match your search.",
+  "kpiOrganizations": "Organizations",
+  "kpiOrders": "Orders",
+  "kpiCustomers": "Customers",
+  "kpiRevenue": "Revenue",
+  "metricBranches": "Branches",
+  "metricMembers": "Members",
+  "metricOrders": "Orders",
+  "metricCustomers": "Customers",
+  "onboarded": "Onboarded",
+  "notOnboarded": "Not onboarded",
+  "statsLoadError": "Could not load organization stats."
 }

@@ -601,6 +601,105 @@ function declineInvite(e) {
   return e.json(200, exportRecord(invite));
 }
 
+function listOrganizationPlatformStats(e) {
+  if (!e.auth) {
+    throw new ForbiddenError("authentication required");
+  }
+  if (isSuperuser(e.auth)) {
+    throw new ForbiddenError("use the Admin UI as a superuser");
+  }
+  if (!hasPermission(e.app, e.auth.getString("role"), "system.admin")) {
+    throw new ForbiddenError("system.admin permission required");
+  }
+
+  var rows = arrayOf(
+    new DynamicModel({
+      id: "",
+      name: "",
+      slug: "",
+      onboardingCompletedAt: nullString(),
+      branchCount: 0,
+      memberCount: 0,
+      orderCount: 0,
+      customerCount: 0,
+      revenue: -0
+    })
+  );
+
+  e.app
+    .db()
+    .newQuery(
+      "SELECT " +
+        "o.id AS id, " +
+        "o.name AS name, " +
+        "COALESCE(o.slug, '') AS slug, " +
+        "o.onboardingCompletedAt AS onboardingCompletedAt, " +
+        "COALESCE((SELECT COUNT(*) FROM branches b WHERE b.organization = o.id), 0) AS branchCount, " +
+        "COALESCE((SELECT COUNT(*) FROM organizationMemberships m WHERE m.organization = o.id AND m.status = 'active'), 0) AS memberCount, " +
+        "COALESCE((" +
+        "SELECT COUNT(*) FROM sales s " +
+        "INNER JOIN branches b ON b.id = s.branch " +
+        "WHERE b.organization = o.id " +
+        "AND s.status != 'voided' " +
+        "AND (s.isDeleted = false OR s.isDeleted IS NULL)" +
+        "), 0) AS orderCount, " +
+        "COALESCE((" +
+        "SELECT COUNT(*) FROM customers c " +
+        "INNER JOIN branches b ON b.id = c.branch " +
+        "WHERE b.organization = o.id" +
+        "), 0) AS customerCount, " +
+        "COALESCE((" +
+        "SELECT SUM(s.totalAmount) FROM sales s " +
+        "INNER JOIN branches b ON b.id = s.branch " +
+        "WHERE b.organization = o.id " +
+        "AND s.status != 'voided' " +
+        "AND (s.isDeleted = false OR s.isDeleted IS NULL)" +
+        "), 0) AS revenue " +
+        "FROM organizations o " +
+        "WHERE COALESCE(o.isDeleted, false) = false " +
+        "ORDER BY o.name COLLATE NOCASE ASC"
+    )
+    .all(rows);
+
+  var organizations = [];
+  var totalOrders = 0;
+  var totalCustomers = 0;
+  var totalRevenue = 0;
+  var i;
+  for (i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var orderCount = Number(row.orderCount) || 0;
+    var customerCount = Number(row.customerCount) || 0;
+    var revenue = Number(row.revenue) || 0;
+    var branchCount = Number(row.branchCount) || 0;
+    var memberCount = Number(row.memberCount) || 0;
+    totalOrders += orderCount;
+    totalCustomers += customerCount;
+    totalRevenue += revenue;
+    organizations.push({
+      id: row.id,
+      name: row.name,
+      slug: row.slug || "",
+      onboardingCompletedAt: row.onboardingCompletedAt || null,
+      branchCount: branchCount,
+      memberCount: memberCount,
+      orderCount: orderCount,
+      customerCount: customerCount,
+      revenue: revenue
+    });
+  }
+
+  return e.json(200, {
+    summary: {
+      organizationCount: organizations.length,
+      orderCount: totalOrders,
+      customerCount: totalCustomers,
+      revenue: totalRevenue
+    },
+    organizations: organizations
+  });
+}
+
 module.exports = {
   readPermissions: readPermissions,
   canManageOrgMembers: canManageOrgMembers,
@@ -611,5 +710,6 @@ module.exports = {
   createInvite: createInvite,
   acceptInvite: acceptInvite,
   revokeInvite: revokeInvite,
-  declineInvite: declineInvite
+  declineInvite: declineInvite,
+  listOrganizationPlatformStats: listOrganizationPlatformStats
 };

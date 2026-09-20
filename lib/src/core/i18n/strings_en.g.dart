@@ -763,8 +763,56 @@ class TranslationsOrganizationsEn {
 	/// en: 'Super Admin'
 	String get superAdminTitle => 'Super Admin';
 
-	/// en: 'Platform tools that are not tied to a single organization.'
-	String get superAdminSubtitle => 'Platform tools that are not tied to a single organization.';
+	/// en: 'Platform overview across all organizations.'
+	String get superAdminSubtitle => 'Platform overview across all organizations.';
+
+	/// en: 'Platform overview'
+	String get platformOverview => 'Platform overview';
+
+	/// en: 'All organizations'
+	String get allOrganizations => 'All organizations';
+
+	/// en: 'Search organizations'
+	String get searchOrganizations => 'Search organizations';
+
+	/// en: 'No organizations yet.'
+	String get noOrganizationsYet => 'No organizations yet.';
+
+	/// en: 'No organizations match your search.'
+	String get noMatchingOrganizations => 'No organizations match your search.';
+
+	/// en: 'Organizations'
+	String get kpiOrganizations => 'Organizations';
+
+	/// en: 'Orders'
+	String get kpiOrders => 'Orders';
+
+	/// en: 'Customers'
+	String get kpiCustomers => 'Customers';
+
+	/// en: 'Revenue'
+	String get kpiRevenue => 'Revenue';
+
+	/// en: 'Branches'
+	String get metricBranches => 'Branches';
+
+	/// en: 'Members'
+	String get metricMembers => 'Members';
+
+	/// en: 'Orders'
+	String get metricOrders => 'Orders';
+
+	/// en: 'Customers'
+	String get metricCustomers => 'Customers';
+
+	/// en: 'Onboarded'
+	String get onboarded => 'Onboarded';
+
+	/// en: 'Not onboarded'
+	String get notOnboarded => 'Not onboarded';
+
+	/// en: 'Could not load organization stats.'
+	String get statsLoadError => 'Could not load organization stats.';
 }
 
 // Path: sort
@@ -1085,7 +1133,23 @@ extension on Translations {
 			'organizations.lastUsed' => 'Last used',
 			'organizations.superAdmin' => 'Super Admin',
 			'organizations.superAdminTitle' => 'Super Admin',
-			'organizations.superAdminSubtitle' => 'Platform tools that are not tied to a single organization.',
+			'organizations.superAdminSubtitle' => 'Platform overview across all organizations.',
+			'organizations.platformOverview' => 'Platform overview',
+			'organizations.allOrganizations' => 'All organizations',
+			'organizations.searchOrganizations' => 'Search organizations',
+			'organizations.noOrganizationsYet' => 'No organizations yet.',
+			'organizations.noMatchingOrganizations' => 'No organizations match your search.',
+			'organizations.kpiOrganizations' => 'Organizations',
+			'organizations.kpiOrders' => 'Orders',
+			'organizations.kpiCustomers' => 'Customers',
+			'organizations.kpiRevenue' => 'Revenue',
+			'organizations.metricBranches' => 'Branches',
+			'organizations.metricMembers' => 'Members',
+			'organizations.metricOrders' => 'Orders',
+			'organizations.metricCustomers' => 'Customers',
+			'organizations.onboarded' => 'Onboarded',
+			'organizations.notOnboarded' => 'Not onboarded',
+			'organizations.statsLoadError' => 'Could not load organization stats.',
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',
