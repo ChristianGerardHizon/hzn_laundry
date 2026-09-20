@@ -321,6 +321,12 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get featuresReadOnly => 'Mga manager lang ng organisasyon ang puwedeng magpalit ng features.';
 	@override String get featuresMoved => 'Ang mga workflow at module toggle ay nasa Features tab na ng organisasyon para magkakaiba ang setting bawat organisasyon.';
 	@override String get openFeatures => 'Buksan ang Features ng organisasyon';
+	@override String get selectTitle => 'Pumili ng organisasyon';
+	@override String get selectSubtitle => 'Piliin kung aling organisasyon ang gusto mong pasukan.';
+	@override String get lastUsed => 'Huling ginamit';
+	@override String get superAdmin => 'Super Admin';
+	@override String get superAdminTitle => 'Super Admin';
+	@override String get superAdminSubtitle => 'Mga platform tool na hindi nakatali sa iisang organisasyon.';
 }
 
 // Path: sort
@@ -588,6 +594,12 @@ extension on TranslationsTl {
 			'organizations.featuresReadOnly' => 'Mga manager lang ng organisasyon ang puwedeng magpalit ng features.',
 			'organizations.featuresMoved' => 'Ang mga workflow at module toggle ay nasa Features tab na ng organisasyon para magkakaiba ang setting bawat organisasyon.',
 			'organizations.openFeatures' => 'Buksan ang Features ng organisasyon',
+			'organizations.selectTitle' => 'Pumili ng organisasyon',
+			'organizations.selectSubtitle' => 'Piliin kung aling organisasyon ang gusto mong pasukan.',
+			'organizations.lastUsed' => 'Huling ginamit',
+			'organizations.superAdmin' => 'Super Admin',
+			'organizations.superAdminTitle' => 'Super Admin',
+			'organizations.superAdminSubtitle' => 'Mga platform tool na hindi nakatali sa iisang organisasyon.',
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',
