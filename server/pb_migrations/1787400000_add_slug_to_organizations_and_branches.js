@@ -60,10 +60,33 @@ function uniqueBranchSlug(app, orgId, base, excludeId) {
   }
 }
 
+function hasSlugIndex(indexes) {
+  return (indexes || []).some((i) => {
+    const s = String(i).toLowerCase();
+    return s.indexOf("slug") !== -1;
+  });
+}
+
 migrate((app) => {
   // 1) Add nullable slug fields (no unique index yet — empty values collide).
   const orgs = app.findCollectionByNameOrId("pbc_organizations01");
-  if (!orgs.fields.getById("text_org_slug")) {
+  const branches = app.findCollectionByNameOrId("pbc_2358601297");
+
+  // Staging (and some older DBs) already have slug + a unique index under a
+  // different name (e.g. idx_slug_organizations). Re-adding idx_organizations_slug
+  // then fails with "index definition already exists" and crash-loops the service.
+  const orgSlugExisting = orgs.fields.getById("text_org_slug");
+  const branchSlugExisting = branches.fields.getById("text_branch_slug");
+  if (
+    orgSlugExisting &&
+    branchSlugExisting &&
+    hasSlugIndex(orgs.indexes) &&
+    hasSlugIndex(branches.indexes)
+  ) {
+    return;
+  }
+
+  if (!orgSlugExisting) {
     orgs.fields.add(new Field({
       "autogeneratePattern": "",
       "hidden": false,
@@ -81,8 +104,7 @@ migrate((app) => {
     app.save(orgs);
   }
 
-  const branches = app.findCollectionByNameOrId("pbc_2358601297");
-  if (!branches.fields.getById("text_branch_slug")) {
+  if (!branchSlugExisting) {
     branches.fields.add(new Field({
       "autogeneratePattern": "",
       "hidden": false,
@@ -130,8 +152,8 @@ migrate((app) => {
   }
 
   // 3) Unique indexes + required now that every row has a slug.
-  const orgIndexes = orgs.indexes || [];
-  if (!orgIndexes.some((i) => String(i).indexOf("idx_organizations_slug") !== -1)) {
+  // Match any existing slug index name — do not create a second unique index on slug.
+  if (!hasSlugIndex(orgs.indexes)) {
     orgs.indexes.push(
       "CREATE UNIQUE INDEX idx_organizations_slug ON organizations (slug)"
     );
@@ -140,8 +162,7 @@ migrate((app) => {
   if (orgSlug) orgSlug.required = true;
   app.save(orgs);
 
-  const branchIndexes = branches.indexes || [];
-  if (!branchIndexes.some((i) => String(i).indexOf("idx_branches_org_slug") !== -1)) {
+  if (!hasSlugIndex(branches.indexes)) {
     branches.indexes.push(
       "CREATE UNIQUE INDEX idx_branches_org_slug ON branches (organization, slug)"
     );
