@@ -7,8 +7,10 @@ import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../domain/organization.dart';
+import '../../domain/organization_platform_stats.dart';
 import '../../domain/organization_setup.dart';
 import '../dto/organization_dto.dart';
+import '../dto/organization_platform_stats_dto.dart';
 
 part 'organization_repository.g.dart';
 
@@ -28,6 +30,9 @@ abstract class OrganizationRepository {
     String? address,
     DateTime? onboardingCompletedAt,
   });
+
+  /// Platform-wide org metrics for `system.admin` (Super Admin dashboard).
+  FutureEither<OrganizationPlatformStatsResponse> listPlatformStats();
 }
 
 @Riverpod(keepAlive: true)
@@ -139,6 +144,28 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
           );
         }
         return _fromMap(response);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrganizationPlatformStatsResponse> listPlatformStats() async {
+    return TaskEither.tryCatch(
+      () async {
+        final response = await _pb.send(
+          '/api/super-admin/organization-stats',
+          method: 'GET',
+        );
+        if (response is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid organization stats response',
+            null,
+            'invalid_organization_stats_response',
+          );
+        }
+        return OrganizationPlatformStatsResponseDto.fromJson(response)
+            .toEntity();
       },
       Failure.handle,
     ).run();

@@ -326,7 +326,23 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get lastUsed => 'Huling ginamit';
 	@override String get superAdmin => 'Super Admin';
 	@override String get superAdminTitle => 'Super Admin';
-	@override String get superAdminSubtitle => 'Mga platform tool na hindi nakatali sa iisang organisasyon.';
+	@override String get superAdminSubtitle => 'Pangkalahatang-ideya ng platform sa lahat ng organisasyon.';
+	@override String get platformOverview => 'Pangkalahatang-ideya ng platform';
+	@override String get allOrganizations => 'Lahat ng organisasyon';
+	@override String get searchOrganizations => 'Maghanap ng organisasyon';
+	@override String get noOrganizationsYet => 'Wala pang organisasyon.';
+	@override String get noMatchingOrganizations => 'Walang organisasyong tumugma sa iyong paghahanap.';
+	@override String get kpiOrganizations => 'Mga Organisasyon';
+	@override String get kpiOrders => 'Mga Order';
+	@override String get kpiCustomers => 'Mga Customer';
+	@override String get kpiRevenue => 'Kita';
+	@override String get metricBranches => 'Mga Sangay';
+	@override String get metricMembers => 'Mga Miyembro';
+	@override String get metricOrders => 'Mga Order';
+	@override String get metricCustomers => 'Mga Customer';
+	@override String get onboarded => 'Naka-onboard';
+	@override String get notOnboarded => 'Hindi pa naka-onboard';
+	@override String get statsLoadError => 'Hindi ma-load ang stats ng organisasyon.';
 }
 
 // Path: sort
@@ -599,7 +615,23 @@ extension on TranslationsTl {
 			'organizations.lastUsed' => 'Huling ginamit',
 			'organizations.superAdmin' => 'Super Admin',
 			'organizations.superAdminTitle' => 'Super Admin',
-			'organizations.superAdminSubtitle' => 'Mga platform tool na hindi nakatali sa iisang organisasyon.',
+			'organizations.superAdminSubtitle' => 'Pangkalahatang-ideya ng platform sa lahat ng organisasyon.',
+			'organizations.platformOverview' => 'Pangkalahatang-ideya ng platform',
+			'organizations.allOrganizations' => 'Lahat ng organisasyon',
+			'organizations.searchOrganizations' => 'Maghanap ng organisasyon',
+			'organizations.noOrganizationsYet' => 'Wala pang organisasyon.',
+			'organizations.noMatchingOrganizations' => 'Walang organisasyong tumugma sa iyong paghahanap.',
+			'organizations.kpiOrganizations' => 'Mga Organisasyon',
+			'organizations.kpiOrders' => 'Mga Order',
+			'organizations.kpiCustomers' => 'Mga Customer',
+			'organizations.kpiRevenue' => 'Kita',
+			'organizations.metricBranches' => 'Mga Sangay',
+			'organizations.metricMembers' => 'Mga Miyembro',
+			'organizations.metricOrders' => 'Mga Order',
+			'organizations.metricCustomers' => 'Mga Customer',
+			'organizations.onboarded' => 'Naka-onboard',
+			'organizations.notOnboarded' => 'Hindi pa naka-onboard',
+			'organizations.statsLoadError' => 'Hindi ma-load ang stats ng organisasyon.',
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',

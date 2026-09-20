@@ -74,3 +74,12 @@ routerAdd(
   },
   $apis.requireAuth("users")
 );
+
+routerAdd(
+  "GET",
+  "/api/super-admin/organization-stats",
+  function(e) {
+    return require(__hooks + "/lib/organization_invites_helpers.js").listOrganizationPlatformStats(e);
+  },
+  $apis.requireAuth("users")
+);

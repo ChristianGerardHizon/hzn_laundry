@@ -77,5 +77,21 @@
   "lastUsed": "Huling ginamit",
   "superAdmin": "Super Admin",
   "superAdminTitle": "Super Admin",
-  "superAdminSubtitle": "Mga platform tool na hindi nakatali sa iisang organisasyon."
+  "superAdminSubtitle": "Pangkalahatang-ideya ng platform sa lahat ng organisasyon.",
+  "platformOverview": "Pangkalahatang-ideya ng platform",
+  "allOrganizations": "Lahat ng organisasyon",
+  "searchOrganizations": "Maghanap ng organisasyon",
+  "noOrganizationsYet": "Wala pang organisasyon.",
+  "noMatchingOrganizations": "Walang organisasyong tumugma sa iyong paghahanap.",
+  "kpiOrganizations": "Mga Organisasyon",
+  "kpiOrders": "Mga Order",
+  "kpiCustomers": "Mga Customer",
+  "kpiRevenue": "Kita",
+  "metricBranches": "Mga Sangay",
+  "metricMembers": "Mga Miyembro",
+  "metricOrders": "Mga Order",
+  "metricCustomers": "Mga Customer",
+  "onboarded": "Naka-onboard",
+  "notOnboarded": "Hindi pa naka-onboard",
+  "statsLoadError": "Hindi ma-load ang stats ng organisasyon."
 }
