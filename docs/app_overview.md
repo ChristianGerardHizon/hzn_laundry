@@ -193,7 +193,7 @@ Device-specific settings only (this tablet/phone/desktop).
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web only
 - Organization selection (`/select-organization`) — after login when the user has 2+ memberships; Super Admin entry for `system.admin`
-- Super Admin hub (`/super-admin`) — out-of-scope platform tools (create organization)
+- Super Admin hub (`/super-admin`) — platform overview with org metrics (orders, customers, revenue, branches, members) and create organization
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
 - Session management
@@ -627,6 +627,7 @@ lib/src/
 
 ---
 
+| Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
 | Sep 20 | Post-login org selection | Users with 2+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
 | Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |
 | Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
