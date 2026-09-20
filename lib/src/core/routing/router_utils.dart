@@ -7,6 +7,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
+import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../../features/version_lock/domain/version_check_result.dart';
@@ -17,6 +18,7 @@ import 'route_permissions.dart';
 import 'route_scope_provider.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
+import 'routes/org_selection.routes.dart';
 import 'routes/version_lock.routes.dart';
 
 /// Utility functions for router configuration.
@@ -31,6 +33,37 @@ abstract class RouterUtils {
     '/web-update',
     '/history',
   ];
+
+  /// Unscoped post-login routes (auth required, no org/branch prefix).
+  static const List<String> orgSelectionRoutes = [
+    SelectOrganizationRoute.path,
+    SuperAdminRoute.path,
+  ];
+
+  static bool isOrgSelectionPath(String path) =>
+      orgSelectionRoutes.any((r) => path == r || path.startsWith('$r/'));
+
+  /// True when the user has 2+ memberships and must pick (or re-pick) an org.
+  ///
+  /// Skips the picker when a valid last-used org is already in secure storage,
+  /// or when the user confirmed a pick this session.
+  static bool needsOrganizationSelection(Ref ref) {
+    if (isScopeLoading(ref)) return false;
+    final notifier = ref.read(currentOrganizationControllerProvider.notifier);
+    if (!notifier.requiresSelection) return false;
+    if (ref.read(organizationSelectionConfirmedProvider)) return false;
+    if (notifier.hasPersistedSelection) return false;
+    return true;
+  }
+
+  /// Post-auth destination: org picker when needed, else scoped home.
+  static String? postAuthDestination(Ref ref) {
+    if (isScopeLoading(ref)) return null;
+    if (needsOrganizationSelection(ref)) {
+      return SelectOrganizationRoute.path;
+    }
+    return homePathFor(ref);
+  }
 
   /// True for empty or slash-only paths (not a registered shell route).
   static bool isEmptyRootPath(String path) => path.isEmpty || path == '/';
@@ -144,12 +177,15 @@ abstract class RouterUtils {
     final isOnLoginPage = currentPath == LoginRoute.path;
     final isOnSplashPage = currentPath == SplashRoute.path;
 
+    final isOnSelectOrg = currentPath == SelectOrganizationRoute.path;
+    final isOnSuperAdmin = currentPath == SuperAdminRoute.path;
+
     // Bare `/` is not registered under the org/branch shell.
     if (isEmptyRootPath(uriPath)) {
       if (isAuthLoading) return SplashRoute.path;
       if (!isAuthenticated) return LoginRoute.path;
       if (isScopeLoading(ref)) return SplashRoute.path;
-      return homePathFor(ref) ?? SplashRoute.path;
+      return postAuthDestination(ref) ?? SplashRoute.path;
     }
 
     // 1. Still loading auth on splash - stay on splash
@@ -158,7 +194,7 @@ abstract class RouterUtils {
     }
 
     // 2. Auth loading + protected route - stash URL, go to splash
-    if (isAuthLoading && !isIgnored) {
+    if (isAuthLoading && !isIgnored && !isOrgSelectionPath(currentPath)) {
       PendingRedirect.stash(fullUri);
       Future(() {
         ref.read(pendingRedirectProvider.notifier).set(fullUri);
@@ -171,28 +207,61 @@ abstract class RouterUtils {
       if (!isAuthenticated) return LoginRoute.path;
       // Wait for org/branch (and their slugs) before leaving splash.
       if (isScopeLoading(ref)) return null;
-      final home = homePathFor(ref);
-      if (home == null) return null;
+      final destination = postAuthDestination(ref);
+      if (destination == null) return null;
+      if (destination == SelectOrganizationRoute.path) {
+        return destination;
+      }
       final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
       if (pendingUrl != null) {
         ref.read(pendingRedirectProvider.notifier).clear();
         return pendingUrl;
       }
-      return home;
+      return destination;
     }
 
     // 4. Login page - redirect if authenticated
     if (isOnLoginPage) {
       if (isAuthenticated) {
         if (isScopeLoading(ref)) return SplashRoute.path;
-        final home = homePathFor(ref);
-        if (home == null) return SplashRoute.path;
+        final destination = postAuthDestination(ref);
+        if (destination == null) return SplashRoute.path;
+        if (destination == SelectOrganizationRoute.path) {
+          return destination;
+        }
         final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
         if (pendingUrl != null) {
           ref.read(pendingRedirectProvider.notifier).clear();
           return pendingUrl;
         }
-        return home;
+        return destination;
+      }
+      return null;
+    }
+
+    // 4b. Org selection / super-admin (auth required, unscoped)
+    if (isOnSelectOrg || isOnSuperAdmin) {
+      if (!isAuthenticated) return LoginRoute.path;
+      if (isScopeLoading(ref)) return null;
+
+      if (isOnSuperAdmin) {
+        final role = ref.read(currentUserRoleProvider).value;
+        if (role?.isAdmin != true) {
+          return needsOrganizationSelection(ref)
+              ? SelectOrganizationRoute.path
+              : (homePathFor(ref) ?? SplashRoute.path);
+        }
+        return null;
+      }
+
+      // Leave picker only when memberships ≤ 1. Multi-org users stay here
+      // until the page navigates after an explicit select (confirm alone must
+      // not homePathFor the previous persisted org).
+      final requiresSelection = ref
+          .read(currentOrganizationControllerProvider.notifier)
+          .requiresSelection;
+      if (!requiresSelection) {
+        return homePathFor(ref) ?? SplashRoute.path;
       }
       return null;
     }
@@ -200,6 +269,16 @@ abstract class RouterUtils {
     // 5. Not authenticated + protected route - redirect to login
     if (!isAuthenticated && !isIgnored) {
       return LoginRoute.path;
+    }
+
+    // 5b. Multi-org user has not confirmed selection yet — keep them on picker
+    // except when already mid-session on a scoped URL (confirmed).
+    if (isAuthenticated &&
+        needsOrganizationSelection(ref) &&
+        !isIgnored &&
+        state.pathParameters['orgSlug'] != null) {
+      // Deep link into scoped app before picking: force picker first.
+      return SelectOrganizationRoute.path;
     }
 
     // 5d. Flat main-app path (no org/branch prefix) → scoped rewrite

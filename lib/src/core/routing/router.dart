@@ -6,6 +6,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
+import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../../features/version_lock/presentation/controllers/version_check_provider.dart';
 import '../pages/app_root.dart';
@@ -17,6 +18,7 @@ import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
 import 'routes/management.routes.dart';
 import 'routes/organizations.routes.dart';
+import 'routes/org_selection.routes.dart';
 import 'routes/products.routes.dart';
 import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
@@ -65,6 +67,10 @@ GoRouter router(Ref ref) {
       $loginRoute,
       $forgotPasswordRoute,
       $authLoadingRoute,
+
+      // Post-login org selection (outside shell, auth required)
+      $selectOrganizationRoute,
+      $superAdminRoute,
 
       // Org/branch-scoped main app. `:orgSlug`/`:branchSlug` are hand-written
       // so feature route `path:` constants stay unchanged. Navigate with
@@ -123,6 +129,10 @@ GoRouter router(Ref ref) {
   });
 
   ref.listen(currentBranchControllerProvider, (previous, next) {
+    router.refresh();
+  });
+
+  ref.listen(organizationSelectionConfirmedProvider, (previous, next) {
     router.refresh();
   });
 

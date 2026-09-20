@@ -21,8 +21,8 @@ import '../login_error_message.dart';
 /// Cooldown between OTP resends (abuse prevention).
 const kLoginOtpResendCooldown = Duration(seconds: 60);
 
-/// HZN brand green sampled from the logo mark.
-const _kBrandGreen = Color(0xFF02F268);
+/// HZN brand teal sampled from the logo mark.
+const _kBrandTeal = Color(0xFF45A9AB);
 const _kInk = Color(0xFF0B0B0B);
 const _kSurface = Color(0xFF141414);
 const _kSurfaceBorder = Color(0xFF2A2A2A);
@@ -224,7 +224,7 @@ class LoginPage extends HookConsumerWidget {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _kBrandGreen, width: 1.5),
+        borderSide: const BorderSide(color: _kBrandTeal, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -246,9 +246,9 @@ class LoginPage extends HookConsumerWidget {
         child: FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(
-            backgroundColor: _kBrandGreen,
+            backgroundColor: _kBrandTeal,
             foregroundColor: _kInk,
-            disabledBackgroundColor: _kBrandGreen.withValues(alpha: 0.35),
+            disabledBackgroundColor: _kBrandTeal.withValues(alpha: 0.35),
             disabledForegroundColor: _kInk.withValues(alpha: 0.55),
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -269,10 +269,10 @@ class LoginPage extends HookConsumerWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _kBrandGreen.withValues(alpha: isDark ? 0.08 : 0.12),
+          color: _kBrandTeal.withValues(alpha: isDark ? 0.08 : 0.12),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _kBrandGreen.withValues(alpha: 0.35),
+            color: _kBrandTeal.withValues(alpha: 0.35),
           ),
         ),
         child: Row(
@@ -281,12 +281,12 @@ class LoginPage extends HookConsumerWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: _kBrandGreen.withValues(alpha: 0.18),
+                color: _kBrandTeal.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.person_outline,
-                color: _kBrandGreen,
+                color: _kBrandTeal,
                 size: 20,
               ),
             ),
@@ -303,7 +303,7 @@ class LoginPage extends HookConsumerWidget {
             TextButton(
               onPressed: formBusy ? null : goToEmailStep,
               style: TextButton.styleFrom(
-                foregroundColor: _kBrandGreen,
+                foregroundColor: _kBrandTeal,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(44, 44),
               ),
@@ -457,7 +457,7 @@ class LoginPage extends HookConsumerWidget {
             TextButton(
               onPressed:
                   formBusy ? null : () => handleSendOtp(isResend: false),
-              style: TextButton.styleFrom(foregroundColor: _kBrandGreen),
+              style: TextButton.styleFrom(foregroundColor: _kBrandTeal),
               child: isSendingOtp.value
                   ? const SizedBox(
                       height: 16,
@@ -522,7 +522,7 @@ class LoginPage extends HookConsumerWidget {
             TextButton(
               onPressed:
                   canResend ? () => handleSendOtp(isResend: true) : null,
-              style: TextButton.styleFrom(foregroundColor: _kBrandGreen),
+              style: TextButton.styleFrom(foregroundColor: _kBrandTeal),
               child: Text(
                 cooldownSeconds.value > 0
                     ? t.auth.resendLoginCodeCooldown(
@@ -647,7 +647,7 @@ class LoginPage extends HookConsumerWidget {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: _kBrandGreen.withValues(
+                                          color: _kBrandTeal.withValues(
                                             alpha: isDark ? 0.08 : 0.06,
                                           ),
                                           blurRadius: 32,
@@ -822,7 +822,7 @@ class _LoginBrandHeader extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: _kBrandGreen.withValues(alpha: 0.28),
+                color: _kBrandTeal.withValues(alpha: 0.28),
                 blurRadius: 42,
                 spreadRadius: 2,
               ),
@@ -853,7 +853,7 @@ class _LoginAtmosphere extends StatelessWidget {
       child: CustomPaint(
         painter: _LoginGlowPainter(
           isDark: isDark,
-          green: _kBrandGreen,
+          teal: _kBrandTeal,
         ),
         child: const SizedBox.expand(),
       ),
@@ -862,10 +862,10 @@ class _LoginAtmosphere extends StatelessWidget {
 }
 
 class _LoginGlowPainter extends CustomPainter {
-  _LoginGlowPainter({required this.isDark, required this.green});
+  _LoginGlowPainter({required this.isDark, required this.teal});
 
   final bool isDark;
-  final Color green;
+  final Color teal;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -874,8 +874,8 @@ class _LoginGlowPainter extends CustomPainter {
         center: const Alignment(0, -0.85),
         radius: 1.05,
         colors: [
-          green.withValues(alpha: isDark ? 0.22 : 0.16),
-          green.withValues(alpha: 0),
+          teal.withValues(alpha: isDark ? 0.22 : 0.16),
+          teal.withValues(alpha: 0),
         ],
       ).createShader(Offset.zero & size);
 
@@ -884,8 +884,8 @@ class _LoginGlowPainter extends CustomPainter {
         center: const Alignment(1.1, 0.35),
         radius: 0.9,
         colors: [
-          green.withValues(alpha: isDark ? 0.10 : 0.07),
-          green.withValues(alpha: 0),
+          teal.withValues(alpha: isDark ? 0.10 : 0.07),
+          teal.withValues(alpha: 0),
         ],
       ).createShader(Offset.zero & size);
 
@@ -905,7 +905,7 @@ class _LoginGlowPainter extends CustomPainter {
 
     // Subtle grid lines for tech texture (very low contrast).
     final grid = Paint()
-      ..color = green.withValues(alpha: isDark ? 0.035 : 0.04)
+      ..color = teal.withValues(alpha: isDark ? 0.035 : 0.04)
       ..strokeWidth = 1;
     const step = 48.0;
     for (var x = 0.0; x < size.width; x += step) {
@@ -930,6 +930,6 @@ class _LoginGlowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LoginGlowPainter oldDelegate) {
-    return oldDelegate.isDark != isDark || oldDelegate.green != green;
+    return oldDelegate.isDark != isDark || oldDelegate.teal != teal;
   }
 }
