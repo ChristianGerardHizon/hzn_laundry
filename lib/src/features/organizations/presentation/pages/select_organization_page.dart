@@ -8,6 +8,7 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/pending_redirect_provider.dart';
 import '../../../../core/routing/routes/dashboard.routes.dart';
 import '../../../../core/routing/routes/org_selection.routes.dart';
+import '../../../../core/routing/router_utils.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -47,9 +48,21 @@ class SelectOrganizationPage extends HookConsumerWidget {
             .read(currentOrganizationControllerProvider.notifier)
             .selectOrganization(organizationId);
         ref.read(organizationSelectionConfirmedProvider.notifier).confirm();
-        // Drop stale deep links that may still point at another org.
-        ref.read(pendingRedirectProvider.notifier).clear();
         if (!context.mounted) return;
+
+        // Restore subscription pay deep links; clear other stale deep links.
+        final pending =
+            ref.read(pendingRedirectProvider.notifier).peek();
+        final pendingPath = pending == null
+            ? ''
+            : (Uri.tryParse(pending)?.path ?? pending);
+        if (pending != null &&
+            RouterUtils.isSubscriptionPayPath(pendingPath)) {
+          ref.read(pendingRedirectProvider.notifier).clear();
+          context.go(pending);
+          return;
+        }
+        ref.read(pendingRedirectProvider.notifier).clear();
 
         final selected =
             ref.read(currentOrganizationControllerProvider).value;

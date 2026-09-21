@@ -47,6 +47,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsNavigationEn navigation = TranslationsNavigationEn._(_root);
 	late final TranslationsOrganizationsEn organizations = TranslationsOrganizationsEn._(_root);
 	late final TranslationsSortEn sort = TranslationsSortEn._(_root);
+	late final TranslationsSubscriptionsEn subscriptions = TranslationsSubscriptionsEn._(_root);
 	late final TranslationsValidationEn validation = TranslationsValidationEn._(_root);
 }
 
@@ -646,6 +647,9 @@ class TranslationsOrganizationsEn {
 	/// en: 'Create your first branch'
 	String get stepBranch => 'Create your first branch';
 
+	/// en: 'Choose a subscription'
+	String get stepSubscription => 'Choose a subscription';
+
 	/// en: 'Invite your team'
 	String get stepInvite => 'Invite your team';
 
@@ -658,11 +662,17 @@ class TranslationsOrganizationsEn {
 	/// en: 'Branch'
 	String get stepBranchShort => 'Branch';
 
+	/// en: 'Plan'
+	String get stepSubscriptionShort => 'Plan';
+
 	/// en: 'Team'
 	String get stepInviteShort => 'Team';
 
 	/// en: 'Review'
 	String get stepReviewShort => 'Review';
+
+	/// en: 'Select a subscription package to continue.'
+	String get subscriptionRequired => 'Select a subscription package to continue.';
 
 	/// en: 'Next'
 	String get next => 'Next';
@@ -879,6 +889,231 @@ class TranslationsSortEn {
 
 	/// en: 'Status'
 	String get status => 'Status';
+}
+
+// Path: subscriptions
+class TranslationsSubscriptionsEn {
+	TranslationsSubscriptionsEn._(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Overview'
+	String get tabOverview => 'Overview';
+
+	/// en: 'Packages'
+	String get tabPackages => 'Packages';
+
+	/// en: 'Payments'
+	String get tabPayments => 'Payments';
+
+	/// en: 'Billing'
+	String get tabBilling => 'Billing';
+
+	/// en: 'Subscription'
+	String get subscription => 'Subscription';
+
+	/// en: 'No subscription'
+	String get noSubscription => 'No subscription';
+
+	/// en: 'Active'
+	String get statusActive => 'Active';
+
+	/// en: 'Grace'
+	String get statusGrace => 'Grace';
+
+	/// en: 'Locked'
+	String get statusLocked => 'Locked';
+
+	/// en: 'Cancelled'
+	String get statusCancelled => 'Cancelled';
+
+	/// en: 'Period ends'
+	String get periodEnds => 'Period ends';
+
+	/// en: 'Grace ends'
+	String get graceEnds => 'Grace ends';
+
+	/// en: 'Pending proofs'
+	String get pendingProofs => 'Pending proofs';
+
+	/// en: 'Assign package'
+	String get assignPackage => 'Assign package';
+
+	/// en: 'Change package'
+	String get changePackage => 'Change package';
+
+	/// en: 'Manual unlock'
+	String get manualUnlock => 'Manual unlock';
+
+	/// en: 'Unlock until'
+	String get unlockUntil => 'Unlock until';
+
+	/// en: 'Organization unlocked'
+	String get unlockSuccess => 'Organization unlocked';
+
+	/// en: 'Could not unlock organization'
+	String get unlockFailed => 'Could not unlock organization';
+
+	/// en: 'Package name'
+	String get packageName => 'Package name';
+
+	/// en: 'Description'
+	String get packageDescription => 'Description';
+
+	/// en: 'Price (₱)'
+	String get packagePrice => 'Price (₱)';
+
+	/// en: 'Every'
+	String get intervalCount => 'Every';
+
+	/// en: 'Interval'
+	String get intervalUnit => 'Interval';
+
+	/// en: 'Day(s)'
+	String get intervalDay => 'Day(s)';
+
+	/// en: 'Month(s)'
+	String get intervalMonth => 'Month(s)';
+
+	/// en: 'Year(s)'
+	String get intervalYear => 'Year(s)';
+
+	/// en: 'Premade package'
+	String get isPremade => 'Premade package';
+
+	/// en: 'Create package'
+	String get createPackage => 'Create package';
+
+	/// en: 'Edit package'
+	String get editPackage => 'Edit package';
+
+	/// en: 'Delete package'
+	String get deletePackage => 'Delete package';
+
+	/// en: 'Package created'
+	String get packageCreated => 'Package created';
+
+	/// en: 'Package updated'
+	String get packageUpdated => 'Package updated';
+
+	/// en: 'Package deleted'
+	String get packageDeleted => 'Package deleted';
+
+	/// en: 'No packages yet.'
+	String get noPackages => 'No packages yet.';
+
+	/// en: 'Select a package'
+	String get selectPackage => 'Select a package';
+
+	/// en: 'Custom package'
+	String get customPackage => 'Custom package';
+
+	/// en: 'Subscription assigned'
+	String get assignSuccess => 'Subscription assigned';
+
+	/// en: 'Could not assign subscription'
+	String get assignFailed => 'Could not assign subscription';
+
+	/// en: 'Pending payment proofs'
+	String get pendingPayments => 'Pending payment proofs';
+
+	/// en: 'No pending payment proofs.'
+	String get noPendingPayments => 'No pending payment proofs.';
+
+	/// en: 'Approve'
+	String get approve => 'Approve';
+
+	/// en: 'Reject'
+	String get reject => 'Reject';
+
+	/// en: 'Admin note'
+	String get adminNote => 'Admin note';
+
+	/// en: 'Payment approved'
+	String get paymentApproved => 'Payment approved';
+
+	/// en: 'Payment rejected'
+	String get paymentRejected => 'Payment rejected';
+
+	/// en: 'Could not review payment'
+	String get reviewFailed => 'Could not review payment';
+
+	/// en: 'Amount'
+	String get amount => 'Amount';
+
+	/// en: 'Submitted'
+	String get submitted => 'Submitted';
+
+	/// en: 'Payee name'
+	String get payeeName => 'Payee name';
+
+	/// en: 'Payment instructions'
+	String get instructions => 'Payment instructions';
+
+	/// en: 'Grace days'
+	String get defaultGraceDays => 'Grace days';
+
+	/// en: 'QRPH image'
+	String get qrphImage => 'QRPH image';
+
+	/// en: 'Upload QRPH'
+	String get uploadQrph => 'Upload QRPH';
+
+	/// en: 'Billing settings saved'
+	String get billingSaved => 'Billing settings saved';
+
+	/// en: 'Could not save billing settings'
+	String get billingSaveFailed => 'Could not save billing settings';
+
+	/// en: 'Pay subscription'
+	String get payTitle => 'Pay subscription';
+
+	/// en: 'Scan the QRPH code, send the exact amount, then upload your transaction screenshot.'
+	String get paySubtitle => 'Scan the QRPH code, send the exact amount, then upload your transaction screenshot.';
+
+	/// en: 'Upload payment screenshot'
+	String get uploadProof => 'Upload payment screenshot';
+
+	/// en: 'Submit for review'
+	String get submitProof => 'Submit for review';
+
+	/// en: 'Payment proof submitted'
+	String get proofSubmitted => 'Payment proof submitted';
+
+	/// en: 'Could not submit payment proof'
+	String get proofSubmitFailed => 'Could not submit payment proof';
+
+	/// en: 'Your payment proof is pending review.'
+	String get proofPending => 'Your payment proof is pending review.';
+
+	/// en: 'Your last payment proof was rejected.'
+	String get proofRejected => 'Your last payment proof was rejected.';
+
+	/// en: 'This organization has no active subscription.'
+	String get noActiveSubscription => 'This organization has no active subscription.';
+
+	/// en: 'Subscription locked'
+	String get lockedTitle => 'Subscription locked';
+
+	/// en: 'Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.'
+	String get lockedMessage => 'Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.';
+
+	/// en: 'Subscription is in grace period. Please pay to avoid losing access.'
+	String get graceBanner => 'Subscription is in grace period. Please pay to avoid losing access.';
+
+	/// en: 'Subscription payment is due soon.'
+	String get dueSoonBanner => 'Subscription payment is due soon.';
+
+	/// en: 'Go to payment'
+	String get goToPayment => 'Go to payment';
+
+	/// en: 'Organization details'
+	String get orgDetails => 'Organization details';
+
+	/// en: 'days'
+	String get days => 'days';
 }
 
 // Path: validation
@@ -1116,12 +1351,15 @@ extension on Translations {
 			'organizations.setupTitle' => 'Set up your organization',
 			'organizations.stepDetails' => 'Organization details',
 			'organizations.stepBranch' => 'Create your first branch',
+			'organizations.stepSubscription' => 'Choose a subscription',
 			'organizations.stepInvite' => 'Invite your team',
 			'organizations.stepReview' => 'Review & create',
 			'organizations.stepDetailsShort' => 'Details',
 			'organizations.stepBranchShort' => 'Branch',
+			'organizations.stepSubscriptionShort' => 'Plan',
 			'organizations.stepInviteShort' => 'Team',
 			'organizations.stepReviewShort' => 'Review',
+			'organizations.subscriptionRequired' => 'Select a subscription package to continue.',
 			'organizations.next' => 'Next',
 			'organizations.back' => 'Back',
 			'organizations.skip' => 'Skip',
@@ -1190,6 +1428,78 @@ extension on Translations {
 			'sort.stock' => 'Stock',
 			'sort.expiration' => 'Expiration',
 			'sort.status' => 'Status',
+			'subscriptions.tabOverview' => 'Overview',
+			'subscriptions.tabPackages' => 'Packages',
+			'subscriptions.tabPayments' => 'Payments',
+			'subscriptions.tabBilling' => 'Billing',
+			'subscriptions.subscription' => 'Subscription',
+			'subscriptions.noSubscription' => 'No subscription',
+			'subscriptions.statusActive' => 'Active',
+			'subscriptions.statusGrace' => 'Grace',
+			'subscriptions.statusLocked' => 'Locked',
+			'subscriptions.statusCancelled' => 'Cancelled',
+			'subscriptions.periodEnds' => 'Period ends',
+			'subscriptions.graceEnds' => 'Grace ends',
+			'subscriptions.pendingProofs' => 'Pending proofs',
+			'subscriptions.assignPackage' => 'Assign package',
+			'subscriptions.changePackage' => 'Change package',
+			'subscriptions.manualUnlock' => 'Manual unlock',
+			'subscriptions.unlockUntil' => 'Unlock until',
+			'subscriptions.unlockSuccess' => 'Organization unlocked',
+			'subscriptions.unlockFailed' => 'Could not unlock organization',
+			'subscriptions.packageName' => 'Package name',
+			'subscriptions.packageDescription' => 'Description',
+			'subscriptions.packagePrice' => 'Price (₱)',
+			'subscriptions.intervalCount' => 'Every',
+			'subscriptions.intervalUnit' => 'Interval',
+			'subscriptions.intervalDay' => 'Day(s)',
+			'subscriptions.intervalMonth' => 'Month(s)',
+			'subscriptions.intervalYear' => 'Year(s)',
+			'subscriptions.isPremade' => 'Premade package',
+			'subscriptions.createPackage' => 'Create package',
+			'subscriptions.editPackage' => 'Edit package',
+			'subscriptions.deletePackage' => 'Delete package',
+			'subscriptions.packageCreated' => 'Package created',
+			'subscriptions.packageUpdated' => 'Package updated',
+			'subscriptions.packageDeleted' => 'Package deleted',
+			'subscriptions.noPackages' => 'No packages yet.',
+			'subscriptions.selectPackage' => 'Select a package',
+			'subscriptions.customPackage' => 'Custom package',
+			'subscriptions.assignSuccess' => 'Subscription assigned',
+			'subscriptions.assignFailed' => 'Could not assign subscription',
+			'subscriptions.pendingPayments' => 'Pending payment proofs',
+			'subscriptions.noPendingPayments' => 'No pending payment proofs.',
+			'subscriptions.approve' => 'Approve',
+			'subscriptions.reject' => 'Reject',
+			'subscriptions.adminNote' => 'Admin note',
+			'subscriptions.paymentApproved' => 'Payment approved',
+			'subscriptions.paymentRejected' => 'Payment rejected',
+			'subscriptions.reviewFailed' => 'Could not review payment',
+			'subscriptions.amount' => 'Amount',
+			'subscriptions.submitted' => 'Submitted',
+			'subscriptions.payeeName' => 'Payee name',
+			'subscriptions.instructions' => 'Payment instructions',
+			'subscriptions.defaultGraceDays' => 'Grace days',
+			'subscriptions.qrphImage' => 'QRPH image',
+			'subscriptions.uploadQrph' => 'Upload QRPH',
+			'subscriptions.billingSaved' => 'Billing settings saved',
+			'subscriptions.billingSaveFailed' => 'Could not save billing settings',
+			'subscriptions.payTitle' => 'Pay subscription',
+			'subscriptions.paySubtitle' => 'Scan the QRPH code, send the exact amount, then upload your transaction screenshot.',
+			'subscriptions.uploadProof' => 'Upload payment screenshot',
+			'subscriptions.submitProof' => 'Submit for review',
+			'subscriptions.proofSubmitted' => 'Payment proof submitted',
+			'subscriptions.proofSubmitFailed' => 'Could not submit payment proof',
+			'subscriptions.proofPending' => 'Your payment proof is pending review.',
+			'subscriptions.proofRejected' => 'Your last payment proof was rejected.',
+			'subscriptions.noActiveSubscription' => 'This organization has no active subscription.',
+			'subscriptions.lockedTitle' => 'Subscription locked',
+			'subscriptions.lockedMessage' => 'Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.',
+			'subscriptions.graceBanner' => 'Subscription is in grace period. Please pay to avoid losing access.',
+			'subscriptions.dueSoonBanner' => 'Subscription payment is due soon.',
+			'subscriptions.goToPayment' => 'Go to payment',
+			'subscriptions.orgDetails' => 'Organization details',
+			'subscriptions.days' => 'days',
 			'validation.required' => 'This field is required',
 			'validation.invalidEmail' => 'Please enter a valid email address',
 			'validation.invalidPhone' => 'Please enter a valid phone number',

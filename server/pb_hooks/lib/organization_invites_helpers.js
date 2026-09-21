@@ -302,6 +302,24 @@ function createOrganization(e) {
     throw new BadRequestError("name is required");
   }
 
+  var packageId = trimStr(body.packageId);
+  var customPackage =
+    body.customPackage && typeof body.customPackage === "object"
+      ? body.customPackage
+      : null;
+  if (!packageId && !customPackage) {
+    throw new BadRequestError("packageId or customPackage is required");
+  }
+
+  var isSystemAdmin = hasPermission(
+    e.app,
+    e.auth.getString("role"),
+    "system.admin"
+  );
+  if (customPackage && !isSystemAdmin) {
+    throw new ForbiddenError("customPackage requires system.admin");
+  }
+
   var branch = parseSetupBranch(body);
   var invites = parseSetupInvites(body, e.app);
 
@@ -309,6 +327,9 @@ function createOrganization(e) {
   if (!adminRole) {
     throw new ApiError(500, "Admin system role not found");
   }
+
+  // Lazy require to avoid circular load with organization_subscriptions_helpers.
+  var subHelpers = require(__hooks + "/lib/organization_subscriptions_helpers.js");
 
   var createdOrg = null;
   var authId = e.auth.id;
@@ -371,6 +392,13 @@ function createOrganization(e) {
     }
 
     seedOrgFeatureFlags(txApp, org.id);
+
+    subHelpers.assignSubscriptionInApp(txApp, org.id, {
+      packageId: packageId,
+      customPackage: customPackage,
+      allowCustom: isSystemAdmin,
+      requirePremade: !isSystemAdmin || !customPackage
+    });
 
     createdOrg = org;
   });
@@ -702,6 +730,8 @@ function listOrganizationPlatformStats(e) {
 
 module.exports = {
   readPermissions: readPermissions,
+  hasPermission: hasPermission,
+  isSuperuser: isSuperuser,
   canManageOrgMembers: canManageOrgMembers,
   requireManageOrgMembers: requireManageOrgMembers,
   createOrganization: createOrganization,

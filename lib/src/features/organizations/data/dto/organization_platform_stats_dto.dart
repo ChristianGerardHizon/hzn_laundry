@@ -51,6 +51,11 @@ class OrganizationPlatformStatsDto with OrganizationPlatformStatsDtoMappable {
     this.orderCount = 0,
     this.customerCount = 0,
     this.revenue = 0,
+    this.subscriptionStatus,
+    this.periodEnd,
+    this.graceEndsAt,
+    this.pendingPaymentCount = 0,
+    this.packageName,
   });
 
   final String id;
@@ -62,6 +67,11 @@ class OrganizationPlatformStatsDto with OrganizationPlatformStatsDtoMappable {
   final int orderCount;
   final int customerCount;
   final num revenue;
+  final String? subscriptionStatus;
+  final String? periodEnd;
+  final String? graceEndsAt;
+  final int pendingPaymentCount;
+  final String? packageName;
 
   factory OrganizationPlatformStatsDto.fromJson(Map<String, dynamic> json) {
     return OrganizationPlatformStatsDto(
@@ -74,6 +84,11 @@ class OrganizationPlatformStatsDto with OrganizationPlatformStatsDtoMappable {
       orderCount: _asInt(json['orderCount']),
       customerCount: _asInt(json['customerCount']),
       revenue: _asNum(json['revenue']),
+      subscriptionStatus: json['subscriptionStatus'] as String?,
+      periodEnd: json['periodEnd'] as String?,
+      graceEndsAt: json['graceEndsAt'] as String?,
+      pendingPaymentCount: _asInt(json['pendingPaymentCount']),
+      packageName: json['packageName'] as String?,
     );
   }
 
@@ -88,6 +103,11 @@ class OrganizationPlatformStatsDto with OrganizationPlatformStatsDtoMappable {
       orderCount: orderCount,
       customerCount: customerCount,
       revenue: revenue,
+      subscriptionStatus: subscriptionStatus,
+      periodEnd: parseToLocal(periodEnd),
+      graceEndsAt: parseToLocal(graceEndsAt),
+      pendingPaymentCount: pendingPaymentCount,
+      packageName: packageName,
     );
   }
 }
