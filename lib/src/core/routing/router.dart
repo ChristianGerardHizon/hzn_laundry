@@ -67,6 +67,7 @@ GoRouter router(Ref ref) {
       $loginRoute,
       $forgotPasswordRoute,
       $authLoadingRoute,
+      $scopeRecoveryRoute,
 
       // Post-login org selection (outside shell, auth required)
       $selectOrganizationRoute,

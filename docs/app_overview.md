@@ -193,6 +193,7 @@ Device-specific settings only (this tablet/phone/desktop).
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web only
 - Organization selection (`/select-organization`) — after login when the user has 2+ memberships; Super Admin entry for `system.admin`
+- Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
 - Super Admin hub (`/super-admin`) — platform overview with org metrics (orders, customers, revenue, branches, members) and create organization
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
@@ -340,6 +341,7 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 ### Authentication
 - Splash Screen (`/splash`) — black warming-up verbs
 - Login Screen (`/login`) — email OTP (default), password optional, Google (web)
+- Scope Recovery (`/scope-recovery`) — Retry / Logout when workspace scope fails
 - Forgot Password (`/forgot-password`)
 
 ### Main Navigation
@@ -433,6 +435,7 @@ App Root (Shell)
 │   ├── /login
 │   ├── /forgot-password
 │   ├── /auth-loading
+│   ├── /scope-recovery
 │   ├── /select-organization
 │   └── /super-admin
 │
@@ -627,6 +630,7 @@ lib/src/
 
 ---
 
+| Sep 21 | Scope recovery after login | When auth succeeds but org/branch scope cannot resolve a home path, redirect to `/scope-recovery` (Retry / Logout) instead of an endless splash |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
 | Sep 20 | Post-login org selection | Users with 2+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
 | Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |

@@ -153,6 +153,27 @@ class TranslationsAuthEn {
 
 	/// en: 'Could not send login code. Try again later.'
 	String get loginCodeSendFailed => 'Could not send login code. Try again later.';
+
+	/// en: 'Can't open your workspace'
+	String get scopeRecoveryTitle => 'Can\'t open your workspace';
+
+	/// en: 'Your account isn't assigned to an organization yet. Ask an admin to invite you, then try again.'
+	String get scopeRecoveryNoMembership => 'Your account isn\'t assigned to an organization yet. Ask an admin to invite you, then try again.';
+
+	/// en: 'Your organization couldn't be loaded. Contact support if this keeps happening.'
+	String get scopeRecoveryOrgUnavailable => 'Your organization couldn\'t be loaded. Contact support if this keeps happening.';
+
+	/// en: 'Your organization is missing a URL slug, so the app can't open the dashboard. Contact support.'
+	String get scopeRecoveryEmptyOrgSlug => 'Your organization is missing a URL slug, so the app can\'t open the dashboard. Contact support.';
+
+	/// en: 'No branches are available for your organization. Ask an admin to add a branch, then try again.'
+	String get scopeRecoveryNoBranch => 'No branches are available for your organization. Ask an admin to add a branch, then try again.';
+
+	/// en: 'Your branch is missing a URL slug, so the app can't open the dashboard. Contact support.'
+	String get scopeRecoveryEmptyBranchSlug => 'Your branch is missing a URL slug, so the app can\'t open the dashboard. Contact support.';
+
+	/// en: 'We couldn't open your workspace after login. Retry, or sign out and try again.'
+	String get scopeRecoveryGeneric => 'We couldn\'t open your workspace after login. Retry, or sign out and try again.';
 }
 
 // Path: common
@@ -946,6 +967,13 @@ extension on Translations {
 			'auth.resendLoginCode' => 'Resend code',
 			'auth.resendLoginCodeCooldown' => ({required Object seconds}) => 'Resend in ${seconds}s',
 			'auth.loginCodeSendFailed' => 'Could not send login code. Try again later.',
+			'auth.scopeRecoveryTitle' => 'Can\'t open your workspace',
+			'auth.scopeRecoveryNoMembership' => 'Your account isn\'t assigned to an organization yet. Ask an admin to invite you, then try again.',
+			'auth.scopeRecoveryOrgUnavailable' => 'Your organization couldn\'t be loaded. Contact support if this keeps happening.',
+			'auth.scopeRecoveryEmptyOrgSlug' => 'Your organization is missing a URL slug, so the app can\'t open the dashboard. Contact support.',
+			'auth.scopeRecoveryNoBranch' => 'No branches are available for your organization. Ask an admin to add a branch, then try again.',
+			'auth.scopeRecoveryEmptyBranchSlug' => 'Your branch is missing a URL slug, so the app can\'t open the dashboard. Contact support.',
+			'auth.scopeRecoveryGeneric' => 'We couldn\'t open your workspace after login. Retry, or sign out and try again.',
 			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'Save',

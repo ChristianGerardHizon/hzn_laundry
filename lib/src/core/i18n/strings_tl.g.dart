@@ -91,6 +91,13 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get resendLoginCode => 'Ipadala ulit ang code';
 	@override String resendLoginCodeCooldown({required Object seconds}) => 'Ipadala ulit sa ${seconds}s';
 	@override String get loginCodeSendFailed => 'Hindi maipadala ang login code. Subukan ulit mamaya.';
+	@override String get scopeRecoveryTitle => 'Hindi mabuksan ang workspace';
+	@override String get scopeRecoveryNoMembership => 'Hindi pa naka-assign ang account mo sa organization. Humingi ng invite sa admin, tapos subukan ulit.';
+	@override String get scopeRecoveryOrgUnavailable => 'Hindi ma-load ang organization mo. Makipag-ugnayan sa support kung paulit-ulit ito.';
+	@override String get scopeRecoveryEmptyOrgSlug => 'Walang URL slug ang organization mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.';
+	@override String get scopeRecoveryNoBranch => 'Walang available na branch para sa organization mo. Magdagdag ng branch ang admin, tapos subukan ulit.';
+	@override String get scopeRecoveryEmptyBranchSlug => 'Walang URL slug ang branch mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.';
+	@override String get scopeRecoveryGeneric => 'Hindi namin mabuksan ang workspace pagkatapos mag-login. Subukan ulit, o mag-logout at mag-login muli.';
 }
 
 // Path: common
@@ -428,6 +435,13 @@ extension on TranslationsTl {
 			'auth.resendLoginCode' => 'Ipadala ulit ang code',
 			'auth.resendLoginCodeCooldown' => ({required Object seconds}) => 'Ipadala ulit sa ${seconds}s',
 			'auth.loginCodeSendFailed' => 'Hindi maipadala ang login code. Subukan ulit mamaya.',
+			'auth.scopeRecoveryTitle' => 'Hindi mabuksan ang workspace',
+			'auth.scopeRecoveryNoMembership' => 'Hindi pa naka-assign ang account mo sa organization. Humingi ng invite sa admin, tapos subukan ulit.',
+			'auth.scopeRecoveryOrgUnavailable' => 'Hindi ma-load ang organization mo. Makipag-ugnayan sa support kung paulit-ulit ito.',
+			'auth.scopeRecoveryEmptyOrgSlug' => 'Walang URL slug ang organization mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.',
+			'auth.scopeRecoveryNoBranch' => 'Walang available na branch para sa organization mo. Magdagdag ng branch ang admin, tapos subukan ulit.',
+			'auth.scopeRecoveryEmptyBranchSlug' => 'Walang URL slug ang branch mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.',
+			'auth.scopeRecoveryGeneric' => 'Hindi namin mabuksan ang workspace pagkatapos mag-login. Subukan ulit, o mag-logout at mag-login muli.',
 			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'I-save',
