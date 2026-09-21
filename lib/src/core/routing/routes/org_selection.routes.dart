@@ -6,7 +6,7 @@ import '../../../features/organizations/presentation/pages/super_admin_page.dart
 
 part 'org_selection.routes.g.dart';
 
-/// Post-login organization picker (2+ memberships).
+/// Post-login organization picker (1+ memberships).
 @TypedGoRoute<SelectOrganizationRoute>(path: SelectOrganizationRoute.path)
 class SelectOrganizationRoute extends GoRouteData
     with $SelectOrganizationRoute {

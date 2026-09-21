@@ -76,7 +76,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
   bool get canSwitchOrganization => _memberships.length > 1;
 
   /// True when the user must pick an org on the post-login selection page.
-  bool get requiresSelection => _memberships.length > 1;
+  bool get requiresSelection => _memberships.isNotEmpty;
 
   /// True when secure storage already has a membership the user belongs to.
   bool get hasPersistedSelection => _resolvedFromPersistence;
@@ -114,10 +114,6 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     if (memberships.isEmpty) {
       _resolvedFromPersistence = false;
       return null;
-    }
-    if (memberships.length == 1) {
-      _resolvedFromPersistence = true;
-      return memberships.first.organization;
     }
 
     final persistedId = await _loadPersistedOrganization();
