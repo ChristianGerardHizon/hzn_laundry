@@ -201,21 +201,23 @@ class OrganizationsPage extends HookConsumerWidget {
                                   currentOrganizationControllerProvider
                                       .notifier,
                                 )
-                                .switchOrganization(membership.organizationId)
-                                .then((_) {
-                              if (!context.mounted || targetOrg == null) {
-                                return;
-                              }
-                              final slug = targetOrg.slug;
-                              final target = isScoped
-                                  ? RouterUtils.replaceScopeSegment(
-                                      currentLocation,
-                                      orgSlug: slug,
-                                      branchSlug: allBranchesSlug,
-                                    )
-                                  : '/$slug/$allBranchesSlug${DashboardRoute.path}';
-                              context.go(target);
-                            });
+                                .switchOrganization(
+                              membership.organizationId,
+                              afterSelect: () {
+                                if (!context.mounted || targetOrg == null) {
+                                  return;
+                                }
+                                final slug = targetOrg.slug;
+                                final target = isScoped
+                                    ? RouterUtils.replaceScopeSegment(
+                                        currentLocation,
+                                        orgSlug: slug,
+                                        branchSlug: allBranchesSlug,
+                                      )
+                                    : '/$slug/$allBranchesSlug${DashboardRoute.path}';
+                                context.go(target);
+                              },
+                            );
                           },
                           child: Text(t.organizations.switchToThis),
                         ),

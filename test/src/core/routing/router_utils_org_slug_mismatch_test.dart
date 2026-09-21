@@ -101,6 +101,44 @@ void main() {
     );
 
     test(
+      'returns null while org-switch overlay is active even if scope settled',
+      () async {
+        final container = buildContainer(
+          org: () => _FixedOrgController(null),
+          branch: () => _FixedBranchController(null),
+        );
+        addTearDown(container.dispose);
+
+        await container.read(currentOrganizationControllerProvider.future);
+        await container.read(currentBranchControllerProvider.future);
+
+        // Activate overlay without awaiting completion.
+        unawaited(
+          container.read(organizationSwitchOverlayProvider.notifier).run(
+                name: 'Beta',
+                action: () => Completer<void>().future,
+              ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(organizationSwitchOverlayProvider).active,
+          isTrue,
+        );
+
+        final result = RouterUtils.resolveOrgSlugMismatch(
+          ref: container.read(_refCaptureProvider),
+          orgSlug: orgA.slug,
+          branchSlug: allBranchesSlug,
+          currentPath: '/${orgA.slug}/$allBranchesSlug/dashboard',
+          uriPath: '/${orgA.slug}/$allBranchesSlug/dashboard',
+          uri: Uri(path: '/${orgA.slug}/$allBranchesSlug/dashboard'),
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
       'rewrites path to current org when scope is ready',
       () async {
         final container = buildContainer(

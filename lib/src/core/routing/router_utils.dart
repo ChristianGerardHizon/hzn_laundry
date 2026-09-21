@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -97,6 +98,42 @@ abstract class RouterUtils {
     final orgAsync = ref.read(currentOrganizationControllerProvider);
     final branchAsync = ref.read(currentBranchControllerProvider);
     return orgAsync.isLoading || branchAsync.isLoading;
+  }
+
+  /// True while the org/branch switch overlay is showing.
+  ///
+  /// During this window the URL often lags the controllers; Scope Recovery
+  /// must not tear down [AppRoot] (and the overlay) for a transient mismatch.
+  static bool isOrganizationSwitching(Ref ref) {
+    return ref.read(organizationSwitchOverlayProvider).active;
+  }
+
+  /// Redirect when the URL org slug does not match the current organization.
+  ///
+  /// Returns null to stay put while org/branch scope is still loading or an
+  /// intentional org/branch switch is in progress. Returns
+  /// [ScopeRecoveryRoute.path] when scope cannot be resolved after settling.
+  @visibleForTesting
+  static String? resolveOrgSlugMismatch({
+    required Ref ref,
+    required String orgSlug,
+    required String branchSlug,
+    required String currentPath,
+    required String uriPath,
+    required Uri uri,
+  }) {
+    if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
+    final prefix = _resolveScopePrefix(ref);
+    if (prefix == null) return ScopeRecoveryRoute.path;
+    final wrongPrefixLength = '/$orgSlug/$branchSlug'.length;
+    final suffix = currentPath.length > wrongPrefixLength
+        ? currentPath.substring(wrongPrefixLength)
+        : '';
+    // Prefer uriPath suffix when matchedLocation is incomplete.
+    final uriSuffix = uriPath.length > wrongPrefixLength
+        ? uriPath.substring(wrongPrefixLength)
+        : suffix;
+    return uri.replace(path: '$prefix$uriSuffix').toString();
   }
 
   /// Resolves `/orgSlug/branchSlug` from current org/branch controllers.
@@ -339,6 +376,7 @@ abstract class RouterUtils {
       if (prefix != null) {
         return state.uri.replace(path: '$prefix$uriPath').toString();
       }
+      if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
       return ScopeRecoveryRoute.path;
     }
 
@@ -353,17 +391,16 @@ abstract class RouterUtils {
       if (orgAsync.isLoading) return null;
       final org = orgAsync.value;
       if (org == null || org.slug != orgSlug) {
-        final prefix = _resolveScopePrefix(ref);
-        if (prefix == null) return ScopeRecoveryRoute.path;
-        final wrongPrefixLength = '/$orgSlug/$branchSlug'.length;
-        final suffix = currentPath.length > wrongPrefixLength
-            ? currentPath.substring(wrongPrefixLength)
-            : '';
-        // Prefer uriPath suffix when matchedLocation is incomplete.
-        final uriSuffix = uriPath.length > wrongPrefixLength
-            ? uriPath.substring(wrongPrefixLength)
-            : suffix;
-        return state.uri.replace(path: '$prefix$uriSuffix').toString();
+        // Org switch updates the controller before context.go rewrites the
+        // URL; branch often still loading. Wait instead of Scope Recovery.
+        return resolveOrgSlugMismatch(
+          ref: ref,
+          orgSlug: orgSlug,
+          branchSlug: branchSlug,
+          currentPath: currentPath,
+          uriPath: uriPath,
+          uri: state.uri,
+        );
       }
 
       final branchesAsync = ref.read(branchesControllerProvider);
@@ -389,6 +426,7 @@ abstract class RouterUtils {
       }
 
       if (!branchValid) {
+        if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
         return homePathFor(ref) ?? ScopeRecoveryRoute.path;
       }
 

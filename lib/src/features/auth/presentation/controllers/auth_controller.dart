@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
 import '../../../../core/routing/pending_redirect_provider.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_state.dart';
 
@@ -79,6 +80,9 @@ class AuthController extends _$AuthController {
   Future<void> logout() async {
     addBreadcrumb('Logout', category: 'auth');
     ref.read(pendingRedirectProvider.notifier).consume();
+    await ref
+        .read(currentOrganizationControllerProvider.notifier)
+        .clearPersistedOrganization();
     await _repository.logout();
     state = const AsyncData(null);
   }

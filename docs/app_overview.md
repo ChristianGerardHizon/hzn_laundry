@@ -636,6 +636,7 @@ lib/src/
 
 ---
 
+| Sep 22 | Org select clears on logout | Logout deletes `CURRENT_ORGANIZATION_ID`; next login shows `/select-organization` unless a last-used org is still persisted for the session |
 | Sep 22 | Org create requires subscription | Create-organization wizard includes a required Subscription step; `POST /api/organizations` assigns the package in the same transaction |
 | Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |
 | Sep 21 | Android Google login | Continue with Google on Android via PocketBase browser OAuth (same invite-only hook as web); iOS still OTP/password only |

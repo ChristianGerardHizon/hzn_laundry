@@ -31,9 +31,11 @@ class SelectOrganizationPage extends HookConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final orgAsync = ref.watch(currentOrganizationControllerProvider);
-    final memberships =
-        ref.watch(currentOrganizationControllerProvider.notifier).memberships;
-    final lastUsedId = orgAsync.value?.id;
+    final orgNotifier =
+        ref.watch(currentOrganizationControllerProvider.notifier);
+    final memberships = orgNotifier.memberships;
+    final lastUsedId =
+        orgNotifier.hasPersistedSelection ? orgAsync.value?.id : null;
     final role = ref.watch(currentUserRoleProvider).value;
     final isAdmin = role?.isAdmin ?? false;
     final selectingId = useState<String?>(null);

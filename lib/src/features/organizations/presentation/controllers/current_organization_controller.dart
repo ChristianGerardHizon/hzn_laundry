@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -122,16 +124,30 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
           orElse: () => null,
         );
     _resolvedFromPersistence = match != null;
-    return (match ?? memberships.first).organization;
+    // No fake default: without a valid persisted id the picker must show,
+    // and "Last used" must not highlight memberships.first.
+    return match?.organization;
   }
 
-  Future<void> switchOrganization(String id) async {
+  /// Switches to [id] under the switch overlay.
+  ///
+  /// [afterSelect] runs inside the overlay (after the org is persisted) so
+  /// callers can update the URL before the overlay clears — otherwise redirect
+  /// can briefly send the user to Scope Recovery when the URL still has the
+  /// previous org slug.
+  Future<void> switchOrganization(
+    String id, {
+    FutureOr<void> Function()? afterSelect,
+  }) async {
     if (!canSwitchOrganization) return;
     if (state.value?.id == id) return;
     final name = membershipFor(id)?.organization?.name;
     await ref.read(organizationSwitchOverlayProvider.notifier).run(
           name: name,
-          action: () => selectOrganization(id),
+          action: () async {
+            await selectOrganization(id);
+            await afterSelect?.call();
+          },
         );
   }
 
@@ -147,6 +163,20 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
 
   Future<void> refresh() async {
     ref.invalidateSelf();
+  }
+
+  /// Removes the last-used org from secure storage (call on logout).
+  Future<void> clearPersistedOrganization() async {
+    _resolvedFromPersistence = false;
+    try {
+      final storage = ref.read(secureStorageProvider);
+      await storage.delete(key: _currentOrganizationStorageKey);
+    } catch (e, st) {
+      assert(() {
+        debugPrint('Failed to clear persisted organization: $e\n$st');
+        return true;
+      }());
+    }
   }
 
   Future<String?> _loadPersistedOrganization() async {
