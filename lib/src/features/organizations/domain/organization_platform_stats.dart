@@ -31,6 +31,11 @@ class OrganizationPlatformStats with OrganizationPlatformStatsMappable {
     required this.orderCount,
     required this.customerCount,
     required this.revenue,
+    this.subscriptionStatus,
+    this.periodEnd,
+    this.graceEndsAt,
+    this.pendingPaymentCount = 0,
+    this.packageName,
   });
 
   final String id;
@@ -42,6 +47,11 @@ class OrganizationPlatformStats with OrganizationPlatformStatsMappable {
   final int orderCount;
   final int customerCount;
   final num revenue;
+  final String? subscriptionStatus;
+  final DateTime? periodEnd;
+  final DateTime? graceEndsAt;
+  final int pendingPaymentCount;
+  final String? packageName;
 
   bool get isOnboarded => onboardingCompletedAt != null;
 }

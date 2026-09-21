@@ -6,7 +6,7 @@ part 'organization_selection_gate.g.dart';
 
 /// Session flag: user has explicitly chosen (or created) an organization.
 ///
-/// Cleared on logout so the next login with 2+ memberships shows the picker
+/// Cleared on logout so the next login with 1+ memberships shows the picker
 /// again. Kept in memory only — not persisted.
 @Riverpod(keepAlive: true)
 class OrganizationSelectionConfirmed

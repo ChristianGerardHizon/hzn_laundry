@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -10,7 +12,7 @@ import 'organization_scope_refresh.dart';
 
 part 'current_organization_controller.g.dart';
 
-const _currentOrganizationStorageKey = 'CURRENT_ORGANIZATION_ID';
+const currentOrganizationStorageKey = 'CURRENT_ORGANIZATION_ID';
 
 /// Whether the full-screen org/branch-switch loader is showing.
 class OrganizationSwitchOverlayState {
@@ -62,6 +64,11 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
       state = const OrganizationSwitchOverlayState();
     }
   }
+
+  /// Forces the overlay off (e.g. on logout so AbsorbPointer cannot stick).
+  void clear() {
+    state = const OrganizationSwitchOverlayState();
+  }
 }
 
 @Riverpod(keepAlive: true)
@@ -76,7 +83,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
   bool get canSwitchOrganization => _memberships.length > 1;
 
   /// True when the user must pick an org on the post-login selection page.
-  bool get requiresSelection => _memberships.length > 1;
+  bool get requiresSelection => _memberships.isNotEmpty;
 
   /// True when secure storage already has a membership the user belongs to.
   bool get hasPersistedSelection => _resolvedFromPersistence;
@@ -115,10 +122,6 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
       _resolvedFromPersistence = false;
       return null;
     }
-    if (memberships.length == 1) {
-      _resolvedFromPersistence = true;
-      return memberships.first.organization;
-    }
 
     final persistedId = await _loadPersistedOrganization();
     final match = memberships.cast<OrganizationMembership?>().firstWhere(
@@ -126,16 +129,30 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
           orElse: () => null,
         );
     _resolvedFromPersistence = match != null;
-    return (match ?? memberships.first).organization;
+    // No fake default: without a valid persisted id the picker must show,
+    // and "Last used" must not highlight memberships.first.
+    return match?.organization;
   }
 
-  Future<void> switchOrganization(String id) async {
+  /// Switches to [id] under the switch overlay.
+  ///
+  /// [afterSelect] runs inside the overlay (after the org is persisted) so
+  /// callers can update the URL before the overlay clears — otherwise redirect
+  /// can briefly send the user to Scope Recovery when the URL still has the
+  /// previous org slug.
+  Future<void> switchOrganization(
+    String id, {
+    FutureOr<void> Function()? afterSelect,
+  }) async {
     if (!canSwitchOrganization) return;
     if (state.value?.id == id) return;
     final name = membershipFor(id)?.organization?.name;
     await ref.read(organizationSwitchOverlayProvider.notifier).run(
           name: name,
-          action: () => selectOrganization(id),
+          action: () async {
+            await selectOrganization(id);
+            await afterSelect?.call();
+          },
         );
   }
 
@@ -153,10 +170,24 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     ref.invalidateSelf();
   }
 
+  /// Removes the last-used org from secure storage (call on logout).
+  Future<void> clearPersistedOrganization() async {
+    _resolvedFromPersistence = false;
+    try {
+      final storage = ref.read(secureStorageProvider);
+      await storage.delete(key: currentOrganizationStorageKey);
+    } catch (e, st) {
+      assert(() {
+        debugPrint('Failed to clear persisted organization: $e\n$st');
+        return true;
+      }());
+    }
+  }
+
   Future<String?> _loadPersistedOrganization() async {
     try {
       final storage = ref.read(secureStorageProvider);
-      return await storage.read(key: _currentOrganizationStorageKey);
+      return await storage.read(key: currentOrganizationStorageKey);
     } catch (e, st) {
       assert(() {
         debugPrint('Failed to load persisted organization: $e\n$st');
@@ -170,7 +201,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     try {
       final storage = ref.read(secureStorageProvider);
       await storage.write(
-        key: _currentOrganizationStorageKey,
+        key: currentOrganizationStorageKey,
         value: organizationId,
       );
     } catch (e, st) {

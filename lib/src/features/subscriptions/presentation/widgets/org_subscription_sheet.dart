@@ -1,0 +1,592 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../organizations/domain/organization_platform_stats.dart';
+import '../../../organizations/presentation/controllers/organization_platform_stats_controller.dart';
+import '../../data/repositories/subscription_repository.dart';
+import '../../domain/billing_interval_unit.dart';
+import '../../domain/subscription_package.dart';
+import '../../domain/subscription_status.dart';
+import '../controllers/packages_controller.dart';
+
+const _kBrandTeal = Color(0xFF45A9AB);
+const _kInk = Color(0xFF0B0B0B);
+const _kSurface = Color(0xFF141414);
+const _kMuted = Color(0xFF9CA3AF);
+
+/// Opens the org subscription management bottom sheet.
+Future<void> showOrgSubscriptionSheet(
+  BuildContext context,
+  OrganizationPlatformStats org,
+) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: _kSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) => OrgSubscriptionSheet(org: org),
+  );
+}
+
+/// Bottom sheet for managing one organization's subscription.
+class OrgSubscriptionSheet extends HookConsumerWidget {
+  const OrgSubscriptionSheet({super.key, required this.org});
+
+  final OrganizationPlatformStats org;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final dateFmt = useMemoized(() => DateFormat.yMMMd());
+    final status = _parseStatus(org.subscriptionStatus);
+    final hasSubscription = org.subscriptionStatus != null &&
+        org.subscriptionStatus!.isNotEmpty;
+
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 16,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _kMuted.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    org.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    t.subscriptions.orgDetails,
+                    style: const TextStyle(color: _kMuted),
+                  ),
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: t.subscriptions.packageName,
+                    value: org.packageName?.isNotEmpty == true
+                        ? org.packageName!
+                        : t.subscriptions.noSubscription,
+                  ),
+                  _DetailRow(
+                    label: t.subscriptions.subscription,
+                    value: hasSubscription
+                        ? _statusLabel(t, status)
+                        : t.subscriptions.noSubscription,
+                  ),
+                  if (org.periodEnd != null)
+                    _DetailRow(
+                      label: t.subscriptions.periodEnds,
+                      value: dateFmt.format(org.periodEnd!.toLocal()),
+                    ),
+                  if (org.graceEndsAt != null)
+                    _DetailRow(
+                      label: t.subscriptions.graceEnds,
+                      value: dateFmt.format(org.graceEndsAt!.toLocal()),
+                    ),
+                  _DetailRow(
+                    label: t.subscriptions.pendingProofs,
+                    value: '${org.pendingPaymentCount}',
+                  ),
+                  if (org.pendingPaymentCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.amber.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        t.subscriptions.pendingPayments,
+                        style: TextStyle(
+                          color: Colors.amber.shade200,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () => _showAssignDialog(context, ref),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _kBrandTeal,
+                      foregroundColor: _kInk,
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    icon: const Icon(Icons.card_membership_outlined),
+                    label: Text(
+                      hasSubscription
+                          ? t.subscriptions.changePackage
+                          : t.subscriptions.assignPackage,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => _showUnlockDialog(context, ref),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _kBrandTeal,
+                      side: const BorderSide(color: _kBrandTeal),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    icon: const Icon(Icons.lock_open_outlined),
+                    label: Text(t.subscriptions.manualUnlock),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showAssignDialog(BuildContext context, WidgetRef ref) async {
+    final t = Translations.of(context);
+    final assigned = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _AssignPackageDialog(organizationId: org.id),
+    );
+    if (!context.mounted) return;
+    if (assigned == true) {
+      showSuccessSnackBar(
+        context,
+        message: t.subscriptions.assignSuccess,
+      );
+      context.pop();
+    }
+  }
+
+  Future<void> _showUnlockDialog(BuildContext context, WidgetRef ref) async {
+    final t = Translations.of(context);
+    final unlocked = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _UnlockDialog(organizationId: org.id),
+    );
+    if (!context.mounted) return;
+    if (unlocked == true) {
+      showSuccessSnackBar(
+        context,
+        message: t.subscriptions.unlockSuccess,
+      );
+      context.pop();
+    }
+  }
+}
+
+class _UnlockDialog extends HookConsumerWidget {
+  const _UnlockDialog({required this.organizationId});
+
+  final String organizationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final until = useState(DateTime.now().add(const Duration(days: 7)));
+    final isSaving = useState(false);
+    final noteController = useTextEditingController();
+
+    Future<void> unlock() async {
+      if (isSaving.value) return;
+      isSaving.value = true;
+      try {
+        final result = await ref
+            .read(subscriptionRepositoryProvider)
+            .unlockOrganization(
+              organizationId,
+              until: until.value,
+              note: noteController.text.trim().isEmpty
+                  ? null
+                  : noteController.text.trim(),
+            );
+        if (!context.mounted) return;
+        result.fold(
+          (_) => showErrorSnackBar(
+            context,
+            message: t.subscriptions.unlockFailed,
+            useRootMessenger: false,
+          ),
+          (_) {
+            ref
+                .read(organizationPlatformStatsControllerProvider.notifier)
+                .refresh();
+            context.pop(true);
+          },
+        );
+      } finally {
+        if (context.mounted) isSaving.value = false;
+      }
+    }
+
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) => AlertDialog(
+          backgroundColor: _kSurface,
+          title: Text(t.subscriptions.manualUnlock),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.subscriptions.unlockUntil),
+                subtitle: Text(
+                  DateFormat.yMMMd().add_jm().format(until.value),
+                ),
+                trailing: const Icon(Icons.calendar_today, color: _kBrandTeal),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: until.value,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date == null || !context.mounted) return;
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(until.value),
+                  );
+                  if (time == null) {
+                    until.value = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      until.value.hour,
+                      until.value.minute,
+                    );
+                  } else {
+                    until.value = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      time.hour,
+                      time.minute,
+                    );
+                  }
+                },
+              ),
+              TextField(
+                controller: noteController,
+                decoration: InputDecoration(
+                  labelText: t.subscriptions.adminNote,
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving.value ? null : () => context.pop(),
+              child: Text(t.common.cancel),
+            ),
+            FilledButton(
+              onPressed: isSaving.value ? null : unlock,
+              style: FilledButton.styleFrom(
+                backgroundColor: _kBrandTeal,
+                foregroundColor: _kInk,
+              ),
+              child: isSaving.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(t.subscriptions.manualUnlock),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AssignPackageDialog extends HookConsumerWidget {
+  const _AssignPackageDialog({required this.organizationId});
+
+  final String organizationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
+    final isSaving = useState(false);
+    final useCustom = useState(false);
+    final packagesAsync = ref.watch(packagesControllerProvider());
+
+    Future<void> assign() async {
+      if (!formKey.currentState!.saveAndValidate()) return;
+      if (isSaving.value) return;
+      isSaving.value = true;
+      try {
+        final values = formKey.currentState!.value;
+        final result = useCustom.value
+            ? await ref.read(subscriptionRepositoryProvider).assignSubscription(
+                  organizationId,
+                  customPackage: {
+                    'name': (values['customName'] as String).trim(),
+                    'description':
+                        (values['customDescription'] as String?)?.trim() ?? '',
+                    'price': num.parse(values['customPrice'].toString()),
+                    'intervalCount':
+                        int.parse(values['customIntervalCount'].toString()),
+                    'intervalUnit':
+                        (values['customIntervalUnit'] as BillingIntervalUnit)
+                            .name,
+                  },
+                )
+            : await ref.read(subscriptionRepositoryProvider).assignSubscription(
+                  organizationId,
+                  packageId: values['packageId'] as String,
+                );
+
+        if (!context.mounted) return;
+        result.fold(
+          (_) => showErrorSnackBar(
+            context,
+            message: t.subscriptions.assignFailed,
+            useRootMessenger: false,
+          ),
+          (_) {
+            ref
+                .read(organizationPlatformStatsControllerProvider.notifier)
+                .refresh();
+            context.pop(true);
+          },
+        );
+      } finally {
+        if (context.mounted) isSaving.value = false;
+      }
+    }
+
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) => AlertDialog(
+          backgroundColor: _kSurface,
+          title: Text(t.subscriptions.assignPackage),
+          content: SizedBox(
+            width: 440,
+            child: FormBuilder(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(t.subscriptions.customPackage),
+                      value: useCustom.value,
+                      activeThumbColor: _kBrandTeal,
+                      onChanged: (v) => useCustom.value = v,
+                    ),
+                    const SizedBox(height: 8),
+                    if (!useCustom.value)
+                      packagesAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(color: _kBrandTeal),
+                        ),
+                        error: (e, _) => Text('$e'),
+                        data: (packages) {
+                          final premade = packages
+                              .where((p) => p.isPremade && p.isActive)
+                              .toList();
+                          return FormBuilderDropdown<String>(
+                            name: 'packageId',
+                            decoration: InputDecoration(
+                              labelText: t.subscriptions.selectPackage,
+                            ),
+                            items: premade
+                                .map(
+                                  (SubscriptionPackage p) => DropdownMenuItem(
+                                    value: p.id,
+                                    child: Text(
+                                      '${p.name} · '
+                                      '${NumberFormat.currency(symbol: '₱', decimalDigits: 2).format(p.price)}',
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            validator: FormBuilderValidators.required(),
+                          );
+                        },
+                      )
+                    else ...[
+                      FormBuilderTextField(
+                        name: 'customName',
+                        decoration: InputDecoration(
+                          labelText: t.subscriptions.packageName,
+                        ),
+                        validator: FormBuilderValidators.required(),
+                      ),
+                      const SizedBox(height: 10),
+                      FormBuilderTextField(
+                        name: 'customDescription',
+                        decoration: InputDecoration(
+                          labelText: t.subscriptions.packageDescription,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      FormBuilderTextField(
+                        name: 'customPrice',
+                        decoration: InputDecoration(
+                          labelText: t.subscriptions.packagePrice,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                          FormBuilderValidators.numeric(),
+                        ]),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FormBuilderTextField(
+                              name: 'customIntervalCount',
+                              initialValue: '1',
+                              decoration: InputDecoration(
+                                labelText: t.subscriptions.intervalCount,
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: FormBuilderValidators.compose([
+                                FormBuilderValidators.required(),
+                                FormBuilderValidators.integer(),
+                                FormBuilderValidators.min(1),
+                              ]),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FormBuilderDropdown<BillingIntervalUnit>(
+                              name: 'customIntervalUnit',
+                              initialValue: BillingIntervalUnit.month,
+                              decoration: InputDecoration(
+                                labelText: t.subscriptions.intervalUnit,
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: BillingIntervalUnit.day,
+                                  child: Text(t.subscriptions.intervalDay),
+                                ),
+                                DropdownMenuItem(
+                                  value: BillingIntervalUnit.month,
+                                  child: Text(t.subscriptions.intervalMonth),
+                                ),
+                                DropdownMenuItem(
+                                  value: BillingIntervalUnit.year,
+                                  child: Text(t.subscriptions.intervalYear),
+                                ),
+                              ],
+                              validator: FormBuilderValidators.required(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving.value ? null : () => context.pop(),
+              child: Text(t.common.cancel),
+            ),
+            FilledButton(
+              onPressed: isSaving.value ? null : assign,
+              style: FilledButton.styleFrom(
+                backgroundColor: _kBrandTeal,
+                foregroundColor: _kInk,
+              ),
+              child: isSaving.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(t.subscriptions.assignPackage),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(color: _kMuted, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+SubscriptionStatus? _parseStatus(String? raw) {
+  if (raw == null || raw.isEmpty) return null;
+  return SubscriptionStatus.fromString(raw);
+}
+
+String _statusLabel(Translations t, SubscriptionStatus? status) {
+  if (status == null) return t.subscriptions.noSubscription;
+  return switch (status) {
+    SubscriptionStatus.active => t.subscriptions.statusActive,
+    SubscriptionStatus.grace => t.subscriptions.statusGrace,
+    SubscriptionStatus.locked => t.subscriptions.statusLocked,
+    SubscriptionStatus.cancelled => t.subscriptions.statusCancelled,
+  };
+}

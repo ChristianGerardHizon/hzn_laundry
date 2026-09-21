@@ -35,5 +35,12 @@
     "loginCodeSent(email)": "Nagpadala kami ng login code sa $email",
     "resendLoginCode": "Ipadala ulit ang code",
     "resendLoginCodeCooldown(seconds)": "Ipadala ulit sa ${seconds}s",
-    "loginCodeSendFailed": "Hindi maipadala ang login code. Subukan ulit mamaya."
+    "loginCodeSendFailed": "Hindi maipadala ang login code. Subukan ulit mamaya.",
+    "scopeRecoveryTitle": "Hindi mabuksan ang workspace",
+    "scopeRecoveryNoMembership": "Hindi pa naka-assign ang account mo sa organization. Humingi ng invite sa admin, tapos subukan ulit.",
+    "scopeRecoveryOrgUnavailable": "Hindi ma-load ang organization mo. Makipag-ugnayan sa support kung paulit-ulit ito.",
+    "scopeRecoveryEmptyOrgSlug": "Walang URL slug ang organization mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.",
+    "scopeRecoveryNoBranch": "Walang available na branch para sa organization mo. Magdagdag ng branch ang admin, tapos subukan ulit.",
+    "scopeRecoveryEmptyBranchSlug": "Walang URL slug ang branch mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.",
+    "scopeRecoveryGeneric": "Hindi namin mabuksan ang workspace pagkatapos mag-login. Subukan ulit, o mag-logout at mag-login muli."
 }

@@ -44,6 +44,7 @@ class TranslationsTl with BaseTranslations<AppLocale, Translations> implements T
 	@override late final _TranslationsNavigationTl navigation = _TranslationsNavigationTl._(_root);
 	@override late final _TranslationsOrganizationsTl organizations = _TranslationsOrganizationsTl._(_root);
 	@override late final _TranslationsSortTl sort = _TranslationsSortTl._(_root);
+	@override late final _TranslationsSubscriptionsTl subscriptions = _TranslationsSubscriptionsTl._(_root);
 	@override late final _TranslationsValidationTl validation = _TranslationsValidationTl._(_root);
 }
 
@@ -91,6 +92,13 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get resendLoginCode => 'Ipadala ulit ang code';
 	@override String resendLoginCodeCooldown({required Object seconds}) => 'Ipadala ulit sa ${seconds}s';
 	@override String get loginCodeSendFailed => 'Hindi maipadala ang login code. Subukan ulit mamaya.';
+	@override String get scopeRecoveryTitle => 'Hindi mabuksan ang workspace';
+	@override String get scopeRecoveryNoMembership => 'Hindi pa naka-assign ang account mo sa organization. Humingi ng invite sa admin, tapos subukan ulit.';
+	@override String get scopeRecoveryOrgUnavailable => 'Hindi ma-load ang organization mo. Makipag-ugnayan sa support kung paulit-ulit ito.';
+	@override String get scopeRecoveryEmptyOrgSlug => 'Walang URL slug ang organization mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.';
+	@override String get scopeRecoveryNoBranch => 'Walang available na branch para sa organization mo. Magdagdag ng branch ang admin, tapos subukan ulit.';
+	@override String get scopeRecoveryEmptyBranchSlug => 'Walang URL slug ang branch mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.';
+	@override String get scopeRecoveryGeneric => 'Hindi namin mabuksan ang workspace pagkatapos mag-login. Subukan ulit, o mag-logout at mag-login muli.';
 }
 
 // Path: common
@@ -278,12 +286,15 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get setupTitle => 'I-setup ang iyong organisasyon';
 	@override String get stepDetails => 'Mga detalye ng organisasyon';
 	@override String get stepBranch => 'Gumawa ng unang sangay';
+	@override String get stepSubscription => 'Pumili ng subscription';
 	@override String get stepInvite => 'Imbitahan ang iyong team';
 	@override String get stepReview => 'Suriin at gawin';
 	@override String get stepDetailsShort => 'Detalye';
 	@override String get stepBranchShort => 'Sangay';
+	@override String get stepSubscriptionShort => 'Plan';
 	@override String get stepInviteShort => 'Team';
 	@override String get stepReviewShort => 'Suriin';
+	@override String get subscriptionRequired => 'Pumili ng subscription package para magpatuloy.';
 	@override String get next => 'Susunod';
 	@override String get back => 'Bumalik';
 	@override String get skip => 'Laktawan';
@@ -366,6 +377,87 @@ class _TranslationsSortTl implements TranslationsSortEn {
 	@override String get status => 'Katayuan';
 }
 
+// Path: subscriptions
+class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
+	_TranslationsSubscriptionsTl._(this._root);
+
+	final TranslationsTl _root; // ignore: unused_field
+
+	// Translations
+	@override String get tabOverview => 'Overview';
+	@override String get tabPackages => 'Mga Package';
+	@override String get tabPayments => 'Mga Bayad';
+	@override String get tabBilling => 'Billing';
+	@override String get subscription => 'Subscription';
+	@override String get noSubscription => 'Walang subscription';
+	@override String get statusActive => 'Aktibo';
+	@override String get statusGrace => 'Grace';
+	@override String get statusLocked => 'Naka-lock';
+	@override String get statusCancelled => 'Kinansela';
+	@override String get periodEnds => 'Magtatapos ang period';
+	@override String get graceEnds => 'Magtatapos ang grace';
+	@override String get pendingProofs => 'Pending na proof';
+	@override String get assignPackage => 'Mag-assign ng package';
+	@override String get changePackage => 'Palitan ang package';
+	@override String get manualUnlock => 'Manual unlock';
+	@override String get unlockUntil => 'I-unlock hanggang';
+	@override String get unlockSuccess => 'Na-unlock ang organization';
+	@override String get unlockFailed => 'Hindi ma-unlock ang organization';
+	@override String get packageName => 'Pangalan ng package';
+	@override String get packageDescription => 'Description';
+	@override String get packagePrice => 'Presyo (₱)';
+	@override String get intervalCount => 'Bawat';
+	@override String get intervalUnit => 'Interval';
+	@override String get intervalDay => 'Araw';
+	@override String get intervalMonth => 'Buwan';
+	@override String get intervalYear => 'Taon';
+	@override String get isPremade => 'Premade package';
+	@override String get createPackage => 'Gumawa ng package';
+	@override String get editPackage => 'I-edit ang package';
+	@override String get deletePackage => 'Burahin ang package';
+	@override String get packageCreated => 'Nagawa ang package';
+	@override String get packageUpdated => 'Na-update ang package';
+	@override String get packageDeleted => 'Nabura ang package';
+	@override String get noPackages => 'Wala pang package.';
+	@override String get selectPackage => 'Pumili ng package';
+	@override String get customPackage => 'Custom package';
+	@override String get assignSuccess => 'Na-assign ang subscription';
+	@override String get assignFailed => 'Hindi ma-assign ang subscription';
+	@override String get pendingPayments => 'Pending na payment proof';
+	@override String get noPendingPayments => 'Walang pending na payment proof.';
+	@override String get approve => 'Aprubahan';
+	@override String get reject => 'Tanggihan';
+	@override String get adminNote => 'Admin note';
+	@override String get paymentApproved => 'Naaprubahan ang bayad';
+	@override String get paymentRejected => 'Tinanggihan ang bayad';
+	@override String get reviewFailed => 'Hindi mareview ang bayad';
+	@override String get amount => 'Halaga';
+	@override String get submitted => 'Naisubmit';
+	@override String get payeeName => 'Payee name';
+	@override String get instructions => 'Mga tagubilin sa bayad';
+	@override String get defaultGraceDays => 'Grace days';
+	@override String get qrphImage => 'QRPH image';
+	@override String get uploadQrph => 'Mag-upload ng QRPH';
+	@override String get billingSaved => 'Nasave ang billing settings';
+	@override String get billingSaveFailed => 'Hindi masave ang billing settings';
+	@override String get payTitle => 'Magbayad ng subscription';
+	@override String get paySubtitle => 'I-scan ang QRPH, ipadala ang exact amount, tapos i-upload ang screenshot ng transaction.';
+	@override String get uploadProof => 'Mag-upload ng payment screenshot';
+	@override String get submitProof => 'I-submit para i-review';
+	@override String get proofSubmitted => 'Naisubmit ang payment proof';
+	@override String get proofSubmitFailed => 'Hindi masubmit ang payment proof';
+	@override String get proofPending => 'Pending pa ang review ng payment proof mo.';
+	@override String get proofRejected => 'Tinanggihan ang huling payment proof mo.';
+	@override String get noActiveSubscription => 'Walang active subscription ang organization na ito.';
+	@override String get lockedTitle => 'Naka-lock ang subscription';
+	@override String get lockedMessage => 'Naka-lock ang access hanggang ma-confirm ang bayad. Mag-upload ng QRPH transfer screenshot para maibalik ang access.';
+	@override String get graceBanner => 'Nasa grace period ang subscription. Magbayad para hindi mawalan ng access.';
+	@override String get dueSoonBanner => 'Malapit nang due ang subscription payment.';
+	@override String get goToPayment => 'Pumunta sa bayad';
+	@override String get orgDetails => 'Detalye ng organization';
+	@override String get days => 'araw';
+}
+
 // Path: validation
 class _TranslationsValidationTl implements TranslationsValidationEn {
 	_TranslationsValidationTl._(this._root);
@@ -428,6 +520,13 @@ extension on TranslationsTl {
 			'auth.resendLoginCode' => 'Ipadala ulit ang code',
 			'auth.resendLoginCodeCooldown' => ({required Object seconds}) => 'Ipadala ulit sa ${seconds}s',
 			'auth.loginCodeSendFailed' => 'Hindi maipadala ang login code. Subukan ulit mamaya.',
+			'auth.scopeRecoveryTitle' => 'Hindi mabuksan ang workspace',
+			'auth.scopeRecoveryNoMembership' => 'Hindi pa naka-assign ang account mo sa organization. Humingi ng invite sa admin, tapos subukan ulit.',
+			'auth.scopeRecoveryOrgUnavailable' => 'Hindi ma-load ang organization mo. Makipag-ugnayan sa support kung paulit-ulit ito.',
+			'auth.scopeRecoveryEmptyOrgSlug' => 'Walang URL slug ang organization mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.',
+			'auth.scopeRecoveryNoBranch' => 'Walang available na branch para sa organization mo. Magdagdag ng branch ang admin, tapos subukan ulit.',
+			'auth.scopeRecoveryEmptyBranchSlug' => 'Walang URL slug ang branch mo, kaya hindi mabuksan ang dashboard. Makipag-ugnayan sa support.',
+			'auth.scopeRecoveryGeneric' => 'Hindi namin mabuksan ang workspace pagkatapos mag-login. Subukan ulit, o mag-logout at mag-login muli.',
 			'common.appName' => 'HZN Laundry',
 			'common.placeholderText' => 'N/A',
 			'common.save' => 'I-save',
@@ -570,12 +669,15 @@ extension on TranslationsTl {
 			'organizations.setupTitle' => 'I-setup ang iyong organisasyon',
 			'organizations.stepDetails' => 'Mga detalye ng organisasyon',
 			'organizations.stepBranch' => 'Gumawa ng unang sangay',
+			'organizations.stepSubscription' => 'Pumili ng subscription',
 			'organizations.stepInvite' => 'Imbitahan ang iyong team',
 			'organizations.stepReview' => 'Suriin at gawin',
 			'organizations.stepDetailsShort' => 'Detalye',
 			'organizations.stepBranchShort' => 'Sangay',
+			'organizations.stepSubscriptionShort' => 'Plan',
 			'organizations.stepInviteShort' => 'Team',
 			'organizations.stepReviewShort' => 'Suriin',
+			'organizations.subscriptionRequired' => 'Pumili ng subscription package para magpatuloy.',
 			'organizations.next' => 'Susunod',
 			'organizations.back' => 'Bumalik',
 			'organizations.skip' => 'Laktawan',
@@ -644,6 +746,78 @@ extension on TranslationsTl {
 			'sort.stock' => 'Stock',
 			'sort.expiration' => 'Expiration',
 			'sort.status' => 'Katayuan',
+			'subscriptions.tabOverview' => 'Overview',
+			'subscriptions.tabPackages' => 'Mga Package',
+			'subscriptions.tabPayments' => 'Mga Bayad',
+			'subscriptions.tabBilling' => 'Billing',
+			'subscriptions.subscription' => 'Subscription',
+			'subscriptions.noSubscription' => 'Walang subscription',
+			'subscriptions.statusActive' => 'Aktibo',
+			'subscriptions.statusGrace' => 'Grace',
+			'subscriptions.statusLocked' => 'Naka-lock',
+			'subscriptions.statusCancelled' => 'Kinansela',
+			'subscriptions.periodEnds' => 'Magtatapos ang period',
+			'subscriptions.graceEnds' => 'Magtatapos ang grace',
+			'subscriptions.pendingProofs' => 'Pending na proof',
+			'subscriptions.assignPackage' => 'Mag-assign ng package',
+			'subscriptions.changePackage' => 'Palitan ang package',
+			'subscriptions.manualUnlock' => 'Manual unlock',
+			'subscriptions.unlockUntil' => 'I-unlock hanggang',
+			'subscriptions.unlockSuccess' => 'Na-unlock ang organization',
+			'subscriptions.unlockFailed' => 'Hindi ma-unlock ang organization',
+			'subscriptions.packageName' => 'Pangalan ng package',
+			'subscriptions.packageDescription' => 'Description',
+			'subscriptions.packagePrice' => 'Presyo (₱)',
+			'subscriptions.intervalCount' => 'Bawat',
+			'subscriptions.intervalUnit' => 'Interval',
+			'subscriptions.intervalDay' => 'Araw',
+			'subscriptions.intervalMonth' => 'Buwan',
+			'subscriptions.intervalYear' => 'Taon',
+			'subscriptions.isPremade' => 'Premade package',
+			'subscriptions.createPackage' => 'Gumawa ng package',
+			'subscriptions.editPackage' => 'I-edit ang package',
+			'subscriptions.deletePackage' => 'Burahin ang package',
+			'subscriptions.packageCreated' => 'Nagawa ang package',
+			'subscriptions.packageUpdated' => 'Na-update ang package',
+			'subscriptions.packageDeleted' => 'Nabura ang package',
+			'subscriptions.noPackages' => 'Wala pang package.',
+			'subscriptions.selectPackage' => 'Pumili ng package',
+			'subscriptions.customPackage' => 'Custom package',
+			'subscriptions.assignSuccess' => 'Na-assign ang subscription',
+			'subscriptions.assignFailed' => 'Hindi ma-assign ang subscription',
+			'subscriptions.pendingPayments' => 'Pending na payment proof',
+			'subscriptions.noPendingPayments' => 'Walang pending na payment proof.',
+			'subscriptions.approve' => 'Aprubahan',
+			'subscriptions.reject' => 'Tanggihan',
+			'subscriptions.adminNote' => 'Admin note',
+			'subscriptions.paymentApproved' => 'Naaprubahan ang bayad',
+			'subscriptions.paymentRejected' => 'Tinanggihan ang bayad',
+			'subscriptions.reviewFailed' => 'Hindi mareview ang bayad',
+			'subscriptions.amount' => 'Halaga',
+			'subscriptions.submitted' => 'Naisubmit',
+			'subscriptions.payeeName' => 'Payee name',
+			'subscriptions.instructions' => 'Mga tagubilin sa bayad',
+			'subscriptions.defaultGraceDays' => 'Grace days',
+			'subscriptions.qrphImage' => 'QRPH image',
+			'subscriptions.uploadQrph' => 'Mag-upload ng QRPH',
+			'subscriptions.billingSaved' => 'Nasave ang billing settings',
+			'subscriptions.billingSaveFailed' => 'Hindi masave ang billing settings',
+			'subscriptions.payTitle' => 'Magbayad ng subscription',
+			'subscriptions.paySubtitle' => 'I-scan ang QRPH, ipadala ang exact amount, tapos i-upload ang screenshot ng transaction.',
+			'subscriptions.uploadProof' => 'Mag-upload ng payment screenshot',
+			'subscriptions.submitProof' => 'I-submit para i-review',
+			'subscriptions.proofSubmitted' => 'Naisubmit ang payment proof',
+			'subscriptions.proofSubmitFailed' => 'Hindi masubmit ang payment proof',
+			'subscriptions.proofPending' => 'Pending pa ang review ng payment proof mo.',
+			'subscriptions.proofRejected' => 'Tinanggihan ang huling payment proof mo.',
+			'subscriptions.noActiveSubscription' => 'Walang active subscription ang organization na ito.',
+			'subscriptions.lockedTitle' => 'Naka-lock ang subscription',
+			'subscriptions.lockedMessage' => 'Naka-lock ang access hanggang ma-confirm ang bayad. Mag-upload ng QRPH transfer screenshot para maibalik ang access.',
+			'subscriptions.graceBanner' => 'Nasa grace period ang subscription. Magbayad para hindi mawalan ng access.',
+			'subscriptions.dueSoonBanner' => 'Malapit nang due ang subscription payment.',
+			'subscriptions.goToPayment' => 'Pumunta sa bayad',
+			'subscriptions.orgDetails' => 'Detalye ng organization',
+			'subscriptions.days' => 'araw',
 			'validation.required' => 'Kinakailangan ang field na ito',
 			'validation.invalidEmail' => 'Maglagay ng valid na email address',
 			'validation.invalidPhone' => 'Maglagay ng valid na numero ng telepono',

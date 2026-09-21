@@ -29,6 +29,7 @@ import 'routes/sales_history.routes.dart';
 import 'routes/reports.routes.dart';
 import 'routes/activities.routes.dart';
 import 'routes/promos.routes.dart';
+import 'routes/subscriptions.routes.dart';
 import 'routes/system.routes.dart';
 import 'routes/version_lock.routes.dart';
 
@@ -67,10 +68,12 @@ GoRouter router(Ref ref) {
       $loginRoute,
       $forgotPasswordRoute,
       $authLoadingRoute,
+      $scopeRecoveryRoute,
 
       // Post-login org selection (outside shell, auth required)
       $selectOrganizationRoute,
       $superAdminRoute,
+      $subscriptionPayRoute,
 
       // Org/branch-scoped main app. `:orgSlug`/`:branchSlug` are hand-written
       // so feature route `path:` constants stay unchanged. Navigate with

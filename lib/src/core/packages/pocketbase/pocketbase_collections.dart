@@ -86,4 +86,10 @@ abstract class PocketBaseCollections {
 
   // Settings
   static const String featureFlags = 'featureFlags';
+
+  // Subscriptions / platform billing
+  static const String subscriptionPackages = 'subscriptionPackages';
+  static const String organizationSubscriptions = 'organizationSubscriptions';
+  static const String subscriptionPayments = 'subscriptionPayments';
+  static const String platformBillingSettings = 'platformBillingSettings';
 }

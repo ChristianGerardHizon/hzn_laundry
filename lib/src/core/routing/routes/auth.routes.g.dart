@@ -11,6 +11,7 @@ List<RouteBase> get $appRoutes => [
       $loginRoute,
       $forgotPasswordRoute,
       $authLoadingRoute,
+      $scopeRecoveryRoute,
     ];
 
 RouteBase get $splashRoute => GoRouteData.$route(
@@ -107,6 +108,34 @@ mixin $AuthLoadingRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/auth-loading',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $scopeRecoveryRoute => GoRouteData.$route(
+      path: '/scope-recovery',
+      factory: $ScopeRecoveryRoute._fromState,
+    );
+
+mixin $ScopeRecoveryRoute on GoRouteData {
+  static ScopeRecoveryRoute _fromState(GoRouterState state) =>
+      const ScopeRecoveryRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/scope-recovery',
       );
 
   @override
