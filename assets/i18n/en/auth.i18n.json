@@ -35,5 +35,12 @@
     "loginCodeSent(email)": "We sent a login code to $email",
     "resendLoginCode": "Resend code",
     "resendLoginCodeCooldown(seconds)": "Resend in ${seconds}s",
-    "loginCodeSendFailed": "Could not send login code. Try again later."
+    "loginCodeSendFailed": "Could not send login code. Try again later.",
+    "scopeRecoveryTitle": "Can't open your workspace",
+    "scopeRecoveryNoMembership": "Your account isn't assigned to an organization yet. Ask an admin to invite you, then try again.",
+    "scopeRecoveryOrgUnavailable": "Your organization couldn't be loaded. Contact support if this keeps happening.",
+    "scopeRecoveryEmptyOrgSlug": "Your organization is missing a URL slug, so the app can't open the dashboard. Contact support.",
+    "scopeRecoveryNoBranch": "No branches are available for your organization. Ask an admin to add a branch, then try again.",
+    "scopeRecoveryEmptyBranchSlug": "Your branch is missing a URL slug, so the app can't open the dashboard. Contact support.",
+    "scopeRecoveryGeneric": "We couldn't open your workspace after login. Retry, or sign out and try again."
 }

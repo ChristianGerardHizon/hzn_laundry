@@ -6,6 +6,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/pos/presentation/cart_controller.dart';
+import '../../features/subscriptions/presentation/widgets/subscription_status_banner.dart';
 import '../../features/version_lock/presentation/controllers/play_store_update_provider.dart';
 import '../i18n/strings.g.dart';
 import '../packages/pocketbase/pb_connectivity_provider.dart';
@@ -277,7 +278,9 @@ class _AppRootState extends ConsumerState<AppRoot> {
                   const FullscreenToggleButton(),
                 ],
               ),
-              Expanded(child: widget.child),
+              Expanded(
+                child: SubscriptionLockGate(child: widget.child),
+              ),
             ],
           ),
         ),
@@ -331,7 +334,9 @@ class _AppRootState extends ConsumerState<AppRoot> {
                           const FullscreenToggleButton(),
                         ],
                       ),
-                      Expanded(child: widget.child),
+                      Expanded(
+                        child: SubscriptionLockGate(child: widget.child),
+                      ),
                     ],
                   ),
                 ),

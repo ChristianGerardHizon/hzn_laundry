@@ -11,6 +11,10 @@ This document contains all entities (domain models) in the project with their fi
 | Organizations | Organization | `organizations` | Multi-tenant laundry business |
 | Organizations | OrganizationMembership | `organizationMemberships` | User membership in an organization |
 | Organizations | OrganizationInvite | `organizationInvites` | Email invite to join an organization |
+| Subscriptions | SubscriptionPackage | `subscriptionPackages` | Premade or custom SaaS billing package |
+| Subscriptions | OrganizationSubscription | `organizationSubscriptions` | Per-org subscription assignment and access status |
+| Subscriptions | SubscriptionPayment | `subscriptionPayments` | QRPH payment proof awaiting Super Admin review |
+| Subscriptions | PlatformBillingSettings | `platformBillingSettings` | Platform QRPH image, payee, grace defaults |
 | Management | User | `users` | System users (all types) |
 | Management | UserRole | `userRoles` | Role definitions and permissions |
 | Management | Branch | `branches` | Business branches/locations |
@@ -238,6 +242,86 @@ Email invite to join an organization. Token is server-hidden; clients accept/rev
 **Collection:** `organizationInvites`
 
 Writes go through `POST /api/organization-invites`, `.../{id}/accept`, `.../{id}/revoke`, `.../{id}/decline`.
+
+---
+
+## Subscription / Platform Billing Domain
+
+SaaS billing for each organization (not customer laundry packages). Super Admin (`system.admin`) manages packages, assigns subscriptions, reviews QRPH payment proofs, and can manually unlock locked orgs. Writes go through custom hooks under `/api/super-admin/*` and `/api/organizations/{id}/subscription*`.
+
+### SubscriptionPackage
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `name` | String | Yes | Package name |
+| `description` | String | No | Details shown to Super Admin |
+| `price` | num | Yes | Amount in ₱ |
+| `intervalCount` | int | Yes | Billing every N units |
+| `intervalUnit` | String | Yes | `day`, `month`, or `year` |
+| `isPremade` | bool | Yes | Catalog package vs one-off custom |
+| `organizationId` | String (FK) | No | Set for custom packages tied to one org |
+| `isActive` | bool | Yes | Available for assignment |
+| `isDeleted` | bool | Yes | Soft delete |
+
+**Collection:** `subscriptionPackages`
+
+### OrganizationSubscription
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization |
+| `package` | String (FK) | Yes | FK to SubscriptionPackage |
+| `packageName` | String | Yes | Snapshot of package name |
+| `price` | num | Yes | Snapshot of price |
+| `intervalCount` | int | Yes | Snapshot |
+| `intervalUnit` | String | Yes | Snapshot |
+| `status` | String | Yes | `active`, `grace`, `locked`, or `cancelled` |
+| `periodStart` | DateTime | Yes | Current paid window start |
+| `periodEnd` | DateTime | Yes | Current paid window end (due date) |
+| `graceEndsAt` | DateTime | No | End of grace after overdue |
+| `nextReminderAt` | DateTime | No | Next reminder schedule |
+| `manualUnlockUntil` | DateTime | No | Super Admin temporary unlock |
+| `lastReminderSentAt` | DateTime | No | Last Resend reminder |
+| `isDeleted` | bool | Yes | Soft delete |
+
+**Collection:** `organizationSubscriptions`
+
+Access: after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Locked orgs see pay screen / lock interstitial only.
+
+### SubscriptionPayment
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization |
+| `subscription` | String (FK) | Yes | FK to OrganizationSubscription |
+| `amount` | num | Yes | Amount claimed paid |
+| `status` | String | Yes | `pending`, `approved`, or `rejected` |
+| `proofImage` | File | Yes | Transaction screenshot |
+| `note` | String | No | Org message |
+| `adminNote` | String | No | Super Admin note |
+| `submittedBy` | String (FK) | Yes | FK to User |
+| `reviewedBy` | String (FK) | No | FK to User |
+| `reviewedAt` | DateTime | No | Review timestamp |
+
+**Collection:** `subscriptionPayments`
+
+### PlatformBillingSettings
+
+Singleton platform row for QRPH and defaults.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `qrphImage` | File | No | Platform-wide QRPH barcode image |
+| `payeeName` | String | No | Payee label |
+| `instructions` | String | No | Shown on pay screen |
+| `defaultGraceDays` | int | Yes | Default 7 |
+| `reminderDaysBeforeDue` | List\<int> | No | e.g. `[3, 0]` |
+
+**Collection:** `platformBillingSettings`
 
 ---
 

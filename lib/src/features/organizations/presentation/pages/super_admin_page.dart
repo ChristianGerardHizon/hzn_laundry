@@ -9,6 +9,11 @@ import '../../../../core/routing/routes/auth.routes.dart';
 import '../../../../core/routing/routes/org_selection.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
+import '../../../subscriptions/domain/subscription_status.dart';
+import '../../../subscriptions/presentation/widgets/billing_settings_tab.dart';
+import '../../../subscriptions/presentation/widgets/org_subscription_sheet.dart';
+import '../../../subscriptions/presentation/widgets/packages_tab.dart';
+import '../../../subscriptions/presentation/widgets/payments_tab.dart';
 import '../../domain/organization_platform_stats.dart';
 import '../controllers/current_organization_controller.dart';
 import '../controllers/organization_platform_stats_controller.dart';
@@ -31,6 +36,7 @@ class SuperAdminPage extends HookConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final isCreating = useState(false);
     final searchQuery = useState('');
+    final tabController = useTabController(initialLength: 4);
     ref.watch(currentOrganizationControllerProvider);
     final statsAsync = ref.watch(organizationPlatformStatsControllerProvider);
 
@@ -113,7 +119,7 @@ class SuperAdminPage extends HookConsumerWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                         child: Column(
                           children: [
                             Assets.icons.appIconTransparent.image(
@@ -148,196 +154,42 @@ class SuperAdminPage extends HookConsumerWidget {
                           ],
                         ),
                       ),
+                      TabBar(
+                        controller: tabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        indicatorColor: _kBrandTeal,
+                        labelColor: _kBrandTeal,
+                        unselectedLabelColor: _kMuted,
+                        tabs: [
+                          Tab(text: t.subscriptions.tabOverview),
+                          Tab(text: t.subscriptions.tabPackages),
+                          Tab(text: t.subscriptions.tabPayments),
+                          Tab(text: t.subscriptions.tabBilling),
+                        ],
+                      ),
                       Expanded(
-                        child: statsAsync.when(
-                          loading: () => const Center(
-                            child: CircularProgressIndicator(
-                              color: _kBrandTeal,
-                            ),
-                          ),
-                          error: (e, _) => Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: ErrorState.fromError(
-                                e,
-                                onRetry: () => ref
-                                    .read(
-                                      organizationPlatformStatsControllerProvider
-                                          .notifier,
-                                    )
-                                    .refresh(),
-                              ),
-                            ),
-                          ),
-                          data: (data) {
-                            final query = searchQuery.value.trim().toLowerCase();
-                            final orgs = query.isEmpty
-                                ? data.organizations
-                                : data.organizations
-                                    .where(
-                                      (o) =>
-                                          o.name.toLowerCase().contains(query),
-                                    )
-                                    .toList();
-
-                            return RefreshIndicator(
-                              color: _kBrandTeal,
+                        child: TabBarView(
+                          controller: tabController,
+                          children: [
+                            _OverviewTab(
+                              statsAsync: statsAsync,
+                              searchQuery: searchQuery,
+                              currency: currency,
+                              compact: compact,
+                              t: t,
+                              scheme: scheme,
                               onRefresh: () => ref
                                   .read(
                                     organizationPlatformStatsControllerProvider
                                         .notifier,
                                   )
                                   .refresh(),
-                              child: CustomScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                slivers: [
-                                  SliverPadding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                    ),
-                                    sliver: SliverToBoxAdapter(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          Text(
-                                            t.organizations.platformOverview,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          _PlatformKpiGrid(
-                                            summary: data.summary,
-                                            currency: currency,
-                                            compact: compact,
-                                            t: t,
-                                          ),
-                                          const SizedBox(height: 24),
-                                          Text(
-                                            t.organizations.allOrganizations,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextField(
-                                            onChanged: (v) =>
-                                                searchQuery.value = v,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                            ),
-                                            decoration: InputDecoration(
-                                              hintText: t.organizations
-                                                  .searchOrganizations,
-                                              hintStyle: TextStyle(
-                                                color: _kMuted.withValues(
-                                                  alpha: 0.8,
-                                                ),
-                                              ),
-                                              prefixIcon: Icon(
-                                                Icons.search,
-                                                color: _kMuted.withValues(
-                                                  alpha: 0.9,
-                                                ),
-                                              ),
-                                              filled: true,
-                                              fillColor: _kSurface,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 14,
-                                              ),
-                                              border: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: const BorderSide(
-                                                  color: _kSurfaceBorder,
-                                                ),
-                                              ),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: const BorderSide(
-                                                  color: _kSurfaceBorder,
-                                                ),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                borderSide: const BorderSide(
-                                                  color: _kBrandTeal,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  if (data.organizations.isEmpty)
-                                    SliverFillRemaining(
-                                      hasScrollBody: false,
-                                      child: Center(
-                                        child: Text(
-                                          t.organizations.noOrganizationsYet,
-                                          style: TextStyle(
-                                            color: scheme.onSurface
-                                                .withValues(alpha: 0.62),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  else if (orgs.isEmpty)
-                                    SliverToBoxAdapter(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(24),
-                                        child: Center(
-                                          child: Text(
-                                            t.organizations
-                                                .noMatchingOrganizations,
-                                            style: TextStyle(
-                                              color: scheme.onSurface
-                                                  .withValues(alpha: 0.62),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    SliverPadding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        24,
-                                        0,
-                                        24,
-                                        24,
-                                      ),
-                                      sliver: SliverList.separated(
-                                        itemCount: orgs.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 10),
-                                        itemBuilder: (context, index) {
-                                          return _OrgStatsCard(
-                                            key: ValueKey(orgs[index].id),
-                                            org: orgs[index],
-                                            currency: currency,
-                                            compact: compact,
-                                            t: t,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          },
+                            ),
+                            const PackagesTab(),
+                            const PaymentsTab(),
+                            const BillingSettingsTab(),
+                          ],
                         ),
                       ),
                     ],
@@ -348,6 +200,171 @@ class SuperAdminPage extends HookConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _OverviewTab extends StatelessWidget {
+  const _OverviewTab({
+    required this.statsAsync,
+    required this.searchQuery,
+    required this.currency,
+    required this.compact,
+    required this.t,
+    required this.scheme,
+    required this.onRefresh,
+  });
+
+  final AsyncValue<OrganizationPlatformStatsResponse> statsAsync;
+  final ValueNotifier<String> searchQuery;
+  final NumberFormat currency;
+  final NumberFormat compact;
+  final Translations t;
+  final ColorScheme scheme;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return statsAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: _kBrandTeal),
+      ),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ErrorState.fromError(e, onRetry: onRefresh),
+        ),
+      ),
+      data: (data) {
+        final query = searchQuery.value.trim().toLowerCase();
+        final orgs = query.isEmpty
+            ? data.organizations
+            : data.organizations
+                .where((o) => o.name.toLowerCase().contains(query))
+                .toList();
+
+        return RefreshIndicator(
+          color: _kBrandTeal,
+          onRefresh: onRefresh,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 12),
+                      Text(
+                        t.organizations.platformOverview,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      _PlatformKpiGrid(
+                        summary: data.summary,
+                        currency: currency,
+                        compact: compact,
+                        t: t,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        t.organizations.allOrganizations,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        onChanged: (v) => searchQuery.value = v,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: t.organizations.searchOrganizations,
+                          hintStyle: TextStyle(
+                            color: _kMuted.withValues(alpha: 0.8),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: _kMuted.withValues(alpha: 0.9),
+                          ),
+                          filled: true,
+                          fillColor: _kSurface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: _kSurfaceBorder),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: _kSurfaceBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: _kBrandTeal),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+              if (data.organizations.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      t.organizations.noOrganizationsYet,
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.62),
+                      ),
+                    ),
+                  ),
+                )
+              else if (orgs.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        t.organizations.noMatchingOrganizations,
+                        style: TextStyle(
+                          color: scheme.onSurface.withValues(alpha: 0.62),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  sliver: SliverList.separated(
+                    itemCount: orgs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      return _OrgStatsCard(
+                        key: ValueKey(orgs[index].id),
+                        org: orgs[index],
+                        currency: currency,
+                        compact: compact,
+                        t: t,
+                        onTap: () =>
+                            showOrgSubscriptionSheet(context, orgs[index]),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -498,126 +515,181 @@ class _OrgStatsCard extends StatelessWidget {
     required this.currency,
     required this.compact,
     required this.t,
+    required this.onTap,
   });
 
   final OrganizationPlatformStats org;
   final NumberFormat currency;
   final NumberFormat compact;
   final Translations t;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final letter = org.name.isNotEmpty ? org.name[0].toUpperCase() : '?';
+    final subStatus = org.subscriptionStatus;
+    final hasSub = subStatus != null && subStatus.isNotEmpty;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: _kSurface.withValues(alpha: 0.92),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kSurfaceBorder),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: _kSurface.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _kSurfaceBorder),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: _kBrandTeal.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    letter,
-                    style: const TextStyle(
-                      color: _kBrandTeal,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        org.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _kBrandTeal.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      if (org.slug.isNotEmpty)
-                        Text(
-                          org.slug,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: _kMuted,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      child: Text(
+                        letter,
+                        style: const TextStyle(
+                          color: _kBrandTeal,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: org.isOnboarded
-                        ? _kBrandTeal.withValues(alpha: 0.16)
-                        : Colors.orange.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    org.isOnboarded
-                        ? t.organizations.onboarded
-                        : t.organizations.notOnboarded,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: org.isOnboarded ? _kBrandTeal : Colors.orangeAccent,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            org.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (org.slug.isNotEmpty)
+                            Text(
+                              org.slug,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: _kMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (org.packageName?.isNotEmpty == true)
+                            Text(
+                              org.packageName!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: _kBrandTeal.withValues(alpha: 0.9),
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _SubscriptionStatusBadge(
+                      status: hasSub ? subStatus : null,
+                      t: t,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _MetricChip(
+                      label: t.organizations.metricOrders,
+                      value: compact.format(org.orderCount),
+                    ),
+                    _MetricChip(
+                      label: t.organizations.metricCustomers,
+                      value: compact.format(org.customerCount),
+                    ),
+                    _MetricChip(
+                      label: t.organizations.kpiRevenue,
+                      value: currency.format(org.revenue),
+                    ),
+                    _MetricChip(
+                      label: t.organizations.metricBranches,
+                      value: compact.format(org.branchCount),
+                    ),
+                    _MetricChip(
+                      label: t.organizations.metricMembers,
+                      value: compact.format(org.memberCount),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _MetricChip(
-                  label: t.organizations.metricOrders,
-                  value: compact.format(org.orderCount),
-                ),
-                _MetricChip(
-                  label: t.organizations.metricCustomers,
-                  value: compact.format(org.customerCount),
-                ),
-                _MetricChip(
-                  label: t.organizations.kpiRevenue,
-                  value: currency.format(org.revenue),
-                ),
-                _MetricChip(
-                  label: t.organizations.metricBranches,
-                  value: compact.format(org.branchCount),
-                ),
-                _MetricChip(
-                  label: t.organizations.metricMembers,
-                  value: compact.format(org.memberCount),
-                ),
-              ],
-            ),
-          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionStatusBadge extends StatelessWidget {
+  const _SubscriptionStatusBadge({
+    required this.status,
+    required this.t,
+  });
+
+  final String? status;
+  final Translations t;
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = status == null || status!.isEmpty
+        ? null
+        : SubscriptionStatus.fromString(status);
+    final (label, color) = switch (parsed) {
+      SubscriptionStatus.active => (t.subscriptions.statusActive, _kBrandTeal),
+      SubscriptionStatus.grace => (
+          t.subscriptions.statusGrace,
+          Colors.orangeAccent
+        ),
+      SubscriptionStatus.locked => (
+          t.subscriptions.statusLocked,
+          Colors.redAccent
+        ),
+      SubscriptionStatus.cancelled => (
+          t.subscriptions.statusCancelled,
+          _kMuted
+        ),
+      null => (t.subscriptions.noSubscription, _kMuted),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );

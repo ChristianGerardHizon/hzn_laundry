@@ -141,6 +141,10 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 
 ### Organization/Admin Features
 
+#### Super Admin & Subscriptions
+- `/super-admin` — Overview (org KPIs + subscription badges), Packages, Payments queue, Billing settings (QRPH)
+- `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); grace banners and lock gate in the authenticated shell
+
 #### Organizations (`/organizations`)
 Every signed-in user can see this tab (no permission gate) so pending invites are visible.
 
@@ -149,7 +153,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - Overview details editable with `members.manage`
 - People: invite by email + role; accept/decline pending invites
 - Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
-- Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), optional team invites; the organization is created only when required setup is submitted
+- Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs
 
 #### Management (`/management`)
@@ -191,9 +195,11 @@ Device-specific settings only (this tablet/phone/desktop).
 ### Authentication (`/login`)
 
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
-- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web only
-- Organization selection (`/select-organization`) — after login when the user has 2+ memberships; Super Admin entry for `system.admin`
-- Super Admin hub (`/super-admin`) — platform overview with org metrics (orders, customers, revenue, branches, members) and create organization
+- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web and Android
+- Organization selection (`/select-organization`) — after login when the user has 1+ memberships; Super Admin entry for `system.admin`
+- Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
+- Super Admin hub (`/super-admin`) — platform overview with org metrics (orders, customers, revenue, branches, members), subscription packages/payments/billing settings, and create organization
+- Subscription payment (`/subscription/pay/:organizationId`) — QRPH scan instructions + transaction screenshot upload for org admins (email deep link)
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
 - Session management
@@ -339,7 +345,8 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 
 ### Authentication
 - Splash Screen (`/splash`) — black warming-up verbs
-- Login Screen (`/login`) — email OTP (default), password optional, Google (web)
+- Login Screen (`/login`) — email OTP (default), password optional, Google (web + Android)
+- Scope Recovery (`/scope-recovery`) — Retry / Logout when workspace scope fails
 - Forgot Password (`/forgot-password`)
 
 ### Main Navigation
@@ -433,8 +440,10 @@ App Root (Shell)
 │   ├── /login
 │   ├── /forgot-password
 │   ├── /auth-loading
+│   ├── /scope-recovery
 │   ├── /select-organization
-│   └── /super-admin
+│   ├── /super-admin
+│   └── /subscription/pay/:organizationId
 │
 ├── Public (non-shell, tokenized)
 │   └── /history/:token (Customer History)
@@ -627,8 +636,13 @@ lib/src/
 
 ---
 
+| Sep 22 | Org select clears on logout | Logout deletes `CURRENT_ORGANIZATION_ID`; next login shows `/select-organization` unless a last-used org is still persisted for the session |
+| Sep 22 | Org create requires subscription | Create-organization wizard includes a required Subscription step; `POST /api/organizations` assigns the package in the same transaction |
+| Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |
+| Sep 21 | Android Google login | Continue with Google on Android via PocketBase browser OAuth (same invite-only hook as web); iOS still OTP/password only |
+| Sep 21 | Scope recovery after login | When auth succeeds but org/branch scope cannot resolve a home path, redirect to `/scope-recovery` (Retry / Logout) instead of an endless splash |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
-| Sep 20 | Post-login org selection | Users with 2+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
+| Sep 20 | Post-login org selection | Users with 1+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
 | Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |
 | Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
 | Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |

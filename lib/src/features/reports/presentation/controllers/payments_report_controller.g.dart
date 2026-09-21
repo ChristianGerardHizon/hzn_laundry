@@ -37,7 +37,7 @@ final class PaymentsReportControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$paymentsReportControllerHash() =>
-    r'68cd3a8bc3d03f968c710d77d6bf65c84c657d94';
+    r'c758c5f786872235ceda842e255eb39250d71312';
 
 /// Paginated payments within the selected report date range.
 

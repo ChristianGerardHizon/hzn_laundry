@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../features/auth/presentation/pages/auth_loading_page.dart';
 import '../../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../../features/auth/presentation/pages/login_page.dart';
+import '../../../features/auth/presentation/pages/scope_recovery_page.dart';
 import '../../../features/auth/presentation/pages/splash_page.dart';
 
 part 'auth.routes.g.dart';
@@ -57,5 +58,18 @@ class AuthLoadingRoute extends GoRouteData with $AuthLoadingRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return const AuthLoadingPage();
+  }
+}
+
+/// Post-auth recovery when org/branch scope cannot resolve a home path.
+@TypedGoRoute<ScopeRecoveryRoute>(path: ScopeRecoveryRoute.path)
+class ScopeRecoveryRoute extends GoRouteData with $ScopeRecoveryRoute {
+  const ScopeRecoveryRoute();
+
+  static const path = '/scope-recovery';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const ScopeRecoveryPage();
   }
 }

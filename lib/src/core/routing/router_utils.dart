@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -38,10 +39,15 @@ abstract class RouterUtils {
   static const List<String> orgSelectionRoutes = [
     SelectOrganizationRoute.path,
     SuperAdminRoute.path,
+    ScopeRecoveryRoute.path,
   ];
 
+  static bool isSubscriptionPayPath(String path) =>
+      path.startsWith('/subscription/pay/');
+
   static bool isOrgSelectionPath(String path) =>
-      orgSelectionRoutes.any((r) => path == r || path.startsWith('$r/'));
+      orgSelectionRoutes.any((r) => path == r || path.startsWith('$r/')) ||
+      isSubscriptionPayPath(path);
 
   /// True when the user has 2+ memberships and must pick (or re-pick) an org.
   ///
@@ -79,8 +85,8 @@ abstract class RouterUtils {
   ///
   /// Returns null while org/branch scope is still loading, or when scope
   /// cannot be resolved (missing memberships / empty slugs). Callers on
-  /// splash must not treat null as "stay via redirect to /splash" forever
-  /// without also checking loading — see [redirect] step 3.
+  /// splash must redirect to [ScopeRecoveryRoute] when null and not loading
+  /// — see [redirect] step 3.
   static String? homePathFor(Ref ref) {
     final prefix = _resolveScopePrefix(ref);
     if (prefix == null) return null;
@@ -92,6 +98,42 @@ abstract class RouterUtils {
     final orgAsync = ref.read(currentOrganizationControllerProvider);
     final branchAsync = ref.read(currentBranchControllerProvider);
     return orgAsync.isLoading || branchAsync.isLoading;
+  }
+
+  /// True while the org/branch switch overlay is showing.
+  ///
+  /// During this window the URL often lags the controllers; Scope Recovery
+  /// must not tear down [AppRoot] (and the overlay) for a transient mismatch.
+  static bool isOrganizationSwitching(Ref ref) {
+    return ref.read(organizationSwitchOverlayProvider).active;
+  }
+
+  /// Redirect when the URL org slug does not match the current organization.
+  ///
+  /// Returns null to stay put while org/branch scope is still loading or an
+  /// intentional org/branch switch is in progress. Returns
+  /// [ScopeRecoveryRoute.path] when scope cannot be resolved after settling.
+  @visibleForTesting
+  static String? resolveOrgSlugMismatch({
+    required Ref ref,
+    required String orgSlug,
+    required String branchSlug,
+    required String currentPath,
+    required String uriPath,
+    required Uri uri,
+  }) {
+    if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
+    final prefix = _resolveScopePrefix(ref);
+    if (prefix == null) return ScopeRecoveryRoute.path;
+    final wrongPrefixLength = '/$orgSlug/$branchSlug'.length;
+    final suffix = currentPath.length > wrongPrefixLength
+        ? currentPath.substring(wrongPrefixLength)
+        : '';
+    // Prefer uriPath suffix when matchedLocation is incomplete.
+    final uriSuffix = uriPath.length > wrongPrefixLength
+        ? uriPath.substring(wrongPrefixLength)
+        : suffix;
+    return uri.replace(path: '$prefix$uriSuffix').toString();
   }
 
   /// Resolves `/orgSlug/branchSlug` from current org/branch controllers.
@@ -179,13 +221,16 @@ abstract class RouterUtils {
 
     final isOnSelectOrg = currentPath == SelectOrganizationRoute.path;
     final isOnSuperAdmin = currentPath == SuperAdminRoute.path;
+    final isOnSubscriptionPay = isSubscriptionPayPath(currentPath);
+
+    final isOnScopeRecovery = currentPath == ScopeRecoveryRoute.path;
 
     // Bare `/` is not registered under the org/branch shell.
     if (isEmptyRootPath(uriPath)) {
       if (isAuthLoading) return SplashRoute.path;
       if (!isAuthenticated) return LoginRoute.path;
       if (isScopeLoading(ref)) return SplashRoute.path;
-      return postAuthDestination(ref) ?? SplashRoute.path;
+      return postAuthDestination(ref) ?? ScopeRecoveryRoute.path;
     }
 
     // 1. Still loading auth on splash - stay on splash
@@ -207,8 +252,17 @@ abstract class RouterUtils {
       if (!isAuthenticated) return LoginRoute.path;
       // Wait for org/branch (and their slugs) before leaving splash.
       if (isScopeLoading(ref)) return null;
+
+      // Prefer subscription pay deep links over org picker / home.
+      final pendingOnSplash = ref.read(pendingRedirectProvider.notifier).peek();
+      if (pendingOnSplash != null &&
+          isSubscriptionPayPath(Uri.tryParse(pendingOnSplash)?.path ?? '')) {
+        ref.read(pendingRedirectProvider.notifier).clear();
+        return pendingOnSplash;
+      }
+
       final destination = postAuthDestination(ref);
-      if (destination == null) return null;
+      if (destination == null) return ScopeRecoveryRoute.path;
       if (destination == SelectOrganizationRoute.path) {
         return destination;
       }
@@ -224,8 +278,17 @@ abstract class RouterUtils {
     if (isOnLoginPage) {
       if (isAuthenticated) {
         if (isScopeLoading(ref)) return SplashRoute.path;
+
+        final pendingOnLogin =
+            ref.read(pendingRedirectProvider.notifier).peek();
+        if (pendingOnLogin != null &&
+            isSubscriptionPayPath(Uri.tryParse(pendingOnLogin)?.path ?? '')) {
+          ref.read(pendingRedirectProvider.notifier).clear();
+          return pendingOnLogin;
+        }
+
         final destination = postAuthDestination(ref);
-        if (destination == null) return SplashRoute.path;
+        if (destination == null) return ScopeRecoveryRoute.path;
         if (destination == SelectOrganizationRoute.path) {
           return destination;
         }
@@ -239,9 +302,27 @@ abstract class RouterUtils {
       return null;
     }
 
-    // 4b. Org selection / super-admin (auth required, unscoped)
-    if (isOnSelectOrg || isOnSuperAdmin) {
+    // 4a. Scope recovery (auth required, unscoped) — leave when home resolves
+    if (isOnScopeRecovery) {
       if (!isAuthenticated) return LoginRoute.path;
+      if (isScopeLoading(ref)) return null;
+      final destination = postAuthDestination(ref);
+      if (destination != null) return destination;
+      return null;
+    }
+
+    // 4b. Org selection / super-admin / subscription pay (auth required, unscoped)
+    if (isOnSelectOrg || isOnSuperAdmin || isOnSubscriptionPay) {
+      if (!isAuthenticated) {
+        // Preserve email deep links through login.
+        if (isOnSubscriptionPay) {
+          PendingRedirect.stash(fullUri);
+          Future(() {
+            ref.read(pendingRedirectProvider.notifier).set(fullUri);
+          });
+        }
+        return LoginRoute.path;
+      }
       if (isScopeLoading(ref)) return null;
 
       if (isOnSuperAdmin) {
@@ -249,8 +330,13 @@ abstract class RouterUtils {
         if (role?.isAdmin != true) {
           return needsOrganizationSelection(ref)
               ? SelectOrganizationRoute.path
-              : (homePathFor(ref) ?? SplashRoute.path);
+              : (homePathFor(ref) ?? ScopeRecoveryRoute.path);
         }
+        return null;
+      }
+
+      if (isOnSubscriptionPay) {
+        // Membership checks happen on the pay page / API.
         return null;
       }
 
@@ -261,7 +347,7 @@ abstract class RouterUtils {
           .read(currentOrganizationControllerProvider.notifier)
           .requiresSelection;
       if (!requiresSelection) {
-        return homePathFor(ref) ?? SplashRoute.path;
+        return homePathFor(ref) ?? ScopeRecoveryRoute.path;
       }
       return null;
     }
@@ -290,7 +376,8 @@ abstract class RouterUtils {
       if (prefix != null) {
         return state.uri.replace(path: '$prefix$uriPath').toString();
       }
-      return SplashRoute.path;
+      if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
+      return ScopeRecoveryRoute.path;
     }
 
     // 5e. Validate scoped URL org/branch segments
@@ -304,17 +391,16 @@ abstract class RouterUtils {
       if (orgAsync.isLoading) return null;
       final org = orgAsync.value;
       if (org == null || org.slug != orgSlug) {
-        final prefix = _resolveScopePrefix(ref);
-        if (prefix == null) return null;
-        final wrongPrefixLength = '/$orgSlug/$branchSlug'.length;
-        final suffix = currentPath.length > wrongPrefixLength
-            ? currentPath.substring(wrongPrefixLength)
-            : '';
-        // Prefer uriPath suffix when matchedLocation is incomplete.
-        final uriSuffix = uriPath.length > wrongPrefixLength
-            ? uriPath.substring(wrongPrefixLength)
-            : suffix;
-        return state.uri.replace(path: '$prefix$uriSuffix').toString();
+        // Org switch updates the controller before context.go rewrites the
+        // URL; branch often still loading. Wait instead of Scope Recovery.
+        return resolveOrgSlugMismatch(
+          ref: ref,
+          orgSlug: orgSlug,
+          branchSlug: branchSlug,
+          currentPath: currentPath,
+          uriPath: uriPath,
+          uri: state.uri,
+        );
       }
 
       final branchesAsync = ref.read(branchesControllerProvider);
@@ -340,7 +426,8 @@ abstract class RouterUtils {
       }
 
       if (!branchValid) {
-        return homePathFor(ref) ?? SplashRoute.path;
+        if (isScopeLoading(ref) || isOrganizationSwitching(ref)) return null;
+        return homePathFor(ref) ?? ScopeRecoveryRoute.path;
       }
 
       ref.read(currentRouteScopeProvider.notifier).set(orgSlug, branchSlug);

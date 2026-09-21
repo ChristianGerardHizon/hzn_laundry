@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -21,7 +22,7 @@ abstract class AuthRepository {
   /// Attempts to login with email and password.
   FutureEither<AuthState> login(String email, String password);
 
-  /// Attempts Google OAuth2 login (web; existing user email must match).
+  /// Attempts Google OAuth2 login (web/Android; existing user email must match).
   FutureEither<AuthState> loginWithGoogle({OAuthUrlLauncher? openUrl});
 
   /// Sends a password-reset email.
@@ -76,6 +77,14 @@ class AuthRepositoryImpl implements AuthRepository {
     pb.authStore.save(authDto.token, authDto.toRecordModel());
   }
 
+  /// Opens the OAuth vendor URL: popup/tab on web, external browser on Android.
+  static Future<bool> _defaultOAuthUrlLauncher(Uri url) {
+    if (kIsWeb) {
+      return launchUrl(url, webOnlyWindowName: '_blank');
+    }
+    return launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
   @override
   FutureEither<AuthState> login(String email, String password) async {
     return TaskEither.tryCatch(
@@ -107,8 +116,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final result = await _collection.authWithOAuth2(
         'google',
         (url) async {
-          final launcher =
-              openUrl ?? (Uri u) => launchUrl(u, webOnlyWindowName: '_blank');
+          final launcher = openUrl ?? _defaultOAuthUrlLauncher;
           final opened = await launcher(url);
           if (!opened) {
             throw const AuthFailure(

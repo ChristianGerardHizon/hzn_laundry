@@ -5,11 +5,16 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
+import '../../../../../core/widgets/nav_permissions.dart';
+import '../../../../subscriptions/domain/billing_interval_unit.dart';
+import '../../../../subscriptions/domain/subscription_package.dart';
+import '../../../../subscriptions/presentation/controllers/packages_controller.dart';
 import '../../../../users/domain/user_role.dart';
 import '../../../../users/presentation/controllers/user_roles_controller.dart';
 import '../../../data/repositories/organization_repository.dart';
@@ -45,12 +50,24 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
     final orgFormKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final branchFormKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final inviteFormKey = useMemoized(() => GlobalKey<FormBuilderState>());
+    final subscriptionFormKey =
+        useMemoized(() => GlobalKey<FormBuilderState>());
 
     final orgDraft = useState<_OrgDraft?>(null);
     final branchDraft = useState<_BranchDraft?>(null);
     final queuedInvites = useState<List<OrganizationSetupInvite>>(const []);
+    final selectedPackageId = useState<String?>(null);
+    final useCustomPackage = useState(false);
+    final customPackageDraft = useState<_CustomPackageDraft?>(null);
 
     final rolesAsync = ref.watch(userRolesControllerProvider);
+    final isSystemAdmin =
+        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
+    final packagesAsync =
+        ref.watch(packagesControllerProvider(premadeOnly: true));
+    final currency = useMemoized(
+      () => NumberFormat.currency(symbol: '₱', decimalDigits: 2),
+    );
 
     bool formHasValue(GlobalKey<FormBuilderState> key) {
       final values = key.currentState?.instantValue ?? {};
@@ -63,6 +80,10 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
 
     bool isDirty() {
       if (formHasValue(orgFormKey) || formHasValue(branchFormKey)) return true;
+      if (formHasValue(subscriptionFormKey)) return true;
+      if (selectedPackageId.value != null || useCustomPackage.value) {
+        return true;
+      }
       if (queuedInvites.value.isNotEmpty) return true;
       return false;
     }
@@ -105,6 +126,24 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
       );
     }
 
+    _CustomPackageDraft? readCustomPackageDraft() {
+      final state = subscriptionFormKey.currentState;
+      if (state == null) return customPackageDraft.value;
+      state.save();
+      final values = state.value;
+      final name = (values['customName'] as String?)?.trim() ?? '';
+      final priceRaw = values['customPrice']?.toString() ?? '';
+      final countRaw = values['customIntervalCount']?.toString() ?? '1';
+      return _CustomPackageDraft(
+        name: name,
+        description: (values['customDescription'] as String?)?.trim() ?? '',
+        price: num.tryParse(priceRaw) ?? 0,
+        intervalCount: int.tryParse(countRaw) ?? 1,
+        intervalUnit: values['customIntervalUnit'] as BillingIntervalUnit? ??
+            BillingIntervalUnit.month,
+      );
+    }
+
     bool validateCurrentStep() {
       if (step.value == 0) {
         if (!(orgFormKey.currentState?.saveAndValidate() ?? false)) {
@@ -142,6 +181,35 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
         return true;
       }
 
+      if (step.value == 2) {
+        if (!(subscriptionFormKey.currentState?.saveAndValidate() ?? false)) {
+          showErrorSnackBar(
+            context,
+            message: t.organizations.subscriptionRequired,
+            useRootMessenger: false,
+          );
+          return false;
+        }
+        final values = subscriptionFormKey.currentState!.value;
+        if (useCustomPackage.value && isSystemAdmin) {
+          customPackageDraft.value = readCustomPackageDraft();
+          selectedPackageId.value = null;
+        } else {
+          selectedPackageId.value = values['packageId'] as String?;
+          customPackageDraft.value = null;
+          if (selectedPackageId.value == null ||
+              selectedPackageId.value!.isEmpty) {
+            showErrorSnackBar(
+              context,
+              message: t.organizations.subscriptionRequired,
+              useRootMessenger: false,
+            );
+            return false;
+          }
+        }
+        return true;
+      }
+
       return true;
     }
 
@@ -157,10 +225,33 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
         step.value = 1;
         return;
       }
+      // Ensure subscription is captured before create.
+      if ((selectedPackageId.value == null ||
+              selectedPackageId.value!.isEmpty) &&
+          customPackageDraft.value == null) {
+        step.value = 2;
+        if (!validateCurrentStep()) return;
+      }
+
       final org = readOrgDraft();
       final branch = readBranchDraft();
       if (org == null || org.name.isEmpty || branch == null) {
         step.value = org == null || org.name.isEmpty ? 0 : 1;
+        return;
+      }
+
+      final Map<String, dynamic>? customPayload =
+          useCustomPackage.value && isSystemAdmin
+              ? customPackageDraft.value?.toJson()
+              : null;
+      final packageId = customPayload == null ? selectedPackageId.value : null;
+      if ((packageId == null || packageId.isEmpty) && customPayload == null) {
+        step.value = 2;
+        showErrorSnackBar(
+          context,
+          message: t.organizations.subscriptionRequired,
+          useRootMessenger: false,
+        );
         return;
       }
 
@@ -178,6 +269,8 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
               cutOffTime: branch.cutOffTime.isEmpty ? null : branch.cutOffTime,
             ),
             invites: queuedInvites.value,
+            packageId: packageId,
+            customPackage: customPayload,
           );
       isSaving.value = false;
 
@@ -202,9 +295,26 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
       );
     }
 
+    String? packageReviewLabel() {
+      if (useCustomPackage.value && customPackageDraft.value != null) {
+        final c = customPackageDraft.value!;
+        return '${c.name} · ${currency.format(c.price)} / '
+            '${c.intervalCount} ${c.intervalUnit.displayName}';
+      }
+      final id = selectedPackageId.value;
+      if (id == null) return null;
+      final packages = packagesAsync.asData?.value;
+      if (packages == null) return id;
+      final match = packages.where((p) => p.id == id).firstOrNull;
+      if (match == null) return id;
+      return '${match.name} · ${currency.format(match.price)} / '
+          '${match.intervalCount} ${match.intervalUnit.displayName}';
+    }
+
     final stepTitles = [
       t.organizations.stepDetailsShort,
       t.organizations.stepBranchShort,
+      t.organizations.stepSubscriptionShort,
       t.organizations.stepInviteShort,
       t.organizations.stepReviewShort,
     ];
@@ -266,6 +376,7 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                     [
                       t.organizations.stepDetails,
                       t.organizations.stepBranch,
+                      t.organizations.stepSubscription,
                       t.organizations.stepInvite,
                       t.organizations.stepReview,
                     ][step.value],
@@ -283,6 +394,23 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                       formKey: branchFormKey,
                       enabled: !isSaving.value,
                     ),
+                    _SubscriptionStep(
+                      formKey: subscriptionFormKey,
+                      enabled: !isSaving.value,
+                      isSystemAdmin: isSystemAdmin,
+                      useCustom: useCustomPackage.value,
+                      onUseCustomChanged: (v) {
+                        useCustomPackage.value = v;
+                        if (v) {
+                          selectedPackageId.value = null;
+                        } else {
+                          customPackageDraft.value = null;
+                        }
+                      },
+                      packagesAsync: packagesAsync,
+                      initialPackageId: selectedPackageId.value,
+                      currency: currency,
+                    ),
                     rolesAsync.when(
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
@@ -299,6 +427,7 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                       org: orgDraft.value,
                       branch: branchDraft.value,
                       inviteCount: queuedInvites.value.length,
+                      subscriptionLabel: packageReviewLabel(),
                     ),
                   ],
                 ),
@@ -313,16 +442,16 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                         child: Text(t.organizations.back),
                       ),
                     const Spacer(),
-                    if (step.value == 2)
+                    if (step.value == 3)
                       TextButton(
-                        onPressed: isSaving.value ? null : () => step.value = 3,
+                        onPressed: isSaving.value ? null : () => step.value = 4,
                         child: Text(t.organizations.skip),
                       ),
                     FilledButton(
                       onPressed: isSaving.value
                           ? null
                           : () {
-                              if (step.value < 3) {
+                              if (step.value < 4) {
                                 if (validateCurrentStep()) {
                                   step.value++;
                                 }
@@ -337,7 +466,7 @@ class CreateOrganizationSetupDialog extends HookConsumerWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              step.value == 3
+                              step.value == 4
                                   ? t.organizations.finish
                                   : t.organizations.next,
                             ),
@@ -379,6 +508,30 @@ class _BranchDraft {
   final String contactNumber;
   final String operatingHours;
   final String cutOffTime;
+}
+
+class _CustomPackageDraft {
+  const _CustomPackageDraft({
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.intervalCount,
+    required this.intervalUnit,
+  });
+
+  final String name;
+  final String description;
+  final num price;
+  final int intervalCount;
+  final BillingIntervalUnit intervalUnit;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'description': description,
+        'price': price,
+        'intervalCount': intervalCount,
+        'intervalUnit': intervalUnit.name,
+      };
 }
 
 class _StepIndicator extends StatelessWidget {
@@ -450,6 +603,168 @@ class _StepIndicator extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _SubscriptionStep extends StatelessWidget {
+  const _SubscriptionStep({
+    required this.formKey,
+    required this.enabled,
+    required this.isSystemAdmin,
+    required this.useCustom,
+    required this.onUseCustomChanged,
+    required this.packagesAsync,
+    required this.initialPackageId,
+    required this.currency,
+  });
+
+  final GlobalKey<FormBuilderState> formKey;
+  final bool enabled;
+  final bool isSystemAdmin;
+  final bool useCustom;
+  final ValueChanged<bool> onUseCustomChanged;
+  final AsyncValue<List<SubscriptionPackage>> packagesAsync;
+  final String? initialPackageId;
+  final NumberFormat currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Translations.of(context);
+
+    return FormBuilder(
+      key: formKey,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        children: [
+          if (isSystemAdmin)
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.subscriptions.customPackage),
+              value: useCustom,
+              onChanged: enabled ? onUseCustomChanged : null,
+            ),
+          if (!useCustom || !isSystemAdmin)
+            packagesAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => ErrorState.fromError(e),
+              data: (packages) {
+                final premade =
+                    packages.where((p) => p.isPremade && p.isActive).toList();
+                if (premade.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(t.subscriptions.noPackages),
+                  );
+                }
+                return FormBuilderDropdown<String>(
+                  name: 'packageId',
+                  initialValue: initialPackageId,
+                  enabled: enabled,
+                  decoration: InputDecoration(
+                    labelText: '${t.subscriptions.selectPackage} *',
+                  ),
+                  items: premade
+                      .map(
+                        (p) => DropdownMenuItem(
+                          value: p.id,
+                          child: Text(
+                            '${p.name} · ${currency.format(p.price)} / '
+                            '${p.intervalCount} ${p.intervalUnit.displayName}',
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  validator: FormBuilderValidators.required(
+                    errorText: t.organizations.subscriptionRequired,
+                  ),
+                );
+              },
+            )
+          else ...[
+            FormBuilderTextField(
+              name: 'customName',
+              enabled: enabled,
+              decoration: InputDecoration(
+                labelText: '${t.subscriptions.packageName} *',
+              ),
+              validator: FormBuilderValidators.required(),
+            ),
+            const SizedBox(height: 12),
+            FormBuilderTextField(
+              name: 'customDescription',
+              enabled: enabled,
+              decoration: InputDecoration(
+                labelText: t.subscriptions.packageDescription,
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            FormBuilderTextField(
+              name: 'customPrice',
+              enabled: enabled,
+              decoration: InputDecoration(
+                labelText: '${t.subscriptions.packagePrice} *',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: FormBuilderValidators.compose([
+                FormBuilderValidators.required(),
+                FormBuilderValidators.numeric(),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FormBuilderTextField(
+                    name: 'customIntervalCount',
+                    initialValue: '1',
+                    enabled: enabled,
+                    decoration: InputDecoration(
+                      labelText: '${t.subscriptions.intervalCount} *',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(),
+                      FormBuilderValidators.integer(),
+                      FormBuilderValidators.min(1),
+                    ]),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FormBuilderDropdown<BillingIntervalUnit>(
+                    name: 'customIntervalUnit',
+                    initialValue: BillingIntervalUnit.month,
+                    enabled: enabled,
+                    decoration: InputDecoration(
+                      labelText: t.subscriptions.intervalUnit,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: BillingIntervalUnit.day,
+                        child: Text(t.subscriptions.intervalDay),
+                      ),
+                      DropdownMenuItem(
+                        value: BillingIntervalUnit.month,
+                        child: Text(t.subscriptions.intervalMonth),
+                      ),
+                      DropdownMenuItem(
+                        value: BillingIntervalUnit.year,
+                        child: Text(t.subscriptions.intervalYear),
+                      ),
+                    ],
+                    validator: FormBuilderValidators.required(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -734,11 +1049,13 @@ class _ReviewStep extends StatelessWidget {
     required this.org,
     required this.branch,
     required this.inviteCount,
+    required this.subscriptionLabel,
   });
 
   final _OrgDraft? org;
   final _BranchDraft? branch;
   final int inviteCount;
+  final String? subscriptionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -775,6 +1092,13 @@ class _ReviewStep extends StatelessWidget {
           title: Text(t.fields.address),
           subtitle: Text(
             branch?.address.isNotEmpty == true ? branch!.address : none,
+          ),
+        ),
+        const Divider(),
+        ListTile(
+          title: Text(t.organizations.stepSubscription),
+          subtitle: Text(
+            subscriptionLabel?.isNotEmpty == true ? subscriptionLabel! : none,
           ),
         ),
         const Divider(),

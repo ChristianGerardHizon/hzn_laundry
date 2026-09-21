@@ -37,7 +37,7 @@ final class SalesDetailControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$salesDetailControllerHash() =>
-    r'010584196d50f742ca1a62c4374e56c76a743468';
+    r'2513b9d80d33472588cb649e65febabc04667d22';
 
 /// Paginated orders for the Orders report tab.
 

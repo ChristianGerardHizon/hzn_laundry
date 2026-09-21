@@ -260,6 +260,29 @@ class OrganizationPlatformStatsMapper
     'revenue',
     _$revenue,
   );
+  static String? _$subscriptionStatus(OrganizationPlatformStats v) =>
+      v.subscriptionStatus;
+  static const Field<OrganizationPlatformStats, String> _f$subscriptionStatus =
+      Field('subscriptionStatus', _$subscriptionStatus, opt: true);
+  static DateTime? _$periodEnd(OrganizationPlatformStats v) => v.periodEnd;
+  static const Field<OrganizationPlatformStats, DateTime> _f$periodEnd = Field(
+    'periodEnd',
+    _$periodEnd,
+    opt: true,
+  );
+  static DateTime? _$graceEndsAt(OrganizationPlatformStats v) => v.graceEndsAt;
+  static const Field<OrganizationPlatformStats, DateTime> _f$graceEndsAt =
+      Field('graceEndsAt', _$graceEndsAt, opt: true);
+  static int _$pendingPaymentCount(OrganizationPlatformStats v) =>
+      v.pendingPaymentCount;
+  static const Field<OrganizationPlatformStats, int> _f$pendingPaymentCount =
+      Field('pendingPaymentCount', _$pendingPaymentCount, opt: true, def: 0);
+  static String? _$packageName(OrganizationPlatformStats v) => v.packageName;
+  static const Field<OrganizationPlatformStats, String> _f$packageName = Field(
+    'packageName',
+    _$packageName,
+    opt: true,
+  );
 
   @override
   final MappableFields<OrganizationPlatformStats> fields = const {
@@ -272,6 +295,11 @@ class OrganizationPlatformStatsMapper
     #orderCount: _f$orderCount,
     #customerCount: _f$customerCount,
     #revenue: _f$revenue,
+    #subscriptionStatus: _f$subscriptionStatus,
+    #periodEnd: _f$periodEnd,
+    #graceEndsAt: _f$graceEndsAt,
+    #pendingPaymentCount: _f$pendingPaymentCount,
+    #packageName: _f$packageName,
   };
 
   static OrganizationPlatformStats _instantiate(DecodingData data) {
@@ -285,6 +313,11 @@ class OrganizationPlatformStatsMapper
       orderCount: data.dec(_f$orderCount),
       customerCount: data.dec(_f$customerCount),
       revenue: data.dec(_f$revenue),
+      subscriptionStatus: data.dec(_f$subscriptionStatus),
+      periodEnd: data.dec(_f$periodEnd),
+      graceEndsAt: data.dec(_f$graceEndsAt),
+      pendingPaymentCount: data.dec(_f$pendingPaymentCount),
+      packageName: data.dec(_f$packageName),
     );
   }
 
@@ -372,6 +405,11 @@ abstract class OrganizationPlatformStatsCopyWith<
     int? orderCount,
     int? customerCount,
     num? revenue,
+    String? subscriptionStatus,
+    DateTime? periodEnd,
+    DateTime? graceEndsAt,
+    int? pendingPaymentCount,
+    String? packageName,
   });
   OrganizationPlatformStatsCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -398,6 +436,11 @@ class _OrganizationPlatformStatsCopyWithImpl<$R, $Out>
     int? orderCount,
     int? customerCount,
     num? revenue,
+    Object? subscriptionStatus = $none,
+    Object? periodEnd = $none,
+    Object? graceEndsAt = $none,
+    int? pendingPaymentCount,
+    Object? packageName = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != null) #id: id,
@@ -410,6 +453,12 @@ class _OrganizationPlatformStatsCopyWithImpl<$R, $Out>
       if (orderCount != null) #orderCount: orderCount,
       if (customerCount != null) #customerCount: customerCount,
       if (revenue != null) #revenue: revenue,
+      if (subscriptionStatus != $none) #subscriptionStatus: subscriptionStatus,
+      if (periodEnd != $none) #periodEnd: periodEnd,
+      if (graceEndsAt != $none) #graceEndsAt: graceEndsAt,
+      if (pendingPaymentCount != null)
+        #pendingPaymentCount: pendingPaymentCount,
+      if (packageName != $none) #packageName: packageName,
     }),
   );
   @override
@@ -427,6 +476,17 @@ class _OrganizationPlatformStatsCopyWithImpl<$R, $Out>
         orderCount: data.get(#orderCount, or: $value.orderCount),
         customerCount: data.get(#customerCount, or: $value.customerCount),
         revenue: data.get(#revenue, or: $value.revenue),
+        subscriptionStatus: data.get(
+          #subscriptionStatus,
+          or: $value.subscriptionStatus,
+        ),
+        periodEnd: data.get(#periodEnd, or: $value.periodEnd),
+        graceEndsAt: data.get(#graceEndsAt, or: $value.graceEndsAt),
+        pendingPaymentCount: data.get(
+          #pendingPaymentCount,
+          or: $value.pendingPaymentCount,
+        ),
+        packageName: data.get(#packageName, or: $value.packageName),
       );
 
   @override

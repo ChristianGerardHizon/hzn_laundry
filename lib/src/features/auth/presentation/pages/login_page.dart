@@ -27,6 +27,10 @@ const _kInk = Color(0xFF0B0B0B);
 const _kSurface = Color(0xFF141414);
 const _kSurfaceBorder = Color(0xFF2A2A2A);
 
+/// Google OAuth via PocketBase browser flow (web + Android).
+bool get _showGoogleSignIn =>
+    kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+
 enum _LoginStep { email, auth }
 
 enum _AuthMethod { password, otp }
@@ -349,7 +353,7 @@ class LoginPage extends HookConsumerWidget {
                   : handleContinue,
               child: Text(t.auth.continueButton),
             ),
-            if (kIsWeb) ...[
+            if (_showGoogleSignIn) ...[
               const SizedBox(height: 20),
               Row(
                 children: [

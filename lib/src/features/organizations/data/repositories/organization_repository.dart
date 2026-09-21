@@ -22,6 +22,8 @@ abstract class OrganizationRepository {
     String? address,
     required OrganizationSetupBranch branch,
     List<OrganizationSetupInvite> invites,
+    String? packageId,
+    Map<String, dynamic>? customPackage,
   });
   FutureEither<Organization> update(
     String id, {
@@ -77,9 +79,21 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
     String? address,
     required OrganizationSetupBranch branch,
     List<OrganizationSetupInvite> invites = const [],
+    String? packageId,
+    Map<String, dynamic>? customPackage,
   }) async {
     return TaskEither.tryCatch(
       () async {
+        final hasPackage =
+            (packageId != null && packageId.isNotEmpty) || customPackage != null;
+        if (!hasPackage) {
+          throw const DataFailure(
+            'A subscription package is required',
+            null,
+            'subscription_package_required',
+          );
+        }
+
         final response = await _pb.send(
           '/api/organizations',
           method: 'POST',
@@ -89,6 +103,8 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
             'address': address ?? '',
             'branch': branch.toJson(),
             'invites': invites.map((i) => i.toJson()).toList(),
+            if (packageId != null && packageId.isNotEmpty) 'packageId': packageId,
+            if (customPackage != null) 'customPackage': customPackage,
           },
         );
         if (response is! Map<String, dynamic>) {
