@@ -50,7 +50,7 @@ class AuthController extends _$AuthController {
     );
   }
 
-  /// Attempts Google OAuth2 login (web).
+  /// Attempts Google OAuth2 login (web / Android).
   ///
   /// Does not set [AsyncLoading] while waiting: PocketBase OAuth waits on a
   /// realtime redirect that never completes if the user closes the popup/tab.
