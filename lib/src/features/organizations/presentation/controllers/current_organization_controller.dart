@@ -12,7 +12,7 @@ import 'organization_scope_refresh.dart';
 
 part 'current_organization_controller.g.dart';
 
-const _currentOrganizationStorageKey = 'CURRENT_ORGANIZATION_ID';
+const currentOrganizationStorageKey = 'CURRENT_ORGANIZATION_ID';
 
 /// Whether the full-screen org/branch-switch loader is showing.
 class OrganizationSwitchOverlayState {
@@ -63,6 +63,11 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
     } finally {
       state = const OrganizationSwitchOverlayState();
     }
+  }
+
+  /// Forces the overlay off (e.g. on logout so AbsorbPointer cannot stick).
+  void clear() {
+    state = const OrganizationSwitchOverlayState();
   }
 }
 
@@ -170,7 +175,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     _resolvedFromPersistence = false;
     try {
       final storage = ref.read(secureStorageProvider);
-      await storage.delete(key: _currentOrganizationStorageKey);
+      await storage.delete(key: currentOrganizationStorageKey);
     } catch (e, st) {
       assert(() {
         debugPrint('Failed to clear persisted organization: $e\n$st');
@@ -182,7 +187,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
   Future<String?> _loadPersistedOrganization() async {
     try {
       final storage = ref.read(secureStorageProvider);
-      return await storage.read(key: _currentOrganizationStorageKey);
+      return await storage.read(key: currentOrganizationStorageKey);
     } catch (e, st) {
       assert(() {
         debugPrint('Failed to load persisted organization: $e\n$st');
@@ -196,7 +201,7 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     try {
       final storage = ref.read(secureStorageProvider);
       await storage.write(
-        key: _currentOrganizationStorageKey,
+        key: currentOrganizationStorageKey,
         value: organizationId,
       );
     } catch (e, st) {

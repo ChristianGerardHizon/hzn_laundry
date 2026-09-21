@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/sentry/sentry_breadcrumbs.dart';
+import '../../../../core/packages/storage/secure_storage_provider.dart';
 import '../../../../core/routing/pending_redirect_provider.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../data/auth_repository.dart';
@@ -77,14 +81,29 @@ class AuthController extends _$AuthController {
   }
 
   /// Logs out the current user.
+  ///
+  /// Clears the auth session first so redirect to login is never blocked by
+  /// secure-storage I/O. Last-used org id is cleared best-effort afterward.
   Future<void> logout() async {
     addBreadcrumb('Logout', category: 'auth');
     ref.read(pendingRedirectProvider.notifier).consume();
-    await ref
-        .read(currentOrganizationControllerProvider.notifier)
-        .clearPersistedOrganization();
     await _repository.logout();
     state = const AsyncData(null);
+    ref.read(organizationSwitchOverlayProvider.notifier).clear();
+    unawaited(_clearPersistedOrganizationId());
+  }
+
+  Future<void> _clearPersistedOrganizationId() async {
+    try {
+      await ref.read(secureStorageProvider).delete(
+            key: currentOrganizationStorageKey,
+          );
+    } catch (e, st) {
+      assert(() {
+        debugPrint('Failed to clear persisted organization on logout: $e\n$st');
+        return true;
+      }());
+    }
   }
 
   /// Refreshes the current authentication token.
