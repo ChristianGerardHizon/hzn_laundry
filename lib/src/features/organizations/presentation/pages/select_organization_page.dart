@@ -234,7 +234,6 @@ class _OrgTile extends ConsumerWidget {
       t,
       sub,
       enforceWarnings: settings?.enforceWarnings ?? true,
-      enforceLockout: settings?.enforceLockout ?? true,
       warningDaysBeforeDue:
           settings?.warningDaysBeforeDue ?? kSubscriptionExpiringSoonDays,
     );
@@ -403,13 +402,11 @@ _StatusInfo? _subscriptionStatusInfo(
   Translations t,
   OrganizationSubscription? sub, {
   required bool enforceWarnings,
-  required bool enforceLockout,
   required int warningDaysBeforeDue,
 }) {
   if (sub == null) return null;
 
-  if (enforceLockout &&
-      (sub.isEffectivelyLocked || sub.status == SubscriptionStatus.locked)) {
+  if (sub.isEffectivelyLocked || sub.status == SubscriptionStatus.locked) {
     return _StatusInfo(
       label: t.organizations.subscriptionLocked,
       color: Colors.redAccent,

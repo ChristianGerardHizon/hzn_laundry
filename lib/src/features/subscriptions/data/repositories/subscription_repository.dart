@@ -84,6 +84,11 @@ abstract class SubscriptionRepository {
     String? note,
   });
 
+  FutureEither<OrganizationSubscription> lockOrganization(
+    String organizationId, {
+    String? note,
+  });
+
   FutureEither<PlatformBillingSettings> getBillingSettings();
 
   FutureEither<PlatformBillingSettings> updateBillingSettings({
@@ -530,6 +535,49 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (subJson is! Map<String, dynamic>) {
           throw const DataFailure(
             'Invalid unlock organization response',
+            null,
+            'invalid_organization_subscription_response',
+          );
+        }
+        return OrganizationSubscriptionDto.fromJson(subJson).toEntity();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrganizationSubscription> lockOrganization(
+    String organizationId, {
+    String? note,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (organizationId.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/super-admin/organizations/$organizationId/lock',
+          method: 'POST',
+          body: {
+            if (note != null) 'note': note,
+          },
+        );
+        if (response is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid lock organization response',
+            null,
+            'invalid_organization_subscription_response',
+          );
+        }
+        final subJson = response['subscription'] ?? response;
+        if (subJson is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid lock organization response',
             null,
             'invalid_organization_subscription_response',
           );

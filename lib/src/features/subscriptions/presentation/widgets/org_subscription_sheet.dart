@@ -139,17 +139,33 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                             : t.subscriptions.assignPackage,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () => _showUnlockDialog(context, ref),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _kBrandTeal,
-                        side: const BorderSide(color: _kBrandTeal),
-                        minimumSize: const Size.fromHeight(44),
+                    if (hasSubscription &&
+                        status != SubscriptionStatus.locked) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => _showLockDialog(context, ref),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                        icon: const Icon(Icons.lock_outline),
+                        label: Text(t.subscriptions.manualLock),
                       ),
-                      icon: const Icon(Icons.lock_open_outlined),
-                      label: Text(t.subscriptions.manualUnlock),
-                    ),
+                    ],
+                    if (hasSubscription) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => _showUnlockDialog(context, ref),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _kBrandTeal,
+                          side: const BorderSide(color: _kBrandTeal),
+                          minimumSize: const Size.fromHeight(44),
+                        ),
+                        icon: const Icon(Icons.lock_open_outlined),
+                        label: Text(t.subscriptions.manualUnlock),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -177,6 +193,23 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
     }
   }
 
+  Future<void> _showLockDialog(BuildContext context, WidgetRef ref) async {
+    final t = Translations.of(context);
+    final locked = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _LockDialog(organizationId: org.id),
+    );
+    if (!context.mounted) return;
+    if (locked == true) {
+      showSuccessSnackBar(
+        context,
+        message: t.subscriptions.lockSuccess,
+        useRootMessenger: false,
+      );
+      context.pop();
+    }
+  }
+
   Future<void> _showUnlockDialog(BuildContext context, WidgetRef ref) async {
     final t = Translations.of(context);
     final unlocked = await showDialog<bool>(
@@ -192,6 +225,100 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
       );
       context.pop();
     }
+  }
+}
+
+class _LockDialog extends HookConsumerWidget {
+  const _LockDialog({required this.organizationId});
+
+  final String organizationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final isSaving = useState(false);
+    final noteController = useTextEditingController();
+
+    Future<void> lock() async {
+      if (isSaving.value) return;
+      isSaving.value = true;
+      try {
+        final result = await ref
+            .read(subscriptionRepositoryProvider)
+            .lockOrganization(
+              organizationId,
+              note: noteController.text.trim().isEmpty
+                  ? null
+                  : noteController.text.trim(),
+            );
+        if (!context.mounted) return;
+        result.fold(
+          (_) => showErrorSnackBar(
+            context,
+            message: t.subscriptions.lockFailed,
+            useRootMessenger: false,
+          ),
+          (_) {
+            ref
+                .read(organizationPlatformStatsControllerProvider.notifier)
+                .refresh();
+            context.pop(true);
+          },
+        );
+      } finally {
+        if (context.mounted) isSaving.value = false;
+      }
+    }
+
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) => AlertDialog(
+          backgroundColor: _kSurface,
+          title: Text(t.subscriptions.manualLock),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                t.subscriptions.lockConfirmMessage,
+                style: const TextStyle(color: _kMuted, height: 1.35),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                decoration: InputDecoration(
+                  labelText: t.subscriptions.adminNote,
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving.value ? null : () => context.pop(),
+              child: Text(t.common.cancel),
+            ),
+            FilledButton(
+              onPressed: isSaving.value ? null : lock,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+              child: isSaving.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(t.subscriptions.manualLock),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

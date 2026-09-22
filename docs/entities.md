@@ -288,7 +288,7 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 
 **Collection:** `organizationSubscriptions`
 
-Access: when lockout is enforced, after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Locked orgs see pay screen / lock interstitial only. Platform billing settings can turn off warnings and/or lockout while leaving voluntary pay available.
+Access: when platform auto-lock (`enforceLockout`) is on, after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Super Admin can also **manually lock** an org (`POST /api/super-admin/organizations/{id}/lock`). Locked orgs see pay screen / lock interstitial only. Manual lock always shows the lock UI; `enforceLockout` only controls the daily auto-lock job.
 
 On Super Admin assign (`POST /api/organizations/{id}/subscription`), optional body fields `periodStart` / `periodEnd` (ISO) override the default window (`now` + package interval). If only `periodStart` is set, `periodEnd` is computed from the package interval. `periodEnd` alone is rejected.
 
@@ -323,7 +323,7 @@ Singleton platform row for QRPH and defaults.
 | `defaultGraceDays` | int | Yes | Grace length in days **after** `periodEnd` (default 7) |
 | `warningDaysBeforeDue` | int | No | Days before `periodEnd` for in-app due-soon warnings (default 7) |
 | `enforceWarnings` | bool | No | When false, skip banners / dialogs / org-picker warning chips (default true) |
-| `enforceLockout` | bool | No | When false, daily job skips grace/lock transitions and client skips lock UI (default true); pay remains available |
+| `enforceLockout` | bool | No | When true, daily job auto-locks after grace (default true). Manual lock always works regardless. |
 | `reminderDaysBeforeDue` | List\<int> | No | Email reminder schedule, e.g. `[3, 0]` |
 
 **Collection:** `platformBillingSettings`

@@ -640,11 +640,12 @@ lib/src/
 
 ---
 
-| Sep 22 | Optional subscription enforcement | Billing settings: configurable warning days before due; toggles to disable in-app warnings and/or lockout while voluntary pay stays available |
+| Sep 22 | Manual organization lock | Super Admin can lock an org immediately (app unusable except pay); billing “Automatically lock after grace” only controls the daily job |
+| Sep 22 | Optional subscription enforcement | Billing settings: configurable warning days before due; toggles for in-app warnings and auto-lock after grace; voluntary pay stays available |
 | Sep 22 | Subscription due alert | Opening an org with a due-soon or grace subscription shows a one-time alert (Later / Go to payment) when warnings are enforced; banner still shown |
 | Sep 22 | Org picker subscription status | Select-organization cards show package name and Expiring / Expired / Locked from each org’s subscription |
 | Sep 22 | Super Admin mobile nav | Super Admin mobile uses bottom nav (Dashboard, Packages, Payments + More → drawer) like the main app; tablet+ keeps the sidenav |
-| Sep 22 | Org subscription dialog | Super Admin org card opens Organization details as a dialog (Assign package / Manual unlock) instead of a bottom sheet |
+| Sep 22 | Org subscription dialog | Super Admin org card opens Organization details as a dialog (Assign / Lock / Manual unlock) instead of a bottom sheet |
 | Sep 22 | Super Admin sidenav | `/super-admin` uses a Management-style shell sidenav (Dashboard, Packages, Payments, Billing) with nested routes; Organizations page AppBar links `system.admin` users to Super Admin |
 | Sep 22 | Manual subscription dates | Super Admin assign/reassign can set optional `periodStart` / `periodEnd`; blank uses today + package interval |
 | Sep 22 | Basic maintenance plan | Premade `Basic` subscription package at ₱2,000/month (includes all features) seeded on local, staging, and production catalogs |

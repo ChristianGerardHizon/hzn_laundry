@@ -974,6 +974,9 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Manual unlock'
 	String get manualUnlock => 'Manual unlock';
 
+	/// en: 'Lock organization'
+	String get manualLock => 'Lock organization';
+
 	/// en: 'Unlock until'
 	String get unlockUntil => 'Unlock until';
 
@@ -982,6 +985,15 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'Could not unlock organization'
 	String get unlockFailed => 'Could not unlock organization';
+
+	/// en: 'Organization locked'
+	String get lockSuccess => 'Organization locked';
+
+	/// en: 'Could not lock organization'
+	String get lockFailed => 'Could not lock organization';
+
+	/// en: 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.'
+	String get lockConfirmMessage => 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.';
 
 	/// en: 'Package name'
 	String get packageName => 'Package name';
@@ -1088,11 +1100,11 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Show payment warnings'
 	String get enforceWarnings => 'Show payment warnings';
 
-	/// en: 'Lock access after grace'
-	String get enforceLockout => 'Lock access after grace';
+	/// en: 'Automatically lock after grace ends'
+	String get enforceLockout => 'Automatically lock after grace ends';
 
-	/// en: 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.'
-	String get enforcementHint => 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.';
+	/// en: 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.'
+	String get enforcementHint => 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.';
 
 	/// en: 'QRPH image'
 	String get qrphImage => 'QRPH image';
@@ -1509,9 +1521,13 @@ extension on Translations {
 			'subscriptions.assignPackage' => 'Assign package',
 			'subscriptions.changePackage' => 'Change package',
 			'subscriptions.manualUnlock' => 'Manual unlock',
+			'subscriptions.manualLock' => 'Lock organization',
 			'subscriptions.unlockUntil' => 'Unlock until',
 			'subscriptions.unlockSuccess' => 'Organization unlocked',
 			'subscriptions.unlockFailed' => 'Could not unlock organization',
+			'subscriptions.lockSuccess' => 'Organization locked',
+			'subscriptions.lockFailed' => 'Could not lock organization',
+			'subscriptions.lockConfirmMessage' => 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.',
 			'subscriptions.packageName' => 'Package name',
 			'subscriptions.packageDescription' => 'Description',
 			'subscriptions.packagePrice' => 'Price (₱)',
@@ -1547,8 +1563,8 @@ extension on Translations {
 			'subscriptions.defaultGraceDays' => 'Grace days after due date',
 			'subscriptions.warningDaysBeforeDue' => 'Warning days before due',
 			'subscriptions.enforceWarnings' => 'Show payment warnings',
-			'subscriptions.enforceLockout' => 'Lock access after grace',
-			'subscriptions.enforcementHint' => 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.',
+			'subscriptions.enforceLockout' => 'Automatically lock after grace ends',
+			'subscriptions.enforcementHint' => 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.',
 			'subscriptions.qrphImage' => 'QRPH image',
 			'subscriptions.uploadQrph' => 'Upload QRPH',
 			'subscriptions.billingSaved' => 'Billing settings saved',

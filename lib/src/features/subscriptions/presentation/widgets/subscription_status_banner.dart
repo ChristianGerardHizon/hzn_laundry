@@ -43,11 +43,7 @@ class SubscriptionStatusBanner extends HookConsumerWidget {
     final subAsync = ref.watch(organizationSubscriptionProvider(org.id));
     final sub = subAsync.asData?.value;
     if (sub == null) return const SizedBox.shrink();
-
-    final enforceLockout = settings?.enforceLockout ?? true;
-    if (enforceLockout && sub.isEffectivelyLocked) {
-      return const SizedBox.shrink();
-    }
+    if (sub.isEffectivelyLocked) return const SizedBox.shrink();
 
     final dueSoon = isSubscriptionDueSoon(
       sub.status,
@@ -105,7 +101,6 @@ class SubscriptionLockGate extends HookConsumerWidget {
     final settings =
         ref.watch(billingSettingsControllerProvider).asData?.value;
     final enforceWarnings = settings?.enforceWarnings ?? true;
-    final enforceLockout = settings?.enforceLockout ?? true;
     final warningDays =
         settings?.warningDaysBeforeDue ?? kSubscriptionExpiringSoonDays;
 
@@ -116,8 +111,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
 
     useEffect(() {
       if (!enforceWarnings) return null;
-      if (org == null || sub == null) return null;
-      if (enforceLockout && sub.isEffectivelyLocked) return null;
+      if (org == null || sub == null || sub.isEffectivelyLocked) return null;
       final needsPrompt = sub.isInGrace ||
           isSubscriptionDueSoon(
             sub.status,
@@ -146,7 +140,6 @@ class SubscriptionLockGate extends HookConsumerWidget {
       sub?.periodEnd,
       path,
       enforceWarnings,
-      enforceLockout,
       warningDays,
     ]);
 
@@ -158,7 +151,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
       data: (subscription) {
         if (subscription == null) return child;
 
-        if (enforceLockout && subscription.isEffectivelyLocked) {
+        if (subscription.isEffectivelyLocked) {
           return _LockedScreen(
             organizationId: org.id,
             title: t.subscriptions.lockedTitle,

@@ -740,6 +740,25 @@ function unlockOrganization(e) {
   });
 }
 
+function lockOrganization(e) {
+  requireSystemAdmin(e);
+  var orgId = e.request.pathValue("id");
+  var sub = findActiveSubscription(e.app, orgId);
+  if (!sub) {
+    throw new NotFoundError("no active subscription for this organization");
+  }
+
+  var body = parseBody(e);
+  sub.set("status", "locked");
+  sub.set("manualUnlockUntil", "");
+  e.app.save(sub);
+
+  return e.json(200, {
+    subscription: exportSubscription(sub),
+    note: trimStr(body.note)
+  });
+}
+
 function getBillingSettings(e) {
   requireAuthUser(e);
   var settings = getBillingSettingsRecord(e.app);
@@ -1229,6 +1248,7 @@ module.exports = {
   listPendingPayments: listPendingPayments,
   reviewPayment: reviewPayment,
   unlockOrganization: unlockOrganization,
+  lockOrganization: lockOrganization,
   getBillingSettings: getBillingSettings,
   updateBillingSettings: updateBillingSettings,
   runDailyBillingJob: runDailyBillingJob,
