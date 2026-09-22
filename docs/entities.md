@@ -290,6 +290,8 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 
 Access: after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Locked orgs see pay screen / lock interstitial only.
 
+On Super Admin assign (`POST /api/organizations/{id}/subscription`), optional body fields `periodStart` / `periodEnd` (ISO) override the default window (`now` + package interval). If only `periodStart` is set, `periodEnd` is computed from the package interval. `periodEnd` alone is rejected.
+
 ### SubscriptionPayment
 
 | Field | Type | Required | Description |

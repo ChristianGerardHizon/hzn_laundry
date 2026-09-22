@@ -54,6 +54,8 @@ abstract class SubscriptionRepository {
     String organizationId, {
     String? packageId,
     Map<String, dynamic>? customPackage,
+    DateTime? periodStart,
+    DateTime? periodEnd,
   });
 
   FutureEither<OrganizationSubscription?> getOrgSubscription(
@@ -245,6 +247,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     String organizationId, {
     String? packageId,
     Map<String, dynamic>? customPackage,
+    DateTime? periodStart,
+    DateTime? periodEnd,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -262,6 +266,12 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         }
         if (customPackage != null) {
           body['customPackage'] = customPackage;
+        }
+        if (periodStart != null) {
+          body['periodStart'] = periodStart.toUtc().toIso8601String();
+        }
+        if (periodEnd != null) {
+          body['periodEnd'] = periodEnd.toUtc().toIso8601String();
         }
 
         final response = await _pb.send(

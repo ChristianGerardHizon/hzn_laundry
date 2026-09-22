@@ -1,5 +1,5 @@
 {
-  "tabOverview": "Overview",
+  "tabOverview": "Dashboard",
   "tabPackages": "Mga Package",
   "tabPayments": "Mga Bayad",
   "tabBilling": "Billing",
@@ -10,6 +10,11 @@
   "statusLocked": "Naka-lock",
   "statusCancelled": "Kinansela",
   "periodEnds": "Magtatapos ang period",
+  "periodStart": "Simula ng period",
+  "periodEnd": "Wakas ng period",
+  "periodDatesHint": "Iwanang blangko para gamitin ang ngayon + package interval",
+  "periodStartRequiredWithEnd": "Kailangan ang start date kung may end date",
+  "periodEndAfterStart": "Dapat mas huli ang end date kaysa start date",
   "graceEnds": "Magtatapos ang grace",
   "pendingProofs": "Pending na proof",
   "assignPackage": "Mag-assign ng package",

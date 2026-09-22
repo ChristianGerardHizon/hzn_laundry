@@ -1,5 +1,5 @@
 {
-  "tabOverview": "Overview",
+  "tabOverview": "Dashboard",
   "tabPackages": "Packages",
   "tabPayments": "Payments",
   "tabBilling": "Billing",
@@ -10,6 +10,11 @@
   "statusLocked": "Locked",
   "statusCancelled": "Cancelled",
   "periodEnds": "Period ends",
+  "periodStart": "Period start",
+  "periodEnd": "Period end",
+  "periodDatesHint": "Leave blank to use today + package interval",
+  "periodStartRequiredWithEnd": "Start date is required when end date is set",
+  "periodEndAfterStart": "End date must be after start date",
   "graceEnds": "Grace ends",
   "pendingProofs": "Pending proofs",
   "assignPackage": "Assign package",

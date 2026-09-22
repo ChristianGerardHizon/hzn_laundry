@@ -347,6 +347,8 @@ class _AssignPackageDialog extends HookConsumerWidget {
       isSaving.value = true;
       try {
         final values = formKey.currentState!.value;
+        final periodStart = values['periodStart'] as DateTime?;
+        final periodEnd = values['periodEnd'] as DateTime?;
         final result = useCustom.value
             ? await ref.read(subscriptionRepositoryProvider).assignSubscription(
                   organizationId,
@@ -361,10 +363,14 @@ class _AssignPackageDialog extends HookConsumerWidget {
                         (values['customIntervalUnit'] as BillingIntervalUnit)
                             .name,
                   },
+                  periodStart: periodStart,
+                  periodEnd: periodEnd,
                 )
             : await ref.read(subscriptionRepositoryProvider).assignSubscription(
                   organizationId,
                   packageId: values['packageId'] as String,
+                  periodStart: periodStart,
+                  periodEnd: periodEnd,
                 );
 
         if (!context.mounted) return;
@@ -513,6 +519,44 @@ class _AssignPackageDialog extends HookConsumerWidget {
                         ],
                       ),
                     ],
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        t.subscriptions.periodDatesHint,
+                        style: const TextStyle(color: _kMuted, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FormBuilderDateTimePicker(
+                      name: 'periodStart',
+                      inputType: InputType.date,
+                      decoration: InputDecoration(
+                        labelText: t.subscriptions.periodStart,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    FormBuilderDateTimePicker(
+                      name: 'periodEnd',
+                      inputType: InputType.date,
+                      decoration: InputDecoration(
+                        labelText: t.subscriptions.periodEnd,
+                      ),
+                      validator: (end) {
+                        final start = formKey
+                            .currentState?.fields['periodStart']?.value
+                            as DateTime?;
+                        if (end != null && start == null) {
+                          return t.subscriptions.periodStartRequiredWithEnd;
+                        }
+                        if (end != null &&
+                            start != null &&
+                            !end.isAfter(start)) {
+                          return t.subscriptions.periodEndAfterStart;
+                        }
+                        return null;
+                      },
+                    ),
                   ],
                 ),
               ),

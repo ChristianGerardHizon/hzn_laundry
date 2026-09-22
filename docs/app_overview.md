@@ -142,13 +142,14 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 ### Organization/Admin Features
 
 #### Super Admin & Subscriptions
-- `/super-admin` — Overview (org KPIs + subscription badges), Packages, Payments queue, Billing settings (QRPH)
+- `/super-admin` — Dashboard (org KPIs + subscription badges) with sidenav for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
 - `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); grace banners and lock gate in the authenticated shell
 
 #### Organizations (`/organizations`)
 Every signed-in user can see this tab (no permission gate) so pending invites are visible.
 
 - List of organizations you belong to, with your role and a switch action
+- `system.admin` users get an AppBar action to open Super Admin (`/super-admin`)
 - Org display page (`/organizations/:id`) with **Overview**, **People**, and **Features** tabs
 - Overview details editable with `members.manage`
 - People: invite by email + role; accept/decline pending invites
@@ -198,7 +199,7 @@ Device-specific settings only (this tablet/phone/desktop).
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web and Android
 - Organization selection (`/select-organization`) — after login when the user has 1+ memberships; Super Admin entry for `system.admin`
 - Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
-- Super Admin hub (`/super-admin`) — platform overview with org metrics (orders, customers, revenue, branches, members), subscription packages/payments/billing settings, and create organization
+- Super Admin hub (`/super-admin`) — sidenav shell with Dashboard (org metrics), Packages, Payments, and Billing; create organization from the header
 - Subscription payment (`/subscription/pay/:organizationId`) — QRPH scan instructions + transaction screenshot upload for org admins (email deep link)
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
@@ -443,6 +444,9 @@ App Root (Shell)
 │   ├── /scope-recovery
 │   ├── /select-organization
 │   ├── /super-admin
+│   │   ├── /packages
+│   │   ├── /payments
+│   │   └── /billing
 │   └── /subscription/pay/:organizationId
 │
 ├── Public (non-shell, tokenized)
@@ -636,6 +640,10 @@ lib/src/
 
 ---
 
+| Sep 22 | Super Admin sidenav | `/super-admin` uses a Management-style shell sidenav (Dashboard, Packages, Payments, Billing) with nested routes; Organizations page AppBar links `system.admin` users to Super Admin |
+| Sep 22 | Manual subscription dates | Super Admin assign/reassign can set optional `periodStart` / `periodEnd`; blank uses today + package interval |
+| Sep 22 | Basic maintenance plan | Premade `Basic` subscription package at ₱2,000/month (includes all features) seeded on local, staging, and production catalogs |
+| Sep 22 | Android Google Custom Tabs | Google OAuth on Android opens a partial Custom Tab (keeps realtime alive) and closes it when auth finishes so the user returns to the app |
 | Sep 22 | Org select clears on logout | Logout deletes `CURRENT_ORGANIZATION_ID`; next login shows `/select-organization` unless a last-used org is still persisted for the session |
 | Sep 22 | Org create requires subscription | Create-organization wizard includes a required Subscription step; `POST /api/organizations` assigns the package in the same transaction |
 | Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |

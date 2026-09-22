@@ -384,7 +384,7 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get tabOverview => 'Overview';
+	@override String get tabOverview => 'Dashboard';
 	@override String get tabPackages => 'Mga Package';
 	@override String get tabPayments => 'Mga Bayad';
 	@override String get tabBilling => 'Billing';
@@ -395,6 +395,11 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	@override String get statusLocked => 'Naka-lock';
 	@override String get statusCancelled => 'Kinansela';
 	@override String get periodEnds => 'Magtatapos ang period';
+	@override String get periodStart => 'Simula ng period';
+	@override String get periodEnd => 'Wakas ng period';
+	@override String get periodDatesHint => 'Iwanang blangko para gamitin ang ngayon + package interval';
+	@override String get periodStartRequiredWithEnd => 'Kailangan ang start date kung may end date';
+	@override String get periodEndAfterStart => 'Dapat mas huli ang end date kaysa start date';
 	@override String get graceEnds => 'Magtatapos ang grace';
 	@override String get pendingProofs => 'Pending na proof';
 	@override String get assignPackage => 'Mag-assign ng package';
@@ -746,7 +751,7 @@ extension on TranslationsTl {
 			'sort.stock' => 'Stock',
 			'sort.expiration' => 'Expiration',
 			'sort.status' => 'Katayuan',
-			'subscriptions.tabOverview' => 'Overview',
+			'subscriptions.tabOverview' => 'Dashboard',
 			'subscriptions.tabPackages' => 'Mga Package',
 			'subscriptions.tabPayments' => 'Mga Bayad',
 			'subscriptions.tabBilling' => 'Billing',
@@ -757,6 +762,11 @@ extension on TranslationsTl {
 			'subscriptions.statusLocked' => 'Naka-lock',
 			'subscriptions.statusCancelled' => 'Kinansela',
 			'subscriptions.periodEnds' => 'Magtatapos ang period',
+			'subscriptions.periodStart' => 'Simula ng period',
+			'subscriptions.periodEnd' => 'Wakas ng period',
+			'subscriptions.periodDatesHint' => 'Iwanang blangko para gamitin ang ngayon + package interval',
+			'subscriptions.periodStartRequiredWithEnd' => 'Kailangan ang start date kung may end date',
+			'subscriptions.periodEndAfterStart' => 'Dapat mas huli ang end date kaysa start date',
 			'subscriptions.graceEnds' => 'Magtatapos ang grace',
 			'subscriptions.pendingProofs' => 'Pending na proof',
 			'subscriptions.assignPackage' => 'Mag-assign ng package',

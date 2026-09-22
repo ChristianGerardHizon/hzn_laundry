@@ -899,8 +899,8 @@ class TranslationsSubscriptionsEn {
 
 	// Translations
 
-	/// en: 'Overview'
-	String get tabOverview => 'Overview';
+	/// en: 'Dashboard'
+	String get tabOverview => 'Dashboard';
 
 	/// en: 'Packages'
 	String get tabPackages => 'Packages';
@@ -931,6 +931,21 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'Period ends'
 	String get periodEnds => 'Period ends';
+
+	/// en: 'Period start'
+	String get periodStart => 'Period start';
+
+	/// en: 'Period end'
+	String get periodEnd => 'Period end';
+
+	/// en: 'Leave blank to use today + package interval'
+	String get periodDatesHint => 'Leave blank to use today + package interval';
+
+	/// en: 'Start date is required when end date is set'
+	String get periodStartRequiredWithEnd => 'Start date is required when end date is set';
+
+	/// en: 'End date must be after start date'
+	String get periodEndAfterStart => 'End date must be after start date';
 
 	/// en: 'Grace ends'
 	String get graceEnds => 'Grace ends';
@@ -1428,7 +1443,7 @@ extension on Translations {
 			'sort.stock' => 'Stock',
 			'sort.expiration' => 'Expiration',
 			'sort.status' => 'Status',
-			'subscriptions.tabOverview' => 'Overview',
+			'subscriptions.tabOverview' => 'Dashboard',
 			'subscriptions.tabPackages' => 'Packages',
 			'subscriptions.tabPayments' => 'Payments',
 			'subscriptions.tabBilling' => 'Billing',
@@ -1439,6 +1454,11 @@ extension on Translations {
 			'subscriptions.statusLocked' => 'Locked',
 			'subscriptions.statusCancelled' => 'Cancelled',
 			'subscriptions.periodEnds' => 'Period ends',
+			'subscriptions.periodStart' => 'Period start',
+			'subscriptions.periodEnd' => 'Period end',
+			'subscriptions.periodDatesHint' => 'Leave blank to use today + package interval',
+			'subscriptions.periodStartRequiredWithEnd' => 'Start date is required when end date is set',
+			'subscriptions.periodEndAfterStart' => 'End date must be after start date',
 			'subscriptions.graceEnds' => 'Grace ends',
 			'subscriptions.pendingProofs' => 'Pending proofs',
 			'subscriptions.assignPackage' => 'Assign package',

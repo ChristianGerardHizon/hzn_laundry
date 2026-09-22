@@ -321,7 +321,10 @@ function softDeletePackage(e) {
 
 /**
  * Assign (or replace) an organization subscription.
- * opts: { packageId?, customPackage?, allowCustom?, requirePremade? }
+ * opts: {
+ *   packageId?, customPackage?, allowCustom?, requirePremade?,
+ *   periodStart?, periodEnd?  // optional ISO date overrides
+ * }
  * Returns { subscription, package }.
  */
 function assignSubscriptionInApp(app, orgId, opts) {
@@ -380,19 +383,46 @@ function assignSubscriptionInApp(app, orgId, opts) {
     app.save(existing);
   }
 
+  var intervalCount = pkg.getInt("intervalCount");
+  var intervalUnit = pkg.getString("intervalUnit");
   var now = new Date();
-  var periodEnd = addInterval(
-    now,
-    pkg.getInt("intervalCount"),
-    pkg.getString("intervalUnit")
-  );
+  var hasStart = trimStr(opts.periodStart) !== "";
+  var hasEnd = trimStr(opts.periodEnd) !== "";
+  var periodStartDate;
+  var periodEndDate;
+
+  if (hasEnd && !hasStart) {
+    throw new BadRequestError("periodStart is required when periodEnd is set");
+  }
+
+  if (hasStart) {
+    periodStartDate = new Date(opts.periodStart);
+    if (isNaN(periodStartDate.getTime())) {
+      throw new BadRequestError("periodStart is invalid");
+    }
+    if (hasEnd) {
+      periodEndDate = new Date(opts.periodEnd);
+      if (isNaN(periodEndDate.getTime())) {
+        throw new BadRequestError("periodEnd is invalid");
+      }
+      if (periodEndDate.getTime() <= periodStartDate.getTime()) {
+        throw new BadRequestError("periodEnd must be after periodStart");
+      }
+    } else {
+      periodEndDate = addInterval(periodStartDate, intervalCount, intervalUnit);
+    }
+  } else {
+    periodStartDate = now;
+    periodEndDate = addInterval(now, intervalCount, intervalUnit);
+  }
+
   var settings = getBillingSettingsRecord(app);
   var reminderDays = readReminderDays(settings);
   var soonestReminder = null;
   var ri;
   for (ri = 0; ri < reminderDays.length; ri++) {
     var daysBefore = Number(reminderDays[ri]) || 0;
-    var reminderAt = new Date(periodEnd.getTime());
+    var reminderAt = new Date(periodEndDate.getTime());
     reminderAt.setUTCDate(reminderAt.getUTCDate() - daysBefore);
     if (!soonestReminder || reminderAt < soonestReminder) {
       if (reminderAt > now) soonestReminder = reminderAt;
@@ -405,11 +435,11 @@ function assignSubscriptionInApp(app, orgId, opts) {
   sub.set("package", pkg.id);
   sub.set("packageName", pkg.getString("name"));
   sub.set("price", pkg.getFloat("price"));
-  sub.set("intervalCount", pkg.getInt("intervalCount"));
-  sub.set("intervalUnit", pkg.getString("intervalUnit"));
+  sub.set("intervalCount", intervalCount);
+  sub.set("intervalUnit", intervalUnit);
   sub.set("status", "active");
-  sub.set("periodStart", toIsoDate(now));
-  sub.set("periodEnd", toIsoDate(periodEnd));
+  sub.set("periodStart", toIsoDate(periodStartDate));
+  sub.set("periodEnd", toIsoDate(periodEndDate));
   sub.set("graceEndsAt", "");
   sub.set("manualUnlockUntil", "");
   sub.set("nextReminderAt", soonestReminder ? toIsoDate(soonestReminder) : "");
@@ -434,7 +464,9 @@ function assignSubscription(e) {
     packageId: body.packageId,
     customPackage: body.customPackage,
     allowCustom: true,
-    requirePremade: false
+    requirePremade: false,
+    periodStart: body.periodStart,
+    periodEnd: body.periodEnd
   });
 
   return e.json(200, {
