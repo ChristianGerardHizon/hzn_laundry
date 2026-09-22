@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/foundation/failure.dart';
 import '../../../core/foundation/type_defs.dart';
@@ -11,10 +9,11 @@ import '../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../core/packages/storage/auth_storage_provider.dart';
 import '../domain/auth_state.dart';
 import 'auth_dto.dart';
+import 'oauth_url_launcher.dart';
 
 part 'auth_repository.g.dart';
 
-/// Opens an OAuth vendor URL (browser popup/tab on web).
+/// Opens an OAuth vendor URL (browser popup/tab on web, Custom Tab on Android).
 typedef OAuthUrlLauncher = Future<bool> Function(Uri url);
 
 /// Repository interface for authentication operations.
@@ -77,14 +76,6 @@ class AuthRepositoryImpl implements AuthRepository {
     pb.authStore.save(authDto.token, authDto.toRecordModel());
   }
 
-  /// Opens the OAuth vendor URL: popup/tab on web, external browser on Android.
-  static Future<bool> _defaultOAuthUrlLauncher(Uri url) {
-    if (kIsWeb) {
-      return launchUrl(url, webOnlyWindowName: '_blank');
-    }
-    return launchUrl(url, mode: LaunchMode.externalApplication);
-  }
-
   @override
   FutureEither<AuthState> login(String email, String password) async {
     return TaskEither.tryCatch(
@@ -113,25 +104,30 @@ class AuthRepositoryImpl implements AuthRepository {
       // Avoid linking Google to a stale leftover session.
       pb.authStore.clear();
 
-      final result = await _collection.authWithOAuth2(
-        'google',
-        (url) async {
-          final launcher = openUrl ?? _defaultOAuthUrlLauncher;
-          final opened = await launcher(url);
-          if (!opened) {
-            throw const AuthFailure(
-              'Could not open Google sign-in',
-              null,
-              'google_launch_failed',
-            );
-          }
-        },
-        expand: _expand,
-      );
+      try {
+        final result = await _collection.authWithOAuth2(
+          'google',
+          (url) async {
+            final launcher = openUrl ?? launchOAuthVendorUrl;
+            final opened = await launcher(url);
+            if (!opened) {
+              throw const AuthFailure(
+                'Could not open Google sign-in',
+                null,
+                'google_launch_failed',
+              );
+            }
+          },
+          expand: _expand,
+        );
 
-      final authDto = AuthDto.fromAuthResult(result);
-      await _persistAuth(authDto);
-      return _createAuthState(authDto);
+        final authDto = AuthDto.fromAuthResult(result);
+        await _persistAuth(authDto);
+        return _createAuthState(authDto);
+      } finally {
+        // Return from the Android Custom Tab whether auth succeeded or failed.
+        await closeOAuthBrowser();
+      }
     }, Failure.handle).run();
   }
 
