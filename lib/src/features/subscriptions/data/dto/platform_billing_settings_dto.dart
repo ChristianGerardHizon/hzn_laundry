@@ -16,6 +16,9 @@ class PlatformBillingSettingsDto with PlatformBillingSettingsDtoMappable {
     this.payeeName = '',
     this.instructions = '',
     this.defaultGraceDays = 7,
+    this.warningDaysBeforeDue = 7,
+    this.enforceWarnings = true,
+    this.enforceLockout = true,
     this.reminderDaysBeforeDue = const [3, 0],
   });
 
@@ -27,6 +30,9 @@ class PlatformBillingSettingsDto with PlatformBillingSettingsDtoMappable {
   final String payeeName;
   final String instructions;
   final int defaultGraceDays;
+  final int warningDaysBeforeDue;
+  final bool enforceWarnings;
+  final bool enforceLockout;
   final List<int> reminderDaysBeforeDue;
 
   factory PlatformBillingSettingsDto.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,9 @@ class PlatformBillingSettingsDto with PlatformBillingSettingsDtoMappable {
       payeeName: json['payeeName'] as String? ?? '',
       instructions: json['instructions'] as String? ?? '',
       defaultGraceDays: _asInt(json['defaultGraceDays'], fallback: 7),
+      warningDaysBeforeDue: _asInt(json['warningDaysBeforeDue'], fallback: 7),
+      enforceWarnings: _asBool(json['enforceWarnings'], fallback: true),
+      enforceLockout: _asBool(json['enforceLockout'], fallback: true),
       reminderDaysBeforeDue: _asIntList(json['reminderDaysBeforeDue']),
     );
   }
@@ -56,6 +65,9 @@ class PlatformBillingSettingsDto with PlatformBillingSettingsDtoMappable {
       payeeName: payeeName,
       instructions: instructions,
       defaultGraceDays: defaultGraceDays,
+      warningDaysBeforeDue: warningDaysBeforeDue,
+      enforceWarnings: enforceWarnings,
+      enforceLockout: enforceLockout,
       reminderDaysBeforeDue: reminderDaysBeforeDue,
     );
   }
@@ -74,6 +86,17 @@ int _asInt(dynamic value, {int fallback = 0}) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? fallback;
+  return fallback;
+}
+
+bool _asBool(dynamic value, {required bool fallback}) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final lower = value.toLowerCase();
+    if (lower == 'true' || lower == '1') return true;
+    if (lower == 'false' || lower == '0') return false;
+  }
   return fallback;
 }
 

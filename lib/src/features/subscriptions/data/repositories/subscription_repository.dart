@@ -54,6 +54,8 @@ abstract class SubscriptionRepository {
     String organizationId, {
     String? packageId,
     Map<String, dynamic>? customPackage,
+    DateTime? periodStart,
+    DateTime? periodEnd,
   });
 
   FutureEither<OrganizationSubscription?> getOrgSubscription(
@@ -82,12 +84,20 @@ abstract class SubscriptionRepository {
     String? note,
   });
 
+  FutureEither<OrganizationSubscription> lockOrganization(
+    String organizationId, {
+    String? note,
+  });
+
   FutureEither<PlatformBillingSettings> getBillingSettings();
 
   FutureEither<PlatformBillingSettings> updateBillingSettings({
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
     http.MultipartFile? qrphImage,
   });
@@ -245,6 +255,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     String organizationId, {
     String? packageId,
     Map<String, dynamic>? customPackage,
+    DateTime? periodStart,
+    DateTime? periodEnd,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -262,6 +274,12 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         }
         if (customPackage != null) {
           body['customPackage'] = customPackage;
+        }
+        if (periodStart != null) {
+          body['periodStart'] = periodStart.toUtc().toIso8601String();
+        }
+        if (periodEnd != null) {
+          body['periodEnd'] = periodEnd.toUtc().toIso8601String();
         }
 
         final response = await _pb.send(
@@ -528,6 +546,49 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
   }
 
   @override
+  FutureEither<OrganizationSubscription> lockOrganization(
+    String organizationId, {
+    String? note,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (organizationId.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/super-admin/organizations/$organizationId/lock',
+          method: 'POST',
+          body: {
+            if (note != null) 'note': note,
+          },
+        );
+        if (response is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid lock organization response',
+            null,
+            'invalid_organization_subscription_response',
+          );
+        }
+        final subJson = response['subscription'] ?? response;
+        if (subJson is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid lock organization response',
+            null,
+            'invalid_organization_subscription_response',
+          );
+        }
+        return OrganizationSubscriptionDto.fromJson(subJson).toEntity();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
   FutureEither<PlatformBillingSettings> getBillingSettings() async {
     return TaskEither.tryCatch(
       () async {
@@ -561,6 +622,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
     http.MultipartFile? qrphImage,
   }) async {
@@ -571,6 +635,15 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (instructions != null) body['instructions'] = instructions;
         if (defaultGraceDays != null) {
           body['defaultGraceDays'] = defaultGraceDays;
+        }
+        if (warningDaysBeforeDue != null) {
+          body['warningDaysBeforeDue'] = warningDaysBeforeDue;
+        }
+        if (enforceWarnings != null) {
+          body['enforceWarnings'] = enforceWarnings;
+        }
+        if (enforceLockout != null) {
+          body['enforceLockout'] = enforceLockout;
         }
         if (reminderDaysBeforeDue != null) {
           body['reminderDaysBeforeDue'] = reminderDaysBeforeDue;

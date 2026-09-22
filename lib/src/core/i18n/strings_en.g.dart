@@ -788,6 +788,18 @@ class TranslationsOrganizationsEn {
 	/// en: 'Last used'
 	String get lastUsed => 'Last used';
 
+	/// en: '(one) {Expiring in 1 day} (other) {Expiring in $n days}'
+	String expiringInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Expiring in 1 day',
+		other: 'Expiring in ${n} days',
+	);
+
+	/// en: 'Expired'
+	String get subscriptionExpired => 'Expired';
+
+	/// en: 'Locked'
+	String get subscriptionLocked => 'Locked';
+
 	/// en: 'Super Admin'
 	String get superAdmin => 'Super Admin';
 
@@ -899,8 +911,8 @@ class TranslationsSubscriptionsEn {
 
 	// Translations
 
-	/// en: 'Overview'
-	String get tabOverview => 'Overview';
+	/// en: 'Dashboard'
+	String get tabOverview => 'Dashboard';
 
 	/// en: 'Packages'
 	String get tabPackages => 'Packages';
@@ -932,6 +944,21 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Period ends'
 	String get periodEnds => 'Period ends';
 
+	/// en: 'Period start'
+	String get periodStart => 'Period start';
+
+	/// en: 'Period end'
+	String get periodEnd => 'Period end';
+
+	/// en: 'Leave blank to use today + package interval'
+	String get periodDatesHint => 'Leave blank to use today + package interval';
+
+	/// en: 'Start date is required when end date is set'
+	String get periodStartRequiredWithEnd => 'Start date is required when end date is set';
+
+	/// en: 'End date must be after start date'
+	String get periodEndAfterStart => 'End date must be after start date';
+
 	/// en: 'Grace ends'
 	String get graceEnds => 'Grace ends';
 
@@ -947,6 +974,9 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Manual unlock'
 	String get manualUnlock => 'Manual unlock';
 
+	/// en: 'Lock organization'
+	String get manualLock => 'Lock organization';
+
 	/// en: 'Unlock until'
 	String get unlockUntil => 'Unlock until';
 
@@ -955,6 +985,15 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'Could not unlock organization'
 	String get unlockFailed => 'Could not unlock organization';
+
+	/// en: 'Organization locked'
+	String get lockSuccess => 'Organization locked';
+
+	/// en: 'Could not lock organization'
+	String get lockFailed => 'Could not lock organization';
+
+	/// en: 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.'
+	String get lockConfirmMessage => 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.';
 
 	/// en: 'Package name'
 	String get packageName => 'Package name';
@@ -1052,8 +1091,20 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Payment instructions'
 	String get instructions => 'Payment instructions';
 
-	/// en: 'Grace days'
-	String get defaultGraceDays => 'Grace days';
+	/// en: 'Grace days after due date'
+	String get defaultGraceDays => 'Grace days after due date';
+
+	/// en: 'Warning days before due'
+	String get warningDaysBeforeDue => 'Warning days before due';
+
+	/// en: 'Show payment warnings'
+	String get enforceWarnings => 'Show payment warnings';
+
+	/// en: 'Automatically lock after grace ends'
+	String get enforceLockout => 'Automatically lock after grace ends';
+
+	/// en: 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.'
+	String get enforcementHint => 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.';
 
 	/// en: 'QRPH image'
 	String get qrphImage => 'QRPH image';
@@ -1105,6 +1156,24 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'Subscription payment is due soon.'
 	String get dueSoonBanner => 'Subscription payment is due soon.';
+
+	/// en: 'Subscription due soon'
+	String get dueSoonDialogTitle => 'Subscription due soon';
+
+	/// en: '(one) {Your subscription expires in 1 day. Please renew to keep access.} (other) {Your subscription expires in $n days. Please renew to keep access.}'
+	String dueSoonDialogMessage({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Your subscription expires in 1 day. Please renew to keep access.',
+		other: 'Your subscription expires in ${n} days. Please renew to keep access.',
+	);
+
+	/// en: 'Subscription expired'
+	String get graceDialogTitle => 'Subscription expired';
+
+	/// en: 'Your subscription is past due. Please pay to avoid losing access.'
+	String get graceDialogMessage => 'Your subscription is past due. Please pay to avoid losing access.';
+
+	/// en: 'Later'
+	String get remindLater => 'Later';
 
 	/// en: 'Go to payment'
 	String get goToPayment => 'Go to payment';
@@ -1397,6 +1466,9 @@ extension on Translations {
 			'organizations.selectTitle' => 'Select organization',
 			'organizations.selectSubtitle' => 'Choose which organization you want to work in.',
 			'organizations.lastUsed' => 'Last used',
+			'organizations.expiringInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Expiring in 1 day', other: 'Expiring in ${n} days', ), 
+			'organizations.subscriptionExpired' => 'Expired',
+			'organizations.subscriptionLocked' => 'Locked',
 			'organizations.superAdmin' => 'Super Admin',
 			'organizations.superAdminTitle' => 'Super Admin',
 			'organizations.superAdminSubtitle' => 'Platform overview across all organizations.',
@@ -1428,7 +1500,7 @@ extension on Translations {
 			'sort.stock' => 'Stock',
 			'sort.expiration' => 'Expiration',
 			'sort.status' => 'Status',
-			'subscriptions.tabOverview' => 'Overview',
+			'subscriptions.tabOverview' => 'Dashboard',
 			'subscriptions.tabPackages' => 'Packages',
 			'subscriptions.tabPayments' => 'Payments',
 			'subscriptions.tabBilling' => 'Billing',
@@ -1439,14 +1511,23 @@ extension on Translations {
 			'subscriptions.statusLocked' => 'Locked',
 			'subscriptions.statusCancelled' => 'Cancelled',
 			'subscriptions.periodEnds' => 'Period ends',
+			'subscriptions.periodStart' => 'Period start',
+			'subscriptions.periodEnd' => 'Period end',
+			'subscriptions.periodDatesHint' => 'Leave blank to use today + package interval',
+			'subscriptions.periodStartRequiredWithEnd' => 'Start date is required when end date is set',
+			'subscriptions.periodEndAfterStart' => 'End date must be after start date',
 			'subscriptions.graceEnds' => 'Grace ends',
 			'subscriptions.pendingProofs' => 'Pending proofs',
 			'subscriptions.assignPackage' => 'Assign package',
 			'subscriptions.changePackage' => 'Change package',
 			'subscriptions.manualUnlock' => 'Manual unlock',
+			'subscriptions.manualLock' => 'Lock organization',
 			'subscriptions.unlockUntil' => 'Unlock until',
 			'subscriptions.unlockSuccess' => 'Organization unlocked',
 			'subscriptions.unlockFailed' => 'Could not unlock organization',
+			'subscriptions.lockSuccess' => 'Organization locked',
+			'subscriptions.lockFailed' => 'Could not lock organization',
+			'subscriptions.lockConfirmMessage' => 'The organization will be unusable until unlocked or payment is approved. Users can still open the pay screen.',
 			'subscriptions.packageName' => 'Package name',
 			'subscriptions.packageDescription' => 'Description',
 			'subscriptions.packagePrice' => 'Price (₱)',
@@ -1479,7 +1560,11 @@ extension on Translations {
 			'subscriptions.submitted' => 'Submitted',
 			'subscriptions.payeeName' => 'Payee name',
 			'subscriptions.instructions' => 'Payment instructions',
-			'subscriptions.defaultGraceDays' => 'Grace days',
+			'subscriptions.defaultGraceDays' => 'Grace days after due date',
+			'subscriptions.warningDaysBeforeDue' => 'Warning days before due',
+			'subscriptions.enforceWarnings' => 'Show payment warnings',
+			'subscriptions.enforceLockout' => 'Automatically lock after grace ends',
+			'subscriptions.enforcementHint' => 'Warnings control banners and alerts. Auto-lock only affects the daily job after grace. Manual lock always blocks the app; pay stays available.',
 			'subscriptions.qrphImage' => 'QRPH image',
 			'subscriptions.uploadQrph' => 'Upload QRPH',
 			'subscriptions.billingSaved' => 'Billing settings saved',
@@ -1497,6 +1582,11 @@ extension on Translations {
 			'subscriptions.lockedMessage' => 'Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.',
 			'subscriptions.graceBanner' => 'Subscription is in grace period. Please pay to avoid losing access.',
 			'subscriptions.dueSoonBanner' => 'Subscription payment is due soon.',
+			'subscriptions.dueSoonDialogTitle' => 'Subscription due soon',
+			'subscriptions.dueSoonDialogMessage' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Your subscription expires in 1 day. Please renew to keep access.', other: 'Your subscription expires in ${n} days. Please renew to keep access.', ), 
+			'subscriptions.graceDialogTitle' => 'Subscription expired',
+			'subscriptions.graceDialogMessage' => 'Your subscription is past due. Please pay to avoid losing access.',
+			'subscriptions.remindLater' => 'Later',
 			'subscriptions.goToPayment' => 'Go to payment',
 			'subscriptions.orgDetails' => 'Organization details',
 			'subscriptions.days' => 'days',

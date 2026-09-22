@@ -10,7 +10,7 @@ part of 'organization_selection_gate.dart';
 // ignore_for_file: type=lint, type=warning
 /// Session flag: user has explicitly chosen (or created) an organization.
 ///
-/// Cleared on logout so the next login with 2+ memberships shows the picker
+/// Cleared on logout so the next login with 1+ memberships shows the picker
 /// again. Kept in memory only — not persisted.
 
 @ProviderFor(OrganizationSelectionConfirmed)
@@ -19,13 +19,13 @@ final organizationSelectionConfirmedProvider =
 
 /// Session flag: user has explicitly chosen (or created) an organization.
 ///
-/// Cleared on logout so the next login with 2+ memberships shows the picker
+/// Cleared on logout so the next login with 1+ memberships shows the picker
 /// again. Kept in memory only — not persisted.
 final class OrganizationSelectionConfirmedProvider
     extends $NotifierProvider<OrganizationSelectionConfirmed, bool> {
   /// Session flag: user has explicitly chosen (or created) an organization.
   ///
-  /// Cleared on logout so the next login with 2+ memberships shows the picker
+  /// Cleared on logout so the next login with 1+ memberships shows the picker
   /// again. Kept in memory only — not persisted.
   OrganizationSelectionConfirmedProvider._()
       : super(
@@ -59,7 +59,7 @@ String _$organizationSelectionConfirmedHash() =>
 
 /// Session flag: user has explicitly chosen (or created) an organization.
 ///
-/// Cleared on logout so the next login with 2+ memberships shows the picker
+/// Cleared on logout so the next login with 1+ memberships shows the picker
 /// again. Kept in memory only — not persisted.
 
 abstract class _$OrganizationSelectionConfirmed extends $Notifier<bool> {

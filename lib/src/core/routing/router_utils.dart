@@ -220,7 +220,8 @@ abstract class RouterUtils {
     final isOnSplashPage = currentPath == SplashRoute.path;
 
     final isOnSelectOrg = currentPath == SelectOrganizationRoute.path;
-    final isOnSuperAdmin = currentPath == SuperAdminRoute.path;
+    final isOnSuperAdmin = currentPath == SuperAdminRoute.path ||
+        currentPath.startsWith('${SuperAdminRoute.path}/');
     final isOnSubscriptionPay = isSubscriptionPayPath(currentPath);
 
     final isOnScopeRecovery = currentPath == ScopeRecoveryRoute.path;

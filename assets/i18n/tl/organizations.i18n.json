@@ -78,6 +78,12 @@
   "selectTitle": "Pumili ng organisasyon",
   "selectSubtitle": "Piliin kung aling organisasyon ang gusto mong pasukan.",
   "lastUsed": "Huling ginamit",
+  "expiringInDays(n)": {
+    "one": "Mag-e-expire sa 1 araw",
+    "other": "Mag-e-expire sa $n araw"
+  },
+  "subscriptionExpired": "Nag-expire na",
+  "subscriptionLocked": "Naka-lock",
   "superAdmin": "Super Admin",
   "superAdminTitle": "Super Admin",
   "superAdminSubtitle": "Pangkalahatang-ideya ng platform sa lahat ng organisasyon.",

@@ -203,13 +203,36 @@ class SubscriptionPayPage extends HookConsumerWidget {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      if (settings.qrphImageUrl != null)
+                      if (settings.qrphImageUrl != null &&
+                          settings.qrphImageUrl!.isNotEmpty)
                         Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 280),
                             child: Image.network(
                               settings.qrphImageUrl!,
+                              key: ValueKey(settings.qrphImageUrl),
                               fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 24,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 48,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      t.subscriptions.qrphImage,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         )
