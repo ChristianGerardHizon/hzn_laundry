@@ -78,6 +78,12 @@
   "selectTitle": "Select organization",
   "selectSubtitle": "Choose which organization you want to work in.",
   "lastUsed": "Last used",
+  "expiringInDays(n)": {
+    "one": "Expiring in 1 day",
+    "other": "Expiring in $n days"
+  },
+  "subscriptionExpired": "Expired",
+  "subscriptionLocked": "Locked",
   "superAdmin": "Super Admin",
   "superAdminTitle": "Super Admin",
   "superAdminSubtitle": "Platform overview across all organizations.",

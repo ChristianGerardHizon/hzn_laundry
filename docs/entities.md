@@ -14,7 +14,7 @@ This document contains all entities (domain models) in the project with their fi
 | Subscriptions | SubscriptionPackage | `subscriptionPackages` | Premade or custom SaaS billing package |
 | Subscriptions | OrganizationSubscription | `organizationSubscriptions` | Per-org subscription assignment and access status |
 | Subscriptions | SubscriptionPayment | `subscriptionPayments` | QRPH payment proof awaiting Super Admin review |
-| Subscriptions | PlatformBillingSettings | `platformBillingSettings` | Platform QRPH image, payee, grace defaults |
+| Subscriptions | PlatformBillingSettings | `platformBillingSettings` | Platform QRPH, grace, warning days, optional enforce toggles |
 | Management | User | `users` | System users (all types) |
 | Management | UserRole | `userRoles` | Role definitions and permissions |
 | Management | Branch | `branches` | Business branches/locations |
@@ -288,7 +288,9 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 
 **Collection:** `organizationSubscriptions`
 
-Access: after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Locked orgs see pay screen / lock interstitial only.
+Access: when platform auto-lock (`enforceLockout`) is on, after `periodEnd` → `grace` (default 7 days); after `graceEndsAt` → `locked` unless `manualUnlockUntil` is in the future. Super Admin can also **manually lock** an org (`POST /api/super-admin/organizations/{id}/lock`). Locked orgs see pay screen / lock interstitial only. Manual lock always shows the lock UI; `enforceLockout` only controls the daily auto-lock job.
+
+On Super Admin assign (`POST /api/organizations/{id}/subscription`), optional body fields `periodStart` / `periodEnd` (ISO) override the default window (`now` + package interval). If only `periodStart` is set, `periodEnd` is computed from the package interval. `periodEnd` alone is rejected.
 
 ### SubscriptionPayment
 
@@ -318,10 +320,15 @@ Singleton platform row for QRPH and defaults.
 | `qrphImage` | File | No | Platform-wide QRPH barcode image |
 | `payeeName` | String | No | Payee label |
 | `instructions` | String | No | Shown on pay screen |
-| `defaultGraceDays` | int | Yes | Default 7 |
-| `reminderDaysBeforeDue` | List\<int> | No | e.g. `[3, 0]` |
+| `defaultGraceDays` | int | Yes | Grace length in days **after** `periodEnd` (default 7) |
+| `warningDaysBeforeDue` | int | No | Days before `periodEnd` for in-app due-soon warnings (default 7) |
+| `enforceWarnings` | bool | No | When false, skip banners / dialogs / org-picker warning chips (default true) |
+| `enforceLockout` | bool | No | When true, daily job auto-locks after grace (default true). Manual lock always works regardless. |
+| `reminderDaysBeforeDue` | List\<int> | No | Email reminder schedule, e.g. `[3, 0]` |
 
 **Collection:** `platformBillingSettings`
+
+Access: after `periodEnd` → `grace` (for `defaultGraceDays`) then → `locked`, only when `enforceLockout` is true. In-app warnings use `warningDaysBeforeDue` when `enforceWarnings` is true.
 
 ---
 

@@ -27,7 +27,7 @@ const _kInk = Color(0xFF0B0B0B);
 const _kSurface = Color(0xFF141414);
 const _kSurfaceBorder = Color(0xFF2A2A2A);
 
-/// Google OAuth via PocketBase browser flow (web + Android).
+/// Google OAuth via PocketBase (web popup; Android partial Custom Tab).
 bool get _showGoogleSignIn =>
     kIsWeb || defaultTargetPlatform == TargetPlatform.android;
 

@@ -59,6 +59,18 @@ class PlatformBillingSettingsDtoMapper
       v.defaultGraceDays;
   static const Field<PlatformBillingSettingsDto, int> _f$defaultGraceDays =
       Field('defaultGraceDays', _$defaultGraceDays, opt: true, def: 7);
+  static int _$warningDaysBeforeDue(PlatformBillingSettingsDto v) =>
+      v.warningDaysBeforeDue;
+  static const Field<PlatformBillingSettingsDto, int> _f$warningDaysBeforeDue =
+      Field('warningDaysBeforeDue', _$warningDaysBeforeDue, opt: true, def: 7);
+  static bool _$enforceWarnings(PlatformBillingSettingsDto v) =>
+      v.enforceWarnings;
+  static const Field<PlatformBillingSettingsDto, bool> _f$enforceWarnings =
+      Field('enforceWarnings', _$enforceWarnings, opt: true, def: true);
+  static bool _$enforceLockout(PlatformBillingSettingsDto v) =>
+      v.enforceLockout;
+  static const Field<PlatformBillingSettingsDto, bool> _f$enforceLockout =
+      Field('enforceLockout', _$enforceLockout, opt: true, def: true);
   static List<int> _$reminderDaysBeforeDue(PlatformBillingSettingsDto v) =>
       v.reminderDaysBeforeDue;
   static const Field<PlatformBillingSettingsDto, List<int>>
@@ -79,6 +91,9 @@ class PlatformBillingSettingsDtoMapper
     #payeeName: _f$payeeName,
     #instructions: _f$instructions,
     #defaultGraceDays: _f$defaultGraceDays,
+    #warningDaysBeforeDue: _f$warningDaysBeforeDue,
+    #enforceWarnings: _f$enforceWarnings,
+    #enforceLockout: _f$enforceLockout,
     #reminderDaysBeforeDue: _f$reminderDaysBeforeDue,
   };
 
@@ -92,6 +107,9 @@ class PlatformBillingSettingsDtoMapper
       payeeName: data.dec(_f$payeeName),
       instructions: data.dec(_f$instructions),
       defaultGraceDays: data.dec(_f$defaultGraceDays),
+      warningDaysBeforeDue: data.dec(_f$warningDaysBeforeDue),
+      enforceWarnings: data.dec(_f$enforceWarnings),
+      enforceLockout: data.dec(_f$enforceLockout),
       reminderDaysBeforeDue: data.dec(_f$reminderDaysBeforeDue),
     );
   }
@@ -180,6 +198,9 @@ abstract class PlatformBillingSettingsDtoCopyWith<
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
   });
   PlatformBillingSettingsDtoCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -217,6 +238,9 @@ class _PlatformBillingSettingsDtoCopyWithImpl<$R, $Out>
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
   }) => $apply(
     FieldCopyWithData({
@@ -228,6 +252,10 @@ class _PlatformBillingSettingsDtoCopyWithImpl<$R, $Out>
       if (payeeName != null) #payeeName: payeeName,
       if (instructions != null) #instructions: instructions,
       if (defaultGraceDays != null) #defaultGraceDays: defaultGraceDays,
+      if (warningDaysBeforeDue != null)
+        #warningDaysBeforeDue: warningDaysBeforeDue,
+      if (enforceWarnings != null) #enforceWarnings: enforceWarnings,
+      if (enforceLockout != null) #enforceLockout: enforceLockout,
       if (reminderDaysBeforeDue != null)
         #reminderDaysBeforeDue: reminderDaysBeforeDue,
     }),
@@ -246,6 +274,12 @@ class _PlatformBillingSettingsDtoCopyWithImpl<$R, $Out>
           #defaultGraceDays,
           or: $value.defaultGraceDays,
         ),
+        warningDaysBeforeDue: data.get(
+          #warningDaysBeforeDue,
+          or: $value.warningDaysBeforeDue,
+        ),
+        enforceWarnings: data.get(#enforceWarnings, or: $value.enforceWarnings),
+        enforceLockout: data.get(#enforceLockout, or: $value.enforceLockout),
         reminderDaysBeforeDue: data.get(
           #reminderDaysBeforeDue,
           or: $value.reminderDaysBeforeDue,

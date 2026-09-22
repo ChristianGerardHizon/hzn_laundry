@@ -108,6 +108,15 @@ routerAdd(
 );
 
 routerAdd(
+  "POST",
+  "/api/super-admin/organizations/{id}/lock",
+  function(e) {
+    return require(__hooks + "/lib/organization_subscriptions_helpers.js").lockOrganization(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
   "GET",
   "/api/super-admin/billing-settings",
   function(e) {

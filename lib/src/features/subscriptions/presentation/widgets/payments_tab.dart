@@ -336,7 +336,20 @@ class _PaymentCard extends HookConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
           child: InteractiveViewer(
-            child: Image.network(url, fit: BoxFit.contain),
+            child: Image.network(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox(
+                height: 160,
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: _kMuted,
+                    size: 48,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),

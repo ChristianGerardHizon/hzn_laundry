@@ -121,6 +121,35 @@ function readReminderDays(settings) {
   return [3, 0];
 }
 
+function readBoolSetting(settings, key, fallback) {
+  try {
+    if (typeof settings.getBool === "function") {
+      // getBool returns false when unset; detect missing via get().
+      var raw = settings.get(key);
+      if (raw === null || raw === undefined || raw === "") {
+        return fallback;
+      }
+      return settings.getBool(key);
+    }
+  } catch (_) {}
+  var v = settings.get(key);
+  if (v === null || v === undefined || v === "") return fallback;
+  return !!v;
+}
+
+function readWarningDays(settings) {
+  var n = 7;
+  try {
+    n = settings.getInt("warningDaysBeforeDue");
+  } catch (_) {
+    n = 7;
+  }
+  if (n === null || n === undefined || isNaN(Number(n)) || Number(n) < 0) {
+    return 7;
+  }
+  return Number(n);
+}
+
 function fileUrl(baseUrl, collection, recordId, filename) {
   if (!filename) return null;
   return baseUrl + "/api/files/" + collection + "/" + recordId + "/" + filename;
@@ -196,6 +225,9 @@ function exportSettings(record, baseUrl) {
     record.getString("qrphImage")
   );
   data.reminderDaysBeforeDue = readReminderDays(record);
+  data.warningDaysBeforeDue = readWarningDays(record);
+  data.enforceWarnings = readBoolSetting(record, "enforceWarnings", true);
+  data.enforceLockout = readBoolSetting(record, "enforceLockout", true);
   return data;
 }
 
@@ -321,7 +353,10 @@ function softDeletePackage(e) {
 
 /**
  * Assign (or replace) an organization subscription.
- * opts: { packageId?, customPackage?, allowCustom?, requirePremade? }
+ * opts: {
+ *   packageId?, customPackage?, allowCustom?, requirePremade?,
+ *   periodStart?, periodEnd?  // optional ISO date overrides
+ * }
  * Returns { subscription, package }.
  */
 function assignSubscriptionInApp(app, orgId, opts) {
@@ -380,19 +415,46 @@ function assignSubscriptionInApp(app, orgId, opts) {
     app.save(existing);
   }
 
+  var intervalCount = pkg.getInt("intervalCount");
+  var intervalUnit = pkg.getString("intervalUnit");
   var now = new Date();
-  var periodEnd = addInterval(
-    now,
-    pkg.getInt("intervalCount"),
-    pkg.getString("intervalUnit")
-  );
+  var hasStart = trimStr(opts.periodStart) !== "";
+  var hasEnd = trimStr(opts.periodEnd) !== "";
+  var periodStartDate;
+  var periodEndDate;
+
+  if (hasEnd && !hasStart) {
+    throw new BadRequestError("periodStart is required when periodEnd is set");
+  }
+
+  if (hasStart) {
+    periodStartDate = new Date(opts.periodStart);
+    if (isNaN(periodStartDate.getTime())) {
+      throw new BadRequestError("periodStart is invalid");
+    }
+    if (hasEnd) {
+      periodEndDate = new Date(opts.periodEnd);
+      if (isNaN(periodEndDate.getTime())) {
+        throw new BadRequestError("periodEnd is invalid");
+      }
+      if (periodEndDate.getTime() <= periodStartDate.getTime()) {
+        throw new BadRequestError("periodEnd must be after periodStart");
+      }
+    } else {
+      periodEndDate = addInterval(periodStartDate, intervalCount, intervalUnit);
+    }
+  } else {
+    periodStartDate = now;
+    periodEndDate = addInterval(now, intervalCount, intervalUnit);
+  }
+
   var settings = getBillingSettingsRecord(app);
   var reminderDays = readReminderDays(settings);
   var soonestReminder = null;
   var ri;
   for (ri = 0; ri < reminderDays.length; ri++) {
     var daysBefore = Number(reminderDays[ri]) || 0;
-    var reminderAt = new Date(periodEnd.getTime());
+    var reminderAt = new Date(periodEndDate.getTime());
     reminderAt.setUTCDate(reminderAt.getUTCDate() - daysBefore);
     if (!soonestReminder || reminderAt < soonestReminder) {
       if (reminderAt > now) soonestReminder = reminderAt;
@@ -405,11 +467,11 @@ function assignSubscriptionInApp(app, orgId, opts) {
   sub.set("package", pkg.id);
   sub.set("packageName", pkg.getString("name"));
   sub.set("price", pkg.getFloat("price"));
-  sub.set("intervalCount", pkg.getInt("intervalCount"));
-  sub.set("intervalUnit", pkg.getString("intervalUnit"));
+  sub.set("intervalCount", intervalCount);
+  sub.set("intervalUnit", intervalUnit);
   sub.set("status", "active");
-  sub.set("periodStart", toIsoDate(now));
-  sub.set("periodEnd", toIsoDate(periodEnd));
+  sub.set("periodStart", toIsoDate(periodStartDate));
+  sub.set("periodEnd", toIsoDate(periodEndDate));
   sub.set("graceEndsAt", "");
   sub.set("manualUnlockUntil", "");
   sub.set("nextReminderAt", soonestReminder ? toIsoDate(soonestReminder) : "");
@@ -434,7 +496,9 @@ function assignSubscription(e) {
     packageId: body.packageId,
     customPackage: body.customPackage,
     allowCustom: true,
-    requirePremade: false
+    requirePremade: false,
+    periodStart: body.periodStart,
+    periodEnd: body.periodEnd
   });
 
   return e.json(200, {
@@ -676,6 +740,25 @@ function unlockOrganization(e) {
   });
 }
 
+function lockOrganization(e) {
+  requireSystemAdmin(e);
+  var orgId = e.request.pathValue("id");
+  var sub = findActiveSubscription(e.app, orgId);
+  if (!sub) {
+    throw new NotFoundError("no active subscription for this organization");
+  }
+
+  var body = parseBody(e);
+  sub.set("status", "locked");
+  sub.set("manualUnlockUntil", "");
+  e.app.save(sub);
+
+  return e.json(200, {
+    subscription: exportSubscription(sub),
+    note: trimStr(body.note)
+  });
+}
+
 function getBillingSettings(e) {
   requireAuthUser(e);
   var settings = getBillingSettingsRecord(e.app);
@@ -695,6 +778,29 @@ function updateBillingSettings(e) {
   }
   if (body.defaultGraceDays !== undefined) {
     settings.set("defaultGraceDays", Number(body.defaultGraceDays) || 7);
+  }
+  if (body.warningDaysBeforeDue !== undefined) {
+    var warningDays = Number(body.warningDaysBeforeDue);
+    if (isNaN(warningDays) || warningDays < 0) warningDays = 7;
+    settings.set("warningDaysBeforeDue", warningDays);
+  }
+  if (body.enforceWarnings !== undefined) {
+    settings.set(
+      "enforceWarnings",
+      body.enforceWarnings === true ||
+        body.enforceWarnings === "true" ||
+        body.enforceWarnings === 1 ||
+        body.enforceWarnings === "1"
+    );
+  }
+  if (body.enforceLockout !== undefined) {
+    settings.set(
+      "enforceLockout",
+      body.enforceLockout === true ||
+        body.enforceLockout === "true" ||
+        body.enforceLockout === 1 ||
+        body.enforceLockout === "1"
+    );
   }
   if (body.reminderDaysBeforeDue !== undefined) {
     var days = body.reminderDaysBeforeDue;
@@ -893,6 +999,7 @@ function runDailyBillingJob() {
   }
   var graceDays = settings.getInt("defaultGraceDays") || 7;
   var reminderDays = readReminderDays(settings);
+  var enforceLockout = readBoolSetting(settings, "enforceLockout", true);
   var now = new Date();
 
   var subs = [];
@@ -924,29 +1031,32 @@ function runDailyBillingJob() {
       var status = sub.getString("status");
       var changed = false;
 
-      // Grace transition
-      if (now > periodEnd && status === "active") {
-        var graceEnds = new Date(periodEnd.getTime());
-        graceEnds.setUTCDate(graceEnds.getUTCDate() + graceDays);
-        sub.set("status", "grace");
-        sub.set("graceEndsAt", toIsoDate(graceEnds));
-        status = "grace";
-        changed = true;
-      }
+      // Grace / lock only when lockout enforcement is enabled.
+      if (enforceLockout) {
+        // Grace transition (after periodEnd / due date)
+        if (now > periodEnd && status === "active") {
+          var graceEnds = new Date(periodEnd.getTime());
+          graceEnds.setUTCDate(graceEnds.getUTCDate() + graceDays);
+          sub.set("status", "grace");
+          sub.set("graceEndsAt", toIsoDate(graceEnds));
+          status = "grace";
+          changed = true;
+        }
 
-      // Lock transition
-      var graceEndsAtRaw = sub.getString("graceEndsAt");
-      var graceEndsAt = graceEndsAtRaw ? new Date(graceEndsAtRaw) : null;
-      if (
-        status === "grace" &&
-        graceEndsAt &&
-        !isNaN(graceEndsAt.getTime()) &&
-        now > graceEndsAt &&
-        !hasManualUnlock
-      ) {
-        sub.set("status", "locked");
-        status = "locked";
-        changed = true;
+        // Lock transition
+        var graceEndsAtRaw = sub.getString("graceEndsAt");
+        var graceEndsAt = graceEndsAtRaw ? new Date(graceEndsAtRaw) : null;
+        if (
+          status === "grace" &&
+          graceEndsAt &&
+          !isNaN(graceEndsAt.getTime()) &&
+          now > graceEndsAt &&
+          !hasManualUnlock
+        ) {
+          sub.set("status", "locked");
+          status = "locked";
+          changed = true;
+        }
       }
 
       // Reminder schedule
@@ -1138,6 +1248,7 @@ module.exports = {
   listPendingPayments: listPendingPayments,
   reviewPayment: reviewPayment,
   unlockOrganization: unlockOrganization,
+  lockOrganization: lockOrganization,
   getBillingSettings: getBillingSettings,
   updateBillingSettings: updateBillingSettings,
   runDailyBillingJob: runDailyBillingJob,

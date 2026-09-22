@@ -3,30 +3,16 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/assets/assets.gen.dart';
 import '../../../../core/i18n/strings.g.dart';
-import '../../../../core/routing/routes/auth.routes.dart';
-import '../../../../core/routing/routes/org_selection.routes.dart';
-import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
 import '../../../subscriptions/domain/subscription_status.dart';
-import '../../../subscriptions/presentation/widgets/billing_settings_tab.dart';
 import '../../../subscriptions/presentation/widgets/org_subscription_sheet.dart';
-import '../../../subscriptions/presentation/widgets/packages_tab.dart';
-import '../../../subscriptions/presentation/widgets/payments_tab.dart';
 import '../../domain/organization_platform_stats.dart';
 import '../controllers/current_organization_controller.dart';
 import '../controllers/organization_platform_stats_controller.dart';
-import '../controllers/organization_selection_gate.dart';
-import '../widgets/dialogs/create_organization_setup_dialog.dart';
+import '../widgets/super_admin_nav_panel.dart';
 
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kInk = Color(0xFF0B0B0B);
-const _kSurface = Color(0xFF141414);
-const _kSurfaceBorder = Color(0xFF2A2A2A);
-const _kMuted = Color(0xFF9CA3AF);
-
-/// Platform dashboard for `system.admin` users.
+/// Super Admin dashboard: platform KPIs and organization list.
 class SuperAdminPage extends HookConsumerWidget {
   const SuperAdminPage({super.key});
 
@@ -34,9 +20,7 @@ class SuperAdminPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final isCreating = useState(false);
     final searchQuery = useState('');
-    final tabController = useTabController(initialLength: 4);
     ref.watch(currentOrganizationControllerProvider);
     final statsAsync = ref.watch(organizationPlatformStatsControllerProvider);
 
@@ -45,167 +29,27 @@ class SuperAdminPage extends HookConsumerWidget {
     );
     final compact = useMemoized(() => NumberFormat.compact());
 
-    Future<void> openCreate() async {
-      if (isCreating.value) return;
-      isCreating.value = true;
-      try {
-        final created = await showCreateOrganizationSetupDialog(context);
-        if (created == true && context.mounted) {
-          ref.read(organizationSelectionConfirmedProvider.notifier).confirm();
-          showSuccessSnackBar(
-            context,
-            message: t.organizations.onboardingComplete,
-            useRootMessenger: false,
-          );
-          ref
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 960),
+        child: _DashboardBody(
+          statsAsync: statsAsync,
+          searchQuery: searchQuery,
+          currency: currency,
+          compact: compact,
+          t: t,
+          scheme: scheme,
+          onRefresh: () => ref
               .read(organizationPlatformStatsControllerProvider.notifier)
-              .refresh();
-          const SplashRoute().go(context);
-        }
-      } finally {
-        if (context.mounted) isCreating.value = false;
-      }
-    }
-
-    return ScaffoldMessenger(
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            backgroundColor: _kInk,
-            body: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 960),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                        child: Row(
-                          children: [
-                            TextButton.icon(
-                              onPressed: isCreating.value
-                                  ? null
-                                  : () => const SelectOrganizationRoute()
-                                      .go(context),
-                              style: TextButton.styleFrom(
-                                foregroundColor: _kBrandTeal,
-                                minimumSize: const Size(44, 44),
-                              ),
-                              icon: const Icon(Icons.arrow_back),
-                              label: Text(t.organizations.back),
-                            ),
-                            const Spacer(),
-                            FilledButton.icon(
-                              onPressed: isCreating.value ? null : openCreate,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: _kBrandTeal,
-                                foregroundColor: _kInk,
-                                minimumSize: const Size(44, 44),
-                              ),
-                              icon: isCreating.value
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: _kInk,
-                                      ),
-                                    )
-                                  : const Icon(Icons.add_business_outlined),
-                              label: Text(t.organizations.create),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                        child: Column(
-                          children: [
-                            Assets.icons.appIconTransparent.image(
-                              width: 48,
-                              height: 48,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t.organizations.superAdminTitle,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.3,
-                                  ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              t.organizations.superAdminSubtitle,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: scheme.onSurface
-                                        .withValues(alpha: 0.62),
-                                    height: 1.35,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TabBar(
-                        controller: tabController,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        indicatorColor: _kBrandTeal,
-                        labelColor: _kBrandTeal,
-                        unselectedLabelColor: _kMuted,
-                        tabs: [
-                          Tab(text: t.subscriptions.tabOverview),
-                          Tab(text: t.subscriptions.tabPackages),
-                          Tab(text: t.subscriptions.tabPayments),
-                          Tab(text: t.subscriptions.tabBilling),
-                        ],
-                      ),
-                      Expanded(
-                        child: TabBarView(
-                          controller: tabController,
-                          children: [
-                            _OverviewTab(
-                              statsAsync: statsAsync,
-                              searchQuery: searchQuery,
-                              currency: currency,
-                              compact: compact,
-                              t: t,
-                              scheme: scheme,
-                              onRefresh: () => ref
-                                  .read(
-                                    organizationPlatformStatsControllerProvider
-                                        .notifier,
-                                  )
-                                  .refresh(),
-                            ),
-                            const PackagesTab(),
-                            const PaymentsTab(),
-                            const BillingSettingsTab(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+              .refresh(),
+        ),
       ),
     );
   }
 }
 
-class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({
+class _DashboardBody extends StatelessWidget {
+  const _DashboardBody({
     required this.statsAsync,
     required this.searchQuery,
     required this.currency,
@@ -227,7 +71,7 @@ class _OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return statsAsync.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: _kBrandTeal),
+        child: CircularProgressIndicator(color: kSuperAdminBrandTeal),
       ),
       error: (e, _) => Center(
         child: Padding(
@@ -244,7 +88,7 @@ class _OverviewTab extends StatelessWidget {
                 .toList();
 
         return RefreshIndicator(
-          color: _kBrandTeal,
+          color: kSuperAdminBrandTeal,
           onRefresh: onRefresh,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -258,9 +102,10 @@ class _OverviewTab extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         t.organizations.platformOverview,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                       const SizedBox(height: 12),
                       _PlatformKpiGrid(
@@ -272,9 +117,10 @@ class _OverviewTab extends StatelessWidget {
                       const SizedBox(height: 24),
                       Text(
                         t.organizations.allOrganizations,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -283,31 +129,34 @@ class _OverviewTab extends StatelessWidget {
                         decoration: InputDecoration(
                           hintText: t.organizations.searchOrganizations,
                           hintStyle: TextStyle(
-                            color: _kMuted.withValues(alpha: 0.8),
+                            color: kSuperAdminMuted.withValues(alpha: 0.8),
                           ),
                           prefixIcon: Icon(
                             Icons.search,
-                            color: _kMuted.withValues(alpha: 0.9),
+                            color: kSuperAdminMuted.withValues(alpha: 0.9),
                           ),
                           filled: true,
-                          fillColor: _kSurface,
+                          fillColor: kSuperAdminSurface,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 14,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: _kSurfaceBorder),
+                            borderSide: const BorderSide(
+                              color: kSuperAdminSurfaceBorder,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: _kSurfaceBorder),
+                            borderSide: const BorderSide(
+                              color: kSuperAdminSurfaceBorder,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: _kBrandTeal),
+                            borderSide:
+                                const BorderSide(color: kSuperAdminBrandTeal),
                           ),
                         ),
                       ),
@@ -356,7 +205,7 @@ class _OverviewTab extends StatelessWidget {
                         compact: compact,
                         t: t,
                         onTap: () =>
-                            showOrgSubscriptionSheet(context, orgs[index]),
+                            showOrgSubscriptionDialog(context, orgs[index]),
                       );
                     },
                   ),
@@ -466,9 +315,9 @@ class _PlatformKpiTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _kSurface.withValues(alpha: 0.92),
+        color: kSuperAdminSurface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kSurfaceBorder),
+        border: Border.all(color: kSuperAdminSurfaceBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -477,13 +326,13 @@ class _PlatformKpiTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(data.icon, size: 18, color: _kBrandTeal),
+                Icon(data.icon, size: 18, color: kSuperAdminBrandTeal),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     data.label,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: _kMuted,
+                          color: kSuperAdminMuted,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -537,9 +386,9 @@ class _OrgStatsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: _kSurface.withValues(alpha: 0.92),
+            color: kSuperAdminSurface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _kSurfaceBorder),
+            border: Border.all(color: kSuperAdminSurfaceBorder),
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -553,13 +402,13 @@ class _OrgStatsCard extends StatelessWidget {
                       height: 40,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _kBrandTeal.withValues(alpha: 0.14),
+                        color: kSuperAdminBrandTeal.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         letter,
                         style: const TextStyle(
-                          color: _kBrandTeal,
+                          color: kSuperAdminBrandTeal,
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
                         ),
@@ -585,7 +434,7 @@ class _OrgStatsCard extends StatelessWidget {
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
-                                  ?.copyWith(color: _kMuted),
+                                  ?.copyWith(color: kSuperAdminMuted),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -596,7 +445,9 @@ class _OrgStatsCard extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: _kBrandTeal.withValues(alpha: 0.9),
+                                    color: kSuperAdminBrandTeal.withValues(
+                                      alpha: 0.9,
+                                    ),
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -662,7 +513,10 @@ class _SubscriptionStatusBadge extends StatelessWidget {
         ? null
         : SubscriptionStatus.fromString(status);
     final (label, color) = switch (parsed) {
-      SubscriptionStatus.active => (t.subscriptions.statusActive, _kBrandTeal),
+      SubscriptionStatus.active => (
+          t.subscriptions.statusActive,
+          kSuperAdminBrandTeal
+        ),
       SubscriptionStatus.grace => (
           t.subscriptions.statusGrace,
           Colors.orangeAccent
@@ -673,9 +527,9 @@ class _SubscriptionStatusBadge extends StatelessWidget {
         ),
       SubscriptionStatus.cancelled => (
           t.subscriptions.statusCancelled,
-          _kMuted
+          kSuperAdminMuted
         ),
-      null => (t.subscriptions.noSubscription, _kMuted),
+      null => (t.subscriptions.noSubscription, kSuperAdminMuted),
     };
 
     return Container(
@@ -707,9 +561,9 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: _kInk.withValues(alpha: 0.55),
+        color: const Color(0xFF0B0B0B).withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _kSurfaceBorder),
+        border: Border.all(color: kSuperAdminSurfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,7 +573,7 @@ class _MetricChip extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: _kMuted,
+              color: kSuperAdminMuted,
               fontWeight: FontWeight.w500,
             ),
           ),

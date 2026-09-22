@@ -19,7 +19,7 @@ const _kSurface = Color(0xFF141414);
 const _kSurfaceBorder = Color(0xFF2A2A2A);
 const _kMuted = Color(0xFF9CA3AF);
 
-/// Super Admin tab: platform billing settings (QRPH, grace, instructions).
+/// Super Admin tab: platform billing settings (QRPH, grace, warnings, lockout).
 class BillingSettingsTab extends HookConsumerWidget {
   const BillingSettingsTab({super.key});
 
@@ -81,6 +81,10 @@ class BillingSettingsTab extends HookConsumerWidget {
                   instructions: (values['instructions'] as String?)?.trim(),
                   defaultGraceDays:
                       int.tryParse(values['defaultGraceDays'].toString()),
+                  warningDaysBeforeDue:
+                      int.tryParse(values['warningDaysBeforeDue'].toString()),
+                  enforceWarnings: values['enforceWarnings'] as bool? ?? true,
+                  enforceLockout: values['enforceLockout'] as bool? ?? true,
                   qrphImage: qrphFile,
                 );
             if (!context.mounted) return;
@@ -118,6 +122,10 @@ class BillingSettingsTab extends HookConsumerWidget {
                   'payeeName': settings.payeeName,
                   'instructions': settings.instructions,
                   'defaultGraceDays': settings.defaultGraceDays.toString(),
+                  'warningDaysBeforeDue':
+                      settings.warningDaysBeforeDue.toString(),
+                  'enforceWarnings': settings.enforceWarnings,
+                  'enforceLockout': settings.enforceLockout,
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -153,6 +161,52 @@ class BillingSettingsTab extends HookConsumerWidget {
                         FormBuilderValidators.min(0),
                       ]),
                     ),
+                    const SizedBox(height: 14),
+                    FormBuilderTextField(
+                      name: 'warningDaysBeforeDue',
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _fieldDecoration(
+                        label: t.subscriptions.warningDaysBeforeDue,
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(),
+                        FormBuilderValidators.integer(),
+                        FormBuilderValidators.min(0),
+                      ]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      t.subscriptions.enforcementHint,
+                      style: const TextStyle(
+                        color: _kMuted,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FormBuilderSwitch(
+                      name: 'enforceWarnings',
+                      title: Text(
+                        t.subscriptions.enforceWarnings,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    FormBuilderSwitch(
+                      name: 'enforceLockout',
+                      title: Text(
+                        t.subscriptions.enforceLockout,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     Text(
                       t.subscriptions.qrphImage,
@@ -176,6 +230,7 @@ class BillingSettingsTab extends HookConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
                           settings.qrphImageUrl!,
+                          key: ValueKey(settings.qrphImageUrl),
                           height: 200,
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => const SizedBox(
