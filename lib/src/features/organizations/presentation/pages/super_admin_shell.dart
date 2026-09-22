@@ -12,6 +12,7 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../controllers/organization_platform_stats_controller.dart';
 import '../controllers/organization_selection_gate.dart';
 import '../widgets/dialogs/create_organization_setup_dialog.dart';
+import '../widgets/super_admin_mobile_bottom_nav.dart';
 import '../widgets/super_admin_nav_panel.dart';
 
 const _kInk = Color(0xFF0B0B0B);
@@ -19,7 +20,7 @@ const _kInk = Color(0xFF0B0B0B);
 /// Adaptive shell for the platform Super Admin hub.
 ///
 /// - Tablet+: persistent [SuperAdminNavPanel] + routed content
-/// - Mobile: drawer with the same sections + menu button
+/// - Mobile: bottom nav (3 sections + More) + drawer for full menu
 class SuperAdminShell extends HookConsumerWidget {
   const SuperAdminShell({
     super.key,
@@ -80,13 +81,6 @@ class SuperAdminShell extends HookConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         children: [
-          if (!isTablet)
-            IconButton(
-              onPressed: () => scaffoldKey.currentState?.openDrawer(),
-              icon: const Icon(Icons.menu),
-              color: kSuperAdminBrandTeal,
-              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-            ),
           TextButton.icon(
             onPressed: isCreating.value
                 ? null
@@ -198,6 +192,13 @@ class SuperAdminShell extends HookConsumerWidget {
                 ],
               ),
             ),
+            bottomNavigationBar: isTablet
+                ? null
+                : SuperAdminMobileBottomNav(
+                    currentSection: section,
+                    onSectionSelected: goToSection,
+                    onMoreTap: () => scaffoldKey.currentState?.openDrawer(),
+                  ),
           );
         },
       ),

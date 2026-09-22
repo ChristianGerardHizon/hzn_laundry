@@ -205,7 +205,7 @@ class _DashboardBody extends StatelessWidget {
                         compact: compact,
                         t: t,
                         onTap: () =>
-                            showOrgSubscriptionSheet(context, orgs[index]),
+                            showOrgSubscriptionDialog(context, orgs[index]),
                       );
                     },
                   ),

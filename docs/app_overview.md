@@ -142,7 +142,7 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 ### Organization/Admin Features
 
 #### Super Admin & Subscriptions
-- `/super-admin` — Dashboard (org KPIs + subscription badges) with sidenav for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
+- `/super-admin` — Dashboard (org KPIs + subscription badges; tap an org for subscription details dialog) with sidenav (tablet+) or bottom nav + More drawer (mobile) for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
 - `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); grace banners and lock gate in the authenticated shell
 
 #### Organizations (`/organizations`)
@@ -199,7 +199,7 @@ Device-specific settings only (this tablet/phone/desktop).
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web and Android
 - Organization selection (`/select-organization`) — after login when the user has 1+ memberships; Super Admin entry for `system.admin`
 - Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
-- Super Admin hub (`/super-admin`) — sidenav shell with Dashboard (org metrics), Packages, Payments, and Billing; create organization from the header
+- Super Admin hub (`/super-admin`) — adaptive shell (tablet sidenav / mobile bottom nav + More drawer) with Dashboard (org metrics), Packages, Payments, and Billing; create organization from the header; org card opens subscription details dialog
 - Subscription payment (`/subscription/pay/:organizationId`) — QRPH scan instructions + transaction screenshot upload for org admins (email deep link)
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
@@ -640,6 +640,8 @@ lib/src/
 
 ---
 
+| Sep 22 | Super Admin mobile nav | Super Admin mobile uses bottom nav (Dashboard, Packages, Payments + More → drawer) like the main app; tablet+ keeps the sidenav |
+| Sep 22 | Org subscription dialog | Super Admin org card opens Organization details as a dialog (Assign package / Manual unlock) instead of a bottom sheet |
 | Sep 22 | Super Admin sidenav | `/super-admin` uses a Management-style shell sidenav (Dashboard, Packages, Payments, Billing) with nested routes; Organizations page AppBar links `system.admin` users to Super Admin |
 | Sep 22 | Manual subscription dates | Super Admin assign/reassign can set optional `periodStart` / `periodEnd`; blank uses today + package interval |
 | Sep 22 | Basic maintenance plan | Premade `Basic` subscription package at ₱2,000/month (includes all features) seeded on local, staging, and production catalogs |
