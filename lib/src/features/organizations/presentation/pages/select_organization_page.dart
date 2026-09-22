@@ -12,6 +12,11 @@ import '../../../../core/routing/router_utils.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../subscriptions/domain/organization_subscription.dart';
+import '../../../subscriptions/domain/subscription_due.dart';
+import '../../../subscriptions/domain/subscription_status.dart';
+import '../../../subscriptions/presentation/controllers/billing_settings_controller.dart';
+import '../../../subscriptions/presentation/controllers/organization_subscription_provider.dart';
 import '../controllers/current_organization_controller.dart';
 import '../controllers/organization_selection_gate.dart';
 
@@ -135,6 +140,7 @@ class SelectOrganizationPage extends HookConsumerWidget {
 
                               return _OrgTile(
                                 key: ValueKey(orgId),
+                                organizationId: orgId,
                                 name: name,
                                 roleName: roleName,
                                 isLastUsed: isLastUsed,
@@ -188,9 +194,10 @@ class SelectOrganizationPage extends HookConsumerWidget {
   }
 }
 
-class _OrgTile extends StatelessWidget {
+class _OrgTile extends ConsumerWidget {
   const _OrgTile({
     super.key,
+    required this.organizationId,
     required this.name,
     required this.roleName,
     required this.isLastUsed,
@@ -201,6 +208,7 @@ class _OrgTile extends StatelessWidget {
     required this.onTap,
   });
 
+  final String organizationId;
   final String name;
   final String roleName;
   final bool isLastUsed;
@@ -211,9 +219,32 @@ class _OrgTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final sub = ref
+        .watch(organizationSubscriptionProvider(organizationId))
+        .asData
+        ?.value;
+    final packageName =
+        sub?.packageName.trim().isNotEmpty == true ? sub!.packageName : null;
+    final settings =
+        ref.watch(billingSettingsControllerProvider).asData?.value;
+    final statusInfo = _subscriptionStatusInfo(
+      t,
+      sub,
+      enforceWarnings: settings?.enforceWarnings ?? true,
+      enforceLockout: settings?.enforceLockout ?? true,
+      warningDaysBeforeDue:
+          settings?.warningDaysBeforeDue ?? kSubscriptionExpiringSoonDays,
+    );
+
+    final semanticsParts = <String>[
+      name,
+      if (packageName != null) packageName,
+      if (statusInfo != null) statusInfo.label,
+      roleName,
+    ];
 
     final tile = Material(
       color: _kSurface.withValues(alpha: 0.92),
@@ -232,7 +263,7 @@ class _OrgTile extends StatelessWidget {
         focusColor: _kBrandTeal.withValues(alpha: 0.12),
         child: Semantics(
           button: true,
-          label: '$name, $roleName',
+          label: semanticsParts.join(', '),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 64),
             child: Padding(
@@ -268,6 +299,32 @@ class _OrgTile extends StatelessWidget {
                               .titleMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
+                        if (packageName != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            packageName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: _kBrandTeal.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                        if (statusInfo != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            statusInfo.label,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: statusInfo.color,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Text(
                           '${t.organizations.yourRole}: $roleName',
@@ -333,4 +390,58 @@ class _OrgTile extends StatelessWidget {
       child: tile,
     );
   }
+}
+
+class _StatusInfo {
+  const _StatusInfo({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+}
+
+_StatusInfo? _subscriptionStatusInfo(
+  Translations t,
+  OrganizationSubscription? sub, {
+  required bool enforceWarnings,
+  required bool enforceLockout,
+  required int warningDaysBeforeDue,
+}) {
+  if (sub == null) return null;
+
+  if (enforceLockout &&
+      (sub.isEffectivelyLocked || sub.status == SubscriptionStatus.locked)) {
+    return _StatusInfo(
+      label: t.organizations.subscriptionLocked,
+      color: Colors.redAccent,
+    );
+  }
+
+  if (!enforceWarnings) return null;
+
+  if (sub.isInGrace || sub.periodEnd.isBefore(DateTime.now())) {
+    return _StatusInfo(
+      label: t.organizations.subscriptionExpired,
+      color: Colors.orangeAccent,
+    );
+  }
+
+  if (sub.status != SubscriptionStatus.active) return null;
+
+  if (!isSubscriptionDueSoon(
+    sub.status,
+    sub.periodEnd,
+    warningDaysBeforeDue: warningDaysBeforeDue,
+  )) {
+    return null;
+  }
+
+  return _StatusInfo(
+    label: t.organizations.expiringInDays(
+      n: subscriptionDaysRemaining(
+        sub.periodEnd,
+        warningDaysBeforeDue: warningDaysBeforeDue,
+      ),
+    ),
+    color: Colors.orangeAccent,
+  );
 }

@@ -121,6 +121,35 @@ function readReminderDays(settings) {
   return [3, 0];
 }
 
+function readBoolSetting(settings, key, fallback) {
+  try {
+    if (typeof settings.getBool === "function") {
+      // getBool returns false when unset; detect missing via get().
+      var raw = settings.get(key);
+      if (raw === null || raw === undefined || raw === "") {
+        return fallback;
+      }
+      return settings.getBool(key);
+    }
+  } catch (_) {}
+  var v = settings.get(key);
+  if (v === null || v === undefined || v === "") return fallback;
+  return !!v;
+}
+
+function readWarningDays(settings) {
+  var n = 7;
+  try {
+    n = settings.getInt("warningDaysBeforeDue");
+  } catch (_) {
+    n = 7;
+  }
+  if (n === null || n === undefined || isNaN(Number(n)) || Number(n) < 0) {
+    return 7;
+  }
+  return Number(n);
+}
+
 function fileUrl(baseUrl, collection, recordId, filename) {
   if (!filename) return null;
   return baseUrl + "/api/files/" + collection + "/" + recordId + "/" + filename;
@@ -196,6 +225,9 @@ function exportSettings(record, baseUrl) {
     record.getString("qrphImage")
   );
   data.reminderDaysBeforeDue = readReminderDays(record);
+  data.warningDaysBeforeDue = readWarningDays(record);
+  data.enforceWarnings = readBoolSetting(record, "enforceWarnings", true);
+  data.enforceLockout = readBoolSetting(record, "enforceLockout", true);
   return data;
 }
 
@@ -728,6 +760,29 @@ function updateBillingSettings(e) {
   if (body.defaultGraceDays !== undefined) {
     settings.set("defaultGraceDays", Number(body.defaultGraceDays) || 7);
   }
+  if (body.warningDaysBeforeDue !== undefined) {
+    var warningDays = Number(body.warningDaysBeforeDue);
+    if (isNaN(warningDays) || warningDays < 0) warningDays = 7;
+    settings.set("warningDaysBeforeDue", warningDays);
+  }
+  if (body.enforceWarnings !== undefined) {
+    settings.set(
+      "enforceWarnings",
+      body.enforceWarnings === true ||
+        body.enforceWarnings === "true" ||
+        body.enforceWarnings === 1 ||
+        body.enforceWarnings === "1"
+    );
+  }
+  if (body.enforceLockout !== undefined) {
+    settings.set(
+      "enforceLockout",
+      body.enforceLockout === true ||
+        body.enforceLockout === "true" ||
+        body.enforceLockout === 1 ||
+        body.enforceLockout === "1"
+    );
+  }
   if (body.reminderDaysBeforeDue !== undefined) {
     var days = body.reminderDaysBeforeDue;
     if (typeof days === "string") {
@@ -925,6 +980,7 @@ function runDailyBillingJob() {
   }
   var graceDays = settings.getInt("defaultGraceDays") || 7;
   var reminderDays = readReminderDays(settings);
+  var enforceLockout = readBoolSetting(settings, "enforceLockout", true);
   var now = new Date();
 
   var subs = [];
@@ -956,29 +1012,32 @@ function runDailyBillingJob() {
       var status = sub.getString("status");
       var changed = false;
 
-      // Grace transition
-      if (now > periodEnd && status === "active") {
-        var graceEnds = new Date(periodEnd.getTime());
-        graceEnds.setUTCDate(graceEnds.getUTCDate() + graceDays);
-        sub.set("status", "grace");
-        sub.set("graceEndsAt", toIsoDate(graceEnds));
-        status = "grace";
-        changed = true;
-      }
+      // Grace / lock only when lockout enforcement is enabled.
+      if (enforceLockout) {
+        // Grace transition (after periodEnd / due date)
+        if (now > periodEnd && status === "active") {
+          var graceEnds = new Date(periodEnd.getTime());
+          graceEnds.setUTCDate(graceEnds.getUTCDate() + graceDays);
+          sub.set("status", "grace");
+          sub.set("graceEndsAt", toIsoDate(graceEnds));
+          status = "grace";
+          changed = true;
+        }
 
-      // Lock transition
-      var graceEndsAtRaw = sub.getString("graceEndsAt");
-      var graceEndsAt = graceEndsAtRaw ? new Date(graceEndsAtRaw) : null;
-      if (
-        status === "grace" &&
-        graceEndsAt &&
-        !isNaN(graceEndsAt.getTime()) &&
-        now > graceEndsAt &&
-        !hasManualUnlock
-      ) {
-        sub.set("status", "locked");
-        status = "locked";
-        changed = true;
+        // Lock transition
+        var graceEndsAtRaw = sub.getString("graceEndsAt");
+        var graceEndsAt = graceEndsAtRaw ? new Date(graceEndsAtRaw) : null;
+        if (
+          status === "grace" &&
+          graceEndsAt &&
+          !isNaN(graceEndsAt.getTime()) &&
+          now > graceEndsAt &&
+          !hasManualUnlock
+        ) {
+          sub.set("status", "locked");
+          status = "locked";
+          changed = true;
+        }
       }
 
       // Reminder schedule

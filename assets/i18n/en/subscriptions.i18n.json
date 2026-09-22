@@ -55,7 +55,11 @@
   "submitted": "Submitted",
   "payeeName": "Payee name",
   "instructions": "Payment instructions",
-  "defaultGraceDays": "Grace days",
+  "defaultGraceDays": "Grace days after due date",
+  "warningDaysBeforeDue": "Warning days before due",
+  "enforceWarnings": "Show payment warnings",
+  "enforceLockout": "Lock access after grace",
+  "enforcementHint": "When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.",
   "qrphImage": "QRPH image",
   "uploadQrph": "Upload QRPH",
   "billingSaved": "Billing settings saved",
@@ -73,6 +77,14 @@
   "lockedMessage": "Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.",
   "graceBanner": "Subscription is in grace period. Please pay to avoid losing access.",
   "dueSoonBanner": "Subscription payment is due soon.",
+  "dueSoonDialogTitle": "Subscription due soon",
+  "dueSoonDialogMessage(n)": {
+    "one": "Your subscription expires in 1 day. Please renew to keep access.",
+    "other": "Your subscription expires in $n days. Please renew to keep access."
+  },
+  "graceDialogTitle": "Subscription expired",
+  "graceDialogMessage": "Your subscription is past due. Please pay to avoid losing access.",
+  "remindLater": "Later",
   "goToPayment": "Go to payment",
   "orgDetails": "Organization details",
   "days": "days"

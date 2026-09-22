@@ -55,7 +55,11 @@
   "submitted": "Naisubmit",
   "payeeName": "Payee name",
   "instructions": "Mga tagubilin sa bayad",
-  "defaultGraceDays": "Grace days",
+  "defaultGraceDays": "Grace days pagkatapos ng due date",
+  "warningDaysBeforeDue": "Warning days bago ang due",
+  "enforceWarnings": "Ipakita ang payment warnings",
+  "enforceLockout": "I-lock ang access pagkatapos ng grace",
+  "enforcementHint": "Kapag naka-off, puwede pa ring magbayad ang orgs nang kusa — walang banner, alert, o lock screen.",
   "qrphImage": "QRPH image",
   "uploadQrph": "Mag-upload ng QRPH",
   "billingSaved": "Nasave ang billing settings",
@@ -73,6 +77,14 @@
   "lockedMessage": "Naka-lock ang access hanggang ma-confirm ang bayad. Mag-upload ng QRPH transfer screenshot para maibalik ang access.",
   "graceBanner": "Nasa grace period ang subscription. Magbayad para hindi mawalan ng access.",
   "dueSoonBanner": "Malapit nang due ang subscription payment.",
+  "dueSoonDialogTitle": "Malapit nang due ang subscription",
+  "dueSoonDialogMessage(n)": {
+    "one": "Mag-e-expire ang subscription mo sa 1 araw. Mag-renew para manatiling may access.",
+    "other": "Mag-e-expire ang subscription mo sa $n araw. Mag-renew para manatiling may access."
+  },
+  "graceDialogTitle": "Nag-expire na ang subscription",
+  "graceDialogMessage": "Lampas na ang due date ng subscription mo. Magbayad para hindi mawalan ng access.",
+  "remindLater": "Mamaya",
   "goToPayment": "Pumunta sa bayad",
   "orgDetails": "Detalye ng organization",
   "days": "araw"

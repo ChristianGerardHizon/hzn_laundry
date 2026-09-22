@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/repositories/subscription_repository.dart';
 import '../../domain/platform_billing_settings.dart';
+import 'organization_pay_info_provider.dart';
 
 part 'billing_settings_controller.g.dart';
 
@@ -36,6 +37,9 @@ class BillingSettingsController extends _$BillingSettingsController {
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
     http.MultipartFile? qrphImage,
   }) async {
@@ -43,6 +47,9 @@ class BillingSettingsController extends _$BillingSettingsController {
       payeeName: payeeName,
       instructions: instructions,
       defaultGraceDays: defaultGraceDays,
+      warningDaysBeforeDue: warningDaysBeforeDue,
+      enforceWarnings: enforceWarnings,
+      enforceLockout: enforceLockout,
       reminderDaysBeforeDue: reminderDaysBeforeDue,
       qrphImage: qrphImage,
     );
@@ -50,6 +57,8 @@ class BillingSettingsController extends _$BillingSettingsController {
       (failure) => false,
       (updated) {
         state = AsyncData(updated);
+        // Pay screens cache QRPH URL; drop stale filenames after re-upload.
+        ref.invalidate(organizationPayInfoProvider);
         return true;
       },
     );

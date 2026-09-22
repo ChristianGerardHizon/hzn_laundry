@@ -788,6 +788,18 @@ class TranslationsOrganizationsEn {
 	/// en: 'Last used'
 	String get lastUsed => 'Last used';
 
+	/// en: '(one) {Expiring in 1 day} (other) {Expiring in $n days}'
+	String expiringInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Expiring in 1 day',
+		other: 'Expiring in ${n} days',
+	);
+
+	/// en: 'Expired'
+	String get subscriptionExpired => 'Expired';
+
+	/// en: 'Locked'
+	String get subscriptionLocked => 'Locked';
+
 	/// en: 'Super Admin'
 	String get superAdmin => 'Super Admin';
 
@@ -1067,8 +1079,20 @@ class TranslationsSubscriptionsEn {
 	/// en: 'Payment instructions'
 	String get instructions => 'Payment instructions';
 
-	/// en: 'Grace days'
-	String get defaultGraceDays => 'Grace days';
+	/// en: 'Grace days after due date'
+	String get defaultGraceDays => 'Grace days after due date';
+
+	/// en: 'Warning days before due'
+	String get warningDaysBeforeDue => 'Warning days before due';
+
+	/// en: 'Show payment warnings'
+	String get enforceWarnings => 'Show payment warnings';
+
+	/// en: 'Lock access after grace'
+	String get enforceLockout => 'Lock access after grace';
+
+	/// en: 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.'
+	String get enforcementHint => 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.';
 
 	/// en: 'QRPH image'
 	String get qrphImage => 'QRPH image';
@@ -1120,6 +1144,24 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'Subscription payment is due soon.'
 	String get dueSoonBanner => 'Subscription payment is due soon.';
+
+	/// en: 'Subscription due soon'
+	String get dueSoonDialogTitle => 'Subscription due soon';
+
+	/// en: '(one) {Your subscription expires in 1 day. Please renew to keep access.} (other) {Your subscription expires in $n days. Please renew to keep access.}'
+	String dueSoonDialogMessage({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Your subscription expires in 1 day. Please renew to keep access.',
+		other: 'Your subscription expires in ${n} days. Please renew to keep access.',
+	);
+
+	/// en: 'Subscription expired'
+	String get graceDialogTitle => 'Subscription expired';
+
+	/// en: 'Your subscription is past due. Please pay to avoid losing access.'
+	String get graceDialogMessage => 'Your subscription is past due. Please pay to avoid losing access.';
+
+	/// en: 'Later'
+	String get remindLater => 'Later';
 
 	/// en: 'Go to payment'
 	String get goToPayment => 'Go to payment';
@@ -1412,6 +1454,9 @@ extension on Translations {
 			'organizations.selectTitle' => 'Select organization',
 			'organizations.selectSubtitle' => 'Choose which organization you want to work in.',
 			'organizations.lastUsed' => 'Last used',
+			'organizations.expiringInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Expiring in 1 day', other: 'Expiring in ${n} days', ), 
+			'organizations.subscriptionExpired' => 'Expired',
+			'organizations.subscriptionLocked' => 'Locked',
 			'organizations.superAdmin' => 'Super Admin',
 			'organizations.superAdminTitle' => 'Super Admin',
 			'organizations.superAdminSubtitle' => 'Platform overview across all organizations.',
@@ -1499,7 +1544,11 @@ extension on Translations {
 			'subscriptions.submitted' => 'Submitted',
 			'subscriptions.payeeName' => 'Payee name',
 			'subscriptions.instructions' => 'Payment instructions',
-			'subscriptions.defaultGraceDays' => 'Grace days',
+			'subscriptions.defaultGraceDays' => 'Grace days after due date',
+			'subscriptions.warningDaysBeforeDue' => 'Warning days before due',
+			'subscriptions.enforceWarnings' => 'Show payment warnings',
+			'subscriptions.enforceLockout' => 'Lock access after grace',
+			'subscriptions.enforcementHint' => 'When off, orgs can still pay voluntarily — no banners, alerts, or lock screens.',
 			'subscriptions.qrphImage' => 'QRPH image',
 			'subscriptions.uploadQrph' => 'Upload QRPH',
 			'subscriptions.billingSaved' => 'Billing settings saved',
@@ -1517,6 +1566,11 @@ extension on Translations {
 			'subscriptions.lockedMessage' => 'Access is locked until payment is confirmed. Upload your QRPH transfer screenshot to restore access.',
 			'subscriptions.graceBanner' => 'Subscription is in grace period. Please pay to avoid losing access.',
 			'subscriptions.dueSoonBanner' => 'Subscription payment is due soon.',
+			'subscriptions.dueSoonDialogTitle' => 'Subscription due soon',
+			'subscriptions.dueSoonDialogMessage' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Your subscription expires in 1 day. Please renew to keep access.', other: 'Your subscription expires in ${n} days. Please renew to keep access.', ), 
+			'subscriptions.graceDialogTitle' => 'Subscription expired',
+			'subscriptions.graceDialogMessage' => 'Your subscription is past due. Please pay to avoid losing access.',
+			'subscriptions.remindLater' => 'Later',
 			'subscriptions.goToPayment' => 'Go to payment',
 			'subscriptions.orgDetails' => 'Organization details',
 			'subscriptions.days' => 'days',

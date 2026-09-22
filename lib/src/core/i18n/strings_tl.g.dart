@@ -335,6 +335,12 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get selectTitle => 'Pumili ng organisasyon';
 	@override String get selectSubtitle => 'Piliin kung aling organisasyon ang gusto mong pasukan.';
 	@override String get lastUsed => 'Huling ginamit';
+	@override String expiringInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: 'Mag-e-expire sa 1 araw',
+		other: 'Mag-e-expire sa ${n} araw',
+	);
+	@override String get subscriptionExpired => 'Nag-expire na';
+	@override String get subscriptionLocked => 'Naka-lock';
 	@override String get superAdmin => 'Super Admin';
 	@override String get superAdminTitle => 'Super Admin';
 	@override String get superAdminSubtitle => 'Pangkalahatang-ideya ng platform sa lahat ng organisasyon.';
@@ -440,7 +446,11 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	@override String get submitted => 'Naisubmit';
 	@override String get payeeName => 'Payee name';
 	@override String get instructions => 'Mga tagubilin sa bayad';
-	@override String get defaultGraceDays => 'Grace days';
+	@override String get defaultGraceDays => 'Grace days pagkatapos ng due date';
+	@override String get warningDaysBeforeDue => 'Warning days bago ang due';
+	@override String get enforceWarnings => 'Ipakita ang payment warnings';
+	@override String get enforceLockout => 'I-lock ang access pagkatapos ng grace';
+	@override String get enforcementHint => 'Kapag naka-off, puwede pa ring magbayad ang orgs nang kusa — walang banner, alert, o lock screen.';
 	@override String get qrphImage => 'QRPH image';
 	@override String get uploadQrph => 'Mag-upload ng QRPH';
 	@override String get billingSaved => 'Nasave ang billing settings';
@@ -458,6 +468,14 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	@override String get lockedMessage => 'Naka-lock ang access hanggang ma-confirm ang bayad. Mag-upload ng QRPH transfer screenshot para maibalik ang access.';
 	@override String get graceBanner => 'Nasa grace period ang subscription. Magbayad para hindi mawalan ng access.';
 	@override String get dueSoonBanner => 'Malapit nang due ang subscription payment.';
+	@override String get dueSoonDialogTitle => 'Malapit nang due ang subscription';
+	@override String dueSoonDialogMessage({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: 'Mag-e-expire ang subscription mo sa 1 araw. Mag-renew para manatiling may access.',
+		other: 'Mag-e-expire ang subscription mo sa ${n} araw. Mag-renew para manatiling may access.',
+	);
+	@override String get graceDialogTitle => 'Nag-expire na ang subscription';
+	@override String get graceDialogMessage => 'Lampas na ang due date ng subscription mo. Magbayad para hindi mawalan ng access.';
+	@override String get remindLater => 'Mamaya';
 	@override String get goToPayment => 'Pumunta sa bayad';
 	@override String get orgDetails => 'Detalye ng organization';
 	@override String get days => 'araw';
@@ -720,6 +738,9 @@ extension on TranslationsTl {
 			'organizations.selectTitle' => 'Pumili ng organisasyon',
 			'organizations.selectSubtitle' => 'Piliin kung aling organisasyon ang gusto mong pasukan.',
 			'organizations.lastUsed' => 'Huling ginamit',
+			'organizations.expiringInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: 'Mag-e-expire sa 1 araw', other: 'Mag-e-expire sa ${n} araw', ), 
+			'organizations.subscriptionExpired' => 'Nag-expire na',
+			'organizations.subscriptionLocked' => 'Naka-lock',
 			'organizations.superAdmin' => 'Super Admin',
 			'organizations.superAdminTitle' => 'Super Admin',
 			'organizations.superAdminSubtitle' => 'Pangkalahatang-ideya ng platform sa lahat ng organisasyon.',
@@ -807,7 +828,11 @@ extension on TranslationsTl {
 			'subscriptions.submitted' => 'Naisubmit',
 			'subscriptions.payeeName' => 'Payee name',
 			'subscriptions.instructions' => 'Mga tagubilin sa bayad',
-			'subscriptions.defaultGraceDays' => 'Grace days',
+			'subscriptions.defaultGraceDays' => 'Grace days pagkatapos ng due date',
+			'subscriptions.warningDaysBeforeDue' => 'Warning days bago ang due',
+			'subscriptions.enforceWarnings' => 'Ipakita ang payment warnings',
+			'subscriptions.enforceLockout' => 'I-lock ang access pagkatapos ng grace',
+			'subscriptions.enforcementHint' => 'Kapag naka-off, puwede pa ring magbayad ang orgs nang kusa — walang banner, alert, o lock screen.',
 			'subscriptions.qrphImage' => 'QRPH image',
 			'subscriptions.uploadQrph' => 'Mag-upload ng QRPH',
 			'subscriptions.billingSaved' => 'Nasave ang billing settings',
@@ -825,6 +850,11 @@ extension on TranslationsTl {
 			'subscriptions.lockedMessage' => 'Naka-lock ang access hanggang ma-confirm ang bayad. Mag-upload ng QRPH transfer screenshot para maibalik ang access.',
 			'subscriptions.graceBanner' => 'Nasa grace period ang subscription. Magbayad para hindi mawalan ng access.',
 			'subscriptions.dueSoonBanner' => 'Malapit nang due ang subscription payment.',
+			'subscriptions.dueSoonDialogTitle' => 'Malapit nang due ang subscription',
+			'subscriptions.dueSoonDialogMessage' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: 'Mag-e-expire ang subscription mo sa 1 araw. Mag-renew para manatiling may access.', other: 'Mag-e-expire ang subscription mo sa ${n} araw. Mag-renew para manatiling may access.', ), 
+			'subscriptions.graceDialogTitle' => 'Nag-expire na ang subscription',
+			'subscriptions.graceDialogMessage' => 'Lampas na ang due date ng subscription mo. Magbayad para hindi mawalan ng access.',
+			'subscriptions.remindLater' => 'Mamaya',
 			'subscriptions.goToPayment' => 'Pumunta sa bayad',
 			'subscriptions.orgDetails' => 'Detalye ng organization',
 			'subscriptions.days' => 'araw',

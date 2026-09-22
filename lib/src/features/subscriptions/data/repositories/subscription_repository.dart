@@ -90,6 +90,9 @@ abstract class SubscriptionRepository {
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
     http.MultipartFile? qrphImage,
   });
@@ -571,6 +574,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     String? payeeName,
     String? instructions,
     int? defaultGraceDays,
+    int? warningDaysBeforeDue,
+    bool? enforceWarnings,
+    bool? enforceLockout,
     List<int>? reminderDaysBeforeDue,
     http.MultipartFile? qrphImage,
   }) async {
@@ -581,6 +587,15 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (instructions != null) body['instructions'] = instructions;
         if (defaultGraceDays != null) {
           body['defaultGraceDays'] = defaultGraceDays;
+        }
+        if (warningDaysBeforeDue != null) {
+          body['warningDaysBeforeDue'] = warningDaysBeforeDue;
+        }
+        if (enforceWarnings != null) {
+          body['enforceWarnings'] = enforceWarnings;
+        }
+        if (enforceLockout != null) {
+          body['enforceLockout'] = enforceLockout;
         }
         if (reminderDaysBeforeDue != null) {
           body['reminderDaysBeforeDue'] = reminderDaysBeforeDue;
