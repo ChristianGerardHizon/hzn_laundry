@@ -9,6 +9,7 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/routing/router_utils.dart';
 import '../../../../core/routing/routes/dashboard.routes.dart';
+import '../../../../core/routing/routes/org_selection.routes.dart';
 import '../../../../core/routing/routes/organizations.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
@@ -30,9 +31,10 @@ class OrganizationsPage extends HookConsumerWidget {
         ref.watch(currentOrganizationControllerProvider.notifier).memberships;
     final currentOrg = orgAsync.value;
     final role = ref.watch(currentUserRoleProvider).value;
+    final isSystemAdmin = role?.isAdmin ?? false;
     final canCreate =
         role?.hasPermission(Permissions.organizationsCreate) == true ||
-            (role?.isAdmin ?? false);
+            isSystemAdmin;
 
     Future<void> openCreateDialog() async {
       final created = await showCreateOrganizationSetupDialog(context);
@@ -66,6 +68,12 @@ class OrganizationsPage extends HookConsumerWidget {
       appBar: AppBar(
         title: Text(t.organizations.title),
         actions: [
+          if (isSystemAdmin)
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: t.organizations.superAdmin,
+              onPressed: () => const SuperAdminRoute().go(context),
+            ),
           if (canCreate)
             IconButton(
               icon: const Icon(Icons.add_business),

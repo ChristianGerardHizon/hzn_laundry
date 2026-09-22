@@ -72,7 +72,7 @@ GoRouter router(Ref ref) {
 
       // Post-login org selection (outside shell, auth required)
       $selectOrganizationRoute,
-      $superAdminRoute,
+      $superAdminShellRoute,
       $subscriptionPayRoute,
 
       // Org/branch-scoped main app. `:orgSlug`/`:branchSlug` are hand-written
