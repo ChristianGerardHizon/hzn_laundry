@@ -40,7 +40,7 @@ class QuickActionsSection extends ConsumerWidget {
         isAdmin || (role?.hasPermission(Permissions.salesCreate) ?? false);
     final canCreateCustomer =
         isAdmin || (role?.hasPermission(Permissions.customersCreate) ?? false);
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     void onNewSale() {
       if (isAllBranches) {

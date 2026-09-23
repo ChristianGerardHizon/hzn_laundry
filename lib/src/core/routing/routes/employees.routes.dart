@@ -39,7 +39,7 @@ class EmployeesRoute extends GoRouteData with $EmployeesRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const EmployeesListPage();

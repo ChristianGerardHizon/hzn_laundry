@@ -53,7 +53,7 @@ class ConsumablesUsageReportView extends ConsumerWidget {
     DateTimeRange dateRange, {
     required bool showCost,
   }) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
     final theme = Theme.of(context);
 
     return RefreshIndicator(

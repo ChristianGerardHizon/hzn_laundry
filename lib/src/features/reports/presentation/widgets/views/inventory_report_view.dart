@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../../core/utils/breakpoints.dart';
 import '../../../../dashboard/presentation/widgets/kpi_card.dart';
 import '../../../domain/inventory_report.dart';
 import '../../controllers/inventory_report_controller.dart';
@@ -29,8 +30,10 @@ class InventoryReportView extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, InventoryReport report) {
+    final isCompact = Breakpoints.isCompactContent(context);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isCompact ? 12 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -38,53 +41,84 @@ class InventoryReportView extends ConsumerWidget {
           _buildKpiSection(context, report),
           const SizedBox(height: 24),
 
-          // Charts Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Stock Status Pie Chart
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: PieChartWidget(
-                      title: 'Stock Status',
-                      data: report.stockStatusBreakdown.map(
-                        (k, v) => MapEntry(k, v),
+          // Charts — stacked on compact, side-by-side when wide
+          if (isCompact) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: PieChartWidget(
+                  title: 'Stock Status',
+                  data: report.stockStatusBreakdown.map(
+                    (k, v) => MapEntry(k, v),
+                  ),
+                  height: 220,
+                  colors: const [
+                    Color(0xFF4CAF50), // In Stock - Green
+                    Color(0xFFFBC02D), // Low Stock - Yellow
+                    Color(0xFFF44336), // Out of Stock - Red
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: BarChartWidget(
+                  title: 'Products by Category',
+                  data: report.productsByCategory.map(
+                    (k, v) => MapEntry(k, v),
+                  ),
+                  height: 220,
+                  barColor: Colors.deepPurple,
+                ),
+              ),
+            ),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: PieChartWidget(
+                        title: 'Stock Status',
+                        data: report.stockStatusBreakdown.map(
+                          (k, v) => MapEntry(k, v),
+                        ),
+                        height: 220,
+                        colors: const [
+                          Color(0xFF4CAF50),
+                          Color(0xFFFBC02D),
+                          Color(0xFFF44336),
+                        ],
                       ),
-                      height: 220,
-                      colors: const [
-                        Color(0xFF4CAF50), // In Stock - Green
-                        Color(0xFFFBC02D), // Low Stock - Yellow
-                        Color(0xFFF44336), // Out of Stock - Red
-                      ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Products by Category Bar Chart
-              Expanded(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: BarChartWidget(
-                      title: 'Products by Category',
-                      data: report.productsByCategory.map(
-                        (k, v) => MapEntry(k, v),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: BarChartWidget(
+                        title: 'Products by Category',
+                        data: report.productsByCategory.map(
+                          (k, v) => MapEntry(k, v),
+                        ),
+                        height: 220,
+                        barColor: Colors.deepPurple,
                       ),
-                      height: 220,
-                      barColor: Colors.deepPurple,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 24),
 
-          // Low Stock Items Table
-          _buildLowStockTable(context, report),
+          // Low Stock Items
+          _buildLowStockSection(context, report, isCompact: isCompact),
         ],
       ),
     );
@@ -148,7 +182,11 @@ class InventoryReportView extends ConsumerWidget {
     );
   }
 
-  Widget _buildLowStockTable(BuildContext context, InventoryReport report) {
+  Widget _buildLowStockSection(
+    BuildContext context,
+    InventoryReport report, {
+    required bool isCompact,
+  }) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM d, y');
 
@@ -175,6 +213,31 @@ class InventoryReportView extends ConsumerWidget {
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (isCompact) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Low Stock Items',
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 12),
+              for (final item in report.lowStockItems) ...[
+                _LowStockItemCard(
+                  item: item,
+                  dateFormat: dateFormat,
+                ),
+                const SizedBox(height: 8),
+              ],
             ],
           ),
         ),
@@ -219,6 +282,66 @@ class InventoryReportView extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LowStockItemCard extends StatelessWidget {
+  const _LowStockItemCard({
+    required this.item,
+    required this.dateFormat,
+  });
+
+  final LowStockItem item;
+  final DateFormat dateFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final expiration = item.expirationDate != null
+        ? dateFormat.format(item.expirationDate!)
+        : '-';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            item.productName,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.categoryName,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              Text(
+                'Stock: ${item.currentStock} / ${item.threshold}',
+                style: theme.textTheme.bodySmall,
+              ),
+              Text(
+                'Expires: $expiration',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

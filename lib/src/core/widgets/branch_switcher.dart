@@ -143,31 +143,36 @@ class _AdminBranchDropdown extends StatelessWidget {
 
     return Container(
       width: compact ? double.infinity : null,
+      height: compact ? 40 : null,
       margin: compact
-          ? EdgeInsets.zero
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
           : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 16 : 12,
+        horizontal: compact ? 12 : 12,
         vertical: compact ? 0 : 4,
       ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: compact ? null : BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
           isExpanded: true,
-          isDense: compact,
+          isDense: true,
           icon: Icon(
             Icons.swap_horiz,
             size: compact ? 16 : 20,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-          style: compact
-              ? theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                )
-              : theme.textTheme.bodyMedium,
+          style: (compact
+                  ? theme.textTheme.labelMedium
+                  : theme.textTheme.bodyMedium)
+              ?.copyWith(
+            color: theme.colorScheme.onSurface,
+            height: 1.2,
+          ),
           items: [
             DropdownMenuItem(
               value: kAllBranchesSentinel,
@@ -228,16 +233,18 @@ class _BranchDisplay extends StatelessWidget {
 
     return Container(
       width: compact ? double.infinity : null,
+      height: compact ? 40 : null,
       margin: compact
-          ? EdgeInsets.zero
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
           : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 16 : 12,
-        vertical: compact ? 6 : 12,
+        horizontal: compact ? 12 : 12,
+        vertical: compact ? 0 : 12,
       ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: compact ? null : BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
@@ -250,11 +257,13 @@ class _BranchDisplay extends StatelessWidget {
           Expanded(
             child: Text(
               branch.name,
-              style: compact
-                  ? theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    )
-                  : theme.textTheme.bodyMedium,
+              style: (compact
+                      ? theme.textTheme.labelMedium
+                      : theme.textTheme.bodyMedium)
+                  ?.copyWith(
+                color: theme.colorScheme.onSurface,
+                height: 1.2,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -285,16 +294,18 @@ class _NoBranchDisplay extends StatelessWidget {
 
     return Container(
       width: compact ? double.infinity : null,
+      height: compact ? 40 : null,
       margin: compact
-          ? EdgeInsets.zero
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
           : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 16 : 12,
-        vertical: compact ? 6 : 12,
+        horizontal: compact ? 12 : 12,
+        vertical: compact ? 0 : 12,
       ),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: compact ? null : BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
@@ -308,11 +319,12 @@ class _NoBranchDisplay extends StatelessWidget {
             child: Text(
               t.navigation.noBranch,
               style: (compact
-                      ? theme.textTheme.labelSmall
+                      ? theme.textTheme.labelMedium
                       : theme.textTheme.bodyMedium)
                   ?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 fontStyle: FontStyle.italic,
+                height: 1.2,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -332,19 +344,19 @@ class _BranchLoadingState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: compact ? double.infinity : null,
+      height: compact ? 40 : null,
       margin: compact
-          ? EdgeInsets.zero
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
           : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 16 : 12,
-        vertical: compact ? 6 : 12,
+        horizontal: compact ? 12 : 12,
+        vertical: compact ? 0 : 12,
       ),
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }

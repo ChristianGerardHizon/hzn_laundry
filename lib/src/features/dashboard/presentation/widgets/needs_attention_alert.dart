@@ -15,7 +15,7 @@ class NeedsAttentionAlert extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = FeedbackColors.warning(theme);
-    final compact = Breakpoints.isMobile(context);
+    final compact = Breakpoints.isCompactContent(context);
     final subtitle = [
       if (data.processingCount > 0) '${data.processingCount} processing',
       if (data.missingDataCount > 0) '${data.missingDataCount} missing data',

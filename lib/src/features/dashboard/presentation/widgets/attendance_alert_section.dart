@@ -88,7 +88,7 @@ class AttendanceAlertSection extends ConsumerWidget {
           final markedCount = totalCount - unmarkedCount;
           final theme = Theme.of(context);
           final colors = FeedbackColors.warning(theme);
-          final compact = Breakpoints.isMobile(context);
+          final compact = Breakpoints.isCompactContent(context);
           final titleStyle = theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: colors.foreground,

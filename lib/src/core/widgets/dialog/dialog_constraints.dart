@@ -4,8 +4,9 @@ import '../../utils/breakpoints.dart';
 
 /// Centralized dialog width constraints for tablet/desktop responsiveness.
 ///
-/// On mobile (< 600px), dialogs remain full-screen.
-/// On tablet/desktop, dialogs are constrained to a max-width and centered.
+/// On compact widths (< [Breakpoints.multiColumn], including portrait tablets
+/// at ~600px), dialogs remain full-screen.
+/// On wider layouts, dialogs are constrained to a max-width and centered.
 abstract class DialogConstraints {
   /// Compact dialog max width (500px).
   /// Use for simple dialogs like sort, search fields, confirmations.
@@ -21,8 +22,8 @@ abstract class DialogConstraints {
 
   /// Returns the appropriate inset padding for a dialog.
   ///
-  /// On mobile or fullScreen, uses minimal padding (8dp).
-  /// On tablet/desktop, calculates horizontal padding to center the dialog.
+  /// On compact content or fullScreen, uses minimal padding (8dp).
+  /// On wide layouts, calculates horizontal padding to center the dialog.
   /// When [shrinkWrap] is true, always uses comfortable inset (never edge-to-edge).
   static EdgeInsets getInsetPadding(
     BuildContext context, {
@@ -31,16 +32,18 @@ abstract class DialogConstraints {
     bool shrinkWrap = false,
   }) {
     final size = MediaQuery.sizeOf(context);
-    final isMobile = size.width < Breakpoints.mobile;
+    final isCompact = size.width < Breakpoints.multiColumn;
 
     if (shrinkWrap) {
       return EdgeInsets.symmetric(
-        horizontal: isMobile ? 24 : ((size.width - maxWidth) / 2).clamp(16.0, double.infinity),
-        vertical: isMobile ? 48 : 24,
+        horizontal: isCompact
+            ? 24
+            : ((size.width - maxWidth) / 2).clamp(16.0, double.infinity),
+        vertical: isCompact ? 48 : 24,
       );
     }
 
-    if (isMobile || fullScreen) {
+    if (isCompact || fullScreen) {
       return const EdgeInsets.all(8);
     }
 
@@ -56,8 +59,8 @@ abstract class DialogConstraints {
 
 /// Wraps dialog content with responsive width constraints.
 ///
-/// On mobile (< 600px), expands to full screen.
-/// On tablet/desktop, constrains width to [maxWidth] and uses intrinsic height.
+/// On compact widths (< [Breakpoints.multiColumn]), expands to full screen.
+/// On wider layouts, constrains width to [maxWidth] and uses intrinsic height.
 ///
 /// Example:
 /// ```dart
@@ -79,7 +82,7 @@ class ConstrainedDialogContent extends StatelessWidget {
   final Widget child;
 
   /// Maximum width for the dialog on tablet/desktop.
-  /// Ignored when [fullScreen] is true or on mobile (unless [shrinkWrap]).
+  /// Ignored when [fullScreen] is true or on compact (unless [shrinkWrap]).
   final double maxWidth;
 
   /// Forces full-screen mode regardless of screen size.
@@ -93,7 +96,7 @@ class ConstrainedDialogContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final isMobile = size.width < Breakpoints.mobile;
+    final isCompact = size.width < Breakpoints.multiColumn;
 
     if (shrinkWrap) {
       return ConstrainedBox(
@@ -105,7 +108,7 @@ class ConstrainedDialogContent extends StatelessWidget {
       );
     }
 
-    if (fullScreen || isMobile) {
+    if (fullScreen || isCompact) {
       // Full screen mode
       return SizedBox(
         width: size.width,
@@ -114,7 +117,7 @@ class ConstrainedDialogContent extends StatelessWidget {
       );
     }
 
-    // Constrained mode for tablet/desktop
+    // Constrained mode for wide tablet/desktop
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxWidth: maxWidth,
@@ -128,8 +131,8 @@ class ConstrainedDialogContent extends StatelessWidget {
 
 /// Shows a dialog with tablet-friendly constraints.
 ///
-/// By default, dialogs are constrained to 700px width on tablet/desktop
-/// and centered. On mobile, they remain full-screen.
+/// By default, dialogs are constrained to 700px width on wide layouts
+/// and centered. On compact widths (< 840px), they remain full-screen.
 ///
 /// Set [fullScreen] to true for complex forms with many fields (10+).
 ///

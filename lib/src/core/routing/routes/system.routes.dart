@@ -89,7 +89,7 @@ class SystemRoute extends GoRouteData with $SystemRoute {
   @override
   String? redirect(BuildContext context, GoRouterState state) {
     // Only redirect on tablet - mobile shows landing page
-    if (Breakpoints.isTabletOrLarger(context) && state.uri.path == path) {
+    if (Breakpoints.isMultiColumnOrLarger(context) && state.uri.path == path) {
       return '$path/printers';
     }
     return null;
@@ -177,7 +177,7 @@ class PrinterSettingsRoute extends GoRouteData with $PrinterSettingsRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     // Mobile: Show printers list

@@ -16,7 +16,7 @@ class ProductsShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // On mobile, just show the child directly
-    if (!Breakpoints.isTabletOrLarger(context)) {
+    if (!Breakpoints.isMultiColumnOrLarger(context)) {
       return child;
     }
 

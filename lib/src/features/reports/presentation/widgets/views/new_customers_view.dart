@@ -70,7 +70,7 @@ class NewCustomersView extends HookConsumerWidget {
     required String searchQuery,
     required ValueNotifier<Set<String>> searchFields,
   }) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     // Group by day for chart & highlight
     final dailyCounts = <DateTime, int>{};

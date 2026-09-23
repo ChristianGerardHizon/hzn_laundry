@@ -5,7 +5,7 @@ import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
 import '../utils/breakpoints.dart';
 import 'nav_permissions.dart';
-import 'network_health_logo.dart';
+import 'organization_nav_brand.dart';
 
 /// Navigation rail for tablet layouts (600–899px).
 ///
@@ -37,7 +37,10 @@ class TabletNavRail extends ConsumerWidget {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
-          child: NetworkHealthLogo(size: 40),
+          child: OrganizationNavBrand(
+            logoSize: 40,
+            showLabel: false,
+          ),
         ),
         Expanded(
           child: SingleChildScrollView(

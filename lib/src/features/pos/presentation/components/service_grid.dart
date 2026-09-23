@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/foundation/failure.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../services/data/repositories/service_repository.dart';
@@ -74,9 +75,9 @@ class ServiceGrid extends ConsumerWidget {
                 final width = constraints.maxWidth;
                 final crossAxisCount = width < 400
                     ? 3
-                    : width < 600
+                    : width < Breakpoints.mobile
                         ? 4
-                        : width < 900
+                        : width < Breakpoints.multiColumn
                             ? 5
                             : 6;
 

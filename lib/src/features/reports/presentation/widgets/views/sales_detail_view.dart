@@ -127,7 +127,7 @@ class SalesDetailView extends HookConsumerWidget {
     required ValueNotifier<Set<String>> searchFields,
     required ScrollController scrollController,
   }) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
     final detailState = detailAsync.asData?.value;
     final sales = detailState?.items ?? const <Sale>[];
     final detailLoading = detailAsync.isLoading && detailState == null;

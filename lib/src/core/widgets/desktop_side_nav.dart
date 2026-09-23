@@ -4,13 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
-import '../config/app_environment.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
 import 'desktop_nav_flyout.dart';
 import 'desktop_nav_item.dart';
 import 'nav_permissions.dart';
-import 'network_health_logo.dart';
+import 'organization_nav_brand.dart';
 
 /// Firebase-style sidebar for tablet-large and desktop layouts (>=900px).
 class DesktopSideNav extends HookConsumerWidget {
@@ -123,47 +122,13 @@ class DesktopSideNav extends HookConsumerWidget {
               12,
             ),
             child: collapsed.value
-                ? const Center(child: NetworkHealthLogo(size: 32))
-                : Row(
-                    children: [
-                      const NetworkHealthLogo(size: 32),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              appTitle,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                color: theme.colorScheme.onSurface,
-                                letterSpacing: -0.15,
-                                height: 1.2,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Tooltip(
-                              message: pocketbaseUrl,
-                              child: Text(
-                                pocketbaseUrl,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontSize: 11,
-                                  height: 1.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                ? const Center(
+                    child: OrganizationNavBrand(
+                      logoSize: 32,
+                      showLabel: false,
+                    ),
+                  )
+                : const OrganizationNavBrand(logoSize: 32),
           ),
           if (!collapsed.value)
             Padding(

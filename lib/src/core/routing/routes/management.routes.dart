@@ -125,7 +125,7 @@ class ManagementRoute extends GoRouteData with $ManagementRoute {
   @override
   String? redirect(BuildContext context, GoRouterState state) {
     // Only redirect on tablet - mobile shows landing page
-    if (Breakpoints.isTabletOrLarger(context) && state.uri.path == path) {
+    if (Breakpoints.isMultiColumnOrLarger(context) && state.uri.path == path) {
       return '$path/users';
     }
     return null;
@@ -145,7 +145,7 @@ class ManagementUsersRoute extends GoRouteData with $ManagementUsersRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     // Mobile: Show users list
@@ -178,7 +178,7 @@ class ManagementRolesRoute extends GoRouteData with $ManagementRolesRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     // Mobile: Show roles list
@@ -207,7 +207,7 @@ class ManagementBranchesRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) {
     // On tablet, handled by shell - return empty
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     // Mobile: Show branches list
@@ -562,7 +562,7 @@ class ManagementMachinesRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const _ManagementMachinesListPage();
@@ -589,7 +589,7 @@ class ManagementStoragesRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const _ManagementStoragesListPage();
@@ -616,7 +616,7 @@ class ManagementProductCategoriesRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const _ManagementProductCategoriesListPage();
@@ -643,7 +643,7 @@ class ManagementQuantityUnitsRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const _ManagementQuantityUnitsListPage();
@@ -670,7 +670,7 @@ class ManagementCashierGroupsRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const CashierGroupsSettingsPage();
@@ -696,7 +696,7 @@ class ManagementImportRoute extends GoRouteData with $ManagementImportRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return Scaffold(

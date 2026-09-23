@@ -30,9 +30,9 @@ class PosScreen extends HookConsumerWidget {
     final hasGroups = groups.isNotEmpty;
     final isAllBranches = ref.watch(isAllBranchesProvider);
 
-    final isMobile = Breakpoints.isMobile(context);
+    final useCompactLayout = Breakpoints.isCompactContent(context);
 
-    final content = isMobile
+    final content = useCompactLayout
         ? _MobileLayout(
             scaffoldKey: scaffoldKey,
             hasGroups: hasGroups,

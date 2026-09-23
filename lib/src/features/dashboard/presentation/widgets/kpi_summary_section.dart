@@ -8,10 +8,10 @@ import 'total_packs_modal.dart';
 
 /// Section displaying KPI summary cards on the dashboard.
 ///
-/// Responsive layout:
-/// - Desktop (≥1200px): 4-column grid
-/// - Tablet (600–1199px): 2-column grid
-/// - Mobile (<600px): 1-column (full width)
+/// Responsive layout (content width via [LayoutBuilder]):
+/// - Desktop (≥1200px content): 4-column grid
+/// - Multi-column (≥840px content): 2-column grid
+/// - Compact (<840px): 1-column (full width)
 class KpiSummarySection extends ConsumerWidget {
   const KpiSummarySection({super.key});
 
@@ -23,20 +23,20 @@ class KpiSummarySection extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final screenWidth = MediaQuery.sizeOf(context).width;
           const spacing = 12.0;
+          final maxWidth = constraints.maxWidth;
 
           final int columns;
-          if (screenWidth >= Breakpoints.desktop) {
+          if (maxWidth >= Breakpoints.desktop) {
             columns = 4;
-          } else if (screenWidth >= Breakpoints.mobile) {
+          } else if (Breakpoints.canUseMultiColumn(maxWidth)) {
             columns = 2;
           } else {
             columns = 1;
           }
 
           final rawWidth =
-              (constraints.maxWidth - spacing * (columns - 1)) / columns;
+              (maxWidth - spacing * (columns - 1)) / columns;
           // Guard against negative/zero widths on extremely narrow
           // constraints, which would throw a BoxConstraints assertion.
           final cardWidth = rawWidth.isFinite && rawWidth > 0 ? rawWidth : 0.0;

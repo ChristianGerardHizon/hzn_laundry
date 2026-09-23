@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../products/domain/product.dart';
@@ -37,9 +38,9 @@ class GroupedCashierView extends StatelessWidget {
         final width = constraints.maxWidth;
         final crossAxisCount = width < 400
             ? 3
-            : width < 600
+            : width < Breakpoints.mobile
                 ? 4
-                : width < 900
+                : width < Breakpoints.multiColumn
                     ? 5
                     : 6;
 
