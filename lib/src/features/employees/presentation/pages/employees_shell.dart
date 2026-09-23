@@ -15,7 +15,7 @@ class EmployeesShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!Breakpoints.isTabletOrLarger(context)) {
+    if (!Breakpoints.isMultiColumnOrLarger(context)) {
       return child;
     }
 

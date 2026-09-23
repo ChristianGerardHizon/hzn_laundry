@@ -21,7 +21,7 @@ class UserRolesPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rolesAsync = ref.watch(userRolesControllerProvider);
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
 
     return rolesAsync.when(
       loading: () => const Scaffold(

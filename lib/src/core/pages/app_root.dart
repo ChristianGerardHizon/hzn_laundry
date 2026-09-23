@@ -272,6 +272,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
           child: Column(
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const OrganizationSwitcher(compact: true),
                   const Expanded(child: BranchSwitcher(compact: true)),
@@ -328,6 +329,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           const OrganizationSwitcher(compact: true),
                           const Expanded(child: BranchSwitcher(compact: true)),

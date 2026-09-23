@@ -13,6 +13,7 @@ import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../../core/printing/order_claim_sheet_pdf.dart';
 import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/system.routes.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -149,7 +150,7 @@ class _CreateOrderDialogScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final isWide = width > 600;
+    final isWide = width >= Breakpoints.multiColumn;
 
     return Dialog(
       insetPadding: isWide

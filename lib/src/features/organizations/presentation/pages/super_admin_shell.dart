@@ -37,7 +37,7 @@ class SuperAdminShell extends HookConsumerWidget {
     final scaffoldKey = useMemoized(GlobalKey<ScaffoldState>.new);
     final location = GoRouterState.of(context).uri.path;
     final section = _sectionForPath(location);
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
 
     Future<void> openCreate() async {
       if (isCreating.value) return;

@@ -42,7 +42,7 @@ class ProductsRoute extends GoRouteData with $ProductsRoute {
   Widget build(BuildContext context, GoRouterState state) {
     // On tablet, this is handled by the shell - return empty container
     // On mobile, this shows the list page
-    if (Breakpoints.isTabletOrLarger(context)) {
+    if (Breakpoints.isMultiColumnOrLarger(context)) {
       return const SizedBox.shrink();
     }
     return const ProductsListPage();

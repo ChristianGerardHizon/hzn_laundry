@@ -85,44 +85,73 @@ class _OrgDropdown extends StatelessWidget {
         ? selectedId
         : organizations.first.id;
 
-    return Container(
-      width: compact ? null : 220,
-      margin: compact
-          ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 12,
-        vertical: compact ? 0 : 4,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: compact ? 160 : 220,
       ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: compact ? null : BorderRadius.circular(8),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: effectiveValue,
-          isDense: compact,
-          icon: Icon(Icons.apartment, size: compact ? 16 : 20),
-          style: compact
-              ? theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                )
-              : theme.textTheme.bodyMedium,
-          items: organizations
-              .map(
-                (org) => DropdownMenuItem(
-                  value: org.id,
-                  child: Text(
-                    org.name,
-                    overflow: TextOverflow.ellipsis,
+      child: Container(
+        width: compact ? double.infinity : 220,
+        height: compact ? 40 : null,
+        margin: compact
+            ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
+            : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 8 : 12,
+          vertical: compact ? 0 : 4,
+        ),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(compact ? 8 : 8),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: effectiveValue,
+            isDense: true,
+            isExpanded: true,
+            icon: Icon(
+              Icons.apartment,
+              size: compact ? 16 : 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            style: (compact
+                    ? theme.textTheme.labelMedium
+                    : theme.textTheme.bodyMedium)
+                ?.copyWith(
+              color: theme.colorScheme.onSurface,
+              height: 1.2,
+            ),
+            selectedItemBuilder: (context) => organizations
+                .map(
+                  (org) => Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      org.name,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
-          hint: Text(t.organizations.switchOrganization),
+                )
+                .toList(),
+            items: organizations
+                .map(
+                  (org) => DropdownMenuItem(
+                    value: org.id,
+                    child: Text(
+                      org.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) onChanged(value);
+            },
+            hint: Text(
+              t.organizations.switchOrganization,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ),
       ),
     );

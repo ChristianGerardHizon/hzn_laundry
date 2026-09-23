@@ -3,10 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
-import '../packages/pocketbase/pocketbase_provider.dart';
 import 'branch_switcher.dart';
 import 'nav_permissions.dart';
-import 'network_health_logo.dart';
+import 'organization_nav_brand.dart';
 
 /// Mobile drawer with permission-filtered navigation menu.
 class MobileDrawer extends ConsumerWidget {
@@ -44,38 +43,15 @@ class MobileDrawer extends ConsumerWidget {
             // Header
             DrawerHeader(
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
+                color: theme.colorScheme.surfaceContainerLow,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const NetworkHealthLogo(size: 48),
-                  const SizedBox(height: 8),
-                  Text(
-                    'HZN Laundry',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  Text(
-                    'Laundry Management System',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withValues(
-                        alpha: 0.7,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    pocketbaseUrl,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withValues(
-                        alpha: 0.5,
-                      ),
-                      fontFamily: 'monospace',
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
+              child: const Align(
+                alignment: Alignment.bottomLeft,
+                child: OrganizationNavBrand(
+                  logoSize: 48,
+                  compact: true,
+                  showServerUrl: true,
+                ),
               ),
             ),
 

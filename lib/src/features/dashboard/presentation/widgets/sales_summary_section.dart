@@ -127,15 +127,18 @@ class SalesSummarySection extends HookConsumerWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          isExpanded ? 'Press to hide' : 'Press to show',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
+                        if (!Breakpoints.isCompactContent(context)) ...[
+                          Text(
+                            isExpanded ? 'Press to hide' : 'Press to show',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.outline,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
+                          const SizedBox(width: 4),
+                        ],
                         AnimatedRotation(
                           turns: isExpanded ? 0.0 : -0.25,
                           duration: const Duration(milliseconds: 200),
@@ -150,25 +153,43 @@ class SalesSummarySection extends HookConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              TextButton.icon(
-                onPressed: isRefreshing.value ? null : handleRefresh,
-                icon: isRefreshing.value
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colorScheme.outline,
-                        ),
-                      )
-                    : const Icon(Icons.refresh, size: 18),
-                label: const Text('Refresh'),
-                style: TextButton.styleFrom(
+              const SizedBox(width: 8),
+              if (Breakpoints.isCompactContent(context))
+                IconButton(
+                  onPressed: isRefreshing.value ? null : handleRefresh,
+                  tooltip: 'Refresh',
+                  icon: isRefreshing.value
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.outline,
+                          ),
+                        )
+                      : const Icon(Icons.refresh, size: 20),
                   visualDensity: VisualDensity.compact,
-                  foregroundColor: theme.colorScheme.outline,
+                  color: theme.colorScheme.outline,
+                )
+              else
+                TextButton.icon(
+                  onPressed: isRefreshing.value ? null : handleRefresh,
+                  icon: isRefreshing.value
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.outline,
+                          ),
+                        )
+                      : const Icon(Icons.refresh, size: 18),
+                  label: const Text('Refresh'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: theme.colorScheme.outline,
+                  ),
                 ),
-              ),
             ],
           ),
           AnimatedCrossFade(
@@ -441,9 +462,19 @@ class _SalesSummaryContent extends ConsumerWidget {
         return Wrap(
           spacing: _kpiSpacing,
           runSpacing: _kpiSpacing,
-          children: salesCards
-              .map((c) => SizedBox(width: layout.cardWidth, child: c))
-              .toList(),
+          children: [
+            for (var i = 0; i < salesCards.length; i++)
+              SizedBox(
+                width: _kpiCardWidthAt(
+                  index: i,
+                  itemCount: salesCards.length,
+                  cols: layout.cols,
+                  cardWidth: layout.cardWidth,
+                  maxWidth: constraints.maxWidth,
+                ),
+                child: salesCards[i],
+              ),
+          ],
         );
       },
     );
@@ -866,9 +897,12 @@ const _kpiMinCardWidth = 168.0;
     return (cols: 1, cardWidth: 0);
   }
 
-  final isMobileWidth = maxWidth < Breakpoints.mobile;
+  final isMobileWidth = maxWidth < Breakpoints.multiColumn;
   var cols = isMobileWidth
-      ? (itemCount >= 2 ? 2 : 1)
+      ? (itemCount >= 2 &&
+              maxWidth >= (_kpiMinCardWidth * 2 + _kpiSpacing)
+          ? 2
+          : 1)
       : ((maxWidth + _kpiSpacing) / (_kpiMinCardWidth + _kpiSpacing))
           .floor()
           .clamp(1, itemCount);
@@ -883,8 +917,25 @@ const _kpiMinCardWidth = 168.0;
     }
   }
 
-  final cardWidth = (maxWidth - _kpiSpacing * (cols - 1)) / cols;
+  final cardWidth = cols <= 1
+      ? maxWidth
+      : (maxWidth - _kpiSpacing * (cols - 1)) / cols;
   return (cols: cols, cardWidth: cardWidth);
+}
+
+/// Width for a KPI card in a Wrap grid. Incomplete last-row cards span full width.
+double _kpiCardWidthAt({
+  required int index,
+  required int itemCount,
+  required int cols,
+  required double cardWidth,
+  required double maxWidth,
+}) {
+  if (cols <= 1) return maxWidth;
+  final remainder = itemCount % cols;
+  if (remainder == 0) return cardWidth;
+  if (index >= itemCount - remainder) return maxWidth;
+  return cardWidth;
 }
 
 class _LoadingCards extends StatelessWidget {
@@ -904,11 +955,19 @@ class _LoadingCards extends StatelessWidget {
         return Wrap(
           spacing: _kpiSpacing,
           runSpacing: _kpiSpacing,
-          children: List.generate(
-            cardCount,
-            (_) =>
-                SizedBox(width: layout.cardWidth, child: const _LoadingCard()),
-          ),
+          children: [
+            for (var i = 0; i < cardCount; i++)
+              SizedBox(
+                width: _kpiCardWidthAt(
+                  index: i,
+                  itemCount: cardCount,
+                  cols: layout.cols,
+                  cardWidth: layout.cardWidth,
+                  maxWidth: constraints.maxWidth,
+                ),
+                child: const _LoadingCard(),
+              ),
+          ],
         );
       },
     );

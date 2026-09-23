@@ -39,7 +39,7 @@ class UserDetailPage extends HookConsumerWidget {
       initialLength: 2,
       initialIndex: initialTab.index,
     );
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
     final t = Translations.of(context);
 
     return userAsync.when(

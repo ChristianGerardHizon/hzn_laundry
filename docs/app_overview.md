@@ -640,6 +640,7 @@ lib/src/
 
 ---
 
+| Sep 23 | Portrait tablet content | Compact content tier (&lt; 840px): stacked kanban/master-detail/POS while keeping tablet nav rail; fixes crushed layouts at ~600×1007 |
 | Sep 22 | Manual organization lock | Super Admin can lock an org immediately (app unusable except pay); billing “Automatically lock after grace” only controls the daily job |
 | Sep 22 | Optional subscription enforcement | Billing settings: configurable warning days before due; toggles for in-app warnings and auto-lock after grace; voluntary pay stays available |
 | Sep 22 | Subscription due alert | Opening an org with a due-soon or grace subscription shows a one-time alert (Later / Go to payment) when warnings are enforced; banner still shown |

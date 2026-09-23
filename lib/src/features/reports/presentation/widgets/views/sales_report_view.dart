@@ -129,7 +129,7 @@ class SalesReportView extends HookConsumerWidget {
     required ValueNotifier<Set<String>> searchFields,
     required ScrollController scrollController,
   }) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     num totalCollected = 0;
     num totalRefunded = 0;
