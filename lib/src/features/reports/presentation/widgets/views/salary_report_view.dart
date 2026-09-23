@@ -56,7 +56,7 @@ class SalaryReportView extends HookConsumerWidget {
     String? selectedEmployee,
     AsyncValue employeesAsync,
   ) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     // Filter entries by selected employee
     final filteredData = selectedEmployee != null

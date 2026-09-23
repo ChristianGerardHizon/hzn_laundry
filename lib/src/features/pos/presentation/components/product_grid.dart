@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../products/data/repositories/product_repository.dart';
@@ -74,14 +75,12 @@ class ProductGrid extends ConsumerWidget {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                // Responsive columns based on available width
-                // Mobile: 3 columns, Tablet: 4-5 columns, Large: 6+ columns
                 final width = constraints.maxWidth;
                 final crossAxisCount = width < 400
                     ? 3
-                    : width < 600
+                    : width < Breakpoints.mobile
                         ? 4
-                        : width < 900
+                        : width < Breakpoints.multiColumn
                             ? 5
                             : 6;
 

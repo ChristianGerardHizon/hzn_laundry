@@ -24,7 +24,7 @@ class PromoDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final promoAsync = ref.watch(promoProvider(promoId));
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
 
     return promoAsync.when(
       data: (promo) {

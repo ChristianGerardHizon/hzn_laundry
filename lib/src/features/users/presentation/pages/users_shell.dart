@@ -18,7 +18,7 @@ class UsersShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
 
     if (isTablet) {
       // Tablet: Two-pane layout with list always visible

@@ -27,7 +27,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final employeeAsync = ref.watch(employeeProvider(employeeId));
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
     final currencyFormat =
         NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final tabController = useTabController(initialLength: 3);

@@ -60,7 +60,7 @@ class SaleDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saleAsync = ref.watch(saleProvider(saleId));
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
 
     return saleAsync.when(
       loading: () => const Scaffold(

@@ -22,7 +22,7 @@ class OrganizationDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isTablet = Breakpoints.isMultiColumnOrLarger(context);
     final tabController = useTabController(initialLength: 3);
     final orgAsync = useState<AsyncValue<Organization>>(const AsyncLoading());
 

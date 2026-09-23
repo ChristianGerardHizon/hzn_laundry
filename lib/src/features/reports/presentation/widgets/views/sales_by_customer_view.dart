@@ -70,7 +70,7 @@ class SalesByCustomerView extends HookConsumerWidget {
     required String searchQuery,
     required ValueNotifier<Set<String>> searchFields,
   }) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     var entries = excludeUnpaid.value
         ? allEntries.where((e) => e.isFullyPaid).toList()

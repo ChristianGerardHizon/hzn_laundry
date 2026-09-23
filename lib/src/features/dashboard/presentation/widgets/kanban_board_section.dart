@@ -94,8 +94,9 @@ Future<void> _handleKanbanDrop(
 
 /// Kanban-style board showing all sales grouped by order status.
 ///
-/// On tablet/desktop: Shows columns side-by-side in a horizontal scrollable row.
-/// On mobile: Shows columns in a vertical scrollable list.
+/// Wide content (>= [Breakpoints.multiColumn]): horizontal columns (min width,
+/// horizontally scrollable if needed).
+/// Compact content: stacked columns (same as phone).
 class KanbanBoardSection extends HookConsumerWidget {
   const KanbanBoardSection({super.key});
 
@@ -322,7 +323,7 @@ class _KanbanFilterChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingCount = ref.watch(backlogPendingCountProvider).asData?.value;
 
-    if (Breakpoints.isMobile(context)) {
+    if (Breakpoints.isCompactContent(context)) {
       return SizedBox(
         width: double.infinity,
         child: SegmentedButton<KanbanFilterMode>(
@@ -506,27 +507,29 @@ class _KanbanBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = Breakpoints.isTabletOrLarger(context);
-
     // Show all columns in both modes (backlogs includes Picked Up so users can drag orders there)
     final statuses = OrderStatus.values;
 
-    if (isTablet) {
-      return _TabletKanbanLayout(
-        data: data,
-        statuses: statuses,
-        filterMode: filterMode,
-      );
-    }
-    return _MobileKanbanLayout(
-      data: data,
-      statuses: statuses,
-      filterMode: filterMode,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!Breakpoints.canUseMultiColumn(constraints.maxWidth)) {
+          return _MobileKanbanLayout(
+            data: data,
+            statuses: statuses,
+            filterMode: filterMode,
+          );
+        }
+        return _TabletKanbanLayout(
+          data: data,
+          statuses: statuses,
+          filterMode: filterMode,
+        );
+      },
     );
   }
 }
 
-/// Tablet: Horizontal row of columns, each taking equal width.
+/// Tablet/wide: Horizontal columns with a minimum width so cards stay readable.
 class _TabletKanbanLayout extends StatelessWidget {
   const _TabletKanbanLayout({
     required this.data,
@@ -540,24 +543,49 @@ class _TabletKanbanLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const gap = 12.0;
+    final columnCount = statuses.length;
+    final gapsWidth = gap * (columnCount - 1);
+
     return SizedBox(
       height: 620,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < statuses.length; i++) ...[
-            if (i > 0) const SizedBox(width: 12),
-            Expanded(
-              child: _KanbanColumn(
-                status: statuses[i],
-                sales: data.salesForStatus(statuses[i]),
-                kanbanData: data,
-                isScrollable: true,
-                filterMode: filterMode,
-              ),
-            ),
-          ],
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final equalWidth =
+              (constraints.maxWidth - gapsWidth) / columnCount;
+          final columnWidth = equalWidth < Breakpoints.minKanbanColumnWidth
+              ? Breakpoints.minKanbanColumnWidth
+              : equalWidth;
+          final needsScroll = columnWidth > equalWidth + 0.5;
+          final columnHeight = constraints.maxHeight;
+
+          final row = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (int i = 0; i < statuses.length; i++) ...[
+                if (i > 0) const SizedBox(width: gap),
+                SizedBox(
+                  width: columnWidth,
+                  height: columnHeight,
+                  child: _KanbanColumn(
+                    status: statuses[i],
+                    sales: data.salesForStatus(statuses[i]),
+                    kanbanData: data,
+                    isScrollable: true,
+                    filterMode: filterMode,
+                  ),
+                ),
+              ],
+            ],
+          );
+
+          if (!needsScroll) return row;
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: row,
+          );
+        },
       ),
     );
   }

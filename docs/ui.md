@@ -20,18 +20,13 @@ This document outlines the responsive UI structure for tablet and mobile devices
 ## Responsive Breakpoints
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        BREAKPOINTS                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  0px          600px         900px        1200px                 │
-│  │             │             │             │                    │
-│  │   MOBILE    │   TABLET    │  TABLET LARGE / DESKTOP           │
-│  │             │  (icons)    │   expandable sidebar              │
-│  │ Bottom Nav  │             │                                   │
-│  │ + Drawer    │  TabletNavRail       DesktopSideNav             │
-│  │             │                                                 │
-└─────────────────────────────────────────────────────────────────┘
+0px          600px        840px        900px        1200px
+|             |            |            |             |
+MOBILE        TABLET                    TABLET LARGE / DESKTOP
+Bottom Nav    (icons rail)              expandable sidebar
++ Drawer
+
+stacked/compact content (< 840)     multi-column content (>= 840)
 ```
 
 Defined in `lib/src/core/utils/breakpoints.dart` (`Breakpoints`):
@@ -41,8 +36,12 @@ Defined in `lib/src/core/utils/breakpoints.dart` (`Breakpoints`):
 | Mobile     | 0-599px | Bottom nav + drawer (`MobileBottomNav` / `MobileDrawer`) |
 | Tablet     | 600-899px | `TabletNavRail`, icons only (selected label) |
 | Tablet large / Desktop | 900px+ | `DesktopSideNav` — expandable grouped sidebar |
+| Compact content | < 840px window | Stacked/mobile feature layouts (kanban, master-detail, POS) even with tablet rail |
+| Multi-column content | >= 840px | Side-by-side panes / kanban columns (`isMultiColumnOrLarger` / `canUseMultiColumn`) |
 
 `AppRoot` still has one non-mobile shell (`_buildTabletLayout`). Inside that row it switches at `Breakpoints.isTabletLargeOrLarger` (900px): `TabletNavRail` below the threshold, `DesktopSideNav` at and above it.
+
+**Portrait tablets (~600x1007):** shell stays on `TabletNavRail`, but content uses compact (stacked) layouts until width >= 840 so columns are not crushed (~118px kanban strips after the rail).
 
 ---
 

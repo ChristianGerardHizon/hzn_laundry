@@ -50,7 +50,7 @@ class AttendanceReportView extends ConsumerWidget {
     String? selectedEmployee,
     AsyncValue employeesAsync,
   ) {
-    final isMobile = Breakpoints.isMobile(context);
+    final isMobile = Breakpoints.isCompactContent(context);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -385,20 +385,20 @@ class AttendanceReportView extends ConsumerWidget {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _StatChip(
                             icon: Icons.check_circle,
                             label: '${summary.daysPresent} In',
                             color: Colors.green,
                           ),
-                          const SizedBox(width: 12),
                           _StatChip(
                             icon: Icons.cancel,
                             label: '${summary.daysOut} Out',
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 12),
                           _StatChip(
                             icon: Icons.percent,
                             label:

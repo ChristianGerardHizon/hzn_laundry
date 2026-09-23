@@ -29,7 +29,7 @@ class DashboardAlertsRow extends ConsumerWidget {
     ];
 
     final sideBySide =
-        Breakpoints.isTabletOrLarger(context) && alerts.length > 1;
+        Breakpoints.isMultiColumnOrLarger(context) && alerts.length > 1;
 
     final content = sideBySide
         ? IntrinsicHeight(
