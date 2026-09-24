@@ -211,18 +211,24 @@ class OrganizationsPage extends HookConsumerWidget {
                                 )
                                 .switchOrganization(
                               membership.organizationId,
-                              afterSelect: () {
+                              afterSelect: () async {
                                 if (!context.mounted || targetOrg == null) {
                                   return;
                                 }
                                 final slug = targetOrg.slug;
+                                final branchSlug = await ref
+                                    .read(
+                                      currentBranchControllerProvider.notifier,
+                                    )
+                                    .defaultBranchSlug();
+                                if (!context.mounted) return;
                                 final target = isScoped
                                     ? RouterUtils.replaceScopeSegment(
                                         currentLocation,
                                         orgSlug: slug,
-                                        branchSlug: allBranchesSlug,
+                                        branchSlug: branchSlug,
                                       )
-                                    : '/$slug/$allBranchesSlug${DashboardRoute.path}';
+                                    : '/$slug/$branchSlug${DashboardRoute.path}';
                                 context.go(target);
                               },
                             );

@@ -43,15 +43,19 @@ class OrganizationSwitcher extends ConsumerWidget {
             final currentLocation = routerState.uri.path;
             ref.read(currentOrganizationControllerProvider.notifier).switchOrganization(
               id,
-              afterSelect: () {
+              afterSelect: () async {
+                if (!context.mounted) return;
+                final branchSlug = await ref
+                    .read(currentBranchControllerProvider.notifier)
+                    .defaultBranchSlug();
                 if (!context.mounted) return;
                 final target = isScoped
                     ? RouterUtils.replaceScopeSegment(
                         currentLocation,
                         orgSlug: targetOrg.slug,
-                        branchSlug: allBranchesSlug,
+                        branchSlug: branchSlug,
                       )
-                    : '/${targetOrg.slug}/$allBranchesSlug${DashboardRoute.path}';
+                    : '/${targetOrg.slug}/$branchSlug${DashboardRoute.path}';
                 context.go(target);
               },
             );

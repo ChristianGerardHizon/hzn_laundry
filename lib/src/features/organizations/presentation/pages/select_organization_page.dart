@@ -75,7 +75,11 @@ class SelectOrganizationPage extends HookConsumerWidget {
             ref.read(currentOrganizationControllerProvider).value;
         final slug = selected?.slug;
         if (slug == null || slug.isEmpty) return;
-        context.go('/$slug/$allBranchesSlug${DashboardRoute.path}');
+        final branchSlug = await ref
+            .read(currentBranchControllerProvider.notifier)
+            .defaultBranchSlug();
+        if (!context.mounted) return;
+        context.go('/$slug/$branchSlug${DashboardRoute.path}');
       } finally {
         if (context.mounted) selectingId.value = null;
       }
