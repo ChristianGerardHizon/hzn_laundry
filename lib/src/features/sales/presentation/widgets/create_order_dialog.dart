@@ -2893,7 +2893,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
       final printService = ref.read(thermalPrintServiceProvider.notifier);
       final header = receiptHeader();
 
-      // Single job: customer claim sheet, optionally + store copy with cut.
+      // Single job: customer claim sheet (auto-cut), optionally + store tag
+      // (feed only, no cut / no barcode).
       final result = await printService.printOrderReceipt(
         printer: printer,
         customerName: customer.name,

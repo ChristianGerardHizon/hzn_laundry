@@ -71,6 +71,16 @@ String _sanitizeFilePart(String value) {
   return cleaned.isEmpty ? 'unknown' : cleaned;
 }
 
+/// Largest PDF font size that keeps [text] readable on one line (~A4 body).
+double _largestFittingPdfCustomerNameSize(String text) {
+  final len = text.isEmpty ? 1 : text.length;
+  if (len <= 8) return 36;
+  if (len <= 12) return 28;
+  if (len <= 18) return 22;
+  if (len <= 24) return 18;
+  return 14;
+}
+
 /// Builds order claim sheet PDF bytes matching the thermal layout.
 Future<Uint8List> buildOrderClaimSheetPdfBytes(
   OrderClaimSheetPdfData data,
@@ -79,8 +89,10 @@ Future<Uint8List> buildOrderClaimSheetPdfBytes(
   pdf.addPage(
     pw.Page(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(40),
-      build: (context) => _buildClaimSheetContent(data),
+      margin: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+      build: (context) => data.storeCopy
+          ? _buildStoreCopyContent(data)
+          : _buildCustomerCopyContent(data),
     ),
   );
   return pdf.save();
@@ -105,7 +117,7 @@ Future<void> previewOrderClaimSheetPdf({
   );
 }
 
-pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
+pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
   final amountFormat = NumberFormat('#,##0.00');
   final dateStr = DateFormat('M/d/yyyy').format(data.createdDate);
   final timeStr = DateFormat('h:mm a').format(data.createdDate);
@@ -121,43 +133,58 @@ pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
   final itemCount = data.quantity.round() +
       data.addOnItems.fold<int>(0, (sum, item) => sum + item.quantity.toInt());
 
-  final showReadyForPickup =
-      !data.storeCopy && data.readyForPickupAt != null;
-
   return pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       ..._businessHeader(data, largeName: true),
-      pw.Divider(borderStyle: pw.BorderStyle.dashed),
+      pw.Center(
+        child: pw.Text(
+          claimSheetTitle,
+          style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+          textAlign: pw.TextAlign.center,
+        ),
+      ),
+      if (data.claimSheetNumber != null &&
+          data.claimSheetNumber!.isNotEmpty) ...[
+        pw.SizedBox(height: 4),
+        pw.Center(
+          child: pw.Text(
+            '$claimSheetNumberLabel ${data.claimSheetNumber}',
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+      ],
+      pw.SizedBox(height: 8),
+      pw.Divider(),
       pw.SizedBox(height: 8),
       pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('Date: $dateStr'),
-          pw.Text('Time: $timeStr'),
+          pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 11)),
+          pw.Text('Time: $timeStr', style: const pw.TextStyle(fontSize: 11)),
         ],
       ),
       if (data.cashierName != null && data.cashierName!.isNotEmpty)
-        pw.Text('Cashier: ${data.cashierName}'),
-      if (data.storeCopy)
-        pw.Center(
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 2),
           child: pw.Text(
-            data.customerName,
-            style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-            ),
-            textAlign: pw.TextAlign.center,
+            'Cashier: ${data.cashierName}',
+            style: const pw.TextStyle(fontSize: 11),
           ),
-        )
-      else
-        pw.Text('Customer: ${data.customerName}'),
+        ),
+      pw.SizedBox(height: 4),
+      pw.Text(
+        'Customer: ${data.customerName}',
+        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      ),
       if (data.customerPhone != null && data.customerPhone!.isNotEmpty)
-        pw.Text('Phone: ${data.customerPhone}'),
-      if (data.claimSheetNumber != null && data.claimSheetNumber!.isNotEmpty)
-        pw.Text('Ticket #: ${data.claimSheetNumber}'),
-      pw.SizedBox(height: 8),
-      pw.Divider(borderStyle: pw.BorderStyle.dashed),
+        pw.Text(
+          'Phone: ${data.customerPhone}',
+          style: const pw.TextStyle(fontSize: 11),
+        ),
+      pw.SizedBox(height: 10),
+      pw.Divider(),
       pw.SizedBox(height: 6),
       _itemTableHeader(),
       pw.Divider(),
@@ -175,18 +202,27 @@ pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
           total: amountFormat.format(item.subtotal),
         ),
       ),
-      pw.SizedBox(height: 6),
+      pw.SizedBox(height: 8),
       pw.Divider(),
       pw.SizedBox(height: 6),
       pw.Row(
         children: [
-          pw.Expanded(child: pw.Text('$itemCount Item (s)')),
-          pw.Text('Total'),
+          pw.Expanded(
+            child: pw.Text(
+              '$itemCount Item(s)',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+          ),
+          pw.Text(
+            'TOTAL',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+          ),
           pw.SizedBox(width: 12),
           pw.SizedBox(
-            width: 72,
+            width: 80,
             child: pw.Text(
               amountFormat.format(data.totalAmount),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
               textAlign: pw.TextAlign.right,
             ),
           ),
@@ -194,37 +230,37 @@ pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
       ),
       if (data.specialInstructions != null &&
           data.specialInstructions!.isNotEmpty) ...[
-        pw.SizedBox(height: 8),
-        pw.Text('Notes: ${data.specialInstructions}'),
-      ],
-      if (data.storeCopy) ...[
         pw.SizedBox(height: 10),
+        pw.Text(
+          'Notes: ${data.specialInstructions}',
+          style: const pw.TextStyle(fontSize: 11),
+        ),
+      ],
+      if (data.readyForPickupAt != null) ...[
+        pw.SizedBox(height: 12),
         pw.Divider(borderStyle: pw.BorderStyle.dashed),
         pw.SizedBox(height: 8),
         pw.Center(
           child: pw.Text(
-            'STORE COPY',
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            textAlign: pw.TextAlign.center,
+            'Ready For Pickup',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           ),
         ),
-      ] else if (showReadyForPickup) ...[
-        pw.SizedBox(height: 10),
-        pw.Divider(borderStyle: pw.BorderStyle.dashed),
-        pw.SizedBox(height: 8),
-        pw.Center(child: pw.Text('Ready For Pickup:')),
+        pw.SizedBox(height: 2),
         pw.Center(
           child: pw.Text(
             DateFormat('M/d/yyyy h:mm a').format(data.readyForPickupAt!),
+            style: const pw.TextStyle(fontSize: 11),
           ),
         ),
       ],
-      pw.SizedBox(height: 10),
+      pw.SizedBox(height: 12),
       pw.Divider(borderStyle: pw.BorderStyle.dashed),
       pw.SizedBox(height: 8),
       pw.Center(
         child: pw.Text(
-          'Please bring this receipt when picking up your items.',
+          'Please bring this receipt when picking up.',
+          style: const pw.TextStyle(fontSize: 10),
           textAlign: pw.TextAlign.center,
         ),
       ),
@@ -244,25 +280,174 @@ pw.Widget _buildClaimSheetContent(OrderClaimSheetPdfData data) {
       pw.SizedBox(height: 8),
       pw.Center(
         child: pw.Text(
-          'Items will be held for free for 7 days.',
+          'Items held free for 7 days.',
+          style: const pw.TextStyle(fontSize: 10),
           textAlign: pw.TextAlign.center,
         ),
       ),
       pw.Center(
         child: pw.Text(
-          'Holding fee will apply afterwards.',
+          'Holding fee applies afterwards.',
+          style: const pw.TextStyle(fontSize: 10),
+          textAlign: pw.TextAlign.center,
+        ),
+      ),
+      pw.SizedBox(height: 8),
+      pw.Center(
+        child: pw.Text(
+          'Thank you for your business!',
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
+          textAlign: pw.TextAlign.center,
+        ),
+      ),
+      pw.SizedBox(height: 12),
+      ..._disclaimerLines(),
+    ],
+  );
+}
+
+pw.Widget _buildStoreCopyContent(OrderClaimSheetPdfData data) {
+  final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+  final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+  final addOnsTotal =
+      data.addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+  final serviceSubtotal = data.totalAmount - addOnsTotal;
+  final notes =
+      (data.specialInstructions != null && data.specialInstructions!.isNotEmpty)
+          ? data.specialInstructions!
+          : 'No special instructions';
+  final upperName = data.customerName.toUpperCase();
+  final nameSize = _largestFittingPdfCustomerNameSize(upperName);
+  final qtyText = data.quantity == data.quantity.roundToDouble()
+      ? '${data.quantity.toInt()}'
+      : data.quantity.toStringAsFixed(1);
+
+  // Compact machine tag — no barcode, no tear/cut zone, BIR disclaimer only.
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.Divider(),
+      pw.SizedBox(height: 8),
+      pw.Center(
+        child: pw.Text(
+          claimSheetStoreCopyTitle,
+          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          textAlign: pw.TextAlign.center,
+        ),
+      ),
+      if (data.claimSheetNumber != null &&
+          data.claimSheetNumber!.isNotEmpty) ...[
+        pw.SizedBox(height: 6),
+        pw.Center(
+          child: pw.Text(
+            '$claimSheetNumberLabel ${data.claimSheetNumber}',
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+      ],
+      pw.SizedBox(height: 8),
+      pw.Divider(),
+      pw.SizedBox(height: 16),
+      pw.Center(
+        child: pw.Text(
+          upperName,
+          style: pw.TextStyle(
+            fontSize: nameSize,
+            fontWeight: pw.FontWeight.bold,
+          ),
+          textAlign: pw.TextAlign.center,
+        ),
+      ),
+      pw.SizedBox(height: 14),
+      pw.Center(
+        child: pw.Text(
+          data.serviceName.toUpperCase(),
+          style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           textAlign: pw.TextAlign.center,
         ),
       ),
       pw.SizedBox(height: 6),
       pw.Center(
         child: pw.Text(
-          'Thank you for your business!',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          '$qtyText ${data.unitLabel}',
+          style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
           textAlign: pw.TextAlign.center,
         ),
       ),
       pw.SizedBox(height: 12),
+      pw.Divider(),
+      pw.SizedBox(height: 8),
+      pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Expanded(
+            child: pw.Text(
+              data.serviceName,
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+          ),
+          pw.Text(
+            currencyFormat.format(serviceSubtotal),
+            style: const pw.TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
+      ...data.addOnItems.map(
+        (item) => pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 4),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  '${item.productName} x${item.quantity.toInt()}',
+                  style: const pw.TextStyle(fontSize: 11),
+                ),
+              ),
+              pw.Text(
+                currencyFormat.format(item.subtotal),
+                style: const pw.TextStyle(fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ),
+      pw.SizedBox(height: 8),
+      pw.Divider(),
+      pw.SizedBox(height: 8),
+      pw.Center(
+        child: pw.Text(
+          'TOTAL',
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
+        ),
+      ),
+      pw.SizedBox(height: 4),
+      pw.Center(
+        child: pw.Text(
+          currencyFormat.format(data.totalAmount),
+          style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+        ),
+      ),
+      pw.SizedBox(height: 12),
+      pw.Divider(),
+      pw.SizedBox(height: 8),
+      pw.Center(
+        child: pw.Text(
+          dateFormat.format(data.createdDate),
+          style: const pw.TextStyle(fontSize: 11),
+        ),
+      ),
+      pw.SizedBox(height: 12),
+      pw.Divider(),
+      pw.SizedBox(height: 8),
+      pw.Text(
+        'NOTES:',
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
+      ),
+      pw.SizedBox(height: 4),
+      pw.Text(notes, style: const pw.TextStyle(fontSize: 11)),
+      pw.SizedBox(height: 16),
       ..._disclaimerLines(),
     ],
   );
@@ -275,14 +460,14 @@ pw.Widget _itemTableHeader() {
         flex: 5,
         child: pw.Text(
           'Description',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
         ),
       ),
       pw.SizedBox(
         width: 40,
         child: pw.Text(
           'QTY',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           textAlign: pw.TextAlign.center,
         ),
       ),
@@ -290,7 +475,7 @@ pw.Widget _itemTableHeader() {
         width: 64,
         child: pw.Text(
           'Price',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           textAlign: pw.TextAlign.right,
         ),
       ),
@@ -298,7 +483,7 @@ pw.Widget _itemTableHeader() {
         width: 72,
         child: pw.Text(
           'Total',
-          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           textAlign: pw.TextAlign.right,
         ),
       ),
@@ -316,18 +501,33 @@ pw.Widget _itemRow({
     padding: const pw.EdgeInsets.only(top: 4),
     child: pw.Row(
       children: [
-        pw.Expanded(flex: 5, child: pw.Text(description)),
+        pw.Expanded(
+          flex: 5,
+          child: pw.Text(description, style: const pw.TextStyle(fontSize: 11)),
+        ),
         pw.SizedBox(
           width: 40,
-          child: pw.Text(qty, textAlign: pw.TextAlign.center),
+          child: pw.Text(
+            qty,
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.center,
+          ),
         ),
         pw.SizedBox(
           width: 64,
-          child: pw.Text(price, textAlign: pw.TextAlign.right),
+          child: pw.Text(
+            price,
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.right,
+          ),
         ),
         pw.SizedBox(
           width: 72,
-          child: pw.Text(total, textAlign: pw.TextAlign.right),
+          child: pw.Text(
+            total,
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.right,
+          ),
         ),
       ],
     ),
@@ -375,7 +575,7 @@ List<pw.Widget> _businessHeader(
 
 List<pw.Widget> _disclaimerLines() {
   return [
-    pw.Divider(borderStyle: pw.BorderStyle.dashed),
+    pw.Divider(),
     pw.SizedBox(height: 8),
     ...claimSheetDisclaimerLines.map(
       (line) => pw.Center(

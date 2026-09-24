@@ -27,7 +27,7 @@ Future<void> main() async {
     await SentryFlutter.init(
       (options) {
         options.dsn =
-            'https://8f474a193a284778a787192bf9f35665@o418473.ingest.us.sentry.io/4511186534006784';
+            'https://124edc0576e3274c98ad1ec540b0f347@o418473.ingest.us.sentry.io/4512142629470208';
         options.environment = currentEnvironment;
         options.tracesSampleRate = currentEnvironment == 'prod' ? 0.2 : 1.0;
         // ignore: experimental_member_use
