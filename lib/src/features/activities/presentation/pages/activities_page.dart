@@ -4,14 +4,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
-import '../../../../core/routing/routes/customers.routes.dart';
-import '../../../../core/routing/routes/employees.routes.dart';
-import '../../../../core/routing/routes/products.routes.dart';
-import '../../../../core/routing/routes/sales_history.routes.dart';
-import '../../../../core/routing/routes/services.routes.dart';
+import '../../../../core/routing/routes/activities.routes.dart';
 import '../../domain/activity_action.dart';
 import '../../domain/activity_log.dart';
 import '../controllers/activities_controller.dart';
+import '../utils/activity_log_display.dart';
 
 /// Tab definition for an activity feature filter.
 class _ActivityTab {
@@ -240,141 +237,19 @@ class _ActivityTile extends StatelessWidget {
 
   final ActivityLog log;
 
-  /// Navigate to the detail page for the record, if a route exists.
-  void _openRecord(BuildContext context) {
-    // Don't navigate for deleted records — they no longer exist.
-    if (log.action == ActivityAction.delete) return;
-
-    final id = log.recordId;
-    switch (log.collection) {
-      case 'sales':
-        SaleDetailRoute(id: id).goScoped(context);
-      case 'products':
-        ProductDetailRoute(id: id).goScoped(context);
-      case 'services':
-        ServiceDetailRoute(id: id).goScoped(context);
-      case 'customers':
-        CustomerDetailRoute(id: id).goScoped(context);
-      case 'employees':
-        EmployeeDetailRoute(id: id).goScoped(context);
-      default:
-        // No detail page for this collection
-        break;
-    }
-  }
-
-  /// Whether this log entry has a navigable detail page.
-  bool get _hasDetailPage {
-    if (log.action == ActivityAction.delete) return false;
-    return const [
-      'sales',
-      'products',
-      'services',
-      'customers',
-      'employees',
-    ].contains(log.collection);
-  }
-
-  /// Format the changes map into human-readable lines.
-  static const _fieldLabels = {
-    'orderStatus': 'Order status',
-    'status': 'Sale status',
-    'totalAmount': 'Total',
-    'isPaid': 'Paid',
-    'unitPrice': 'Unit price',
-    'subtotal': 'Subtotal',
-    'price': 'Price',
-    'quantity': 'Quantity',
-    'name': 'Name',
-    'customerName': 'Customer',
-    'machineName': 'Machine',
-    'storageName': 'Storage',
-    'notes': 'Notes',
-    'rate': 'Rate',
-    'description': 'Description',
-    'phone': 'Phone',
-    'email': 'Email',
-    'address': 'Address',
-  };
-
-  static const _orderStatusLabels = {
-    'pending': 'Pending',
-    'processing': 'Processing',
-    'ready': 'Ready',
-    'pickedUp': 'Picked Up',
-  };
-
-  static const _saleStatusLabels = {
-    'pending': 'Pending',
-    'completed': 'Completed',
-    'refunded': 'Refunded',
-    'voided': 'Voided',
-  };
-
-  String _formatFieldValue(String field, dynamic value) {
-    if (value == null || value == '') return '(empty)';
-    if (field == 'orderStatus') {
-      return _orderStatusLabels[value] ?? '$value';
-    }
-    if (field == 'status') {
-      return _saleStatusLabels[value] ?? '$value';
-    }
-    if (field == 'isPaid') return value == true ? 'Paid' : 'Unpaid';
-    if (field == 'totalAmount' ||
-        field == 'unitPrice' ||
-        field == 'subtotal' ||
-        field == 'price' ||
-        field == 'rate') {
-      final n = num.tryParse('$value');
-      if (n != null) return '₱${n.toStringAsFixed(2)}';
-    }
-    return '$value';
-  }
-
-  /// Fields to hide from the change summary (internal/redundant).
-  static const _hiddenFields = {
-    'pickedUpAt',
-    'postedDate',
-    'collectionId',
-    'collectionName',
-  };
-
-  String? _buildChangeSummary() {
-    final changes = log.changes;
-    if (changes == null || changes.isEmpty) return null;
-
-    final lines = <String>[];
-    for (final entry in changes.entries) {
-      final field = entry.key;
-      if (_hiddenFields.contains(field)) continue;
-      final change = entry.value;
-      if (change is! Map) continue;
-
-      final label = _fieldLabels[field] ?? _camelToLabel(field);
-      final oldVal = _formatFieldValue(field, change['old']);
-      final newVal = _formatFieldValue(field, change['new']);
-      lines.add('$label: $oldVal → $newVal');
-    }
-    return lines.isEmpty ? null : lines.join('\n');
-  }
-
-  String _camelToLabel(String s) {
-    final spaced = s.replaceAllMapped(
-      RegExp(r'([A-Z])'),
-      (m) => ' ${m.group(1)!.toLowerCase()}',
-    );
-    return spaced[0].toUpperCase() + spaced.substring(1);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timeFormat = DateFormat('MMM dd, yyyy hh:mm a');
-    final changeSummary = _buildChangeSummary();
+    final summary = ActivityLogDisplay.buildShortSummary(log);
+    final actor = (log.userName != null && log.userName!.isNotEmpty)
+        ? log.userName!
+        : 'Unknown';
+    final when =
+        log.created != null ? timeFormat.format(log.created!) : '';
 
     return ListTile(
-      onTap: _hasDetailPage ? () => _openRecord(context) : null,
-      isThreeLine: changeSummary != null,
+      onTap: () => ActivityLogDetailRoute(id: log.id).pushScoped(context),
       leading: CircleAvatar(
         backgroundColor: log.action.color.withValues(alpha: 0.1),
         child: Icon(
@@ -384,73 +259,19 @@ class _ActivityTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        log.description ?? '${log.action.displayName} ${log.collection}',
+        summary,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (changeSummary != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 4),
-              child: Text(
-                changeSummary,
-                style: theme.textTheme.bodySmall,
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  log.collectionDisplayName,
-                  style: theme.textTheme.labelSmall,
-                ),
-              ),
-              if (log.userName != null && log.userName!.isNotEmpty) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    log.userName!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  log.created != null ? timeFormat.format(log.created!) : '',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
+      subtitle: Text(
+        when.isEmpty ? 'by $actor' : 'by $actor · $when',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
-      trailing: _hasDetailPage
-          ? Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurfaceVariant,
-            )
-          : null,
+      trailing: Icon(
+        Icons.chevron_right,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }

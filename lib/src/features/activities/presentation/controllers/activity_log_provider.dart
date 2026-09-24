@@ -1,0 +1,18 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../data/repositories/activity_log_repository.dart';
+import '../../domain/activity_log.dart';
+
+part 'activity_log_provider.g.dart';
+
+/// Provider for a single activity log by ID.
+@riverpod
+Future<ActivityLog?> activityLog(Ref ref, String id) async {
+  final repository = ref.watch(activityLogRepositoryProvider);
+  final result = await repository.fetchById(id);
+
+  return result.fold(
+    (failure) => null,
+    (log) => log,
+  );
+}

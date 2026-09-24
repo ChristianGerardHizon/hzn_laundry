@@ -12,8 +12,6 @@ enum ManagementMode {
   productCategories,
   quantityUnits,
   cashierGroups,
-  import,
-  settings,
 }
 
 /// Vertical navigation panel for selecting organization mode.
@@ -115,22 +113,6 @@ class ManagementNavPanel extends StatelessWidget {
                   label: 'Cashier',
                   isSelected: currentMode == ManagementMode.cashierGroups,
                   onTap: () => onModeChanged(ManagementMode.cashierGroups),
-                ),
-                const SizedBox(height: 4),
-                _NavButton(
-                  icon: Icons.file_upload_outlined,
-                  selectedIcon: Icons.file_upload,
-                  label: 'Import',
-                  isSelected: currentMode == ManagementMode.import,
-                  onTap: () => onModeChanged(ManagementMode.import),
-                ),
-                const SizedBox(height: 4),
-                _NavButton(
-                  icon: Icons.tune_outlined,
-                  selectedIcon: Icons.tune,
-                  label: 'Settings',
-                  isSelected: currentMode == ManagementMode.settings,
-                  onTap: () => onModeChanged(ManagementMode.settings),
                 ),
               ],
             ),

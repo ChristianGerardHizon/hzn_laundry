@@ -119,6 +119,9 @@ class TranslationsAuthEn {
 	/// en: 'You're almost there — just warming things up'
 	String get almostThereWarmingUp => 'You\'re almost there — just warming things up';
 
+	/// en: 'Powered by HZN Laundry'
+	String get poweredBy => 'Powered by HZN Laundry';
+
 	/// en: 'A verification email has been sent to your email address'
 	String get verificationEmailSent => 'A verification email has been sent to your email address';
 
@@ -773,12 +776,6 @@ class TranslationsOrganizationsEn {
 	/// en: 'Only organization managers can change these features.'
 	String get featuresReadOnly => 'Only organization managers can change these features.';
 
-	/// en: 'Workflow and module toggles now live on the organization Features tab so each organization can configure them separately.'
-	String get featuresMoved => 'Workflow and module toggles now live on the organization Features tab so each organization can configure them separately.';
-
-	/// en: 'Open organization Features'
-	String get openFeatures => 'Open organization Features';
-
 	/// en: 'Select organization'
 	String get selectTitle => 'Select organization';
 
@@ -1259,6 +1256,7 @@ extension on Translations {
 			'auth.orDivider' => 'or',
 			'auth.signingIn' => 'Signing in...',
 			'auth.almostThereWarmingUp' => 'You\'re almost there — just warming things up',
+			'auth.poweredBy' => 'Powered by HZN Laundry',
 			'auth.verificationEmailSent' => 'A verification email has been sent to your email address',
 			'auth.continueButton' => 'Continue',
 			'auth.changeEmail' => 'Change email',
@@ -1461,8 +1459,6 @@ extension on Translations {
 			'organizations.requirePack' => 'Require pack count',
 			'organizations.requireStorage' => 'Require storage assignment',
 			'organizations.featuresReadOnly' => 'Only organization managers can change these features.',
-			'organizations.featuresMoved' => 'Workflow and module toggles now live on the organization Features tab so each organization can configure them separately.',
-			'organizations.openFeatures' => 'Open organization Features',
 			'organizations.selectTitle' => 'Select organization',
 			'organizations.selectSubtitle' => 'Choose which organization you want to work in.',
 			'organizations.lastUsed' => 'Last used',

@@ -256,8 +256,6 @@ public `/history/:token` stay outside the prefix.
 │   │   └── …/management/quantity-units/:id -> Quantity Unit Detail
 │   ├── …/management/cashier-groups -> POS Groups List
 │   │   └── …/management/cashier-groups/:id -> Cashier Group Detail
-│   ├── …/management/import         -> Data Import
-│   └── …/management/settings       -> Workflow Settings
 │
 ├── …/organizations                 -> Organizations
 │   └── …/organizations/:id         -> Organization Detail (Overview / People / Features)
@@ -271,8 +269,8 @@ public `/history/:token` stay outside the prefix.
 │   └── /system/appearance           -> Appearance Settings
 │
 │   (legacy `/system/product-categories`, `/system/quantity-units`,
-│    `/system/machines`, `/system/cashier-groups`, `/system/import`,
-│    `/system/feature-flags` redirect to the matching `/management/...` paths)
+│    `/system/machines`, `/system/cashier-groups` redirect to the matching
+│    `/management/...` paths)
 │
 ├── /history/:token                  -> Customer History (shared link, outside the shell)
 │

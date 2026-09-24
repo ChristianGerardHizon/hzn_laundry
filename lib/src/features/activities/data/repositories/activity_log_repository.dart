@@ -23,6 +23,9 @@ abstract class ActivityLogRepository {
     String? search,
   });
 
+  /// Fetches a single activity log by ID.
+  FutureEither<ActivityLog> fetchById(String id);
+
   /// Fetches activity logs for a specific record.
   FutureEither<List<ActivityLog>> fetchByRecord(String recordId);
 
@@ -87,6 +90,25 @@ class ActivityLogRepositoryImpl implements ActivityLogRepository {
           totalItems: result.totalItems,
           totalPages: result.totalPages,
         );
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<ActivityLog> fetchById(String id) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (id.isEmpty) {
+          throw const DataFailure(
+            'Activity log ID cannot be empty',
+            null,
+            'invalid_activity_log_id',
+          );
+        }
+
+        final record = await _collection.getOne(id, expand: 'user');
+        return _toEntity(record);
       },
       Failure.handle,
     ).run();

@@ -5,6 +5,7 @@ import '../../features/organizations/presentation/controllers/current_organizati
 import '../packages/pocketbase/pb_connectivity_provider.dart';
 import '../packages/pocketbase/pocketbase_provider.dart';
 import 'network_health_logo.dart';
+import 'organization_letter_mark.dart';
 
 /// Org branding for nav chrome: letter-mark (health border) + organization name.
 ///
@@ -32,22 +33,8 @@ class OrganizationNavBrand extends ConsumerWidget {
   /// Tighter typography for drawer / dense headers.
   final bool compact;
 
-  static String initialsFor(String? name) {
-    if (name == null) return '';
-    final parts = name
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return '';
-    if (parts.length == 1) {
-      final word = parts.first;
-      return word.length >= 2
-          ? word.substring(0, 2).toUpperCase()
-          : word.toUpperCase();
-    }
-    return ('${parts[0][0]}${parts[1][0]}').toUpperCase();
-  }
+  static String initialsFor(String? name) =>
+      OrganizationLetterMark.initialsFor(name);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

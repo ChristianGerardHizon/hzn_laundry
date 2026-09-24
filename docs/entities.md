@@ -1001,7 +1001,7 @@ A configured thermal printer (Bluetooth or network) for receipt printing. Stored
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
-The selected printer ID is stored separately on the device (`selected_printer_id`). Existing PocketBase `printerConfigs` rows are imported once onto each device, then unused.
+The selected printer ID is stored separately on the device (`selected_printer_id`).
 
 **Storage:** device secure storage (not a PocketBase collection)
 
