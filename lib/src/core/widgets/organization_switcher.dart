@@ -8,8 +8,13 @@ import '../../features/settings/presentation/controllers/current_branch_controll
 import '../i18n/strings.g.dart';
 import '../routing/router_utils.dart';
 import '../routing/routes/dashboard.routes.dart';
+import '../routing/routes/org_selection.routes.dart';
+import 'nav_permissions.dart';
 
-/// Compact org switcher shown only when the user belongs to 2+ organizations.
+/// Sentinel dropdown value for the Super Admin footer action.
+const kSuperAdminSentinel = '__SUPER_ADMIN__';
+
+/// Compact org switcher when the user has 2+ orgs, or is a system admin.
 class OrganizationSwitcher extends ConsumerWidget {
   const OrganizationSwitcher({super.key, this.compact = false});
 
@@ -18,7 +23,8 @@ class OrganizationSwitcher extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canSwitch = ref.watch(canSwitchOrganizationProvider);
-    if (!canSwitch) return const SizedBox.shrink();
+    final isAdmin = ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
+    if (!canSwitch && !isAdmin) return const SizedBox.shrink();
 
     final currentAsync = ref.watch(currentOrganizationControllerProvider);
     return currentAsync.when(
@@ -33,7 +39,12 @@ class OrganizationSwitcher extends ConsumerWidget {
           selectedId: selectedId,
           organizations: orgs,
           compact: compact,
+          showSuperAdmin: isAdmin,
           onChanged: (id) {
+            if (id == kSuperAdminSentinel) {
+              const SuperAdminRoute().go(context);
+              return;
+            }
             final targetOrg = orgs.firstWhere(
               (o) => o.id == id,
               orElse: () => orgs.first,
@@ -41,17 +52,23 @@ class OrganizationSwitcher extends ConsumerWidget {
             final routerState = GoRouterState.of(context);
             final isScoped = routerState.pathParameters['orgSlug'] != null;
             final currentLocation = routerState.uri.path;
-            ref.read(currentOrganizationControllerProvider.notifier).switchOrganization(
+            ref
+                .read(currentOrganizationControllerProvider.notifier)
+                .switchOrganization(
               id,
-              afterSelect: () {
+              afterSelect: () async {
+                if (!context.mounted) return;
+                final branchSlug = await ref
+                    .read(currentBranchControllerProvider.notifier)
+                    .defaultBranchSlug();
                 if (!context.mounted) return;
                 final target = isScoped
                     ? RouterUtils.replaceScopeSegment(
                         currentLocation,
                         orgSlug: targetOrg.slug,
-                        branchSlug: allBranchesSlug,
+                        branchSlug: branchSlug,
                       )
-                    : '/${targetOrg.slug}/$allBranchesSlug${DashboardRoute.path}';
+                    : '/${targetOrg.slug}/$branchSlug${DashboardRoute.path}';
                 context.go(target);
               },
             );
@@ -69,12 +86,14 @@ class _OrgDropdown extends StatelessWidget {
     required this.selectedId,
     required this.organizations,
     required this.onChanged,
+    required this.showSuperAdmin,
     this.compact = false,
   });
 
   final String selectedId;
   final List<Organization> organizations;
   final ValueChanged<String> onChanged;
+  final bool showSuperAdmin;
   final bool compact;
 
   @override
@@ -84,6 +103,7 @@ class _OrgDropdown extends StatelessWidget {
     final effectiveValue = organizations.any((o) => o.id == selectedId)
         ? selectedId
         : organizations.first.id;
+    final iconSize = compact ? 14.0 : 18.0;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -102,7 +122,7 @@ class _OrgDropdown extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(compact ? 8 : 8),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
@@ -121,29 +141,52 @@ class _OrgDropdown extends StatelessWidget {
               color: theme.colorScheme.onSurface,
               height: 1.2,
             ),
-            selectedItemBuilder: (context) => organizations
-                .map(
-                  (org) => Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      org.name,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
+            selectedItemBuilder: (context) => [
+              for (final org in organizations)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    org.name,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                )
-                .toList(),
-            items: organizations
-                .map(
-                  (org) => DropdownMenuItem(
-                    value: org.id,
-                    child: Text(
-                      org.name,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                ),
+              if (showSuperAdmin)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    t.organizations.superAdmin,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                )
-                .toList(),
+                ),
+            ],
+            items: [
+              for (final org in organizations)
+                DropdownMenuItem(
+                  value: org.id,
+                  child: Text(
+                    org.name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              if (showSuperAdmin)
+                DropdownMenuItem(
+                  value: kSuperAdminSentinel,
+                  child: Row(
+                    children: [
+                      Icon(Icons.admin_panel_settings_outlined, size: iconSize),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          t.organizations.superAdmin,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
             onChanged: (value) {
               if (value != null) onChanged(value);
             },

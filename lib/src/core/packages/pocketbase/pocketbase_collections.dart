@@ -14,7 +14,6 @@ abstract class PocketBaseCollections {
 
   // Management
   static const String branches = 'branches';
-  static const String printerConfigs = 'printerConfigs';
 
   // Products
   static const String products = 'products';

@@ -80,6 +80,7 @@ class _TranslationsAuthTl implements TranslationsAuthEn {
 	@override String get orDivider => 'o';
 	@override String get signingIn => 'Nagsa-sign in...';
 	@override String get almostThereWarmingUp => 'Malapit na — pinapainit pa ang app';
+	@override String get poweredBy => 'Powered by HZN Laundry';
 	@override String get verificationEmailSent => 'Naipadala na ang verification email sa iyong email address';
 	@override String get continueButton => 'Magpatuloy';
 	@override String get changeEmail => 'Palitan ang email';
@@ -330,8 +331,6 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get requirePack => 'Kailangan ang pack count';
 	@override String get requireStorage => 'Kailangan ang storage';
 	@override String get featuresReadOnly => 'Mga manager lang ng organisasyon ang puwedeng magpalit ng features.';
-	@override String get featuresMoved => 'Ang mga workflow at module toggle ay nasa Features tab na ng organisasyon para magkakaiba ang setting bawat organisasyon.';
-	@override String get openFeatures => 'Buksan ang Features ng organisasyon';
 	@override String get selectTitle => 'Pumili ng organisasyon';
 	@override String get selectSubtitle => 'Piliin kung aling organisasyon ang gusto mong pasukan.';
 	@override String get lastUsed => 'Huling ginamit';
@@ -535,6 +534,7 @@ extension on TranslationsTl {
 			'auth.orDivider' => 'o',
 			'auth.signingIn' => 'Nagsa-sign in...',
 			'auth.almostThereWarmingUp' => 'Malapit na — pinapainit pa ang app',
+			'auth.poweredBy' => 'Powered by HZN Laundry',
 			'auth.verificationEmailSent' => 'Naipadala na ang verification email sa iyong email address',
 			'auth.continueButton' => 'Magpatuloy',
 			'auth.changeEmail' => 'Palitan ang email',
@@ -737,8 +737,6 @@ extension on TranslationsTl {
 			'organizations.requirePack' => 'Kailangan ang pack count',
 			'organizations.requireStorage' => 'Kailangan ang storage',
 			'organizations.featuresReadOnly' => 'Mga manager lang ng organisasyon ang puwedeng magpalit ng features.',
-			'organizations.featuresMoved' => 'Ang mga workflow at module toggle ay nasa Features tab na ng organisasyon para magkakaiba ang setting bawat organisasyon.',
-			'organizations.openFeatures' => 'Buksan ang Features ng organisasyon',
 			'organizations.selectTitle' => 'Pumili ng organisasyon',
 			'organizations.selectSubtitle' => 'Piliin kung aling organisasyon ang gusto mong pasukan.',
 			'organizations.lastUsed' => 'Huling ginamit',

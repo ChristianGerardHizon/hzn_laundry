@@ -20,8 +20,6 @@ import '../../../settings/presentation/controllers/quantity_units_controller.dar
 import '../../../settings/presentation/widgets/dialogs/branch_form_dialog.dart';
 import '../../../settings/presentation/widgets/dialogs/product_category_form_dialog.dart';
 import '../../../settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
-import '../../../settings/presentation/widgets/email_settings_panel.dart';
-import '../../../settings/presentation/widgets/import_landing_panel.dart';
 import '../../../storages/presentation/controllers/storage_locations_controller.dart';
 import '../../../storages/presentation/widgets/storage_location_form_dialog.dart';
 import '../../../users/presentation/controllers/paginated_users_controller.dart';
@@ -69,10 +67,6 @@ class TabletManagementLayout extends ConsumerWidget {
       currentMode = ManagementMode.quantityUnits;
     } else if (path.contains('/cashier-groups')) {
       currentMode = ManagementMode.cashierGroups;
-    } else if (path.contains('/import')) {
-      currentMode = ManagementMode.import;
-    } else if (path.contains('/settings')) {
-      currentMode = ManagementMode.settings;
     } else {
       currentMode = ManagementMode.users;
     }
@@ -100,20 +94,12 @@ class TabletManagementLayout extends ConsumerWidget {
                 const ManagementQuantityUnitsRoute().goScoped(context);
               case ManagementMode.cashierGroups:
                 const ManagementCashierGroupsRoute().goScoped(context);
-              case ManagementMode.import:
-                const ManagementImportRoute().goScoped(context);
-              case ManagementMode.settings:
-                const ManagementSettingsRoute().goScoped(context);
             }
           },
         ),
         const VerticalDivider(width: 1),
 
-        if (currentMode == ManagementMode.import) ...[
-          const Expanded(child: ImportLandingPanel()),
-        ] else if (currentMode == ManagementMode.settings) ...[
-          const Expanded(child: EmailSettingsPanel()),
-        ] else if (currentMode == ManagementMode.cashierGroups) ...[
+        if (currentMode == ManagementMode.cashierGroups) ...[
           SizedBox(
             width: 320,
             child: _CashierGroupListWrapper(selectedId: selectedId),
@@ -140,10 +126,7 @@ class TabletManagementLayout extends ConsumerWidget {
                 _ProductCategoryListWrapper(selectedId: selectedId),
               ManagementMode.quantityUnits =>
                 _QuantityUnitListWrapper(selectedId: selectedId),
-              ManagementMode.cashierGroups ||
-              ManagementMode.import ||
-              ManagementMode.settings =>
-                const SizedBox.shrink(),
+              ManagementMode.cashierGroups => const SizedBox.shrink(),
             },
           ),
           const VerticalDivider(width: 1),

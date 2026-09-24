@@ -57,16 +57,6 @@ class EmptyManagementState extends StatelessWidget {
           'Select a group',
           'Choose a cashier group from the list to view and manage items',
         ),
-      ManagementMode.import => (
-          Icons.file_upload_outlined,
-          'Import Products',
-          'Import products and categories from a CSV file',
-        ),
-      ManagementMode.settings => (
-          Icons.tune_outlined,
-          'Settings',
-          'Configure organization workflow options',
-        ),
     };
 
     return Scaffold(

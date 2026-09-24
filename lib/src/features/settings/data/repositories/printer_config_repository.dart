@@ -3,22 +3,16 @@ import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
-import '../../../../core/packages/pocketbase/pb_filter.dart';
-import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
-import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/packages/storage/secure_storage_provider.dart';
 import '../../domain/printer_config.dart';
-import '../dto/printer_config_dto.dart';
 
 part 'printer_config_repository.g.dart';
 
 const _localPrintersKey = 'local_printers';
-const _localPrintersMigratedKey = 'local_printers_migrated';
 const selectedPrinterIdKey = 'selected_printer_id';
 const legacyLocalDefaultPrinterKey = 'local_default_printer_id';
 
@@ -43,33 +37,19 @@ abstract class PrinterConfigRepository {
 /// Provides the PrinterConfigRepository instance.
 @Riverpod(keepAlive: true)
 PrinterConfigRepository printerConfigRepository(Ref ref) {
-  return PrinterConfigRepositoryImpl(
-    ref.watch(secureStorageProvider),
-    ref.watch(pocketbaseProvider),
-  );
+  return PrinterConfigRepositoryImpl(ref.watch(secureStorageProvider));
 }
 
 /// Implementation of [PrinterConfigRepository] using on-device storage.
 class PrinterConfigRepositoryImpl implements PrinterConfigRepository {
-  PrinterConfigRepositoryImpl(this._storage, this._pb);
+  PrinterConfigRepositoryImpl(this._storage);
 
   final FlutterSecureStorage _storage;
-  final PocketBase _pb;
   final Random _random = Random();
-  Future<void>? _migration;
-
-  RecordService get _collection =>
-      _pb.collection(PocketBaseCollections.printerConfigs);
 
   @override
   FutureEither<List<PrinterConfig>> fetchAll() async {
-    return TaskEither.tryCatch(
-      () async {
-        await _migrateFromServerIfNeeded();
-        return _readPrinters();
-      },
-      Failure.handle,
-    ).run();
+    return TaskEither.tryCatch(_readPrinters, Failure.handle).run();
   }
 
   @override
@@ -84,7 +64,6 @@ class PrinterConfigRepositoryImpl implements PrinterConfigRepository {
           );
         }
 
-        await _migrateFromServerIfNeeded();
         final printers = await _readPrinters();
         return printers.firstWhere(
           (p) => p.id == id,
@@ -168,76 +147,6 @@ class PrinterConfigRepositoryImpl implements PrinterConfigRepository {
       },
       Failure.handle,
     ).run();
-  }
-
-  Future<void> _migrateFromServerIfNeeded() async {
-    final migrated = await _storage.read(key: _localPrintersMigratedKey);
-    if (migrated == 'true') return;
-
-    final inFlight = _migration;
-    if (inFlight != null) {
-      await inFlight;
-      return;
-    }
-
-    final future = _runMigration();
-    _migration = future;
-    try {
-      await future;
-    } finally {
-      if (identical(_migration, future)) _migration = null;
-    }
-  }
-
-  Future<void> _runMigration() async {
-    try {
-      final records = await _collection.getFullList(
-        filter: PBFilters.active.build(),
-        sort: 'name',
-      );
-
-      final dtos = records
-          .map(PrinterConfigDto.fromRecord)
-          .where((dto) => !dto.isDeleted)
-          .toList();
-      final printers = dtos.map((dto) => dto.toEntity()).toList();
-      await _writePrinters(printers);
-
-      final existingSelected = await _storage.read(key: selectedPrinterIdKey);
-      final legacySelected =
-          await _storage.read(key: legacyLocalDefaultPrinterKey);
-      final printerIds = printers.map((p) => p.id).toSet();
-
-      String? selectedId = existingSelected;
-      if (selectedId == null ||
-          selectedId.isEmpty ||
-          !printerIds.contains(selectedId)) {
-        if (legacySelected != null && printerIds.contains(legacySelected)) {
-          selectedId = legacySelected;
-        } else {
-          final serverDefault = dtos.cast<PrinterConfigDto?>().firstWhere(
-                (dto) => dto!.isDefault && dto.isEnabled,
-                orElse: () => null,
-              );
-          selectedId = serverDefault?.id ??
-              printers
-                  .cast<PrinterConfig?>()
-                  .firstWhere(
-                    (p) => p!.isEnabled,
-                    orElse: () => null,
-                  )
-                  ?.id;
-        }
-      }
-
-      if (selectedId != null && selectedId.isNotEmpty) {
-        await _storage.write(key: selectedPrinterIdKey, value: selectedId);
-      }
-
-      await _storage.write(key: _localPrintersMigratedKey, value: 'true');
-    } catch (_) {
-      // Leave un-migrated so a later launch can retry when the server is reachable.
-    }
   }
 
   Future<List<PrinterConfig>> _readPrinters() async {

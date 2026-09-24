@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
+import '../routing/routes/org_selection.routes.dart';
 import '../utils/breakpoints.dart';
 import 'nav_permissions.dart';
 import 'organization_nav_brand.dart';
@@ -32,6 +33,8 @@ class TabletNavRail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final isLargeTablet = Breakpoints.isTabletLargeOrLarger(context);
+    final isAdmin =
+        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
 
     return Column(
       children: [
@@ -62,6 +65,15 @@ class TabletNavRail extends ConsumerWidget {
             ),
           ),
         ),
+        if (isAdmin)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: IconButton(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: t.organizations.superAdmin,
+              onPressed: () => const SuperAdminRoute().go(context),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: IconButton(

@@ -125,7 +125,9 @@ View and manage completed transactions.
 #### Activities (`/activities`)
 Audit log of changes made across the system (Admin-only, `system.admin` permission).
 
-- Chronological feed of create/update/delete actions (`ChangeLogType`), who made them, and on what record
+- Chronological feed of create/update/delete actions, summarized as what was done and who did it
+- Tap a row to open activity details (`/activities/:id`): full description, actor, affected record, and field-level changes
+- From details, open the related sale, product, service, customer, or employee when the record still exists
 - Backed by the `activityLogs` collection, written by the `activity_logger_config.js` PocketBase hook
 
 #### Promos (`/promos`)
@@ -174,8 +176,6 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - **Product Categories** (`/management/product-categories`) - Hierarchical product categories
 - **Quantity Units** (`/management/quantity-units`) - Units of measure used by products/services (e.g. kg, pc)
 - **Cashier Layout** (`/management/cashier-groups`) - POS groups management per branch (create groups, add products/services, reorder)
-- **Import** (`/management/import`) - CSV product import
-- **Settings** (`/management/settings`) - Pointer to the organization Features tab (flags are per-org)
 
 Old `/system/...` URLs for the moved items redirect here.
 
@@ -271,7 +271,7 @@ See [`docs/entities.md`](entities.md) for full field-level detail; this is a sum
 | `machineLoadRules` | Per-machine weight→load count rules |
 | `storages` | Storage locations for ready laundry items |
 
-Printers are stored on the device (secure storage), not in PocketBase. The leftover `printerConfigs` collection is only read once to import existing printers onto a device.
+Printers are stored on the device (secure storage) only — there is no PocketBase `printerConfigs` collection.
 
 #### Product Domain (5 collections)
 | Collection | Description |
@@ -467,6 +467,7 @@ App Root (Shell)
     │   └── /employees/:id (Detail)
     ├── /reports
     ├── /activities (Admin-only)
+    │   └── /activities/:id (activity log details)
     ├── /management (3-panel layout)
     │   ├── /management/users
     │   │   └── /management/users/:id
@@ -484,8 +485,6 @@ App Root (Shell)
     │   │   └── /management/quantity-units/:id
     │   ├── /management/cashier-groups
     │   │   └── /management/cashier-groups/:id
-    │   ├── /management/import
-    │   └── /management/settings
     ├── /organizations
     ├── /promos (Admin-only)
     │   └── /promos/:id (Detail)
@@ -524,7 +523,7 @@ Management and System sections use a 3-panel layout:
 5. 👥 Customers - `/customers`
 6. 🪪 Employees - `/employees`
 7. 📊 Reports - `/reports`
-8. 🕓 Activities - `/activities` (Admin-only)
+8. 🕓 Activities - `/activities` (Admin-only; detail at `/activities/:id`)
 9. 🏢 Management - `/management`
 10. 🏬 Organizations - `/organizations` (always visible)
 11. 🎁 Promos - `/promos` (Admin-only)
@@ -640,6 +639,10 @@ lib/src/
 
 ---
 
+| Sep 25 | Remove Management Import/Settings | Dropped unused Management Import and Settings nav, routes, CSV import UI, and legacy `/system/import` / `/system/feature-flags` redirects |
+| Sep 25 | Activity log details | Activity list shows a short what + who summary; tap opens `/activities/:id` with full changes, actor, affected record, and Open sale/customer/… CTA |
+| Sep 25 | Local-only printers | Printer configs are device storage only; removed PocketBase `printerConfigs` collection and one-shot server import |
+| Sep 25 | Org-branded splash | Logged-in cold start with a selected org shows that org’s letter-mark and name on splash, with “Powered by HZN Laundry” at the bottom; otherwise keeps the app logo |
 | Sep 23 | Portrait tablet content | Compact content tier (&lt; 840px): stacked kanban/master-detail/POS while keeping tablet nav rail; fixes crushed layouts at ~600×1007 |
 | Sep 22 | Manual organization lock | Super Admin can lock an org immediately (app unusable except pay); billing “Automatically lock after grace” only controls the daily job |
 | Sep 25 | Web Google OAuth redirect | Web Google login uses custom `oauth2-redirect.html` (auto-close copy + postMessage); closing the success popup completes login instead of hanging/failing; Android still uses `/api/oauth2-redirect` |

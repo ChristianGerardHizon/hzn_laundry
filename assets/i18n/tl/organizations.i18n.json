@@ -73,8 +73,6 @@
   "requirePack": "Kailangan ang pack count",
   "requireStorage": "Kailangan ang storage",
   "featuresReadOnly": "Mga manager lang ng organisasyon ang puwedeng magpalit ng features.",
-  "featuresMoved": "Ang mga workflow at module toggle ay nasa Features tab na ng organisasyon para magkakaiba ang setting bawat organisasyon.",
-  "openFeatures": "Buksan ang Features ng organisasyon",
   "selectTitle": "Pumili ng organisasyon",
   "selectSubtitle": "Piliin kung aling organisasyon ang gusto mong pasukan.",
   "lastUsed": "Huling ginamit",

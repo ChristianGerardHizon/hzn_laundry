@@ -73,8 +73,6 @@
   "requirePack": "Require pack count",
   "requireStorage": "Require storage assignment",
   "featuresReadOnly": "Only organization managers can change these features.",
-  "featuresMoved": "Workflow and module toggles now live on the organization Features tab so each organization can configure them separately.",
-  "openFeatures": "Open organization Features",
   "selectTitle": "Select organization",
   "selectSubtitle": "Choose which organization you want to work in.",
   "lastUsed": "Last used",

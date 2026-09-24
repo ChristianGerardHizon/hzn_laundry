@@ -119,7 +119,7 @@ Feature-based clean architecture. `HookConsumerWidget`. `@riverpod`. `Either<Fai
 - Keep list at `/organizations`.
 - Add `/organizations/:id` with tabs: **Overview** (existing details form), **People** (members/invites), **Features** (per-org toggles).
 - Features includes the four migrated workflow flags plus **Consumable usage**.
-- Remove duplicate toggles from Management → Settings (`EmailSettingsPanel` at `/management/settings`). Leave a pointer to Organizations → Features.
+- Feature toggles live only on Organizations → Features (Management Settings stub removed).
 - Scope `feature_flag_repository` by current org.
 
 ### B.2 Catalog UI

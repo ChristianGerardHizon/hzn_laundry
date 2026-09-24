@@ -13,7 +13,7 @@ class SelectedPrinterId extends _$SelectedPrinterId {
 
   @override
   Future<String?> build() async {
-    // Ensure one-time server import has run before reading the selected ID.
+    // Ensure local printers are loaded before reading the selected ID.
     await ref.watch(printerConfigRepositoryProvider).fetchAll();
     final selected = await _storage.read(key: selectedPrinterIdKey);
     if (selected != null && selected.isNotEmpty) return selected;
