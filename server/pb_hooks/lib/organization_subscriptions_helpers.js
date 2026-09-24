@@ -841,14 +841,15 @@ function escapeHtml(s) {
 }
 
 function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
+  var brand = historyConfig.getAppDisplayName();
   var safeName = escapeHtml(orgName);
   var safeLink = escapeHtml(link);
   var subject =
     status === "locked"
-      ? "HZN Laundry subscription locked — pay to restore access"
+      ? brand + " subscription locked — pay to restore access"
       : status === "grace"
-        ? "HZN Laundry subscription overdue — grace period active"
-        : "HZN Laundry subscription payment reminder";
+        ? brand + " subscription overdue — grace period active"
+        : brand + " subscription payment reminder";
 
   var html =
     "<!DOCTYPE html><html><body style=\"font-family:sans-serif;color:#0f172a\">" +
@@ -868,7 +869,9 @@ function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
     "<p>Or open: " +
     safeLink +
     "</p>" +
-    "<p>— HZN Laundry</p></body></html>";
+    "<p>— " +
+    escapeHtml(brand) +
+    "</p></body></html>";
 
   var text =
     "Billing reminder for " +
@@ -890,10 +893,7 @@ function sendResendEmail(toEmail, subject, html, text) {
     console.log("[SUBSCRIPTION] RESEND_API_KEY not set; skip email to " + toEmail);
     return;
   }
-  var fromEmail = $os.getenv("RESEND_FROM_EMAIL");
-  if (!fromEmail) {
-    fromEmail = "HZN Laundry <noreply@hznsystems.com>";
-  }
+  var fromEmail = historyConfig.getFromEmail();
   var res = $http.send({
     url: "https://api.resend.com/emails",
     method: "POST",
