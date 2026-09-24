@@ -196,7 +196,7 @@ Device-specific settings only (this tablet/phone/desktop).
 ### Authentication (`/login`)
 
 - Splash screen (`/splash`) — black warming-up UI with rotating status verbs
-- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web and Android
+- Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web (custom redirect page) and Android (Custom Tabs)
 - Organization selection (`/select-organization`) — after login when the user has 1+ memberships; each card shows package name plus Expiring / Expired / Locked when applicable; Super Admin entry for `system.admin`
 - Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
 - Super Admin hub (`/super-admin`) — adaptive shell (tablet sidenav / mobile bottom nav + More drawer) with Dashboard (org metrics), Packages, Payments, and Billing; create organization from the header; org card opens subscription details dialog
@@ -642,6 +642,7 @@ lib/src/
 
 | Sep 23 | Portrait tablet content | Compact content tier (&lt; 840px): stacked kanban/master-detail/POS while keeping tablet nav rail; fixes crushed layouts at ~600×1007 |
 | Sep 22 | Manual organization lock | Super Admin can lock an org immediately (app unusable except pay); billing “Automatically lock after grace” only controls the daily job |
+| Sep 25 | Web Google OAuth redirect | Web Google login uses custom `oauth2-redirect.html` (auto-close copy + postMessage); closing the success popup completes login instead of hanging/failing; Android still uses `/api/oauth2-redirect` |
 | Sep 22 | Optional subscription enforcement | Billing settings: configurable warning days before due; toggles for in-app warnings and auto-lock after grace; voluntary pay stays available |
 | Sep 22 | Subscription due alert | Opening an org with a due-soon or grace subscription shows a one-time alert (Later / Go to payment) when warnings are enforced; banner still shown |
 | Sep 22 | Org picker subscription status | Select-organization cards show package name and Expiring / Expired / Locked from each org’s subscription |
@@ -656,6 +657,7 @@ lib/src/
 | Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |
 | Sep 21 | Android Google login | Continue with Google on Android via PocketBase browser OAuth (same invite-only hook as web); iOS still OTP/password only |
 | Sep 21 | Scope recovery after login | When auth succeeds but org/branch scope cannot resolve a home path, redirect to `/scope-recovery` (Retry / Logout) instead of an endless splash |
+| Sep 25 | Email brand teal + env tags | OTP/auth-alert accents use brand teal `#45A9AB` (not green); staging/dev emails show `[Staging]` / `[Dev]` in `{APP_NAME}` / From; history + subscription Resend emails match |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
 | Sep 20 | Post-login org selection | Users with 1+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
 | Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |

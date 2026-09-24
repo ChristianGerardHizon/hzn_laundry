@@ -19,14 +19,42 @@ function getAppBaseUrl() {
   return url;
 }
 
+// Env-tagged brand name for email header / From / subject.
+// prod: "HZN Laundry"; staging: "[Staging] HZN Laundry"; dev/local: "[Dev] HZN Laundry"
+function getAppDisplayName() {
+  var env = String($os.getenv("APP_ENV") || "").toLowerCase();
+  if (env === "staging" || env === "stage") {
+    return "[Staging] HZN Laundry";
+  }
+  if (env === "dev" || env === "development" || env === "local") {
+    return "[Dev] HZN Laundry";
+  }
+  if (env === "prod" || env === "production") {
+    return "HZN Laundry";
+  }
+  var url = String($os.getenv("APP_BASE_URL") || "").toLowerCase();
+  if (url.indexOf("staging.") >= 0) {
+    return "[Staging] HZN Laundry";
+  }
+  if (url.indexOf("127.0.0.1") >= 0 || url.indexOf("localhost") >= 0) {
+    return "[Dev] HZN Laundry";
+  }
+  return "HZN Laundry";
+}
+
 // "From" address for transactional emails (must be a verified domain in Resend).
-// Read from RESEND_FROM_EMAIL env var; falls back to prod info address.
+// Display name always follows getAppDisplayName(); address from RESEND_FROM_EMAIL or default.
 function getFromEmail() {
+  var name = getAppDisplayName();
   var v = $os.getenv("RESEND_FROM_EMAIL");
   if (!v) {
-    return "HZN Laundry <noreply@hznsystems.com>";
+    return name + " <noreply@hznsystems.com>";
   }
-  return v;
+  var m = String(v).match(/^(.+?)\s*<([^>]+)>\s*$/);
+  if (m) {
+    return name + " <" + m[2] + ">";
+  }
+  return name + " <" + v + ">";
 }
 
 // Token lifetime in days
@@ -66,6 +94,8 @@ function escapeHtml(s) {
 
 // Build a transactional email body (HTML + plain text).
 function buildEmail(customerName, link) {
+  var brand = getAppDisplayName();
+  var safeBrand = escapeHtml(brand);
   var safeName = escapeHtml(customerName);
   var safeLink = escapeHtml(link);
 
@@ -78,7 +108,7 @@ function buildEmail(customerName, link) {
       "<meta charset=\"UTF-8\">" +
       "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
       "<meta name=\"x-apple-disable-message-reformatting\">" +
-      "<title>HZN Laundry</title>" +
+      "<title>" + safeBrand + "</title>" +
     "</head>" +
     "<body style=\"margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1f2937;\">" +
       "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">" + escapeHtml(preheader) + "</div>" +
@@ -86,13 +116,13 @@ function buildEmail(customerName, link) {
         "<tr>" +
           "<td align=\"center\" style=\"padding:32px 12px;\">" +
             "<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(16,24,40,0.08);\">" +
-              // Header bar
+              // Header bar — brand teal (#45A9AB)
               "<tr>" +
-                "<td style=\"background:linear-gradient(135deg,#0ea5e9 0%,#0369a1 100%); padding:28px 32px;\">" +
+                "<td style=\"background:#45A9AB; padding:28px 32px;\">" +
                   "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">" +
                     "<tr>" +
-                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">HZN Laundry</td>" +
-                      "<td align=\"right\" style=\"color:#e0f2fe; font-size:13px;\">Order History</td>" +
+                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">" + safeBrand + "</td>" +
+                      "<td align=\"right\" style=\"color:#e6f5f5; font-size:13px;\">Order History</td>" +
                     "</tr>" +
                   "</table>" +
                 "</td>" +
@@ -101,17 +131,17 @@ function buildEmail(customerName, link) {
               "<tr>" +
                 "<td style=\"padding:32px;\">" +
                   "<h1 style=\"margin:0 0 16px; font-size:22px; line-height:1.3; color:#0f172a;\">Hi " + safeName + ",</h1>" +
-                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Thanks for choosing HZN Laundry. You can now track your laundry orders, see what is pending, and check any outstanding balances using your personal order history link below.</p>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Thanks for choosing " + safeBrand + ". You can now track your laundry orders, see what is pending, and check any outstanding balances using your personal order history link below.</p>" +
                   "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0;\">" +
                     "<tr>" +
                       "<td align=\"center\">" +
-                        "<a href=\"" + safeLink + "\" style=\"display:inline-block; background-color:#0ea5e9; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:8px;\">View My Orders</a>" +
+                        "<a href=\"" + safeLink + "\" style=\"display:inline-block; background-color:#45A9AB; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:8px;\">View My Orders</a>" +
                       "</td>" +
                     "</tr>" +
                   "</table>" +
                   "<p style=\"margin:0 0 8px; font-size:13px; line-height:1.5; color:#64748b;\">Button not working? Paste this link into your browser:</p>" +
                   "<p style=\"margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all;\">" +
-                    "<a href=\"" + safeLink + "\" style=\"color:#0369a1; text-decoration:underline;\">" + safeLink + "</a>" +
+                    "<a href=\"" + safeLink + "\" style=\"color:#2F7A7C; text-decoration:underline;\">" + safeLink + "</a>" +
                   "</p>" +
                   "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0 0; background-color:#f8fafc; border-radius:8px;\">" +
                     "<tr>" +
@@ -132,7 +162,7 @@ function buildEmail(customerName, link) {
               "<tr>" +
                 "<td style=\"background-color:#f8fafc; padding:20px 32px; border-top:1px solid #e2e8f0;\">" +
                   "<p style=\"margin:0 0 4px; font-size:12px; line-height:1.5; color:#64748b;\">This link is private to you — please do not share it. It expires after 90 days of inactivity but is refreshed every time you place a new order.</p>" +
-                  "<p style=\"margin:8px 0 0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; HZN Laundry. All rights reserved.</p>" +
+                  "<p style=\"margin:8px 0 0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; " + safeBrand + ". All rights reserved.</p>" +
                 "</td>" +
               "</tr>" +
             "</table>" +
@@ -144,7 +174,7 @@ function buildEmail(customerName, link) {
 
   var text =
     "Hi " + customerName + ",\n\n" +
-    "Thanks for choosing HZN Laundry. View your order history, track status, and check outstanding balances here:\n\n" +
+    "Thanks for choosing " + brand + ". View your order history, track status, and check outstanding balances here:\n\n" +
     link + "\n\n" +
     "What you can do:\n" +
     "  - See all your orders in one place\n" +
@@ -152,7 +182,7 @@ function buildEmail(customerName, link) {
     "  - Check unpaid balances\n" +
     "  - View receipts and order details\n\n" +
     "This link is private to you — please do not share it. It expires after 90 days of inactivity but is refreshed every time you place a new order.\n\n" +
-    "HZN Laundry";
+    brand;
 
   return { html: html, text: text };
 }
@@ -160,6 +190,7 @@ function buildEmail(customerName, link) {
 // Send email via Resend
 function sendHistoryLinkEmail(toEmail, customerName, link) {
   var apiKey = getResendApiKey();
+  var brand = getAppDisplayName();
   var body = buildEmail(customerName, link);
 
   var res = $http.send({
@@ -172,7 +203,7 @@ function sendHistoryLinkEmail(toEmail, customerName, link) {
     body: JSON.stringify({
       from: getFromEmail(),
       to: [toEmail],
-      subject: "Your HZN Laundry order history",
+      subject: "Your " + brand + " order history",
       html: body.html,
       text: body.text
     }),
@@ -192,5 +223,7 @@ module.exports = {
   isExpired: isExpired,
   sendHistoryLinkEmail: sendHistoryLinkEmail,
   getAppBaseUrl: getAppBaseUrl,
+  getAppDisplayName: getAppDisplayName,
+  getFromEmail: getFromEmail,
   TOKEN_TTL_DAYS: TOKEN_TTL_DAYS
 };
