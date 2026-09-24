@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
+import '../routing/routes/org_selection.routes.dart';
 import 'desktop_nav_flyout.dart';
 import 'desktop_nav_item.dart';
 import 'nav_permissions.dart';
@@ -54,6 +55,8 @@ class DesktopSideNav extends HookConsumerWidget {
         ? filterNavItemsByQuery(visibleItems, searchQuery.value)
         : const <NavItem>[];
 
+    final isAdmin =
+        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
     final defaultShortcuts = visibleShortcutIds(visibleItems);
     final extraShortcuts =
         extraShortcutCandidates(visibleItems, defaultShortcuts);
@@ -61,7 +64,22 @@ class DesktopSideNav extends HookConsumerWidget {
       ...defaultShortcuts,
       if (showAllShortcuts.value) ...extraShortcuts,
     };
-    final categories = visibleCategories(visibleItems, shownShortcutIds);
+    final categories = [
+      ...visibleCategories(visibleItems, shownShortcutIds),
+    ];
+    // Keep Administration visible for system admins so the Super Admin
+    // footer remains reachable even when its destinations are shortcuts.
+    if (isAdmin &&
+        !categories.contains(AppNavCategory.administration)) {
+      categories.add(AppNavCategory.administration);
+    }
+    final superAdminFooter = isAdmin
+        ? DesktopNavFlyoutFooter(
+            icon: Icons.admin_panel_settings_outlined,
+            label: t.organizations.superAdmin,
+            onTap: () => const SuperAdminRoute().go(context),
+          )
+        : null;
 
     void clearSearch() {
       searchQuery.value = '';
@@ -225,6 +243,9 @@ class DesktopSideNav extends HookConsumerWidget {
                               shownShortcutIds,
                             ),
                             onDestinationTap: tapItem,
+                            footer: category == AppNavCategory.administration
+                                ? superAdminFooter
+                                : null,
                           ),
                         ),
                     ],

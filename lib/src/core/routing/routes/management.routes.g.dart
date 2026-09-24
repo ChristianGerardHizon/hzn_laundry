@@ -97,14 +97,6 @@ RouteBase get $managementShellRoute => ShellRouteData.$route(
                 ),
               ],
             ),
-            GoRouteData.$route(
-              path: 'import',
-              factory: $ManagementImportRoute._fromState,
-            ),
-            GoRouteData.$route(
-              path: 'settings',
-              factory: $ManagementSettingsRoute._fromState,
-            ),
           ],
         ),
       ],
@@ -531,52 +523,6 @@ mixin $ManagementCashierGroupDetailRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/management/cashier-groups/${Uri.encodeComponent(_self.id)}',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $ManagementImportRoute on GoRouteData {
-  static ManagementImportRoute _fromState(GoRouterState state) =>
-      const ManagementImportRoute();
-
-  @override
-  String get location => GoRouteData.$location(
-        '/management/import',
-      );
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $ManagementSettingsRoute on GoRouteData {
-  static ManagementSettingsRoute _fromState(GoRouterState state) =>
-      const ManagementSettingsRoute();
-
-  @override
-  String get location => GoRouteData.$location(
-        '/management/settings',
       );
 
   @override

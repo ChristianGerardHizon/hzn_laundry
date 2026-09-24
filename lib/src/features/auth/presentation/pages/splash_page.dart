@@ -6,6 +6,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/assets/assets.gen.dart';
 import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/widgets/organization_letter_mark.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../controllers/auth_controller.dart';
 
 /// Splash page shown while the app is initializing.
@@ -13,6 +15,9 @@ import '../controllers/auth_controller.dart';
 /// Displayed during auth state initialization on app startup.
 /// The router handles navigation based on auth state - this page
 /// simply watches auth state and displays a warming-up loading UI.
+///
+/// When a current organization is already resolved (logged-in cold start),
+/// shows that org's letter-mark and name with a "Powered by" footer.
 class SplashPage extends HookConsumerWidget {
   const SplashPage({super.key});
 
@@ -20,11 +25,16 @@ class SplashPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch auth state - router will redirect when auth completes
     ref.watch(authControllerProvider);
+    final orgAsync = ref.watch(currentOrganizationControllerProvider);
+    final org = orgAsync.asData?.value;
+    final orgName = org?.name.trim();
+    final showOrgBrand = orgName != null && orgName.isNotEmpty;
 
     final verbIndex = useState(0);
     final ellipsisStep = useState(0);
 
     useEffect(() {
+      if (showOrgBrand) return null;
       final verbTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
         verbIndex.value = (verbIndex.value + 1) % splashLoadingVerbs.length;
       });
@@ -38,37 +48,101 @@ class SplashPage extends HookConsumerWidget {
         verbTimer.cancel();
         ellipsisTimer.cancel();
       };
-    }, const []);
+    }, [showOrgBrand]);
 
     final dots = '.' * (ellipsisStep.value + 1);
     final verbText = '${splashLoadingVerbs[verbIndex.value]}$dots';
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Assets.icons.appIconTransparent.image(width: 150, height: 150),
-            const SizedBox(height: 24),
-            Text(
-              t.auth.almostThereWarmingUp,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF999999),
-                    height: 1.4,
+      body: SafeArea(
+        child: showOrgBrand
+            ? _OrgBrandedSplash(orgName: orgName)
+            : _AppLogoSplash(verbText: verbText),
+      ),
+    );
+  }
+}
+
+class _OrgBrandedSplash extends StatelessWidget {
+  const _OrgBrandedSplash({required this.orgName});
+
+  final String orgName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OrganizationLetterMark(name: orgName, size: 150),
+                  const SizedBox(height: 24),
+                  Text(
+                    orgName,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.15,
+                          height: 1.2,
+                        ),
                   ),
+                ],
+              ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              verbText,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFBBBBBB),
-                    letterSpacing: 0.02 * 14,
-                  ),
-            ),
-          ],
+          ),
         ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Text(
+            t.auth.poweredBy,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF999999),
+                  height: 1.4,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AppLogoSplash extends StatelessWidget {
+  const _AppLogoSplash({required this.verbText});
+
+  final String verbText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Assets.icons.appIconTransparent.image(width: 150, height: 150),
+          const SizedBox(height: 24),
+          Text(
+            t.auth.almostThereWarmingUp,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF999999),
+                  height: 1.4,
+                ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            verbText,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFBBBBBB),
+                  letterSpacing: 0.02 * 14,
+                ),
+          ),
+        ],
       ),
     );
   }

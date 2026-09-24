@@ -5,6 +5,19 @@ import '../navigation/desktop_nav_presentation.dart';
 import 'desktop_nav_item.dart';
 import 'nav_permissions.dart';
 
+/// Optional footer action at the bottom of a [DesktopNavFlyout] panel.
+class DesktopNavFlyoutFooter {
+  const DesktopNavFlyoutFooter({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+}
+
 /// Hover/tap flyout panel listing destinations within a sidebar category.
 class DesktopNavFlyout extends StatelessWidget {
   const DesktopNavFlyout({
@@ -13,12 +26,14 @@ class DesktopNavFlyout extends StatelessWidget {
     required this.destinations,
     required this.selectedId,
     required this.onDestinationTap,
+    this.footer,
   });
 
   final AppNavCategory category;
   final List<NavItem> destinations;
   final NavId selectedId;
   final ValueChanged<NavItem> onDestinationTap;
+  final DesktopNavFlyoutFooter? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +72,19 @@ class DesktopNavFlyout extends StatelessWidget {
                   selected: isNavItemSelected(selectedId, dest.id),
                   onTap: () => onDestinationTap(dest),
                 ),
+              if (footer != null) ...[
+                if (destinations.isNotEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: Divider(height: 1),
+                  ),
+                _FlyoutItem(
+                  icon: footer!.icon,
+                  label: footer!.label,
+                  selected: false,
+                  onTap: footer!.onTap,
+                ),
+              ],
             ],
           ),
         ),
@@ -129,6 +157,7 @@ class DesktopNavCategoryRow extends StatefulWidget {
     required this.selected,
     required this.collapsed,
     required this.onDestinationTap,
+    this.footer,
   });
 
   final AppNavCategory category;
@@ -137,6 +166,7 @@ class DesktopNavCategoryRow extends StatefulWidget {
   final bool selected;
   final bool collapsed;
   final ValueChanged<NavItem> onDestinationTap;
+  final DesktopNavFlyoutFooter? footer;
 
   @override
   State<DesktopNavCategoryRow> createState() => _DesktopNavCategoryRowState();
@@ -146,6 +176,9 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
   final _anchorKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   bool _isHovered = false;
+
+  bool get _canShowOverlay =>
+      widget.destinations.isNotEmpty || widget.footer != null;
 
   @override
   void dispose() {
@@ -159,7 +192,7 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
   }
 
   void _showOverlay() {
-    if (_overlayEntry != null || widget.destinations.isEmpty) return;
+    if (_overlayEntry != null || !_canShowOverlay) return;
 
     final renderBox =
         _anchorKey.currentContext?.findRenderObject() as RenderBox?;
@@ -193,6 +226,16 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
                 category: widget.category,
                 destinations: widget.destinations,
                 selectedId: widget.selectedId,
+                footer: widget.footer == null
+                    ? null
+                    : DesktopNavFlyoutFooter(
+                        icon: widget.footer!.icon,
+                        label: widget.footer!.label,
+                        onTap: () {
+                          _hideOverlay();
+                          widget.footer!.onTap();
+                        },
+                      ),
                 onDestinationTap: (dest) {
                   _hideOverlay();
                   widget.onDestinationTap(dest);

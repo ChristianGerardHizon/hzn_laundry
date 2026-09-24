@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
+import '../routing/routes/org_selection.routes.dart';
 import 'branch_switcher.dart';
 import 'nav_permissions.dart';
 import 'organization_nav_brand.dart';
@@ -29,11 +30,49 @@ class MobileDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final theme = Theme.of(context);
+    final isAdmin =
+        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
 
     // Split visible items into primary (index <= 5) and secondary (index > 5)
     final primaryItems = visibleItems.where((item) => item.index <= 5).toList();
     final secondaryItems =
         visibleItems.where((item) => item.index > 5).toList();
+
+    Widget mapItem(NavItem item) {
+      final visibleIndex = visibleItems.indexOf(item);
+      return _DrawerItem(
+        icon: item.icon,
+        label: item.label,
+        selected: selectedIndex == visibleIndex,
+        onTap: () => _selectAndClose(context, visibleIndex),
+      );
+    }
+
+    List<Widget> withSuperAdminAfterOrganizations(List<NavItem> items) {
+      final widgets = <Widget>[];
+      for (final item in items) {
+        widgets.add(mapItem(item));
+        if (isAdmin && item.id == NavId.organizations) {
+          widgets.add(
+            _DrawerItem(
+              icon: Icons.admin_panel_settings_outlined,
+              label: t.organizations.superAdmin,
+              selected: false,
+              onTap: () {
+                Navigator.of(context).pop();
+                const SuperAdminRoute().go(context);
+              },
+            ),
+          );
+        }
+      }
+      return widgets;
+    }
+
+    final orgsInPrimary =
+        primaryItems.any((item) => item.id == NavId.organizations);
+    final orgsInSecondary =
+        secondaryItems.any((item) => item.id == NavId.organizations);
 
     return Drawer(
       child: SafeArea(
@@ -59,28 +98,24 @@ class MobileDrawer extends ConsumerWidget {
             const BranchSwitcher(),
 
             // Primary navigation items
-            ...primaryItems.map((item) {
-              final visibleIndex = visibleItems.indexOf(item);
-              return _DrawerItem(
-                icon: item.icon,
-                label: item.label,
-                selected: selectedIndex == visibleIndex,
-                onTap: () => _selectAndClose(context, visibleIndex),
-              );
-            }),
+            ...withSuperAdminAfterOrganizations(primaryItems),
 
             if (secondaryItems.isNotEmpty) const Divider(),
 
             // Secondary navigation items
-            ...secondaryItems.map((item) {
-              final visibleIndex = visibleItems.indexOf(item);
-              return _DrawerItem(
-                icon: item.icon,
-                label: item.label,
-                selected: selectedIndex == visibleIndex,
-                onTap: () => _selectAndClose(context, visibleIndex),
-              );
-            }),
+            ...withSuperAdminAfterOrganizations(secondaryItems),
+
+            // Super Admin fallback when Organizations is not in the drawer list
+            if (isAdmin && !orgsInPrimary && !orgsInSecondary)
+              _DrawerItem(
+                icon: Icons.admin_panel_settings_outlined,
+                label: t.organizations.superAdmin,
+                selected: false,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  const SuperAdminRoute().go(context);
+                },
+              ),
 
             const Divider(),
 

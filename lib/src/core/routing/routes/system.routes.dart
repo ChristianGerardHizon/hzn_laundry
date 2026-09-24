@@ -60,10 +60,6 @@ part 'system.routes.g.dart';
         ),
         // Appearance/theme settings
         TypedGoRoute<AppearanceRoute>(path: 'appearance'),
-        // Import products from CSV
-        TypedGoRoute<ImportRoute>(path: 'import'),
-        // Feature flags / workflow settings
-        TypedGoRoute<FeatureFlagsRoute>(path: 'feature-flags'),
       ],
     ),
   ],
@@ -204,26 +200,6 @@ class AppearanceRoute extends GoRouteData with $AppearanceRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return const ThemeSettingsPanel();
-  }
-}
-
-/// Import products — redirected to Management.
-class ImportRoute extends GoRouteData with $ImportRoute {
-  const ImportRoute();
-
-  @override
-  String? redirect(BuildContext context, GoRouterState state) {
-    return '/management/import';
-  }
-}
-
-/// Feature flags / workflow settings — redirected to Management.
-class FeatureFlagsRoute extends GoRouteData with $FeatureFlagsRoute {
-  const FeatureFlagsRoute();
-
-  @override
-  String? redirect(BuildContext context, GoRouterState state) {
-    return '/management/settings';
   }
 }
 

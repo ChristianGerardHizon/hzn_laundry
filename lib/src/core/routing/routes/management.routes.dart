@@ -10,8 +10,6 @@ import '../../../features/machines/presentation/controllers/machines_controller.
 import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
 import '../../../features/settings/presentation/widgets/product_category_detail_panel.dart';
 import '../../../features/settings/presentation/widgets/quantity_unit_detail_panel.dart';
-import '../../../features/settings/presentation/widgets/import_landing_panel.dart';
-import '../../../features/settings/presentation/widgets/email_settings_panel.dart';
 import '../../../features/settings/presentation/widgets/dialogs/product_category_form_dialog.dart';
 import '../../../features/settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
 import '../../../features/settings/presentation/controllers/product_categories_controller.dart';
@@ -98,8 +96,6 @@ part 'management.routes.g.dart';
             TypedGoRoute<ManagementCashierGroupDetailRoute>(path: ':id'),
           ],
         ),
-        TypedGoRoute<ManagementImportRoute>(path: 'import'),
-        TypedGoRoute<ManagementSettingsRoute>(path: 'settings'),
       ],
     ),
   ],
@@ -302,20 +298,6 @@ class _MobileManagementLandingPage extends StatelessWidget {
             title: 'Cashier',
             color: Colors.teal,
             onTap: () => const ManagementCashierGroupsRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.file_upload,
-            title: 'Import',
-            color: Colors.deepPurple,
-            onTap: () => const ManagementImportRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.tune,
-            title: 'Settings',
-            color: Colors.blueGrey,
-            onTap: () => const ManagementSettingsRoute().goScoped(context),
           ),
         ],
       ),
@@ -687,33 +669,6 @@ class ManagementCashierGroupDetailRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return CashierGroupDetailPanel(groupId: id);
-  }
-}
-
-/// CSV product import route.
-class ManagementImportRoute extends GoRouteData with $ManagementImportRoute {
-  const ManagementImportRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    if (Breakpoints.isMultiColumnOrLarger(context)) {
-      return const SizedBox.shrink();
-    }
-    return Scaffold(
-      appBar: AppBar(title: const Text('Import Products')),
-      body: const ImportLandingPanel(),
-    );
-  }
-}
-
-/// Org workflow / feature-flag settings route.
-class ManagementSettingsRoute extends GoRouteData
-    with $ManagementSettingsRoute {
-  const ManagementSettingsRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return const EmailSettingsPanel();
   }
 }
 
