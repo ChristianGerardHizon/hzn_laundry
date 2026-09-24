@@ -7,6 +7,8 @@ password: password101
 
 Seeded by `python server/scripts/seed_multi_org_demo.py`. Also stored in `.env` as `TEST_ACCOUNT_EMAIL` / `TEST_ACCOUNT_PASSWORD`.
 
+To mirror the three real local orgs (plus users/roles/services) onto staging, see [copy_local_orgs_to_staging.md](copy_local_orgs_to_staging.md).
+
 | Account | Email | Password | Orgs |
 |---------|-------|----------|------|
 | Admin (multi-org) | `christiangerardhizon@gmail.com` | `password101` | HZN Laundry + Sunrise Laundry |

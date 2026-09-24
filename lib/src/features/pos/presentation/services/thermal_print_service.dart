@@ -49,7 +49,7 @@ enum OrderReceiptCopy {
   /// Full customer claim sheet (optionally followed by a store copy).
   customer,
 
-  /// Full store claim sheet (large customer name + STORE COPY marker).
+  /// Compact store/machine tag with large fitted customer name.
   store,
 }
 
@@ -165,7 +165,8 @@ class ThermalPrintService extends _$ThermalPrintService {
   ///
   /// [copyType] selects customer vs store sheet.
   /// When [includeStoreCopy] is true with a customer copy, a store sheet is
-  /// appended in the same job with an ESC/POS cut between sections.
+  /// appended in the same job. Customer sheet cuts (if enabled); store sheet
+  /// feeds only — no cut — so staff can tear the compact machine tag by hand.
   Future<PrintResult> printOrderReceipt({
     required PrinterConfig printer,
     required String customerName,
@@ -194,6 +195,7 @@ class ThermalPrintService extends _$ThermalPrintService {
       customerName: customerName,
       serviceName: serviceName,
       quantity: quantity,
+      unitLabel: unitLabel,
       totalAmount: totalAmount,
       paperWidth: printer.paperWidth,
       businessName: businessName ?? '',
@@ -737,6 +739,34 @@ class ThermalPrintService extends _$ThermalPrintService {
     return bytes;
   }
 
+  /// All text-size multipliers supported by [PosTextSize], smallest first.
+  static const List<PosTextSize> _posTextSizes = [
+    PosTextSize.size1,
+    PosTextSize.size2,
+    PosTextSize.size3,
+    PosTextSize.size4,
+    PosTextSize.size5,
+    PosTextSize.size6,
+    PosTextSize.size7,
+    PosTextSize.size8,
+  ];
+
+  /// Largest `GS !` multiplier this hardware reliably honors (often 4x on
+  /// generic ESC/POS clones — sizes above that are accepted then ignored).
+  static const PosTextSize _maxReliableTextSize = PosTextSize.size4;
+
+  /// Largest text-size multiplier that keeps [text] on one physical line.
+  PosTextSize _largestFittingTextSize(String text, int maxCharsPerLine) {
+    final length = text.isEmpty ? 1 : text.length;
+    for (final size in _posTextSizes.reversed) {
+      if (size.value > _maxReliableTextSize.value) continue;
+      if (maxCharsPerLine ~/ size.value >= length) {
+        return size;
+      }
+    }
+    return PosTextSize.size1;
+  }
+
   List<int> _appendClaimSheetTitle(
     Generator generator,
     List<int> bytes, {
@@ -771,9 +801,15 @@ class ThermalPrintService extends _$ThermalPrintService {
     return '${text.substring(0, maxLen - 2)}..';
   }
 
-  List<int> _appendFeedAndCut(Generator generator, List<int> bytes) {
-    bytes += generator.feed(_autoCut ? 2 : 4);
-    if (_autoCut) bytes += generator.cut();
+  /// Feeds paper; optionally cuts. Store copies always skip cut.
+  List<int> _appendFeedAndCut(
+    Generator generator,
+    List<int> bytes, {
+    bool cut = true,
+  }) {
+    final shouldCut = cut && _autoCut;
+    bytes += generator.feed(shouldCut ? 2 : 4);
+    if (shouldCut) bytes += generator.cut();
     return bytes;
   }
 
@@ -798,8 +834,145 @@ class ThermalPrintService extends _$ThermalPrintService {
     return bytes;
   }
 
-  /// Full claim sheet body (customer or store copy).
-  List<int> _appendOrderClaimSheet(
+  /// Compact store/machine tag — large fitted customer name, no barcode, no cut.
+  List<int> _appendStoreClaimSheet(
+    Generator generator,
+    List<int> bytes, {
+    required String customerName,
+    required String serviceName,
+    required double quantity,
+    required String unitLabel,
+    required double totalAmount,
+    required PrinterPaperWidth paperWidth,
+    String? specialInstructions,
+    String? claimSheetNumber,
+    DateTime? orderDate,
+    List<SaleItem> addOnItems = const [],
+  }) {
+    final currencyFormat = NumberFormat.currency(symbol: 'P', decimalDigits: 2);
+    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+    final now = orderDate ?? DateTime.now();
+
+    bytes = _appendDivider(generator, bytes, ch: '=');
+    bytes = _appendClaimSheetTitle(generator, bytes, storeCopy: true);
+    if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
+      bytes += generator.text(
+        '$claimSheetNumberLabel $claimSheetNumber',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+    bytes = _appendDivider(generator, bytes, ch: '=');
+
+    // Fitted large name for machine identification (Hi-Zone pattern).
+    final upperCustomerName = customerName.toUpperCase();
+    final customerNameSize = _largestFittingTextSize(
+      upperCustomerName,
+      paperWidth.charsPerLine,
+    );
+    bytes += generator.text(
+      upperCustomerName,
+      styles: PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: customerNameSize,
+        width: customerNameSize,
+      ),
+    );
+    bytes += generator.emptyLines(1);
+
+    bytes += generator.text(
+      serviceName.toUpperCase(),
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
+    final qtyText = quantity == quantity.roundToDouble()
+        ? '${quantity.toInt()}'
+        : quantity.toStringAsFixed(1);
+    bytes += generator.text(
+      '$qtyText $unitLabel',
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
+
+    bytes = _appendDivider(generator, bytes);
+
+    final addOnsTotal =
+        addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+    final serviceSubtotal = totalAmount - addOnsTotal;
+
+    bytes += generator.row([
+      PosColumn(text: _truncate(serviceName, 16), width: 8),
+      PosColumn(
+        text: currencyFormat.format(serviceSubtotal),
+        width: 4,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
+    ]);
+
+    for (final item in addOnItems) {
+      bytes += generator.row([
+        PosColumn(
+          text: _truncate(
+            '${item.productName} x${item.quantity.toInt()}',
+            22,
+          ),
+          width: 8,
+        ),
+        PosColumn(
+          text: currencyFormat.format(item.subtotal),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
+
+    bytes = _appendDivider(generator, bytes);
+    bytes += generator.text(
+      'TOTAL',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+    );
+    bytes += generator.text(
+      currencyFormat.format(totalAmount),
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
+
+    bytes = _appendDivider(generator, bytes);
+    bytes += generator.text(
+      dateFormat.format(now),
+      styles: const PosStyles(align: PosAlign.center),
+    );
+
+    bytes = _appendDivider(generator, bytes);
+    bytes += generator.text('NOTES:', styles: const PosStyles(bold: true));
+    bytes += generator.text(
+      (specialInstructions != null && specialInstructions.isNotEmpty)
+          ? specialInstructions
+          : 'No special instructions',
+    );
+
+    bytes = _appendDivider(generator, bytes);
+    bytes = _appendClaimSheetDisclaimer(generator, bytes);
+    bytes = _appendDivider(generator, bytes, ch: '=');
+
+    // Store copy: feed only — no auto-cut / tear zone.
+    return _appendFeedAndCut(generator, bytes, cut: false);
+  }
+
+  /// Full customer claim sheet with barcode, pickup notes, and BIR disclaimer.
+  List<int> _appendCustomerClaimSheet(
     Generator generator,
     List<int> bytes, {
     required String customerName,
@@ -807,7 +980,6 @@ class ThermalPrintService extends _$ThermalPrintService {
     required double quantity,
     required double totalAmount,
     required String businessName,
-    bool storeCopy = false,
     String? branchAddress,
     String? contactNumber,
     String? cashierName,
@@ -829,11 +1001,19 @@ class ThermalPrintService extends _$ThermalPrintService {
       businessName: businessName,
       branchAddress: branchAddress,
       contactNumber: contactNumber,
-      dividerChar: '-',
+      dividerChar: '=',
       largeName: true,
     );
 
-    // Date left / Time right
+    bytes = _appendClaimSheetTitle(generator, bytes);
+    if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
+      bytes += generator.text(
+        '$claimSheetNumberLabel $claimSheetNumber',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+    bytes = _appendDivider(generator, bytes);
+
     bytes += generator.row([
       PosColumn(text: 'Date: $dateStr', width: 6),
       PosColumn(
@@ -846,29 +1026,13 @@ class ThermalPrintService extends _$ThermalPrintService {
     if (cashierName != null && cashierName.isNotEmpty) {
       bytes += generator.text('Cashier: $cashierName');
     }
-    if (storeCopy) {
-      bytes += generator.text(
-        customerName,
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-          height: PosTextSize.size2,
-          width: PosTextSize.size2,
-        ),
-      );
-    } else {
-      bytes += generator.text('Customer: $customerName');
-    }
+    bytes += generator.text('Customer: $customerName');
     if (customerPhone != null && customerPhone.isNotEmpty) {
       bytes += generator.text('Phone: $customerPhone');
-    }
-    if (claimSheetNumber != null && claimSheetNumber.isNotEmpty) {
-      bytes += generator.text('Ticket #: $claimSheetNumber');
     }
 
     bytes = _appendDivider(generator, bytes);
 
-    // Description | QTY | Price | Total
     bytes += generator.row([
       PosColumn(
         text: 'Description',
@@ -896,7 +1060,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     final addOnsTotal =
         addOnItems.fold<double>(0.0, (sum, item) => sum + item.subtotal);
     final serviceSubtotal = totalAmount - addOnsTotal;
-    final unitPrice = quantity > 0 ? serviceSubtotal / quantity : serviceSubtotal;
+    final unitPrice =
+        quantity > 0 ? serviceSubtotal / quantity : serviceSubtotal;
 
     bytes += generator.row([
       PosColumn(text: _truncate(serviceName, 14), width: 5),
@@ -946,38 +1111,30 @@ class ThermalPrintService extends _$ThermalPrintService {
         addOnItems.fold<int>(0, (sum, item) => sum + item.quantity.toInt());
 
     bytes += generator.row([
-      PosColumn(text: '$itemCount Item (s)', width: 5),
+      PosColumn(text: '$itemCount Item(s)', width: 5),
       PosColumn(text: '', width: 1),
       PosColumn(
-        text: 'Total',
+        text: 'TOTAL',
         width: 3,
-        styles: const PosStyles(align: PosAlign.right),
+        styles: const PosStyles(bold: true, align: PosAlign.right),
       ),
       PosColumn(
         text: amountFormat.format(totalAmount),
         width: 3,
-        styles: const PosStyles(align: PosAlign.right),
+        styles: const PosStyles(bold: true, align: PosAlign.right),
       ),
     ]);
 
     if (specialInstructions != null && specialInstructions.isNotEmpty) {
+      bytes += generator.emptyLines(1);
       bytes += generator.text('Notes: $specialInstructions');
     }
 
-    if (storeCopy) {
+    if (readyForPickupAt != null) {
       bytes = _appendDivider(generator, bytes);
       bytes += generator.text(
-        'STORE COPY',
-        styles: const PosStyles(
-          align: PosAlign.center,
-          bold: true,
-        ),
-      );
-    } else if (readyForPickupAt != null) {
-      bytes = _appendDivider(generator, bytes);
-      bytes += generator.text(
-        'Ready For Pickup:',
-        styles: const PosStyles(align: PosAlign.center),
+        'Ready For Pickup',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
       );
       bytes += generator.text(
         DateFormat('M/d/yyyy h:mm a').format(readyForPickupAt),
@@ -987,18 +1144,20 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     bytes = _appendDivider(generator, bytes);
     bytes += generator.text(
-      'Please bring this receipt when picking up your items.',
+      'Please bring this receipt when picking up.',
       styles: const PosStyles(align: PosAlign.center),
     );
     bytes = _appendTicketBarcode(generator, bytes, claimSheetNumber);
+    bytes += generator.emptyLines(1);
     bytes += generator.text(
-      'Items will be held for free for 7 days.',
+      'Items held free for 7 days.',
       styles: const PosStyles(align: PosAlign.center),
     );
     bytes += generator.text(
-      'Holding fee will apply afterwards.',
+      'Holding fee applies afterwards.',
       styles: const PosStyles(align: PosAlign.center),
     );
+    bytes += generator.emptyLines(1);
     bytes += generator.text(
       'Thank you for your business!',
       styles: const PosStyles(align: PosAlign.center, bold: true),
@@ -1006,6 +1165,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     bytes = _appendDivider(generator, bytes);
     bytes = _appendClaimSheetDisclaimer(generator, bytes);
+    bytes = _appendDivider(generator, bytes, ch: '=');
 
     return _appendFeedAndCut(generator, bytes);
   }
@@ -1150,13 +1310,15 @@ class ThermalPrintService extends _$ThermalPrintService {
 
   /// Generates order claim sheet bytes.
   ///
-  /// Customer copy: full receipt with BIR disclaimer; when [includeStoreCopy]
-  /// is true, a store sheet is appended after a cut.
-  /// Store copy: same full receipt with large customer name + STORE COPY.
+  /// Customer copy: full receipt with barcode + BIR disclaimer; when
+  /// [includeStoreCopy] is true, a compact store tag (no barcode, no cut) is
+  /// appended after the customer sheet cut.
+  /// Store copy: compact machine tag with fitted large customer name.
   Future<List<int>> _generateOrderReceiptBytes({
     required String customerName,
     required String serviceName,
     required double quantity,
+    required String unitLabel,
     required double totalAmount,
     required PrinterPaperWidth paperWidth,
     required String businessName,
@@ -1179,7 +1341,7 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     List<int> bytes = [];
 
-    List<int> appendSheet({required bool storeCopy}) => _appendOrderClaimSheet(
+    List<int> appendCustomer() => _appendCustomerClaimSheet(
           generator,
           bytes,
           customerName: customerName,
@@ -1187,7 +1349,6 @@ class ThermalPrintService extends _$ThermalPrintService {
           quantity: quantity,
           totalAmount: totalAmount,
           businessName: businessName,
-          storeCopy: storeCopy,
           branchAddress: branchAddress,
           contactNumber: contactNumber,
           cashierName: cashierName,
@@ -1199,13 +1360,28 @@ class ThermalPrintService extends _$ThermalPrintService {
           addOnItems: addOnItems,
         );
 
+    List<int> appendStore() => _appendStoreClaimSheet(
+          generator,
+          bytes,
+          customerName: customerName,
+          serviceName: serviceName,
+          quantity: quantity,
+          unitLabel: unitLabel,
+          totalAmount: totalAmount,
+          paperWidth: paperWidth,
+          specialInstructions: specialInstructions,
+          claimSheetNumber: claimSheetNumber,
+          orderDate: orderDate,
+          addOnItems: addOnItems,
+        );
+
     if (copyType == OrderReceiptCopy.customer) {
-      bytes = appendSheet(storeCopy: false);
+      bytes = appendCustomer();
       if (includeStoreCopy) {
-        bytes = appendSheet(storeCopy: true);
+        bytes = appendStore();
       }
     } else {
-      bytes = appendSheet(storeCopy: true);
+      bytes = appendStore();
     }
 
     return bytes;

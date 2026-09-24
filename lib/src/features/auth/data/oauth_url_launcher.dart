@@ -3,11 +3,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_custom_tabs/flutter_custom_tabs.dart' as custom_tabs;
 import 'package:url_launcher/url_launcher.dart';
 
-/// Opens the OAuth vendor URL for PocketBase all-in-one auth.
+/// Opens the OAuth vendor URL for PocketBase all-in-one auth (Android).
 ///
-/// Web uses a blank tab/popup. Android uses a partial Chrome Custom Tab so the
-/// Flutter activity stays foreground and the realtime `@oauth2` subscription
-/// survives until auth completes.
+/// Android uses a partial Chrome Custom Tab so the Flutter activity stays
+/// foreground and the realtime `@oauth2` subscription survives until auth
+/// completes. Web Google login uses the manual code-exchange flow instead.
 Future<bool> launchOAuthVendorUrl(Uri url) async {
   if (kIsWeb) {
     return launchUrl(url, webOnlyWindowName: '_blank');

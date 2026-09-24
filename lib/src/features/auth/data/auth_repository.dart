@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -10,6 +11,7 @@ import '../../../core/packages/storage/auth_storage_provider.dart';
 import '../domain/auth_state.dart';
 import 'auth_dto.dart';
 import 'oauth_url_launcher.dart';
+import 'oauth_web_login.dart';
 
 part 'auth_repository.g.dart';
 
@@ -103,6 +105,15 @@ class AuthRepositoryImpl implements AuthRepository {
     return TaskEither.tryCatch(() async {
       // Avoid linking Google to a stale leftover session.
       pb.authStore.clear();
+
+      // Web: manual code exchange + custom oauth2-redirect.html (auto-close UX).
+      // Android: PocketBase all-in-one + partial Custom Tab.
+      if (kIsWeb) {
+        final result = await loginWithGoogleWeb(pb: pb, expand: _expand);
+        final authDto = AuthDto.fromAuthResult(result);
+        await _persistAuth(authDto);
+        return _createAuthState(authDto);
+      }
 
       try {
         final result = await _collection.authWithOAuth2(
