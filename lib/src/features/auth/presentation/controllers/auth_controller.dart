@@ -57,8 +57,8 @@ class AuthController extends _$AuthController {
 
   /// Attempts Google OAuth2 login (web / Android).
   ///
-  /// Does not set [AsyncLoading] while waiting: PocketBase OAuth waits on a
-  /// realtime redirect that never completes if the user closes the popup/tab.
+  /// Does not set [AsyncLoading] while waiting: the OAuth popup/tab can be
+  /// closed by the user before the flow finishes.
   Future<bool> loginWithGoogle() async {
     addBreadcrumb('Google login attempt', category: 'auth');
 
@@ -66,6 +66,11 @@ class AuthController extends _$AuthController {
 
     return result.fold(
       (failure) {
+        // User closed the popup or denied consent — leave login UI idle.
+        if (failure.identifier == 'google_oauth_cancelled') {
+          addBreadcrumb('Google login cancelled', category: 'auth');
+          return false;
+        }
         addBreadcrumb('Google login failed', category: 'auth');
         state = AsyncError(failure, StackTrace.current);
         return false;

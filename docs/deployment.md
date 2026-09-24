@@ -478,6 +478,23 @@ Source: [`web/privacy-policy.html`](web/privacy-policy.html) and [`web/reset-pas
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 
+### Google OAuth redirect URIs
+
+Web Google sign-in uses the custom page [`web/oauth2-redirect.html`](web/oauth2-redirect.html) (manual code exchange). Android still uses PocketBase’s `/api/oauth2-redirect` (all-in-one + Custom Tabs).
+
+In Google Cloud Console → OAuth 2.0 Client → **Authorized redirect URIs**, register:
+
+| Platform | URI |
+|----------|-----|
+| Web (local) | `http://127.0.0.1:8090/oauth2-redirect.html` |
+| Web (staging) | `https://staging.hznlaundry.hznsystems.com/oauth2-redirect.html` |
+| Web (production) | `https://hznlaundry.hznsystems.com/oauth2-redirect.html` |
+| Android (local) | `http://127.0.0.1:8090/api/oauth2-redirect` |
+| Android (staging) | `https://staging.hznlaundry.hznsystems.com/api/oauth2-redirect` |
+| Android (production) | `https://hznlaundry.hznsystems.com/api/oauth2-redirect` |
+
+After deploying a web build, confirm `/oauth2-redirect.html` is reachable on that host’s `pb_public/`.
+
 The web build also ships `robots.txt` and `noindex` meta tags on the main app so search engines and bots are asked not to index the staff application. The privacy policy URL stays publicly fetchable for Play Console.
 
 #### 6. After each production deploy

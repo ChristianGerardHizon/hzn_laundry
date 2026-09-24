@@ -6,7 +6,10 @@ String loginErrorMessage(Object? error) {
   if (error is Failure) {
     switch (error.identifier) {
       case 'google_launch_failed':
+      case 'google_oauth_failed':
         return t.failures.googleSignInFailed;
+      case 'google_oauth_cancelled':
+        return '';
       case 'otp_invalid':
         return t.failures.invalidLoginCode;
       case 'otp_no_account':

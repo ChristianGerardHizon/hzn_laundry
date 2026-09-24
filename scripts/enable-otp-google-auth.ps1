@@ -3,6 +3,17 @@
 #   pwsh ./scripts/enable-otp-google-auth.ps1 staging
 #   pwsh ./scripts/enable-otp-google-auth.ps1 local
 #   pwsh ./scripts/enable-otp-google-auth.ps1 prod
+#
+# Google Cloud Console → OAuth client → Authorized redirect URIs:
+#   Android (PocketBase all-in-one):
+#     http://127.0.0.1:8090/api/oauth2-redirect
+#     https://staging.hznlaundry.hznsystems.com/api/oauth2-redirect
+#     https://hznlaundry.hznsystems.com/api/oauth2-redirect
+#   Web (custom page web/oauth2-redirect.html):
+#     http://127.0.0.1:8090/oauth2-redirect.html
+#     https://staging.hznlaundry.hznsystems.com/oauth2-redirect.html
+#     https://hznlaundry.hznsystems.com/oauth2-redirect.html
+# Keep both sets registered — Android still uses /api/oauth2-redirect.
 
 param(
   [Parameter(Mandatory = $true, Position = 0)]
