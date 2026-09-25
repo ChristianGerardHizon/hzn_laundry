@@ -49,7 +49,7 @@ import '../widgets/sale_highlight_banner.dart';
 import '../widgets/sale_status_chip.dart';
 
 /// Sale detail page showing sale information and items.
-class SaleDetailPage extends ConsumerWidget {
+class SaleDetailPage extends HookConsumerWidget {
   const SaleDetailPage({
     super.key,
     required this.saleId,
@@ -61,6 +61,7 @@ class SaleDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final saleAsync = ref.watch(saleProvider(saleId));
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
+    final currentOrgId = ref.watch(currentOrganizationIdProvider);
 
     return saleAsync.when(
       loading: () => const Scaffold(
@@ -97,11 +98,69 @@ class SaleDetailPage extends ConsumerWidget {
           );
         }
 
-        return _SaleDetailContent(
+        return _SaleOrgGuard(
           sale: sale,
+          currentOrgId: currentOrgId,
           isTablet: isTablet,
         );
       },
+    );
+  }
+}
+
+/// Redirects to the sales list when the sale's branch belongs to another org.
+class _SaleOrgGuard extends HookConsumerWidget {
+  const _SaleOrgGuard({
+    required this.sale,
+    required this.currentOrgId,
+    required this.isTablet,
+  });
+
+  final Sale sale;
+  final String? currentOrgId;
+  final bool isTablet;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final branchAsync = ref.watch(branchProvider(sale.branchId));
+
+    useEffect(() {
+      final branch = branchAsync.value;
+      final saleOrgId = branch?.organizationId;
+      if (branchAsync.isLoading || branchAsync.hasError) return null;
+      if (saleOrgId == null ||
+          saleOrgId.isEmpty ||
+          currentOrgId == null ||
+          currentOrgId!.isEmpty) {
+        return null;
+      }
+      if (saleOrgId == currentOrgId) return null;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          const SalesHistoryRoute().goScoped(context);
+        }
+      });
+      return null;
+    }, [branchAsync, currentOrgId, sale.branchId]);
+
+    final branch = branchAsync.value;
+    final saleOrgId = branch?.organizationId;
+    final outOfOrg = saleOrgId != null &&
+        saleOrgId.isNotEmpty &&
+        currentOrgId != null &&
+        currentOrgId!.isNotEmpty &&
+        saleOrgId != currentOrgId;
+
+    if (branchAsync.isLoading || outOfOrg) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return _SaleDetailContent(
+      sale: sale,
+      isTablet: isTablet,
     );
   }
 }

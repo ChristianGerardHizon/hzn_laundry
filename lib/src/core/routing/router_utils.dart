@@ -20,6 +20,7 @@ import 'route_scope_provider.dart';
 import 'routes/auth.routes.dart';
 import 'routes/dashboard.routes.dart';
 import 'routes/org_selection.routes.dart';
+import 'routes/sales_history.routes.dart';
 import 'routes/version_lock.routes.dart';
 
 /// Utility functions for router configuration.
@@ -170,6 +171,29 @@ abstract class RouterUtils {
     if (orgSlug != null) segments[1] = orgSlug;
     if (branchSlug != null) segments[2] = branchSlug;
     return segments.join('/');
+  }
+
+  /// Path to open after switching organization.
+  ///
+  /// Sale detail (`…/sales/:id`) goes to the sales list so Org A's order is
+  /// not kept under Org B's URL. Other routes only rewrite the scope segments.
+  static String pathAfterOrganizationSwitch(
+    String currentLocation, {
+    required String orgSlug,
+    required String branchSlug,
+  }) {
+    final segments = currentLocation.split('/');
+    // ['', orgSlug, branchSlug, 'sales', ':id', ...]
+    if (segments.length >= 5 &&
+        segments[3] == 'sales' &&
+        segments[4].isNotEmpty) {
+      return '/$orgSlug/$branchSlug${SalesHistoryRoute.path}';
+    }
+    return replaceScopeSegment(
+      currentLocation,
+      orgSlug: orgSlug,
+      branchSlug: branchSlug,
+    );
   }
 
   /// Global redirect function for auth, version, and org/branch scope guards.
