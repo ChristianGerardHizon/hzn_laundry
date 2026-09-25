@@ -70,9 +70,7 @@ class _ActivityLogDetailBody extends StatelessWidget {
     final summary = ActivityLogDisplay.buildShortSummary(log);
     final changeLines = ActivityLogDisplay.buildChangeLines(log);
     final canOpen = ActivityLogDisplay.canOpenRecord(log);
-    final actor = (log.userName != null && log.userName!.isNotEmpty)
-        ? log.userName!
-        : 'Unknown user';
+    final actor = ActivityLogDisplay.actorLabel(log);
     final when =
         log.created != null ? timeFormat.format(log.created!) : 'Unknown time';
 
@@ -140,21 +138,9 @@ class _ActivityLogDetailBody extends StatelessWidget {
               const SizedBox(height: 12),
               _SectionCard(
                 title: 'What was affected',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      log.collectionDisplayName,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      'Record ID: ${log.recordId}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  log.collectionDisplayName,
+                  style: theme.textTheme.bodyLarge,
                 ),
               ),
               const SizedBox(height: 12),

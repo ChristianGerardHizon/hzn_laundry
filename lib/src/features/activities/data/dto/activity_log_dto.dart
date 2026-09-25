@@ -42,14 +42,10 @@ class ActivityLogDto with ActivityLogDtoMappable {
   factory ActivityLogDto.fromRecord(RecordModel record) {
     final json = record.toJson();
 
-    // Extract user name from expanded relation
-    String? expandedUserName;
-    try {
-      final userExpand = record.get<RecordModel?>('expand.user');
-      if (userExpand != null) {
-        expandedUserName = userExpand.getStringValue('name');
-      }
-    } catch (_) {}
+    // Prefer nested expand path (same pattern as other DTOs)
+    final expandedName = record.get<String>('expand.user.name');
+    final userName =
+        expandedName.isNotEmpty ? expandedName : null;
 
     return ActivityLogDto(
       id: json['id'] as String? ?? '',
@@ -61,7 +57,7 @@ class ActivityLogDto with ActivityLogDtoMappable {
       description: json['description'] as String?,
       changes: json['changes'],
       user: json['user'] as String? ?? '',
-      userName: expandedUserName,
+      userName: userName,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
     );

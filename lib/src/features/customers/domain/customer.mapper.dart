@@ -55,6 +55,13 @@ class CustomerMapper extends ClassMapperBase<Customer> {
     _$notes,
     opt: true,
   );
+  static bool _$isDeleted(Customer v) => v.isDeleted;
+  static const Field<Customer, bool> _f$isDeleted = Field(
+    'isDeleted',
+    _$isDeleted,
+    opt: true,
+    def: false,
+  );
   static DateTime? _$created(Customer v) => v.created;
   static const Field<Customer, DateTime> _f$created = Field(
     'created',
@@ -77,6 +84,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
     #email: _f$email,
     #address: _f$address,
     #notes: _f$notes,
+    #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -90,6 +98,7 @@ class CustomerMapper extends ClassMapperBase<Customer> {
       email: data.dec(_f$email),
       address: data.dec(_f$address),
       notes: data.dec(_f$notes),
+      isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -160,6 +169,7 @@ abstract class CustomerCopyWith<$R, $In extends Customer, $Out>
     String? email,
     String? address,
     String? notes,
+    bool? isDeleted,
     DateTime? created,
     DateTime? updated,
   });
@@ -183,6 +193,7 @@ class _CustomerCopyWithImpl<$R, $Out>
     Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
+    bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -194,6 +205,7 @@ class _CustomerCopyWithImpl<$R, $Out>
       if (email != $none) #email: email,
       if (address != $none) #address: address,
       if (notes != $none) #notes: notes,
+      if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -207,6 +219,7 @@ class _CustomerCopyWithImpl<$R, $Out>
     email: data.get(#email, or: $value.email),
     address: data.get(#address, or: $value.address),
     notes: data.get(#notes, or: $value.notes),
+    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

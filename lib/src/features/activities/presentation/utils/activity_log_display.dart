@@ -63,6 +63,14 @@ abstract final class ActivityLogDisplay {
     'collectionName',
   };
 
+  /// Human label for the actor (never shows raw user IDs).
+  static String actorLabel(ActivityLog log) {
+    final name = log.userName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    if (log.userId == null || log.userId!.isEmpty) return 'System';
+    return 'Unknown user';
+  }
+
   /// Whether [log] can open a related entity detail page.
   static bool canOpenRecord(ActivityLog log) {
     if (log.action == ActivityAction.delete) return false;
