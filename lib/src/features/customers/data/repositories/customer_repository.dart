@@ -26,7 +26,7 @@ abstract class CustomerRepository {
   /// Updates an existing customer.
   FutureEither<Customer> update(Customer customer);
 
-  /// Deletes a customer by ID.
+  /// Soft deletes a customer by ID (sets isDeleted = true).
   FutureEither<void> delete(String id);
 
   /// Fetches customers created within a date range.
@@ -98,8 +98,13 @@ class CustomerRepositoryImpl implements CustomerRepository {
 
     return TaskEither.tryCatch(
       () async {
+        final filterString = PBFilters.combine(
+          PBFilters.active.build(),
+          filter,
+        );
+
         final records = await _collection.getFullList(
-          filter: filter,
+          filter: filterString,
           sort: sort ?? 'name',
         );
 
@@ -130,7 +135,15 @@ class CustomerRepositoryImpl implements CustomerRepository {
         }
 
         final record = await _collection.getOne(id);
-        return _toEntity(record);
+        final customer = _toEntity(record);
+        if (customer.isDeleted) {
+          throw const DataFailure(
+            'Customer not found',
+            null,
+            'customer_not_found',
+          );
+        }
+        return customer;
       },
       Failure.handle,
     ).run();
@@ -146,6 +159,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
           'email': customer.email,
           'address': customer.address,
           'notes': customer.notes,
+          'isDeleted': false,
         };
         if (customer.branchId != null && customer.branchId!.isNotEmpty) {
           body['branch'] = customer.branchId;
@@ -186,7 +200,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
   FutureEither<void> delete(String id) async {
     return TaskEither.tryCatch(
       () async {
-        await _collection.delete(id);
+        await _collection.update(id, body: {'isDeleted': true});
         invalidateCache();
       },
       Failure.handle,
@@ -201,7 +215,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        final filter = PBFilter().between('created', startDate, endDate);
+        final filter = PBFilter()
+            .notDeleted()
+            .between('created', startDate, endDate);
 
         final records = await _collection.getFullList(
           filter: PBFilters.combine(filter.build(), branchScope),
@@ -222,7 +238,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name', 'phone'];
-        var filter = PBFilter().searchFields(query, searchFields);
+        var filter =
+            PBFilter().notDeleted().searchFields(query, searchFields);
         if (branchId != null && branchId.isNotEmpty) {
           filter = filter.relation('branch', branchId);
         }

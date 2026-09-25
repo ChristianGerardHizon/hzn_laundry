@@ -18,6 +18,7 @@ class CustomerDto with CustomerDtoMappable {
   final String? email;
   final String? address;
   final String? notes;
+  final bool isDeleted;
   final String? created;
   final String? updated;
 
@@ -31,6 +32,7 @@ class CustomerDto with CustomerDtoMappable {
     this.email,
     this.address,
     this.notes,
+    this.isDeleted = false,
     this.created,
     this.updated,
   });
@@ -47,6 +49,7 @@ class CustomerDto with CustomerDtoMappable {
       email: record.getStringValue('email'),
       address: record.getStringValue('address'),
       notes: record.getStringValue('notes'),
+      isDeleted: record.getBoolValue('isDeleted'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -62,6 +65,7 @@ class CustomerDto with CustomerDtoMappable {
       email: email != null && email!.isNotEmpty ? email : null,
       address: address != null && address!.isNotEmpty ? address : null,
       notes: notes != null && notes!.isNotEmpty ? notes : null,
+      isDeleted: isDeleted,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

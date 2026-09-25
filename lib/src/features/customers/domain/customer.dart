@@ -15,6 +15,7 @@ class Customer with CustomerMappable {
     this.email,
     this.address,
     this.notes,
+    this.isDeleted = false,
     this.created,
     this.updated,
   });
@@ -39,6 +40,9 @@ class Customer with CustomerMappable {
 
   /// Notes about the customer (optional).
   final String? notes;
+
+  /// Soft-delete flag. Soft-deleted customers are excluded from lists.
+  final bool isDeleted;
 
   /// Creation timestamp.
   final DateTime? created;

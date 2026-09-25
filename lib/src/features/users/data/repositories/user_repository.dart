@@ -56,6 +56,11 @@ abstract class UserRepository {
   /// Resets a user's password (admin action).
   FutureEither<void> resetPassword(String userId, String newPassword);
 
+  /// Fetches display names for the given user IDs (id → name).
+  ///
+  /// Used when activity log expand did not populate [userName].
+  FutureEither<Map<String, String>> fetchNamesByIds(List<String> ids);
+
   /// Invalidates the user list cache.
   void invalidateCache();
 }
@@ -323,6 +328,39 @@ class UserRepositoryImpl implements UserRepository {
           'password': newPassword,
           'passwordConfirm': newPassword,
         });
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Map<String, String>> fetchNamesByIds(List<String> ids) async {
+    return TaskEither.tryCatch(
+      () async {
+        final unique = ids.where((id) => id.isNotEmpty).toSet().toList();
+        if (unique.isEmpty) return <String, String>{};
+
+        const batchSize = 50;
+        final names = <String, String>{};
+
+        for (var i = 0; i < unique.length; i += batchSize) {
+          final end =
+              (i + batchSize < unique.length) ? i + batchSize : unique.length;
+          final batch = unique.sublist(i, end);
+          final filter = batch.map((id) => 'id = "$id"').join(' || ');
+          final records = await _collection.getFullList(
+            filter: '($filter)',
+            fields: 'id,name',
+          );
+          for (final record in records) {
+            final name = record.getStringValue('name');
+            if (name.isNotEmpty) {
+              names[record.id] = name;
+            }
+          }
+        }
+
+        return names;
       },
       Failure.handle,
     ).run();

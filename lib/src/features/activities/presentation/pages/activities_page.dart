@@ -242,9 +242,7 @@ class _ActivityTile extends StatelessWidget {
     final theme = Theme.of(context);
     final timeFormat = DateFormat('MMM dd, yyyy hh:mm a');
     final summary = ActivityLogDisplay.buildShortSummary(log);
-    final actor = (log.userName != null && log.userName!.isNotEmpty)
-        ? log.userName!
-        : 'Unknown';
+    final actor = ActivityLogDisplay.actorLabel(log);
     final when =
         log.created != null ? timeFormat.format(log.created!) : '';
 

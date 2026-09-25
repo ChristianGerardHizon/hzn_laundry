@@ -65,7 +65,7 @@ final class ActivityLogProvider extends $FunctionalProvider<
   }
 }
 
-String _$activityLogHash() => r'ba5fb89fe714cc85701b2fcb8f99da76a248f21b';
+String _$activityLogHash() => r'9504a243071d5a58d722f8cbe8bb29edcdf4d244';
 
 /// Provider for a single activity log by ID.
 

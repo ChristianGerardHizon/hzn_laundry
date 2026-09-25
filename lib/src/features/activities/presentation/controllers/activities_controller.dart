@@ -1,8 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../pos/presentation/payments_controller.dart';
+import '../../../users/data/repositories/user_repository.dart';
 import '../../data/repositories/activity_log_repository.dart';
 import '../../domain/activity_log.dart';
+import '../utils/activity_log_actor_resolver.dart';
 
 part 'activities_controller.g.dart';
 
@@ -45,6 +47,13 @@ class ActivitiesController extends _$ActivitiesController {
     return _fetchPage(1);
   }
 
+  Future<List<ActivityLog>> _withActorNames(List<ActivityLog> logs) {
+    return resolveActivityActorNames(
+      logs: logs,
+      userRepository: ref.read(userRepositoryProvider),
+    );
+  }
+
   Future<ActivitiesState> _fetchPage(
     int page, {
     List<ActivityLog> existing = const [],
@@ -59,19 +68,22 @@ class ActivitiesController extends _$ActivitiesController {
       action: action,
     );
 
-    return result.fold(
-      (failure) => ActivitiesState(
+    return await result.fold(
+      (failure) async => ActivitiesState(
         logs: existing,
         page: page,
         hasMore: false,
         action: action,
       ),
-      (paginated) => ActivitiesState(
-        logs: [...existing, ...paginated.items],
-        page: paginated.page,
-        hasMore: paginated.hasMore,
-        action: action,
-      ),
+      (paginated) async {
+        final resolved = await _withActorNames(paginated.items);
+        return ActivitiesState(
+          logs: [...existing, ...resolved],
+          page: paginated.page,
+          hasMore: paginated.hasMore,
+          action: action,
+        );
+      },
     );
   }
 
@@ -113,7 +125,13 @@ Future<List<ActivityLog>> recordActivityLogs(
 ) async {
   final repository = ref.watch(activityLogRepositoryProvider);
   final result = await repository.fetchByRecord(recordId);
-  return result.fold((f) => [], (logs) => logs);
+  return await result.fold(
+    (f) async => <ActivityLog>[],
+    (logs) => resolveActivityActorNames(
+      logs: logs,
+      userRepository: ref.read(userRepositoryProvider),
+    ),
+  );
 }
 
 /// Provider for fetching all activity logs related to a sale,
@@ -132,5 +150,11 @@ Future<List<ActivityLog>> saleActivityLogs(
   // Fetch logs for the sale + all its payment records
   final allRecordIds = [saleId, ...paymentIds];
   final result = await repository.fetchByRecordIds(allRecordIds);
-  return result.fold((f) => [], (logs) => logs);
+  return await result.fold(
+    (f) async => <ActivityLog>[],
+    (logs) => resolveActivityActorNames(
+      logs: logs,
+      userRepository: ref.read(userRepositoryProvider),
+    ),
+  );
 }

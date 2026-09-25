@@ -13,7 +13,7 @@ part 'customers_controller.g.dart';
 class CustomersController extends _$CustomersController {
   CustomerRepository get _repository => ref.read(customerRepositoryProvider);
 
-  /// Branch/org scope without soft-delete — customers have no `isDeleted` field.
+  /// Branch/org scope (soft-deleted rows excluded in the repository).
   String? get _branchFilter => PBFilters.forBranchOrOrganization(
         branchId: ref.read(currentBranchIdProvider),
         organizationId: ref.read(currentOrganizationIdProvider),
@@ -86,7 +86,7 @@ class CustomersController extends _$CustomersController {
     return updateCustomer(customer.copyWith(branchId: branchId));
   }
 
-  /// Deletes a customer.
+  /// Soft deletes a customer.
   Future<bool> deleteCustomer(String id) async {
     final result = await _repository.delete(id);
     return result.fold(

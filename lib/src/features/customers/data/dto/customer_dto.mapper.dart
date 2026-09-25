@@ -65,6 +65,13 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
     _$notes,
     opt: true,
   );
+  static bool _$isDeleted(CustomerDto v) => v.isDeleted;
+  static const Field<CustomerDto, bool> _f$isDeleted = Field(
+    'isDeleted',
+    _$isDeleted,
+    opt: true,
+    def: false,
+  );
   static String? _$created(CustomerDto v) => v.created;
   static const Field<CustomerDto, String> _f$created = Field(
     'created',
@@ -89,6 +96,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
     #email: _f$email,
     #address: _f$address,
     #notes: _f$notes,
+    #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -104,6 +112,7 @@ class CustomerDtoMapper extends ClassMapperBase<CustomerDto> {
       email: data.dec(_f$email),
       address: data.dec(_f$address),
       notes: data.dec(_f$notes),
+      isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -179,6 +188,7 @@ abstract class CustomerDtoCopyWith<$R, $In extends CustomerDto, $Out>
     String? email,
     String? address,
     String? notes,
+    bool? isDeleted,
     String? created,
     String? updated,
   });
@@ -204,6 +214,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     Object? email = $none,
     Object? address = $none,
     Object? notes = $none,
+    bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -217,6 +228,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
       if (email != $none) #email: email,
       if (address != $none) #address: address,
       if (notes != $none) #notes: notes,
+      if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -232,6 +244,7 @@ class _CustomerDtoCopyWithImpl<$R, $Out>
     email: data.get(#email, or: $value.email),
     address: data.get(#address, or: $value.address),
     notes: data.get(#notes, or: $value.notes),
+    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );
