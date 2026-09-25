@@ -639,6 +639,7 @@ lib/src/
 
 ---
 
+| Sep 25 | Activity log actor names | Request-scoped hooks now store `activityLogs.user`; UI shows expand/fetched names (not IDs), **System** when no actor, and drops raw Record ID from detail |
 | Sep 25 | Remove Management Import/Settings | Dropped unused Management Import and Settings nav, routes, CSV import UI, and legacy `/system/import` / `/system/feature-flags` redirects |
 | Sep 25 | Activity log details | Activity list shows a short what + who summary; tap opens `/activities/:id` with full changes, actor, affected record, and Open sale/customer/… CTA |
 | Sep 25 | Local-only printers | Printer configs are device storage only; removed PocketBase `printerConfigs` collection and one-shot server import |

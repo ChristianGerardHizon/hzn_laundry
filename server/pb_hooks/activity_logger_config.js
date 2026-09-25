@@ -114,7 +114,7 @@ module.exports = {
     return this.getStr(record, field);
   },
 
-  // Resolve a relation ID to a display name
+  // Resolve a relation ID to a display name (never echo raw IDs)
   resolveRelationName: function(collectionId, recordId) {
     if (!recordId || recordId === "") return "(none)";
     try {
@@ -127,9 +127,9 @@ module.exports = {
           if (val) return val;
         } catch(e) {}
       }
-      return recordId;
+      return "(unavailable)";
     } catch (err) {
-      return recordId;
+      return "(unavailable)";
     }
   },
 
@@ -602,45 +602,11 @@ module.exports = {
     return { changes: changes, changedFields: changedFields };
   },
 
+  // Request hooks expose e.auth; AfterSuccess RecordEvent does not.
   getUserId: function(e) {
-    // Try all known PocketBase API versions to get auth user ID
-    var attempts = [];
-
-    // v0.25+: e.auth
     try {
       if (e.auth && e.auth.id) return e.auth.id;
-      attempts.push("e.auth=" + JSON.stringify(e.auth));
-    } catch (err) { attempts.push("e.auth:err"); }
-
-    // v0.23+: e.requestInfo
-    try {
-      if (e.requestInfo) {
-        var info = e.requestInfo;
-        if (typeof info === "function") info = info();
-        if (info && info.auth && info.auth.id) return info.auth.id;
-        if (info && info.authRecord && info.authRecord.id) return info.authRecord.id;
-        attempts.push("requestInfo.auth=" + JSON.stringify(info ? info.auth : null));
-      }
-    } catch (err) { attempts.push("requestInfo:err"); }
-
-    // httpContext approach
-    try {
-      if (e.httpContext) {
-        var auth = e.httpContext.get("auth");
-        if (auth && auth.id) return auth.id;
-      }
-    } catch (err) { attempts.push("httpContext:err"); }
-
-    // $apis.requestInfo
-    try {
-      if (typeof $apis !== "undefined" && e.httpContext) {
-        var reqInfo = $apis.requestInfo(e.httpContext);
-        if (reqInfo && reqInfo.authRecord && reqInfo.authRecord.id) return reqInfo.authRecord.id;
-        attempts.push("$apis.requestInfo.authRecord=" + JSON.stringify(reqInfo ? reqInfo.authRecord : null));
-      }
-    } catch (err) { attempts.push("$apis:err"); }
-
-    console.log("[ACTIVITY_LOGGER] Could not get userId. Attempts: " + attempts.join(", "));
+    } catch (err) {}
     return "";
   },
 
@@ -662,12 +628,14 @@ module.exports = {
     $app.save(logRecord);
   },
 
-  logUpdate: function(e) {
+  // originalRecord: snapshot from before e.next() on UpdateRequest hooks
+  logUpdate: function(e, originalRecord) {
     var record = e.record;
     var colName = record.collection().name;
     var userId = this.getUserId(e);
+    var original = originalRecord || record.original();
 
-    var result = this.computeChanges(record.original(), record, colName);
+    var result = this.computeChanges(original, record, colName);
     if (result.changedFields.length === 0) return;
 
     var description = this.buildUpdateDescription(colName, record, result.changes, result.changedFields);

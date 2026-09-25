@@ -972,14 +972,16 @@ A single audit-trail entry recording a create/update/delete on any tracked colle
 | `action` | ActivityAction | Yes | `create`, `update`, or `delete` |
 | `description` | String | No | Human-readable description |
 | `changes` | Map\<String, dynamic> | No | Change payload/diff |
-| `userId` | String (FK) | No | User who made the change |
-| `userName` | String | No | User name snapshot |
+| `userId` | String (FK) | No | User who made the change (`activityLogs.user` relation) |
+| `userName` | String | No | Display name resolved client-side via `expand.user` or an on-demand users fetch (not a stored snapshot field) |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
 **Collection:** `activityLogs`
 
 **Enum:** `ActivityAction { create, update, delete }`
+
+Actor attribution is written by PocketBase `onRecord*Request` hooks (where `e.auth` is available). Logs created by programmatic `$app.save()` with no request auth leave `user` empty and show as **System** in the UI.
 
 ---
 
