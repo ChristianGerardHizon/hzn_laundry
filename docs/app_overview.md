@@ -660,6 +660,7 @@ lib/src/
 | Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |
 | Sep 21 | Android Google login | Continue with Google on Android via PocketBase browser OAuth (same invite-only hook as web); iOS still OTP/password only |
 | Sep 21 | Scope recovery after login | When auth succeeds but org/branch scope cannot resolve a home path, redirect to `/scope-recovery` (Retry / Logout) instead of an endless splash |
+| Sep 25 | Org switch leaves order detail | Switching organization while on `/sales/:id` navigates to the orders list; sale detail redirects if the sale’s branch is outside the current org; sales API rules require branch + org membership |
 | Sep 25 | Email brand teal + env tags | OTP/auth-alert accents use brand teal `#45A9AB` (not green); staging/dev emails show `[Staging]` / `[Dev]` in `{APP_NAME}` / From; history + subscription Resend emails match |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
 | Sep 20 | Post-login org selection | Users with 1+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |

@@ -31,6 +31,41 @@ void main() {
     });
   });
 
+  group('RouterUtils.pathAfterOrganizationSwitch', () {
+    test('sale detail navigates to sales list', () {
+      expect(
+        RouterUtils.pathAfterOrganizationSwitch(
+          '/acme/downtown/sales/sale123',
+          orgSlug: 'other',
+          branchSlug: 'uptown',
+        ),
+        '/other/uptown/sales',
+      );
+    });
+
+    test('sales list only rewrites scope', () {
+      expect(
+        RouterUtils.pathAfterOrganizationSwitch(
+          '/acme/downtown/sales',
+          orgSlug: 'other',
+          branchSlug: 'uptown',
+        ),
+        '/other/uptown/sales',
+      );
+    });
+
+    test('non-sale routes keep entity id', () {
+      expect(
+        RouterUtils.pathAfterOrganizationSwitch(
+          '/acme/downtown/customers/cust1',
+          orgSlug: 'other',
+          branchSlug: 'uptown',
+        ),
+        '/other/uptown/customers/cust1',
+      );
+    });
+  });
+
   group('RouterUtils.isEmptyRootPath', () {
     test('is true for empty and slash-only paths', () {
       expect(RouterUtils.isEmptyRootPath(''), isTrue);

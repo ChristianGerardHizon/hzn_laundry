@@ -223,7 +223,7 @@ class OrganizationsPage extends HookConsumerWidget {
                                     .defaultBranchSlug();
                                 if (!context.mounted) return;
                                 final target = isScoped
-                                    ? RouterUtils.replaceScopeSegment(
+                                    ? RouterUtils.pathAfterOrganizationSwitch(
                                         currentLocation,
                                         orgSlug: slug,
                                         branchSlug: branchSlug,
