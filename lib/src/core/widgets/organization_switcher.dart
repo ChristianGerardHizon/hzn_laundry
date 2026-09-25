@@ -63,7 +63,7 @@ class OrganizationSwitcher extends ConsumerWidget {
                     .defaultBranchSlug();
                 if (!context.mounted) return;
                 final target = isScoped
-                    ? RouterUtils.replaceScopeSegment(
+                    ? RouterUtils.pathAfterOrganizationSwitch(
                         currentLocation,
                         orgSlug: targetOrg.slug,
                         branchSlug: branchSlug,

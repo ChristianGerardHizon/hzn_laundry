@@ -16,6 +16,7 @@ import '../../../promos/data/repositories/promo_repository.dart';
 import '../../../promos/presentation/controllers/promos_controller.dart';
 import '../../../quantity_units/data/repositories/quantity_unit_repository.dart';
 import '../../../sales/presentation/controllers/paginated_sales_controller.dart';
+import '../../../sales/presentation/controllers/sale_provider.dart';
 import '../../../services/data/repositories/service_category_repository.dart';
 import '../../../services/data/repositories/service_repository.dart';
 import '../../../services/presentation/controllers/services_controller.dart';
@@ -44,6 +45,7 @@ void invalidateOrganizationScopedProviders(Ref ref) {
   invalidate(cartControllerProvider);
   invalidate(customersControllerProvider);
   invalidate(paginatedSalesControllerProvider);
+  invalidate(saleProvider);
   invalidate(paginatedProductsControllerProvider);
   invalidate(servicesControllerProvider);
   invalidate(promosControllerProvider);
