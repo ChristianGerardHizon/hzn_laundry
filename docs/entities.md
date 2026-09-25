@@ -178,6 +178,8 @@ Business branches or locations.
 
 **Relationships:** `organizationId` -> Organization (required after backfill).
 
+**Notes:** Soft-deleted branches are excluded from list/view/update API rules; hard delete is superuser-only.
+
 **Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup (most of these treat `branch` as optional — unassigned records remain visible to all branches).
 
 ---
@@ -578,6 +580,7 @@ Laundry customers (members), scoped to the branch they were created on.
 | `email` | String | No | Email (used for order history links) |
 | `address` | String | No | Physical address |
 | `notes` | String | No | Notes about the customer |
+| `isDeleted` | bool | Yes | Soft delete flag (default false) |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
@@ -587,6 +590,7 @@ Laundry customers (members), scoped to the branch they were created on.
 
 **Notes:**
 - List, search, and create are filtered by the current working branch.
+- Soft-deleted customers (`isDeleted = true`) are excluded from list/view/update API rules and app queries; hard delete is superuser-only.
 - Admins in All Branches mode can view all customers but cannot create until a specific branch is selected.
 - A customer can be transferred to another branch from the customer detail page; historical sales stay on the branch where they were created.
 

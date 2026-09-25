@@ -72,6 +72,7 @@ Customer (member) management with sales history tracking. Customers are scoped t
   - Customer detail with info, branch, and full sales history
   - Transfer a customer to another branch from the detail menu
   - Create/edit customer via dialog form (stamped with the current branch)
+  - Soft delete (sets `isDeleted`); soft-deleted customers are hidden from lists and POS pickers
   - Inline customer creation from POS checkout
 - **Key Models**: `Customer`
 - **POS Integration**: Customer selection is required at checkout with search/autocomplete and quick "New Customer" creation, both limited to the current branch
@@ -661,6 +662,7 @@ lib/src/
 | Sep 21 | Organization subscriptions | Super Admin packages, QRPH billing settings, payment-proof review; org pay screen; grace→lock with manual unlock; Resend reminder emails deep-linking to `/subscription/pay/:organizationId` |
 | Sep 21 | Android Google login | Continue with Google on Android via PocketBase browser OAuth (same invite-only hook as web); iOS still OTP/password only |
 | Sep 21 | Scope recovery after login | When auth succeeds but org/branch scope cannot resolve a home path, redirect to `/scope-recovery` (Retry / Logout) instead of an endless splash |
+| Sep 25 | Soft-delete hardening | Customers soft-delete via `isDeleted`; PocketBase list/view/update rules exclude soft-deleted rows for customers, branches, machines, storages, categories, units, and roles; hard delete is superuser-only |
 | Sep 25 | Org switch leaves order detail | Switching organization while on `/sales/:id` navigates to the orders list; sale detail redirects if the sale’s branch is outside the current org; sales API rules require branch + org membership |
 | Sep 25 | Email brand teal + env tags | OTP/auth-alert accents use brand teal `#45A9AB` (not green); staging/dev emails show `[Staging]` / `[Dev]` in `{APP_NAME}` / From; history + subscription Resend emails match |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |

@@ -60,7 +60,7 @@ final class ActivitiesControllerProvider
 }
 
 String _$activitiesControllerHash() =>
-    r'6f406664f25c90153d02a25d2c1c6009d4bccb33';
+    r'7fdb86e16f0dd32d31ecd3ece36253a8876a2723';
 
 /// Controller for a single activity tab with pagination and action filtering.
 ///
@@ -183,7 +183,7 @@ final class RecordActivityLogsProvider extends $FunctionalProvider<
 }
 
 String _$recordActivityLogsHash() =>
-    r'689a9795495ce004ccc89f945c69fc4513260e14';
+    r'c5c7648a95a2fef58d765521a912a7d40f0a9325';
 
 /// Provider for fetching activity logs for a specific record.
 
@@ -274,7 +274,7 @@ final class SaleActivityLogsProvider extends $FunctionalProvider<
   }
 }
 
-String _$saleActivityLogsHash() => r'85439eb7fd436d07ec646c0a6496ef53e270f0f7';
+String _$saleActivityLogsHash() => r'4ba09b46bf6ff85c1313d37424a872c49aec1c17';
 
 /// Provider for fetching all activity logs related to a sale,
 /// including logs for its payment records.
