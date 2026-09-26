@@ -12,7 +12,6 @@ import '../../domain/organization.dart';
 import '../controllers/current_organization_controller.dart';
 import '../widgets/tabs/organization_features_tab.dart';
 import '../widgets/tabs/organization_overview_tab.dart';
-import '../widgets/tabs/organization_people_tab.dart';
 
 class OrganizationDetailPage extends HookConsumerWidget {
   const OrganizationDetailPage({super.key, required this.organizationId});
@@ -23,7 +22,7 @@ class OrganizationDetailPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
-    final tabController = useTabController(initialLength: 3);
+    final tabController = useTabController(initialLength: 2);
     final orgAsync = useState<AsyncValue<Organization>>(const AsyncLoading());
 
     Future<void> load() async {
@@ -85,7 +84,6 @@ class OrganizationDetailPage extends HookConsumerWidget {
               controller: tabController,
               tabs: [
                 Tab(text: t.organizations.overviewTab),
-                Tab(text: t.organizations.peopleTab),
                 Tab(text: t.organizations.featuresTab),
               ],
             ),
@@ -97,7 +95,6 @@ class OrganizationDetailPage extends HookConsumerWidget {
                 organization: org,
                 onSaved: load,
               ),
-              OrganizationPeopleTab(organizationId: org.id),
               OrganizationFeaturesTab(organizationId: org.id),
             ],
           ),

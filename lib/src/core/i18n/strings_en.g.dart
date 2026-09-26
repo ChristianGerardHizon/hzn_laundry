@@ -44,6 +44,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsCommonEn common = TranslationsCommonEn._(_root);
 	late final TranslationsFailuresEn failures = TranslationsFailuresEn._(_root);
 	late final TranslationsFieldsEn fields = TranslationsFieldsEn._(_root);
+	late final TranslationsManagementEn management = TranslationsManagementEn._(_root);
 	late final TranslationsNavigationEn navigation = TranslationsNavigationEn._(_root);
 	late final TranslationsOrganizationsEn organizations = TranslationsOrganizationsEn._(_root);
 	late final TranslationsSortEn sort = TranslationsSortEn._(_root);
@@ -426,6 +427,18 @@ class TranslationsFieldsEn {
 	String get gcashBank => 'GCash/Bank';
 }
 
+// Path: management
+class TranslationsManagementEn {
+	TranslationsManagementEn._(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Invite staff to this organization. After they accept, manage their roles here.'
+	String get usersSubtitle => 'Invite staff to this organization. After they accept, manage their roles here.';
+}
+
 // Path: navigation
 class TranslationsNavigationEn {
 	TranslationsNavigationEn._(this._root);
@@ -737,17 +750,8 @@ class TranslationsOrganizationsEn {
 	/// en: 'Overview'
 	String get overviewTab => 'Overview';
 
-	/// en: 'People'
-	String get peopleTab => 'People';
-
 	/// en: 'Features'
 	String get featuresTab => 'Features';
-
-	/// en: 'Members'
-	String get members => 'Members';
-
-	/// en: 'No members found.'
-	String get noMembers => 'No members found.';
 
 	/// en: 'Modules'
 	String get featuresModules => 'Modules';
@@ -1349,6 +1353,7 @@ extension on Translations {
 			'fields.unpaid' => 'Unpaid',
 			'fields.cash' => 'Cash',
 			'fields.gcashBank' => 'GCash/Bank',
+			'management.usersSubtitle' => 'Invite staff to this organization. After they accept, manage their roles here.',
 			'navigation.shortcuts' => 'Shortcuts',
 			'navigation.categories' => 'Categories',
 			'navigation.showMore' => 'Show more',
@@ -1446,10 +1451,7 @@ extension on Translations {
 			'organizations.reviewInviteCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 queued invite', other: '${n} queued invites', ), 
 			'organizations.reviewNone' => '—',
 			'organizations.overviewTab' => 'Overview',
-			'organizations.peopleTab' => 'People',
 			'organizations.featuresTab' => 'Features',
-			'organizations.members' => 'Members',
-			'organizations.noMembers' => 'No members found.',
 			'organizations.featuresModules' => 'Modules',
 			'organizations.featuresNotifications' => 'Notifications',
 			'organizations.featuresWorkflow' => 'Order workflow',

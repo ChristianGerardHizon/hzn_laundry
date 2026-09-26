@@ -8,7 +8,7 @@ HZN Laundry already sells **add-ons** as `saleItems` (revenue, receipts, Add-ons
 
 This is **not** a second inventory catalog. Products remain the catalog. Usage is a child of the sale.
 
-**Supersedes** the multi-tenant note “No organization dashboard” in `docs/multi_tenant_org_email_auth_plan.md`: this feature adds a real org display page with sections (Overview, People, Features).
+**Supersedes** the multi-tenant note “No organization dashboard” in `docs/multi_tenant_org_email_auth_plan.md`: this feature adds a real org display page with sections (Overview, Features).
 
 ## Locked decisions (do not re-litigate)
 
@@ -117,7 +117,7 @@ Feature-based clean architecture. `HookConsumerWidget`. `@riverpod`. `Either<Fai
 ### B.1 Org display page
 
 - Keep list at `/organizations`.
-- Add `/organizations/:id` with tabs: **Overview** (existing details form), **People** (members/invites), **Features** (per-org toggles).
+- Add `/organizations/:id` with tabs: **Overview** (existing details form) and **Features** (per-org toggles). Staff invites live under Management → Users.
 - Features includes the four migrated workflow flags plus **Consumable usage**.
 - Feature toggles live only on Organizations → Features (Management Settings stub removed).
 - Scope `feature_flag_repository` by current org.
@@ -159,13 +159,13 @@ Copy-last: latest sale on current branch whose service item `serviceId` matches 
 
 ### What changed
 
-- Org detail page with Overview / People / Features; feature flags are per organization.
+- Org detail page with Overview / Features; feature flags are per organization.
 - Consumable products, per-service recipes, usage recorded on orders.
 - Dashboard and reports for consumable consumption.
 
 ### Test steps
 
-- [ ] Organizations list → open an org → Overview saves, People invites still work, Features toggles persist after refresh.
+- [ ] Organizations list → open an org → Overview saves, Features toggles persist after refresh; staff invites work from Management → Users.
 - [ ] New organization gets all five flags; Consumable usage is off.
 - [ ] Management Settings no longer duplicates those toggles.
 - [ ] With flag off, Create Order has no usage section.

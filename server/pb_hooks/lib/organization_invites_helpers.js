@@ -380,8 +380,10 @@ function createOrganization(e) {
       var i;
       for (i = 0; i < invites.length; i++) {
         var invite = invites[i];
+        var inviteEmail = String(invite.email || "").trim().toLowerCase();
+        ensureUserAccountForInvite(txApp, inviteEmail);
         var inviteRecord = new Record(invitesCollection);
-        inviteRecord.set("email", invite.email);
+        inviteRecord.set("email", inviteEmail);
         inviteRecord.set("organization", org.id);
         inviteRecord.set("role", invite.role);
         inviteRecord.set("invitedBy", authId);
@@ -489,6 +491,10 @@ function createInvite(e) {
 
   requireManageOrgMembers(e, organization);
 
+  // Ensure a login account exists so the invitee can OTP/OAuth then accept.
+  // Do not assign role here — permissions come from users.role only after accept.
+  ensureUserAccountForInvite(e.app, email);
+
   var collection = e.app.findCollectionByNameOrId("organizationInvites");
   var record = new Record(collection);
   record.set("email", email);
@@ -501,6 +507,39 @@ function createInvite(e) {
 
   e.app.save(record);
   return e.json(200, exportRecord(record));
+}
+
+/**
+ * Creates a users auth record when the invite email has no account yet.
+ * Auto-verify hook marks verified on create. Random password — login via OTP/Google.
+ * Role is intentionally omitted; acceptInvite sets users.role from the invite.
+ */
+function ensureUserAccountForInvite(app, email) {
+  var existing;
+  try {
+    existing = app.findFirstRecordByFilter(
+      "users",
+      "email = {:email}",
+      { email: email }
+    );
+  } catch (_) {
+    existing = null;
+  }
+  if (existing) {
+    return existing;
+  }
+
+  var collection = app.findCollectionByNameOrId("users");
+  var record = new Record(collection);
+  var password = $security.randomString(32);
+  var localPart = email.split("@")[0] || "user";
+  record.set("email", email);
+  record.set("name", localPart);
+  record.set("password", password);
+  record.set("passwordConfirm", password);
+  record.set("isDeleted", false);
+  app.save(record);
+  return record;
 }
 
 function acceptInvite(e) {
@@ -552,6 +591,9 @@ function acceptInvite(e) {
   var membership;
   if (existing) {
     membership = existing;
+    membership.set("role", invite.getString("role"));
+    membership.set("status", "active");
+    e.app.save(membership);
   } else {
     var collection = e.app.findCollectionByNameOrId("organizationMemberships");
     membership = new Record(collection);
@@ -563,6 +605,15 @@ function acceptInvite(e) {
     membership.set("joinedAt", new Date().toISOString());
     e.app.save(membership);
   }
+
+  // Keep users.role in sync — nav permissions resolve from the auth user record.
+  try {
+    var authUser = e.app.findRecordById("users", e.auth.id);
+    if (authUser) {
+      authUser.set("role", invite.getString("role"));
+      e.app.save(authUser);
+    }
+  } catch (_) {}
 
   invite.set("status", "accepted");
   invite.set("acceptedBy", e.auth.id);

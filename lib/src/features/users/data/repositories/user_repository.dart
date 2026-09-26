@@ -48,6 +48,7 @@ abstract class UserRepository {
     List<String>? fields,
     int page = 1,
     int perPage = Pagination.defaultPageSize,
+    String? filter,
   });
 
   /// Updates a user's avatar image.
@@ -278,18 +279,21 @@ class UserRepositoryImpl implements UserRepository {
     List<String>? fields,
     int page = 1,
     int perPage = Pagination.defaultPageSize,
+    String? filter,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final searchFields = fields ?? ['name', 'email'];
-        final filter =
+        final searchFilter =
             PBFilter().notDeleted().searchFields(query, searchFields).build();
+        final filterString =
+            filter != null ? '$searchFilter && $filter' : searchFilter;
 
         final result = await _collection.getList(
           page: page,
           perPage: perPage,
           expand: _expand,
-          filter: filter,
+          filter: filterString,
           sort: 'name',
         );
 

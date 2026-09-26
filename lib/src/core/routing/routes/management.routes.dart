@@ -25,11 +25,13 @@ import '../../../features/settings/presentation/widgets/dialogs/branch_form_dial
 import '../../../features/storages/domain/storage_location.dart';
 import '../../../features/storages/presentation/controllers/storage_locations_controller.dart';
 import '../../../features/storages/presentation/widgets/storage_location_form_dialog.dart';
+import '../../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../features/users/domain/user_tab.dart';
 import '../../../features/users/presentation/controllers/paginated_users_controller.dart';
 import '../../../features/users/presentation/controllers/user_roles_controller.dart';
 import '../../../features/users/presentation/pages/user_detail_page.dart';
-import '../../../features/users/presentation/widgets/dialogs/create_user_dialog.dart';
+import '../../../features/users/presentation/widgets/dialogs/invite_user_dialog.dart';
+import '../../../features/users/presentation/controllers/org_pending_invites_controller.dart';
 import '../../../features/users/presentation/widgets/dialogs/edit_role_dialog.dart';
 import '../../../features/users/presentation/widgets/user_list_panel.dart';
 import '../../../features/users/presentation/widgets/user_role_detail_panel.dart';
@@ -372,6 +374,13 @@ class _ManagementUsersListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final paginatedAsync = ref.watch(paginatedUsersControllerProvider);
     final t = Translations.of(context);
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    final canInvite = org != null &&
+        (ref
+                .watch(currentOrganizationControllerProvider.notifier)
+                .membershipFor(org.id)
+                ?.canManageMembers ??
+            false);
 
     return Scaffold(
       appBar: AppBar(
@@ -384,12 +393,14 @@ class _ManagementUsersListPage extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'mgmt_users_fab',
-        onPressed: () => showCreateUserDialog(context),
-        tooltip: 'Add User',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canInvite
+          ? FloatingActionButton(
+              heroTag: 'mgmt_users_fab',
+              onPressed: () => showInviteUserDialog(context),
+              tooltip: t.organizations.invitePeople,
+              child: const Icon(Icons.person_add),
+            )
+          : null,
       body: paginatedAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(
@@ -404,8 +415,10 @@ class _ManagementUsersListPage extends ConsumerWidget {
           onUserTap: (user) {
             ManagementUserDetailRoute(id: user.id).pushScoped(context);
           },
-          onRefresh: () =>
-              ref.read(paginatedUsersControllerProvider.notifier).refresh(),
+          onRefresh: () async {
+            await ref.read(paginatedUsersControllerProvider.notifier).refresh();
+            await ref.read(orgPendingInvitesControllerProvider.notifier).refresh();
+          },
           onLoadMore: () =>
               ref.read(paginatedUsersControllerProvider.notifier).loadMore(),
         ),

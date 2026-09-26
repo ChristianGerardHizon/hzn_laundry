@@ -258,7 +258,7 @@ public `/history/:token` stay outside the prefix.
 │   │   └── …/management/cashier-groups/:id -> Cashier Group Detail
 │
 ├── …/organizations                 -> Organizations
-│   └── …/organizations/:id         -> Organization Detail (Overview / People / Features)
+│   └── …/organizations/:id         -> Organization Detail (Overview / Features)
 │
 ├── …/promos                          -> Promos List
 │   └── …/promos/:id                  -> Promo Detail
@@ -281,7 +281,7 @@ public `/history/:token` stay outside the prefix.
     └── /auth-loading                -> Auth Loading
 ```
 
-`/users` and `/roles` also exist as separate top-level route files (`users.routes.dart`, `roles.routes.dart`) alongside the `/management/users` and `/management/roles` nested routes above — both are present in the codebase; which one a given entry point (e.g. a dashboard quick action vs. the Management nav item) links to depends on the calling widget, not audited exhaustively here.
+`/users` and `/roles` redirect to `/management/users` and `/management/roles` (legacy bookmarks). Staff are invited from Management → Users; accept/decline pending invites stays on the Organizations list.
 
 ### Shell Branches (12 nav-visible + Cashier)
 
@@ -366,8 +366,7 @@ Product Detail Page (/products/:id)
 
 Organization Detail Page (/organizations/:id)
 ├── Tab 0: Overview     -> OrganizationOverviewTab
-├── Tab 1: People       -> OrganizationPeopleTab
-└── Tab 2: Features     -> OrganizationFeaturesTab
+└── Tab 1: Features     -> OrganizationFeaturesTab
 ```
 
 Each such page keeps its tab widgets in `presentation/widgets/tabs/` (or similar) alongside the page, named `*_tab.dart`. Check the specific feature's `presentation/pages/*_detail_page.dart` for its exact tab set — they aren't identical across features (e.g. Employee Detail's tabs differ from Product Detail's).
