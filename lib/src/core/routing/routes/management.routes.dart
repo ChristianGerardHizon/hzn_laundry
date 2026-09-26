@@ -113,8 +113,7 @@ class ManagementShellRoute extends ShellRouteData {
 
 /// Organization root route.
 ///
-/// On tablet: Redirects to /management/users (3-panel layout)
-/// On mobile: Shows landing page with Users/Roles options
+/// Redirects to `/management/users` on all layouts (no landing hub).
 class ManagementRoute extends GoRouteData with $ManagementRoute {
   const ManagementRoute();
 
@@ -122,17 +121,24 @@ class ManagementRoute extends GoRouteData with $ManagementRoute {
 
   @override
   String? redirect(BuildContext context, GoRouterState state) {
-    // Only redirect on tablet - mobile shows landing page
-    if (Breakpoints.isMultiColumnOrLarger(context) && state.uri.path == path) {
-      return '$path/users';
+    final uriPath = state.uri.path;
+    final org = state.pathParameters['orgSlug'];
+    final branch = state.pathParameters['branchSlug'];
+    final isExactManagement = uriPath == path ||
+        (org != null &&
+            branch != null &&
+            uriPath == '/$org/$branch$path');
+    if (!isExactManagement) return null;
+    if (org != null && branch != null) {
+      return '/$org/$branch$path/users';
     }
-    return null;
+    return '$path/users';
   }
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    // Mobile: Show landing page with Users/Roles options
-    return const _MobileManagementLandingPage();
+    // Redirect always handles the exact /management path.
+    return const SizedBox.shrink();
   }
 }
 
@@ -229,142 +235,6 @@ class ManagementBranchDetailRoute extends GoRouteData
 // ============================================================================
 // Mobile Pages
 // ============================================================================
-
-/// Mobile landing page for organization with Users/Roles selection.
-class _MobileManagementLandingPage extends StatelessWidget {
-  const _MobileManagementLandingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Translations.of(context);
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.navigation.management),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _ManagementOptionCard(
-            icon: Icons.people,
-            title: t.navigation.users,
-            color: theme.colorScheme.primary,
-            onTap: () => const ManagementUsersRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.admin_panel_settings,
-            title: t.navigation.roles,
-            color: theme.colorScheme.secondary,
-            onTap: () => const ManagementRolesRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.store,
-            title: t.navigation.branches,
-            color: theme.colorScheme.tertiary,
-            onTap: () => const ManagementBranchesRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.local_laundry_service,
-            title: 'Machines',
-            color: Colors.teal,
-            onTap: () => const ManagementMachinesRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.inventory_2,
-            title: 'Storages',
-            color: Colors.indigo,
-            onTap: () => const ManagementStoragesRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.category,
-            title: 'Categories',
-            color: Colors.orange,
-            onTap: () => const ManagementProductCategoriesRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.straighten,
-            title: 'Units',
-            color: Colors.cyan,
-            onTap: () => const ManagementQuantityUnitsRoute().goScoped(context),
-          ),
-          const SizedBox(height: 16),
-          _ManagementOptionCard(
-            icon: Icons.point_of_sale,
-            title: 'Cashier',
-            color: Colors.teal,
-            onTap: () => const ManagementCashierGroupsRoute().goScoped(context),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Card widget for organization option selection.
-class _ManagementOptionCard extends StatelessWidget {
-  const _ManagementOptionCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 40,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Mobile users list page for organization.
 class _ManagementUsersListPage extends ConsumerWidget {

@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hzn_laundry/src/core/i18n/strings.g.dart';
 import 'package:hzn_laundry/src/core/navigation/desktop_nav_presentation.dart';
 import 'package:hzn_laundry/src/core/widgets/nav_permissions.dart';
 
@@ -10,6 +12,7 @@ List<NavItem> _itemsWith(Set<NavId> ids) {
 
 void main() {
   final allItems = buildAllNavItems((key) => key);
+  final t = AppLocale.en.buildSync();
 
   group('desktop_nav_presentation', () {
     test(
@@ -92,6 +95,54 @@ void main() {
       );
     });
 
+    test('administrationFlyoutDestinations lists sections then Organizations',
+        () {
+      final destinations = administrationFlyoutDestinations(allItems, t);
+
+      expect(
+        destinations.map((d) => d.selectionKey),
+        [
+          AdminFlyoutId.users,
+          AdminFlyoutId.roles,
+          AdminFlyoutId.branches,
+          AdminFlyoutId.machines,
+          AdminFlyoutId.storages,
+          AdminFlyoutId.productCategories,
+          AdminFlyoutId.quantityUnits,
+          AdminFlyoutId.cashierGroups,
+          AdminFlyoutId.organizations,
+        ],
+      );
+    });
+
+    test('administrationFlyoutDestinations omits sections without Management',
+        () {
+      final visible = _itemsWith({
+        NavId.dashboard,
+        NavId.organizations,
+      });
+
+      expect(
+        administrationFlyoutDestinations(visible, t)
+            .map((d) => d.selectionKey),
+        [AdminFlyoutId.organizations],
+      );
+    });
+
+    test('visibleCategories keeps Administration when Management is a shortcut',
+        () {
+      final excluded = {
+        ...visibleShortcutIds(allItems),
+        NavId.management,
+        NavId.organizations,
+      };
+
+      expect(
+        visibleCategories(allItems, excluded),
+        contains(AppNavCategory.administration),
+      );
+    });
+
     test('visibleCategories omits empty groups when items are hidden', () {
       final staffItems = _itemsWith({
         NavId.dashboard,
@@ -132,6 +183,31 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        isNavCategorySelected(
+          NavId.management,
+          AppNavCategory.administration,
+          allItems,
+          {...excluded, NavId.management, NavId.organizations},
+        ),
+        isTrue,
+      );
+    });
+
+    test('adminFlyoutIdFromPath resolves management and org locations', () {
+      expect(
+        adminFlyoutIdFromPath('/acme/main/management/roles'),
+        AdminFlyoutId.roles,
+      );
+      expect(
+        adminFlyoutIdFromPath('/acme/main/management/users/abc'),
+        AdminFlyoutId.users,
+      );
+      expect(
+        adminFlyoutIdFromPath('/acme/main/organizations/xyz'),
+        AdminFlyoutId.organizations,
+      );
+      expect(adminFlyoutIdFromPath('/acme/main/dashboard'), isNull);
     });
 
     group('filterNavItemsByQuery', () {

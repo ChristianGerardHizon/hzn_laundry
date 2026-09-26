@@ -239,6 +239,11 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get users => 'Mga User';
 	@override String get roles => 'Mga Tungkulin';
 	@override String get branches => 'Mga Sangay';
+	@override String get machines => 'Mga Makina';
+	@override String get storages => 'Mga Storage';
+	@override String get productCategories => 'Mga Kategorya';
+	@override String get units => 'Mga Unit';
+	@override String get cashierGroups => 'Cashier';
 	@override String get more => 'Iba Pa';
 	@override String get sales => 'Cashier';
 	@override String get salesHistory => 'Mga Order';
@@ -655,6 +660,11 @@ extension on TranslationsTl {
 			'navigation.users' => 'Mga User',
 			'navigation.roles' => 'Mga Tungkulin',
 			'navigation.branches' => 'Mga Sangay',
+			'navigation.machines' => 'Mga Makina',
+			'navigation.storages' => 'Mga Storage',
+			'navigation.productCategories' => 'Mga Kategorya',
+			'navigation.units' => 'Mga Unit',
+			'navigation.cashierGroups' => 'Cashier',
 			'navigation.more' => 'Iba Pa',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Mga Order',

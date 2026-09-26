@@ -504,6 +504,21 @@ class TranslationsNavigationEn {
 	/// en: 'Branches'
 	String get branches => 'Branches';
 
+	/// en: 'Machines'
+	String get machines => 'Machines';
+
+	/// en: 'Storages'
+	String get storages => 'Storages';
+
+	/// en: 'Categories'
+	String get productCategories => 'Categories';
+
+	/// en: 'Units'
+	String get units => 'Units';
+
+	/// en: 'Cashier'
+	String get cashierGroups => 'Cashier';
+
 	/// en: 'More'
 	String get more => 'More';
 
@@ -1373,6 +1388,11 @@ extension on Translations {
 			'navigation.users' => 'Users',
 			'navigation.roles' => 'Roles',
 			'navigation.branches' => 'Branches',
+			'navigation.machines' => 'Machines',
+			'navigation.storages' => 'Storages',
+			'navigation.productCategories' => 'Categories',
+			'navigation.units' => 'Units',
+			'navigation.cashierGroups' => 'Cashier',
 			'navigation.more' => 'More',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Orders',

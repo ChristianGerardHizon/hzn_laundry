@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
 import 'desktop_nav_item.dart';
-import 'nav_permissions.dart';
 
 /// Optional footer action at the bottom of a [DesktopNavFlyout] panel.
 class DesktopNavFlyoutFooter {
@@ -24,15 +23,15 @@ class DesktopNavFlyout extends StatelessWidget {
     super.key,
     required this.category,
     required this.destinations,
-    required this.selectedId,
+    required this.selectedKey,
     required this.onDestinationTap,
     this.footer,
   });
 
   final AppNavCategory category;
-  final List<NavItem> destinations;
-  final NavId selectedId;
-  final ValueChanged<NavItem> onDestinationTap;
+  final List<DesktopFlyoutDestination> destinations;
+  final Object selectedKey;
+  final ValueChanged<DesktopFlyoutDestination> onDestinationTap;
   final DesktopNavFlyoutFooter? footer;
 
   @override
@@ -65,11 +64,11 @@ class DesktopNavFlyout extends StatelessWidget {
               ),
               for (final dest in destinations)
                 _FlyoutItem(
-                  icon: isNavItemSelected(selectedId, dest.id)
+                  icon: dest.selectionKey == selectedKey
                       ? dest.selectedIcon
                       : dest.icon,
                   label: dest.label,
-                  selected: isNavItemSelected(selectedId, dest.id),
+                  selected: dest.selectionKey == selectedKey,
                   onTap: () => onDestinationTap(dest),
                 ),
               if (footer != null) ...[
@@ -153,7 +152,7 @@ class DesktopNavCategoryRow extends StatefulWidget {
     super.key,
     required this.category,
     required this.destinations,
-    required this.selectedId,
+    required this.selectedKey,
     required this.selected,
     required this.collapsed,
     required this.onDestinationTap,
@@ -161,11 +160,11 @@ class DesktopNavCategoryRow extends StatefulWidget {
   });
 
   final AppNavCategory category;
-  final List<NavItem> destinations;
-  final NavId selectedId;
+  final List<DesktopFlyoutDestination> destinations;
+  final Object selectedKey;
   final bool selected;
   final bool collapsed;
-  final ValueChanged<NavItem> onDestinationTap;
+  final ValueChanged<DesktopFlyoutDestination> onDestinationTap;
   final DesktopNavFlyoutFooter? footer;
 
   @override
@@ -225,7 +224,7 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
               child: DesktopNavFlyout(
                 category: widget.category,
                 destinations: widget.destinations,
-                selectedId: widget.selectedId,
+                selectedKey: widget.selectedKey,
                 footer: widget.footer == null
                     ? null
                     : DesktopNavFlyoutFooter(

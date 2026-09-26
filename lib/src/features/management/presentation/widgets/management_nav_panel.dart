@@ -78,7 +78,7 @@ class ManagementNavPanel extends StatelessWidget {
                 _NavButton(
                   icon: Icons.local_laundry_service_outlined,
                   selectedIcon: Icons.local_laundry_service,
-                  label: 'Machines',
+                  label: t.navigation.machines,
                   isSelected: currentMode == ManagementMode.machines,
                   onTap: () => onModeChanged(ManagementMode.machines),
                 ),
@@ -86,7 +86,7 @@ class ManagementNavPanel extends StatelessWidget {
                 _NavButton(
                   icon: Icons.inventory_2_outlined,
                   selectedIcon: Icons.inventory_2,
-                  label: 'Storages',
+                  label: t.navigation.storages,
                   isSelected: currentMode == ManagementMode.storages,
                   onTap: () => onModeChanged(ManagementMode.storages),
                 ),
@@ -94,7 +94,7 @@ class ManagementNavPanel extends StatelessWidget {
                 _NavButton(
                   icon: Icons.category_outlined,
                   selectedIcon: Icons.category,
-                  label: 'Categories',
+                  label: t.navigation.productCategories,
                   isSelected: currentMode == ManagementMode.productCategories,
                   onTap: () => onModeChanged(ManagementMode.productCategories),
                 ),
@@ -102,7 +102,7 @@ class ManagementNavPanel extends StatelessWidget {
                 _NavButton(
                   icon: Icons.straighten_outlined,
                   selectedIcon: Icons.straighten,
-                  label: 'Units',
+                  label: t.navigation.units,
                   isSelected: currentMode == ManagementMode.quantityUnits,
                   onTap: () => onModeChanged(ManagementMode.quantityUnits),
                 ),
@@ -110,7 +110,7 @@ class ManagementNavPanel extends StatelessWidget {
                 _NavButton(
                   icon: Icons.point_of_sale_outlined,
                   selectedIcon: Icons.point_of_sale,
-                  label: 'Cashier',
+                  label: t.navigation.cashierGroups,
                   isSelected: currentMode == ManagementMode.cashierGroups,
                   onTap: () => onModeChanged(ManagementMode.cashierGroups),
                 ),
