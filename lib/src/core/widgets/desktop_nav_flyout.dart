@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
 import 'desktop_nav_item.dart';
-import 'nav_permissions.dart';
 
 /// Optional footer action at the bottom of a [DesktopNavFlyout] panel.
 class DesktopNavFlyoutFooter {
@@ -24,16 +23,20 @@ class DesktopNavFlyout extends StatelessWidget {
     super.key,
     required this.category,
     required this.destinations,
-    required this.selectedId,
+    required this.selectedKey,
     required this.onDestinationTap,
     this.footer,
+    this.maxHeight,
   });
 
   final AppNavCategory category;
-  final List<NavItem> destinations;
-  final NavId selectedId;
-  final ValueChanged<NavItem> onDestinationTap;
+  final List<DesktopFlyoutDestination> destinations;
+  final Object selectedKey;
+  final ValueChanged<DesktopFlyoutDestination> onDestinationTap;
   final DesktopNavFlyoutFooter? footer;
+
+  /// When set, the panel scrolls instead of overflowing the viewport.
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -41,53 +44,75 @@ class DesktopNavFlyout extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final t = Translations.of(context);
 
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Text(
+        appNavCategoryLabel(category, t),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+
+    final items = [
+      for (final dest in destinations)
+        _FlyoutItem(
+          icon: dest.selectionKey == selectedKey
+              ? dest.selectedIcon
+              : dest.icon,
+          label: dest.label,
+          selected: dest.selectionKey == selectedKey,
+          onTap: () => onDestinationTap(dest),
+        ),
+    ];
+
+    final footerSection = footer == null
+        ? const <Widget>[]
+        : <Widget>[
+            if (destinations.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Divider(height: 1),
+              ),
+            _FlyoutItem(
+              icon: footer!.icon,
+              label: footer!.label,
+              selected: false,
+              onTap: footer!.onTap,
+            ),
+          ];
+
+    final body = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        ...items,
+        ...footerSection,
+      ],
+    );
+
     return Material(
       elevation: 8,
       borderRadius: BorderRadius.circular(12),
       color: colorScheme.surfaceContainerHigh,
+      clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Text(
-                  appNavCategoryLabel(category, t),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              for (final dest in destinations)
-                _FlyoutItem(
-                  icon: isNavItemSelected(selectedId, dest.id)
-                      ? dest.selectedIcon
-                      : dest.icon,
-                  label: dest.label,
-                  selected: isNavItemSelected(selectedId, dest.id),
-                  onTap: () => onDestinationTap(dest),
-                ),
-              if (footer != null) ...[
-                if (destinations.isNotEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Divider(height: 1),
-                  ),
-                _FlyoutItem(
-                  icon: footer!.icon,
-                  label: footer!.label,
-                  selected: false,
-                  onTap: footer!.onTap,
-                ),
-              ],
-            ],
-          ),
+        constraints: BoxConstraints(
+          minWidth: 220,
+          maxWidth: 280,
+          maxHeight: maxHeight ?? double.infinity,
         ),
+        child: maxHeight == null
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: body,
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: body,
+              ),
       ),
     );
   }
@@ -153,7 +178,7 @@ class DesktopNavCategoryRow extends StatefulWidget {
     super.key,
     required this.category,
     required this.destinations,
-    required this.selectedId,
+    required this.selectedKey,
     required this.selected,
     required this.collapsed,
     required this.onDestinationTap,
@@ -161,11 +186,11 @@ class DesktopNavCategoryRow extends StatefulWidget {
   });
 
   final AppNavCategory category;
-  final List<NavItem> destinations;
-  final NavId selectedId;
+  final List<DesktopFlyoutDestination> destinations;
+  final Object selectedKey;
   final bool selected;
   final bool collapsed;
-  final ValueChanged<NavItem> onDestinationTap;
+  final ValueChanged<DesktopFlyoutDestination> onDestinationTap;
   final DesktopNavFlyoutFooter? footer;
 
   @override
@@ -201,6 +226,20 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
     final overlay = Overlay.of(context);
     final anchorOffset = renderBox.localToGlobal(Offset.zero);
     final anchorSize = renderBox.size;
+    final mediaSize = MediaQuery.sizeOf(context);
+    final mediaPadding = MediaQuery.paddingOf(context);
+    const margin = 8.0;
+    const minFlyoutHeight = 240.0;
+
+    final left = anchorOffset.dx + anchorSize.width + 4;
+    final bottomLimit = mediaSize.height - mediaPadding.bottom - margin;
+    final topLimit = mediaPadding.top + margin;
+    var top = anchorOffset.dy;
+    var maxHeight = bottomLimit - top;
+    if (maxHeight < minFlyoutHeight) {
+      top = (bottomLimit - minFlyoutHeight).clamp(topLimit, anchorOffset.dy);
+      maxHeight = bottomLimit - top;
+    }
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Stack(
@@ -212,8 +251,8 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
             ),
           ),
           Positioned(
-            left: anchorOffset.dx + anchorSize.width + 4,
-            top: anchorOffset.dy,
+            left: left,
+            top: top,
             child: MouseRegion(
               onEnter: (_) => _isHovered = true,
               onExit: (_) {
@@ -225,7 +264,8 @@ class _DesktopNavCategoryRowState extends State<DesktopNavCategoryRow> {
               child: DesktopNavFlyout(
                 category: widget.category,
                 destinations: widget.destinations,
-                selectedId: widget.selectedId,
+                selectedKey: widget.selectedKey,
+                maxHeight: maxHeight,
                 footer: widget.footer == null
                     ? null
                     : DesktopNavFlyoutFooter(

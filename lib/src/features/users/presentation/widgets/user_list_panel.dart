@@ -6,7 +6,11 @@ import '../../../../core/foundation/paginated_state.dart';
 import '../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/end_of_list_indicator.dart';
+import '../../../../core/widgets/form_feedback.dart';
+import '../../../organizations/domain/organization_invite.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../domain/user.dart';
+import '../controllers/org_pending_invites_controller.dart';
 import '../controllers/paginated_users_controller.dart';
 import '../controllers/user_search_controller.dart';
 import 'dialogs/search_fields_dialog.dart';
@@ -78,9 +82,26 @@ class UserListPanel extends HookConsumerWidget {
             padding: const EdgeInsets.all(16),
             color: theme.colorScheme.surfaceContainerHighest,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.navigation.users, style: theme.textTheme.titleLarge),
-                const Spacer(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.navigation.users,
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.management.usersSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Text(
                   '${paginatedState.totalItems} total',
                   style: theme.textTheme.bodySmall,
@@ -88,6 +109,9 @@ class UserListPanel extends HookConsumerWidget {
               ],
             ),
           ),
+
+          // Pending invites for this org (managers only)
+          const _PendingInvitesSection(),
 
           // Search
           Padding(
@@ -150,6 +174,87 @@ class UserListPanel extends HookConsumerWidget {
           ),
         ],
       );
+  }
+}
+
+class _PendingInvitesSection extends HookConsumerWidget {
+  const _PendingInvitesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final theme = Theme.of(context);
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    if (org == null) return const SizedBox.shrink();
+
+    final membership = ref
+        .watch(currentOrganizationControllerProvider.notifier)
+        .membershipFor(org.id);
+    final canManage = membership?.canManageMembers ?? false;
+    if (!canManage) return const SizedBox.shrink();
+
+    final invitesAsync = ref.watch(orgPendingInvitesControllerProvider);
+
+    return invitesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (invites) {
+        if (invites.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Text(
+                t.organizations.pendingOrgInvites,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            ...invites.map(
+              (invite) => _PendingInviteTile(invite: invite),
+            ),
+            const Divider(height: 1),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PendingInviteTile extends ConsumerWidget {
+  const _PendingInviteTile({required this.invite});
+
+  final OrganizationInvite invite;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+
+    return ListTile(
+      dense: true,
+      title: Text(invite.email),
+      subtitle: Text(invite.roleName),
+      trailing: TextButton(
+        onPressed: () async {
+          final ok = await ref
+              .read(orgPendingInvitesControllerProvider.notifier)
+              .revoke(invite.id);
+          if (!context.mounted) return;
+          if (ok) {
+            showSuccessSnackBar(
+              context,
+              message: t.organizations.inviteRevoked,
+            );
+          } else {
+            showErrorSnackBar(
+              context,
+              message: 'Failed to revoke invite',
+            );
+          }
+        },
+        child: Text(t.organizations.revoke),
+      ),
+    );
   }
 }
 
