@@ -20,6 +20,7 @@ class OrganizationSwitchOverlayState {
     this.active = false,
     this.targetName,
     this.organizationLabel,
+    this.logoUrl,
   });
 
   final bool active;
@@ -29,6 +30,9 @@ class OrganizationSwitchOverlayState {
 
   /// Organization name for the letter-mark badge (destination org).
   final String? organizationLabel;
+
+  /// Optional logo URL for the destination organization.
+  final String? logoUrl;
 
   /// Alias for older call sites / tests.
   String? get organizationName => targetName;
@@ -47,6 +51,7 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
   Future<void> run({
     String? name,
     String? organizationLabel,
+    String? logoUrl,
     required Future<void> Function() action,
   }) async {
     if (state.active) return;
@@ -54,6 +59,7 @@ class OrganizationSwitchOverlay extends _$OrganizationSwitchOverlay {
       active: true,
       targetName: name,
       organizationLabel: organizationLabel ?? name,
+      logoUrl: logoUrl,
     );
     try {
       await Future.wait([
@@ -147,8 +153,11 @@ class CurrentOrganizationController extends _$CurrentOrganizationController {
     if (!canSwitchOrganization) return;
     if (state.value?.id == id) return;
     final name = membershipFor(id)?.organization?.name;
+    final logoUrl = membershipFor(id)?.organization?.logoUrl;
     await ref.read(organizationSwitchOverlayProvider.notifier).run(
           name: name,
+          organizationLabel: name,
+          logoUrl: logoUrl,
           action: () async {
             await selectOrganization(id);
             await afterSelect?.call();

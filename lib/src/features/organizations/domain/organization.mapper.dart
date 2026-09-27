@@ -39,6 +39,12 @@ class OrganizationMapper extends ClassMapperBase<Organization> {
     _$address,
     opt: true,
   );
+  static String? _$logoUrl(Organization v) => v.logoUrl;
+  static const Field<Organization, String> _f$logoUrl = Field(
+    'logoUrl',
+    _$logoUrl,
+    opt: true,
+  );
   static DateTime? _$onboardingCompletedAt(Organization v) =>
       v.onboardingCompletedAt;
   static const Field<Organization, DateTime> _f$onboardingCompletedAt = Field(
@@ -73,6 +79,7 @@ class OrganizationMapper extends ClassMapperBase<Organization> {
     #slug: _f$slug,
     #contactNumber: _f$contactNumber,
     #address: _f$address,
+    #logoUrl: _f$logoUrl,
     #onboardingCompletedAt: _f$onboardingCompletedAt,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
@@ -86,6 +93,7 @@ class OrganizationMapper extends ClassMapperBase<Organization> {
       slug: data.dec(_f$slug),
       contactNumber: data.dec(_f$contactNumber),
       address: data.dec(_f$address),
+      logoUrl: data.dec(_f$logoUrl),
       onboardingCompletedAt: data.dec(_f$onboardingCompletedAt),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
@@ -161,6 +169,7 @@ abstract class OrganizationCopyWith<$R, $In extends Organization, $Out>
     String? slug,
     String? contactNumber,
     String? address,
+    String? logoUrl,
     DateTime? onboardingCompletedAt,
     bool? isDeleted,
     DateTime? created,
@@ -184,6 +193,7 @@ class _OrganizationCopyWithImpl<$R, $Out>
     String? slug,
     Object? contactNumber = $none,
     Object? address = $none,
+    Object? logoUrl = $none,
     Object? onboardingCompletedAt = $none,
     bool? isDeleted,
     Object? created = $none,
@@ -195,6 +205,7 @@ class _OrganizationCopyWithImpl<$R, $Out>
       if (slug != null) #slug: slug,
       if (contactNumber != $none) #contactNumber: contactNumber,
       if (address != $none) #address: address,
+      if (logoUrl != $none) #logoUrl: logoUrl,
       if (onboardingCompletedAt != $none)
         #onboardingCompletedAt: onboardingCompletedAt,
       if (isDeleted != null) #isDeleted: isDeleted,
@@ -209,6 +220,7 @@ class _OrganizationCopyWithImpl<$R, $Out>
     slug: data.get(#slug, or: $value.slug),
     contactNumber: data.get(#contactNumber, or: $value.contactNumber),
     address: data.get(#address, or: $value.address),
+    logoUrl: data.get(#logoUrl, or: $value.logoUrl),
     onboardingCompletedAt: data.get(
       #onboardingCompletedAt,
       or: $value.onboardingCompletedAt,

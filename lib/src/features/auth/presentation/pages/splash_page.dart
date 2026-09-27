@@ -57,7 +57,10 @@ class SplashPage extends HookConsumerWidget {
       backgroundColor: Colors.black,
       body: SafeArea(
         child: showOrgBrand
-            ? _OrgBrandedSplash(orgName: orgName)
+            ? _OrgBrandedSplash(
+                orgName: orgName,
+                logoUrl: org?.logoUrl,
+              )
             : _AppLogoSplash(verbText: verbText),
       ),
     );
@@ -65,9 +68,13 @@ class SplashPage extends HookConsumerWidget {
 }
 
 class _OrgBrandedSplash extends StatelessWidget {
-  const _OrgBrandedSplash({required this.orgName});
+  const _OrgBrandedSplash({
+    required this.orgName,
+    this.logoUrl,
+  });
 
   final String orgName;
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +87,11 @@ class _OrgBrandedSplash extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  OrganizationLetterMark(name: orgName, size: 150),
+                  OrganizationLetterMark(
+                    name: orgName,
+                    logoUrl: logoUrl,
+                    size: 150,
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     orgName,

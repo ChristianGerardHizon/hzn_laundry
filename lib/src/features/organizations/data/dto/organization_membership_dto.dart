@@ -59,7 +59,7 @@ class OrganizationMembershipDto with OrganizationMembershipDtoMappable {
     );
   }
 
-  OrganizationMembership toEntity() {
+  OrganizationMembership toEntity({String? baseUrl}) {
     return OrganizationMembership(
       id: id,
       organizationId: organization,
@@ -67,7 +67,7 @@ class OrganizationMembershipDto with OrganizationMembershipDtoMappable {
       status: status,
       joinedAt: parseToLocal(joinedAt) ?? DateTime.now(),
       role: expandedRole?.toEntity(),
-      organization: expandedOrganization?.toEntity(),
+      organization: expandedOrganization?.toEntity(baseUrl: baseUrl),
     );
   }
 }

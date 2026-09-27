@@ -39,6 +39,12 @@ class OrganizationDtoMapper extends ClassMapperBase<OrganizationDto> {
     _$address,
     opt: true,
   );
+  static String? _$logo(OrganizationDto v) => v.logo;
+  static const Field<OrganizationDto, String> _f$logo = Field(
+    'logo',
+    _$logo,
+    opt: true,
+  );
   static String? _$onboardingCompletedAt(OrganizationDto v) =>
       v.onboardingCompletedAt;
   static const Field<OrganizationDto, String> _f$onboardingCompletedAt = Field(
@@ -73,6 +79,7 @@ class OrganizationDtoMapper extends ClassMapperBase<OrganizationDto> {
     #slug: _f$slug,
     #contactNumber: _f$contactNumber,
     #address: _f$address,
+    #logo: _f$logo,
     #onboardingCompletedAt: _f$onboardingCompletedAt,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
@@ -86,6 +93,7 @@ class OrganizationDtoMapper extends ClassMapperBase<OrganizationDto> {
       slug: data.dec(_f$slug),
       contactNumber: data.dec(_f$contactNumber),
       address: data.dec(_f$address),
+      logo: data.dec(_f$logo),
       onboardingCompletedAt: data.dec(_f$onboardingCompletedAt),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
@@ -161,6 +169,7 @@ abstract class OrganizationDtoCopyWith<$R, $In extends OrganizationDto, $Out>
     String? slug,
     String? contactNumber,
     String? address,
+    String? logo,
     String? onboardingCompletedAt,
     bool? isDeleted,
     String? created,
@@ -186,6 +195,7 @@ class _OrganizationDtoCopyWithImpl<$R, $Out>
     String? slug,
     Object? contactNumber = $none,
     Object? address = $none,
+    Object? logo = $none,
     Object? onboardingCompletedAt = $none,
     bool? isDeleted,
     Object? created = $none,
@@ -197,6 +207,7 @@ class _OrganizationDtoCopyWithImpl<$R, $Out>
       if (slug != null) #slug: slug,
       if (contactNumber != $none) #contactNumber: contactNumber,
       if (address != $none) #address: address,
+      if (logo != $none) #logo: logo,
       if (onboardingCompletedAt != $none)
         #onboardingCompletedAt: onboardingCompletedAt,
       if (isDeleted != null) #isDeleted: isDeleted,
@@ -211,6 +222,7 @@ class _OrganizationDtoCopyWithImpl<$R, $Out>
     slug: data.get(#slug, or: $value.slug),
     contactNumber: data.get(#contactNumber, or: $value.contactNumber),
     address: data.get(#address, or: $value.address),
+    logo: data.get(#logo, or: $value.logo),
     onboardingCompletedAt: data.get(
       #onboardingCompletedAt,
       or: $value.onboardingCompletedAt,

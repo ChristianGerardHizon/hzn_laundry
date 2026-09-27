@@ -151,14 +151,14 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 #### Organizations (`/organizations`)
 Every signed-in user can see this tab (no permission gate) so pending invites are visible.
 
-- List of organizations you belong to, with your role and a switch action
+- List of organizations you belong to, with logo/initials, your role, and a switch action
 - `system.admin` users get an AppBar action to open Super Admin (`/super-admin`)
 - Org display page (`/organizations/:id`) with **Overview** and **Features** tabs
-- Overview details editable with `members.manage`
+- Overview: brand logo upload/replace/remove (managers) plus editable details with `members.manage`
 - Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
 - Staff: invite and manage via **Management → Users** (invite → accept → role); accept/decline pending invites on the Organizations list
 - Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
-- Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs
+- Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs; nav brand and select-org tiles show the org logo when set
 
 #### Management (`/management`)
 3-panel tablet layout for org-wide people, assets, and catalog. The nav rail scrolls when needed.
@@ -376,8 +376,9 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 
 ### Organizations
 - Memberships, invites, create-org setup dialog (`/organizations`)
-- Org display (`/organizations/:id`): Overview, Features
+- Org display (`/organizations/:id`): Overview (details + logo), Features
 - Header org switcher (2+ memberships) shows a full-screen, non-dismissible loader for at least 3 seconds while the new org loads
+- Org logo (when set) appears in nav brand, list, select-org, splash, and switch overlay; otherwise letter initials
 
 ### System Settings (this device)
 - Printers (list/detail; local storage, one selected printer)
@@ -639,6 +640,7 @@ lib/src/
 
 ---
 
+| Sep 28 | Organization logo | Orgs can upload a single brand logo (Overview); logo shows in nav brand, org list, select-org tiles, splash, and switch overlay; falls back to letter initials |
 | Sep 28 | Machine busy warnings scoped | Assign-Machines warnings ignore voided/refunded sales and only count processing orders in the current branch/org; blank-branch machines/storages no longer leak across orgs (client filter + PB rule) |
 | Sep 28 | Quick move status | Order Details shows a "Move to {next status}" button under Services to advance Pending → Processing → Ready → Picked Up in one tap |
 | Sep 26 | Flatten Administration nav | Desktop Administration flyout deep-links Users/Roles/Branches/Machines/Storages/Categories/Units/Cashier + Organizations (no Management hub hop); `/management` redirects to Users on mobile too |

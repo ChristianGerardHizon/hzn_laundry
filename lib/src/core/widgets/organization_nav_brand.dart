@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -7,11 +8,10 @@ import '../packages/pocketbase/pocketbase_provider.dart';
 import 'network_health_logo.dart';
 import 'organization_letter_mark.dart';
 
-/// Org branding for nav chrome: letter-mark (health border) + organization name.
+/// Org branding for nav chrome: logo/letter-mark (health border) + org name.
 ///
-/// Organizations do not have an image logo field yet; initials match the
-/// switch-overlay mark. Falls back to [NetworkHealthLogo] + [appTitle] when
-/// no organization is selected.
+/// Falls back to [NetworkHealthLogo] + [appTitle] when no organization is
+/// selected.
 class OrganizationNavBrand extends ConsumerWidget {
   const OrganizationNavBrand({
     super.key,
@@ -94,6 +94,7 @@ class OrganizationNavBrand extends ConsumerWidget {
 
     final mark = _OrganizationHealthMark(
       name: orgName,
+      logoUrl: org?.logoUrl,
       size: logoSize,
     );
 
@@ -144,15 +145,17 @@ class OrganizationNavBrand extends ConsumerWidget {
   }
 }
 
-/// Org initials in a circle with the same network-health border as
+/// Org logo or initials in a circle with the same network-health border as
 /// [NetworkHealthLogo].
 class _OrganizationHealthMark extends ConsumerWidget {
   const _OrganizationHealthMark({
     required this.name,
     required this.size,
+    this.logoUrl,
   });
 
   final String name;
+  final String? logoUrl;
   final double size;
 
   @override
@@ -168,6 +171,38 @@ class _OrganizationHealthMark extends ConsumerWidget {
     const borderWidth = 2.5;
     final borderColor = NetworkHealthLogo.colorFor(status);
     final initials = OrganizationNavBrand.initialsFor(name);
+    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+
+    Widget inner;
+    if (hasLogo) {
+      inner = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: logoUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _NavInitials(
+            size: size,
+            initials: initials,
+            colors: colors,
+            theme: theme,
+          ),
+          errorWidget: (_, __, ___) => _NavInitials(
+            size: size,
+            initials: initials,
+            colors: colors,
+            theme: theme,
+          ),
+        ),
+      );
+    } else {
+      inner = _NavInitials(
+        size: size,
+        initials: initials,
+        colors: colors,
+        theme: theme,
+      );
+    }
 
     return Tooltip(
       message: NetworkHealthLogo.labelFor(status),
@@ -179,30 +214,51 @@ class _OrganizationHealthMark extends ConsumerWidget {
           shape: BoxShape.circle,
           border: Border.all(color: borderColor, width: borderWidth),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: initials.isEmpty
-              ? Icon(
-                  Icons.apartment_rounded,
-                  size: size * 0.5,
-                  color: colors.onPrimaryContainer,
-                )
-              : Text(
-                  initials,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colors.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                    fontSize: size * 0.36,
-                    height: 1,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-        ),
+        child: inner,
       ),
+    );
+  }
+}
+
+class _NavInitials extends StatelessWidget {
+  const _NavInitials({
+    required this.size,
+    required this.initials,
+    required this.colors,
+    required this.theme,
+  });
+
+  final double size;
+  final String initials;
+  final ColorScheme colors;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: initials.isEmpty
+          ? Icon(
+              Icons.apartment_rounded,
+              size: size * 0.5,
+              color: colors.onPrimaryContainer,
+            )
+          : Text(
+              initials,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colors.onPrimaryContainer,
+                fontWeight: FontWeight.w700,
+                fontSize: size * 0.36,
+                height: 1,
+                letterSpacing: 0.3,
+              ),
+            ),
     );
   }
 }

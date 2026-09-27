@@ -10,6 +10,7 @@ import '../../../../core/routing/routes/dashboard.routes.dart';
 import '../../../../core/routing/routes/org_selection.routes.dart';
 import '../../../../core/routing/router_utils.dart';
 import '../../../../core/widgets/nav_permissions.dart';
+import '../../../../core/widgets/organization_letter_mark.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../subscriptions/domain/organization_subscription.dart';
@@ -146,6 +147,7 @@ class SelectOrganizationPage extends HookConsumerWidget {
                                 key: ValueKey(orgId),
                                 organizationId: orgId,
                                 name: name,
+                                logoUrl: membership.organization?.logoUrl,
                                 roleName: roleName,
                                 isLastUsed: isLastUsed,
                                 isBusy: isBusy,
@@ -203,6 +205,7 @@ class _OrgTile extends ConsumerWidget {
     super.key,
     required this.organizationId,
     required this.name,
+    this.logoUrl,
     required this.roleName,
     required this.isLastUsed,
     required this.isBusy,
@@ -214,6 +217,7 @@ class _OrgTile extends ConsumerWidget {
 
   final String organizationId;
   final String name;
+  final String? logoUrl;
   final String roleName;
   final bool isLastUsed;
   final bool isBusy;
@@ -273,22 +277,10 @@ class _OrgTile extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _kBrandTeal.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: _kBrandTeal,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                  OrganizationLetterMark(
+                    name: name,
+                    logoUrl: logoUrl,
+                    size: 44,
                   ),
                   const SizedBox(width: 14),
                   Expanded(

@@ -48,7 +48,7 @@ class OrganizationMembershipRepositoryImpl
         );
         return records
             .map(OrganizationMembershipDto.fromRecord)
-            .map((dto) => dto.toEntity())
+            .map((dto) => dto.toEntity(baseUrl: _pb.baseURL))
             .toList();
       },
       Failure.handle,
@@ -72,7 +72,7 @@ class OrganizationMembershipRepositoryImpl
         );
         return records
             .map(OrganizationMembershipDto.fromRecord)
-            .map((dto) => dto.toEntity())
+            .map((dto) => dto.toEntity(baseUrl: _pb.baseURL))
             .toList();
       },
       Failure.handle,
