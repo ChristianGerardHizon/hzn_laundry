@@ -7,6 +7,7 @@ import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../../core/widgets/organization_letter_mark.dart';
 import '../../data/repositories/organization_repository.dart';
 import '../../domain/organization.dart';
 import '../controllers/current_organization_controller.dart';
@@ -21,9 +22,11 @@ class OrganizationDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final theme = Theme.of(context);
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
     final tabController = useTabController(initialLength: 2);
     final orgAsync = useState<AsyncValue<Organization>>(const AsyncLoading());
+    final isRefreshing = useState(false);
 
     Future<void> load() async {
       orgAsync.value = const AsyncLoading();
@@ -55,29 +58,65 @@ class OrganizationDetailPage extends HookConsumerWidget {
       data: (org) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(org.name),
+            titleSpacing: 0,
+            title: Row(
+              children: [
+                OrganizationLetterMark(
+                  name: org.name,
+                  logoUrl: org.logoUrl,
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    org.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             automaticallyImplyLeading: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               onPressed: () => context.pop(),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: t.organizations.title,
-                onPressed: () async {
-                  await load();
-                  await ref
-                      .read(currentOrganizationControllerProvider.notifier)
-                      .refresh();
-                  if (context.mounted) {
-                    showInfoSnackBar(
-                      context,
-                      message: 'Refreshing...',
-                      duration: const Duration(seconds: 1),
-                    );
-                  }
-                },
+                icon: isRefreshing.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                tooltip: t.organizations.refreshing,
+                onPressed: isRefreshing.value
+                    ? null
+                    : () async {
+                        isRefreshing.value = true;
+                        try {
+                          await load();
+                          await ref
+                              .read(
+                                currentOrganizationControllerProvider.notifier,
+                              )
+                              .refresh();
+                          if (context.mounted) {
+                            showInfoSnackBar(
+                              context,
+                              message: t.organizations.refreshing,
+                              duration: const Duration(seconds: 1),
+                            );
+                          }
+                        } finally {
+                          isRefreshing.value = false;
+                        }
+                      },
               ),
             ],
             bottom: TabBar(

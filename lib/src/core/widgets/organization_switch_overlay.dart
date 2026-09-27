@@ -7,8 +7,8 @@ import 'organization_letter_mark.dart';
 
 /// Full-screen, opaque loader shown while switching org or branch.
 ///
-/// Uses a stable Material progress indicator and an organization letter-mark
-/// (orgs have no image logo field yet) so the wait reads as purposeful.
+/// Uses a stable Material progress indicator and the destination org mark
+/// (logo or initials) so the wait reads as purposeful.
 class OrganizationSwitchLoadingOverlay extends ConsumerWidget {
   const OrganizationSwitchLoadingOverlay({super.key});
 
@@ -41,6 +41,7 @@ class OrganizationSwitchLoadingOverlay extends ConsumerWidget {
                     children: [
                       OrganizationLetterMark(
                         name: overlay.organizationLabel,
+                        logoUrl: overlay.logoUrl,
                         size: 96,
                         breathe: true,
                       ),

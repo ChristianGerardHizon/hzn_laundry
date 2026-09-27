@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 
 part 'machine_usage_provider.g.dart';
 
@@ -67,8 +68,9 @@ class MachineUsageInfo {
 
 /// Provider that checks if a machine is currently in use.
 ///
-/// A machine is considered "in use" if it's assigned to any saleServiceItem
-/// whose parent sale has orderStatus == "processing".
+/// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+/// active sale (`orderStatus == processing`, not voided/refunded) in the
+/// current branch/org scope — matching Orders by Resource / kanban.
 @riverpod
 Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
   if (machineId.isEmpty) {
@@ -80,11 +82,14 @@ Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
   }
 
   final pb = ref.watch(pocketbaseProvider);
+  final saleBranchClause = ref.watch(currentSaleBranchScopeClauseProvider);
 
-  // Query saleServiceItems where machine = machineId
-  // and expand the sale relation to check orderStatus
+  // Scope to the current branch/org so other orgs' processing orders do not
+  // mark machines busy. Exclude voided/refunded — voiding leaves orderStatus
+  // as processing.
   final records = await pb.collection(PocketBaseCollections.saleServiceItems).getFullList(
-    filter: 'machine ~ "$machineId"',
+    filter:
+        'machine ~ "$machineId" && sale.orderStatus = "processing" && sale.status != "voided" && sale.status != "refunded"$saleBranchClause',
     expand: 'sale',
   );
 
@@ -94,34 +99,28 @@ Future<MachineUsageInfo> machineUsage(Ref ref, String machineId) async {
   final orders = <MachineUsageOrder>[];
 
   for (final record in records) {
-    // Use the newer get<T>(keyPath) API with dot-notation
-    final orderStatus = record.get<String?>('expand.sale.orderStatus');
-    if (orderStatus == 'processing') {
-      // Check the service item's status - machine is only "in use" if
-      // the service item is not completed
-      final itemStatus = record.get<String?>('status');
-      if (itemStatus == 'completed') {
-        // Service item is done, machine is available
-        continue;
-      }
+    // Machine is free once the service item itself is completed.
+    final itemStatus = record.get<String?>('status');
+    if (itemStatus == 'completed') {
+      continue;
+    }
 
-      final receiptNumber = record.get<String?>('expand.sale.receiptNumber');
-      if (receiptNumber != null &&
-          receiptNumber.isNotEmpty &&
-          !seenReceipts.contains(receiptNumber)) {
-        seenReceipts.add(receiptNumber);
+    final receiptNumber = record.get<String?>('expand.sale.receiptNumber');
+    if (receiptNumber != null &&
+        receiptNumber.isNotEmpty &&
+        !seenReceipts.contains(receiptNumber)) {
+      seenReceipts.add(receiptNumber);
 
-        final postedDateStr = record.get<String?>('expand.sale.postedDate');
-        final postedDate = postedDateStr != null
-            ? DateTime.tryParse(postedDateStr)?.toLocal()
-            : null;
-        final isBacklog = postedDate != null && postedDate.isBefore(todayStart);
+      final postedDateStr = record.get<String?>('expand.sale.postedDate');
+      final postedDate = postedDateStr != null
+          ? DateTime.tryParse(postedDateStr)?.toLocal()
+          : null;
+      final isBacklog = postedDate != null && postedDate.isBefore(todayStart);
 
-        orders.add(MachineUsageOrder(
-          receiptNumber: receiptNumber,
-          isBacklog: isBacklog,
-        ));
-      }
+      orders.add(MachineUsageOrder(
+        receiptNumber: receiptNumber,
+        isBacklog: isBacklog,
+      ));
     }
   }
 

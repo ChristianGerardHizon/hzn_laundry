@@ -17,6 +17,14 @@ enum OrderStatus {
         OrderStatus.pickedUp => 'Picked Up',
       };
 
+  /// Next status in the fulfillment workflow, or null when already picked up.
+  OrderStatus? get next => switch (this) {
+        OrderStatus.pending => OrderStatus.processing,
+        OrderStatus.processing => OrderStatus.ready,
+        OrderStatus.ready => OrderStatus.pickedUp,
+        OrderStatus.pickedUp => null,
+      };
+
   /// Returns the icon for this order status.
   String get iconName => switch (this) {
         OrderStatus.pending => 'schedule',

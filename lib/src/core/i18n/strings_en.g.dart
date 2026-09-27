@@ -609,8 +609,32 @@ class TranslationsOrganizationsEn {
 	/// en: 'Details'
 	String get details => 'Details';
 
+	/// en: 'Branding'
+	String get branding => 'Branding';
+
+	/// en: 'Change logo'
+	String get changeLogo => 'Change logo';
+
+	/// en: 'Remove logo'
+	String get removeLogo => 'Remove logo';
+
+	/// en: 'Logo updated'
+	String get logoUpdated => 'Logo updated';
+
+	/// en: 'Logo removed'
+	String get logoRemoved => 'Logo removed';
+
+	/// en: 'Failed to upload logo'
+	String get logoUploadFailed => 'Failed to upload logo';
+
 	/// en: 'Save details'
 	String get saveDetails => 'Save details';
+
+	/// en: 'Saving…'
+	String get saving => 'Saving…';
+
+	/// en: 'Refreshing…'
+	String get refreshing => 'Refreshing…';
 
 	/// en: 'Invite people'
 	String get invitePeople => 'Invite people';
@@ -1420,7 +1444,15 @@ extension on Translations {
 			'organizations.switchToThis' => 'Switch to this organization',
 			'organizations.current' => 'Current',
 			'organizations.details' => 'Details',
+			'organizations.branding' => 'Branding',
+			'organizations.changeLogo' => 'Change logo',
+			'organizations.removeLogo' => 'Remove logo',
+			'organizations.logoUpdated' => 'Logo updated',
+			'organizations.logoRemoved' => 'Logo removed',
+			'organizations.logoUploadFailed' => 'Failed to upload logo',
 			'organizations.saveDetails' => 'Save details',
+			'organizations.saving' => 'Saving…',
+			'organizations.refreshing' => 'Refreshing…',
 			'organizations.invitePeople' => 'Invite people',
 			'organizations.inviteEmail' => 'Email',
 			'organizations.inviteRole' => 'Role',

@@ -12,9 +12,13 @@ import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../pos/data/dto/payment_dto.dart';
 import '../../../pos/data/dto/sale_dto.dart';
 import '../../../pos/data/dto/sale_item_dto.dart';
 import '../../../pos/domain/order_status.dart';
+import '../../../pos/domain/payment.dart';
+import '../../../pos/domain/payment_status.dart';
+import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
@@ -256,6 +260,7 @@ enum _SalesFilterMode {
   monthly('Monthly', Icons.calendar_month),
   yearly('Yearly', Icons.calendar_today),
   allTime('All Time', Icons.all_inclusive),
+  pending('Pending', Icons.payments_outlined),
   custom('Custom', Icons.tune);
 
   const _SalesFilterMode(this.label, this.icon);
@@ -263,7 +268,7 @@ enum _SalesFilterMode {
   final String label;
   final IconData icon;
 
-  /// Returns the PocketBase date filter clause, or null for all time.
+  /// Returns the PocketBase date filter clause, or null for all time / pending.
   /// For [custom], use [dateFilterForRange] instead.
   String? get dateFilter {
     final now = DateTime.now();
@@ -286,6 +291,7 @@ enum _SalesFilterMode {
         final end = DateTime(now.year + 1);
         return 'postedDate >= "${start.toPocketBaseUtc()}" && postedDate < "${end.toPocketBaseUtc()}"';
       case _SalesFilterMode.allTime:
+      case _SalesFilterMode.pending:
       case _SalesFilterMode.custom:
         return null;
     }
@@ -299,19 +305,35 @@ enum _SalesFilterMode {
   }
 }
 
+/// All-time unpaid/partial balance for a customer.
+class _CustomerBalanceSummary {
+  const _CustomerBalanceSummary({
+    required this.totalOutstanding,
+    required this.orderCount,
+  });
+
+  final num totalOutstanding;
+  final int orderCount;
+
+  bool get hasBalance => totalOutstanding > 0 && orderCount > 0;
+}
+
 /// Data holder for customer sales with their service items and add-ons.
 class _CustomerSalesData {
   const _CustomerSalesData({
     required this.sales,
     this.serviceItemsBySale = const {},
     this.saleItemsBySale = const {},
+    this.outstandingBySaleId = const {},
+    this.totalOutstanding = 0,
   });
 
   final List<Sale> sales;
   final Map<String, List<SaleServiceItem>> serviceItemsBySale;
   final Map<String, List<SaleItem>> saleItemsBySale;
+  final Map<String, num> outstandingBySaleId;
+  final num totalOutstanding;
 }
-
 /// Widget that fetches and displays sales history for a customer.
 ///
 /// Uses card-style layout matching the dashboard kanban board cards.
@@ -328,6 +350,8 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     final pb = ref.watch(pocketbaseProvider);
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM d, yyyy');
+    final currencyFormat =
+        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
     final future = useMemoized(
       () => _fetchCustomerSalesData(
@@ -339,6 +363,12 @@ class _CustomerSalesHistory extends HookConsumerWidget {
       [filterMode.value, customStart.value, customEnd.value],
     );
     final snapshot = useFuture(future);
+
+    final balanceFuture = useMemoized(
+      () => _fetchCustomerBalanceSummary(pb),
+      [filterMode.value, customStart.value, customEnd.value],
+    );
+    final balanceSnapshot = useFuture(balanceFuture);
 
     Future<void> pickCustomDate() async {
       final now = DateTime.now();
@@ -359,10 +389,61 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     }
 
     final salesCount = snapshot.data?.sales.length;
+    final balance = balanceSnapshot.data;
+    final showBalanceBanner = balance != null && balance.hasBalance;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (showBalanceBanner) ...[
+          Material(
+            color: Colors.orange.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () => filterMode.value = _SalesFilterMode.pending,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.payments_outlined,
+                      size: 20,
+                      color: Colors.orange.shade800,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Balance due ${currencyFormat.format(balance.totalOutstanding)}',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                          Text(
+                            '${balance.orderCount} unpaid ${balance.orderCount == 1 ? 'order' : 'orders'} · Tap to view',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.orange.shade800,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         // Filter chips
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -443,13 +524,16 @@ class _CustomerSalesHistory extends HookConsumerWidget {
           ),
         ],
         const SizedBox(height: 12),
-        // Sales count
+        // Sales count / pending summary
         if (snapshot.connectionState != ConnectionState.waiting &&
             salesCount != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              '$salesCount ${salesCount == 1 ? 'order' : 'orders'}',
+              filterMode.value == _SalesFilterMode.pending &&
+                      (snapshot.data?.totalOutstanding ?? 0) > 0
+                  ? '$salesCount ${salesCount == 1 ? 'order' : 'orders'} · Balance due ${currencyFormat.format(snapshot.data!.totalOutstanding)}'
+                  : '$salesCount ${salesCount == 1 ? 'order' : 'orders'}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
@@ -476,16 +560,20 @@ class _CustomerSalesHistory extends HookConsumerWidget {
                   child: Column(
                     children: [
                       Icon(
-                        Icons.receipt_long_outlined,
+                        filterMode.value == _SalesFilterMode.pending
+                            ? Icons.check_circle_outline
+                            : Icons.receipt_long_outlined,
                         size: 48,
                         color: theme.colorScheme.onSurfaceVariant
                             .withValues(alpha: 0.5),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        filterMode.value == _SalesFilterMode.allTime
-                            ? 'No sales yet'
-                            : 'No sales for this period',
+                        switch (filterMode.value) {
+                          _SalesFilterMode.allTime => 'No sales yet',
+                          _SalesFilterMode.pending => 'No pending payments',
+                          _ => 'No sales for this period',
+                        },
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -503,16 +591,51 @@ class _CustomerSalesHistory extends HookConsumerWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final sale = sales[index];
+                final outstanding = data?.outstandingBySaleId[sale.id] ?? 0;
                 return _SaleCard(
                   sale: sale,
                   serviceItems: data?.serviceItemsBySale[sale.id] ?? [],
                   saleItems: data?.saleItemsBySale[sale.id] ?? [],
+                  outstandingAmount: outstanding > 0 ? outstanding : null,
                 );
               },
             );
           }(),
         ],
       ],
+    );
+  }
+
+  Future<_CustomerBalanceSummary> _fetchCustomerBalanceSummary(
+    PocketBase pb,
+  ) async {
+    final records =
+        await pb.collection(PocketBaseCollections.sales).getFullList(
+              filter:
+                  'customer = "$customerId" && status != "voided" && isPaid = false',
+              sort: '-postedDate',
+            );
+
+    final sales =
+        records.map((record) => SaleDto.fromRecord(record).toEntity()).toList();
+
+    if (sales.isEmpty) {
+      return const _CustomerBalanceSummary(
+        totalOutstanding: 0,
+        orderCount: 0,
+      );
+    }
+
+    final outstandingBySaleId = await _fetchOutstandingBySaleId(pb, sales);
+    final totalOutstanding = outstandingBySaleId.values
+        .fold<num>(0, (sum, amount) => sum + amount);
+
+    final orderCount =
+        outstandingBySaleId.values.where((amount) => amount > 0).length;
+
+    return _CustomerBalanceSummary(
+      totalOutstanding: totalOutstanding,
+      orderCount: orderCount,
     );
   }
 
@@ -524,7 +647,9 @@ class _CustomerSalesHistory extends HookConsumerWidget {
   }) async {
     var filter = 'customer = "$customerId" && status != "voided"';
 
-    if (filterMode == _SalesFilterMode.custom &&
+    if (filterMode == _SalesFilterMode.pending) {
+      filter = '$filter && isPaid = false';
+    } else if (filterMode == _SalesFilterMode.custom &&
         customStart != null &&
         customEnd != null) {
       filter =
@@ -547,7 +672,7 @@ class _CustomerSalesHistory extends HookConsumerWidget {
 
     if (sales.isEmpty) return const _CustomerSalesData(sales: []);
 
-    // Batch-fetch service items and sale items for all sales
+    // Batch-fetch service items, sale items, and outstanding balances
     final saleIds = sales.map((s) => s.id).toList();
     final saleIdFilter = saleIds.map((id) => 'sale = "$id"').join(' || ');
 
@@ -559,10 +684,15 @@ class _CustomerSalesHistory extends HookConsumerWidget {
       pb
           .collection(PocketBaseCollections.saleItems)
           .getFullList(filter: '($saleIdFilter)'),
+      _fetchOutstandingBySaleId(pb, sales),
     ]);
 
+    final serviceRecords = results[0] as List<RecordModel>;
+    final saleItemRecords = results[1] as List<RecordModel>;
+    final outstandingBySaleId = results[2] as Map<String, num>;
+
     final Map<String, List<SaleServiceItem>> serviceItemsBySale = {};
-    for (final record in results[0]) {
+    for (final record in serviceRecords) {
       final serviceExpanded = record.get<RecordModel?>('expand.service');
       final item = SaleServiceItemDto.fromRecord(record).toEntity(
         serviceExpanded: serviceExpanded,
@@ -571,17 +701,75 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     }
 
     final Map<String, List<SaleItem>> saleItemsBySale = {};
-    for (final record in results[1]) {
+    for (final record in saleItemRecords) {
       final item = SaleItemDto.fromRecord(record).toEntity();
       saleItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
+
+    final totalOutstanding = outstandingBySaleId.values
+        .fold<num>(0, (sum, amount) => sum + amount);
 
     return _CustomerSalesData(
       sales: sales,
       serviceItemsBySale: serviceItemsBySale,
       saleItemsBySale: saleItemsBySale,
+      outstandingBySaleId: outstandingBySaleId,
+      totalOutstanding: totalOutstanding,
     );
   }
+}
+/// Batch-fetches payments for [sales] and returns remaining balance per sale.
+Future<Map<String, num>> _fetchOutstandingBySaleId(
+  PocketBase pb,
+  List<Sale> sales,
+) async {
+  final unpaidSales = sales.where((s) => !s.isPaid).toList();
+  if (unpaidSales.isEmpty) {
+    return {for (final sale in sales) sale.id: 0};
+  }
+
+  final saleIdFilter =
+      unpaidSales.map((s) => 'sale = "${s.id}"').join(' || ');
+  final paymentRecords =
+      await pb.collection(PocketBaseCollections.payments).getFullList(
+            filter: '($saleIdFilter) && isVoided = false',
+          );
+
+  return _calculateOutstandingBySaleId(
+    sales: sales,
+    paymentRecords: paymentRecords,
+  );
+}
+
+Map<String, num> _calculateOutstandingBySaleId({
+  required List<Sale> sales,
+  required List<RecordModel> paymentRecords,
+}) {
+  final paidBySaleId = <String, num>{};
+  for (final record in paymentRecords) {
+    if (record.getBoolValue('isVoided')) continue;
+    final saleId = record.getStringValue('sale');
+    if (saleId.isEmpty) continue;
+    final payment = PaymentDto.fromRecord(record).toEntity();
+    paidBySaleId[saleId] =
+        (paidBySaleId[saleId] ?? 0) + _signedPaymentAmount(payment);
+  }
+
+  final outstandingBySaleId = <String, num>{};
+  for (final sale in sales) {
+    if (sale.isPaid) {
+      outstandingBySaleId[sale.id] = 0;
+      continue;
+    }
+    final outstanding = sale.totalAmount - (paidBySaleId[sale.id] ?? 0);
+    outstandingBySaleId[sale.id] = outstanding > 0 ? outstanding : 0;
+  }
+
+  return outstandingBySaleId;
+}
+
+num _signedPaymentAmount(Payment payment) {
+  return payment.type == PaymentType.refund ? -payment.amount : payment.amount;
 }
 
 /// Sale card matching the dashboard kanban board card style.
@@ -590,11 +778,13 @@ class _SaleCard extends StatelessWidget {
     required this.sale,
     this.serviceItems = const [],
     this.saleItems = const [],
+    this.outstandingAmount,
   });
 
   final Sale sale;
   final List<SaleServiceItem> serviceItems;
   final List<SaleItem> saleItems;
+  final num? outstandingAmount;
 
   String _shortOrderNumber(String receiptNumber) {
     final parts = receiptNumber.split('-');
@@ -628,12 +818,21 @@ class _SaleCard extends StatelessWidget {
     };
   }
 
+  Color _paymentStatusColor(PaymentStatus status) {
+    return switch (status) {
+      PaymentStatus.paid => Colors.green,
+      PaymentStatus.partial => Colors.amber.shade800,
+      PaymentStatus.unpaid => Colors.orange,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     final statusColor = _orderStatusColor(sale);
-    final paymentColor = sale.isPaid ? Colors.green : Colors.orange;
+    final paymentColor = _paymentStatusColor(sale.paymentStatus);
+    final dueAmount = outstandingAmount;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -690,7 +889,7 @@ class _SaleCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      sale.isPaid ? 'Paid' : 'Unpaid',
+                      sale.paymentStatus.displayName,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w500,
@@ -734,6 +933,16 @@ class _SaleCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (dueAmount != null && dueAmount > 0) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      'Due ${currencyFormat.format(dueAmount)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ],
                   const Spacer(),
                   if (sale.postedDate != null)
                     Text(

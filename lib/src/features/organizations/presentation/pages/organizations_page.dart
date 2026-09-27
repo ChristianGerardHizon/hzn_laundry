@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
@@ -13,12 +13,14 @@ import '../../../../core/routing/routes/org_selection.routes.dart';
 import '../../../../core/routing/routes/organizations.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
+import '../../../../core/widgets/organization_letter_mark.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
-import '../widgets/dialogs/create_organization_setup_dialog.dart';
 import '../../../users/domain/user_role.dart';
 import '../../data/repositories/organization_invite_repository.dart';
 import '../../domain/organization_invite.dart';
+import '../../domain/organization_membership.dart';
 import '../controllers/current_organization_controller.dart';
+import '../widgets/dialogs/create_organization_setup_dialog.dart';
 
 class OrganizationsPage extends HookConsumerWidget {
   const OrganizationsPage({super.key});
@@ -26,6 +28,8 @@ class OrganizationsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final orgAsync = ref.watch(currentOrganizationControllerProvider);
     final memberships =
         ref.watch(currentOrganizationControllerProvider.notifier).memberships;
@@ -89,116 +93,175 @@ class OrganizationsPage extends HookConsumerWidget {
           if (memberships.isEmpty && pendingInvites.value.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(t.organizations.noOrganizations),
-                    const SizedBox(height: 8),
-                    Text(
-                      t.organizations.contactAdmin,
-                      textAlign: TextAlign.center,
-                    ),
-                    if (canCreate) ...[
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: openCreateDialog,
-                        child: Text(t.organizations.create),
+                padding: const EdgeInsets.all(32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.apartment_rounded,
+                        size: 56,
+                        color: colors.onSurfaceVariant,
                       ),
+                      const SizedBox(height: 16),
+                      Text(
+                        t.organizations.noOrganizations,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        t.organizations.contactAdmin,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      if (canCreate) ...[
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: openCreateDialog,
+                          icon: const Icon(Icons.add_business),
+                          label: Text(t.organizations.create),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             );
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
               if (pendingInvites.value.isNotEmpty) ...[
                 Text(
                   t.organizations.pendingInvites,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 8),
                 ...pendingInvites.value.map(
-                  (invite) => ListTile(
-                    title:
-                        Text(invite.organizationName ?? invite.organizationId),
-                    subtitle: Text('${invite.email} · ${invite.roleName}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextButton(
-                          onPressed: () async {
-                            final result = await ref
-                                .read(organizationInviteRepositoryProvider)
-                                .accept(invite.id);
-                            if (!context.mounted) return;
-                            result.fold(
-                              (f) => showErrorSnackBar(
-                                context,
-                                message: f.messageString,
+                  (invite) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: colors.secondaryContainer,
+                              child: Icon(
+                                Icons.mail_outline_rounded,
+                                color: colors.onSecondaryContainer,
                               ),
-                              (_) async {
-                                showSuccessSnackBar(
-                                  context,
-                                  message: t.organizations.inviteAccepted,
-                                );
-                                await ref
-                                    .read(
-                                      currentOrganizationControllerProvider
-                                          .notifier,
-                                    )
-                                    .refresh();
-                                await loadInvites();
-                              },
-                            );
-                          },
-                          child: Text(t.organizations.accept),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final result = await ref
-                                .read(organizationInviteRepositoryProvider)
-                                .decline(invite.id);
-                            if (!context.mounted) return;
-                            result.fold(
-                              (f) => showErrorSnackBar(
-                                context,
-                                message: f.messageString,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    invite.organizationName ??
+                                        invite.organizationId,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${invite.email} · ${invite.roleName}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              (_) {
-                                showSuccessSnackBar(
-                                  context,
-                                  message: t.organizations.inviteDeclined,
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final result = await ref
+                                    .read(organizationInviteRepositoryProvider)
+                                    .accept(invite.id);
+                                if (!context.mounted) return;
+                                result.fold(
+                                  (f) => showErrorSnackBar(
+                                    context,
+                                    message: f.messageString,
+                                  ),
+                                  (_) async {
+                                    showSuccessSnackBar(
+                                      context,
+                                      message: t.organizations.inviteAccepted,
+                                    );
+                                    await ref
+                                        .read(
+                                          currentOrganizationControllerProvider
+                                              .notifier,
+                                        )
+                                        .refresh();
+                                    await loadInvites();
+                                  },
                                 );
-                                loadInvites();
                               },
-                            );
-                          },
-                          child: Text(t.organizations.decline),
+                              child: Text(t.organizations.accept),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                final result = await ref
+                                    .read(organizationInviteRepositoryProvider)
+                                    .decline(invite.id);
+                                if (!context.mounted) return;
+                                result.fold(
+                                  (f) => showErrorSnackBar(
+                                    context,
+                                    message: f.messageString,
+                                  ),
+                                  (_) {
+                                    showSuccessSnackBar(
+                                      context,
+                                      message: t.organizations.inviteDeclined,
+                                    );
+                                    loadInvites();
+                                  },
+                                );
+                              },
+                              child: Text(t.organizations.decline),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-                const Divider(),
+                const SizedBox(height: 16),
               ],
               Text(
                 t.organizations.yourOrganizations,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              const SizedBox(height: 8),
               ...memberships.map((membership) {
                 final isCurrent = membership.organizationId == currentOrg?.id;
-                return ListTile(
-                  title: Text(membership.organizationName),
-                  subtitle: Text(
-                    '${t.organizations.yourRole}: ${membership.roleName}',
-                  ),
-                  trailing: isCurrent
-                      ? Chip(label: Text(t.organizations.current))
-                      : TextButton(
-                          onPressed: () {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _MembershipCard(
+                    membership: membership,
+                    isCurrent: isCurrent,
+                    onOpen: () => OrganizationDetailRoute(
+                      id: membership.organizationId,
+                    ).goScoped(context),
+                    onSwitch: isCurrent
+                        ? null
+                        : () {
                             final targetOrg = membership.organization;
                             final routerState = GoRouterState.of(context);
                             final isScoped =
@@ -233,15 +296,100 @@ class OrganizationsPage extends HookConsumerWidget {
                               },
                             );
                           },
-                          child: Text(t.organizations.switchToThis),
-                        ),
-                  onTap: () => OrganizationDetailRoute(id: membership.organizationId)
-                      .goScoped(context),
+                  ),
                 );
               }),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _MembershipCard extends StatelessWidget {
+  const _MembershipCard({
+    required this.membership,
+    required this.isCurrent,
+    required this.onOpen,
+    this.onSwitch,
+  });
+
+  final OrganizationMembership membership;
+  final bool isCurrent;
+  final VoidCallback onOpen;
+  final VoidCallback? onSwitch;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Translations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final org = membership.organization;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            children: [
+              OrganizationLetterMark(
+                name: membership.organizationName,
+                logoUrl: org?.logoUrl,
+                size: 44,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      membership.organizationName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${t.organizations.yourRole}: ${membership.roleName}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (isCurrent)
+                Chip(
+                  label: Text(t.organizations.current),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  side: BorderSide(color: colors.primary.withValues(alpha: 0.4)),
+                  backgroundColor: colors.primaryContainer,
+                  labelStyle: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else if (onSwitch != null)
+                TextButton(
+                  onPressed: onSwitch,
+                  child: Text(t.organizations.switchToThis),
+                ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

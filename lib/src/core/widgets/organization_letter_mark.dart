@@ -1,15 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Circular organization letter-mark (orgs have no image logo field yet).
+/// Circular organization mark: logo when available, otherwise letter initials.
 class OrganizationLetterMark extends StatelessWidget {
   const OrganizationLetterMark({
     super.key,
     required this.name,
+    this.logoUrl,
     this.size = 96,
     this.breathe = false,
   });
 
   final String? name;
+
+  /// Absolute URL for the org logo. When null/empty, shows initials.
+  final String? logoUrl;
   final double size;
 
   /// Soft scale pulse used on the org/branch switch overlay.
@@ -37,7 +42,63 @@ class OrganizationLetterMark extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final initials = initialsFor(name);
-    final badge = Container(
+    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+
+    final Widget badge;
+    if (hasLogo) {
+      badge = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: logoUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _InitialsBadge(
+            size: size,
+            initials: initials,
+            colors: colors,
+            theme: theme,
+          ),
+          errorWidget: (_, __, ___) => _InitialsBadge(
+            size: size,
+            initials: initials,
+            colors: colors,
+            theme: theme,
+          ),
+        ),
+      );
+    } else {
+      badge = _InitialsBadge(
+        size: size,
+        initials: initials,
+        colors: colors,
+        theme: theme,
+      );
+    }
+
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (!breathe || reduceMotion) {
+      return ExcludeSemantics(child: badge);
+    }
+    return ExcludeSemantics(child: _BreathingBadge(child: badge));
+  }
+}
+
+class _InitialsBadge extends StatelessWidget {
+  const _InitialsBadge({
+    required this.size,
+    required this.initials,
+    required this.colors,
+    required this.theme,
+  });
+
+  final double size;
+  final String initials;
+  final ColorScheme colors;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -62,12 +123,6 @@ class OrganizationLetterMark extends StatelessWidget {
               ),
             ),
     );
-
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    if (!breathe || reduceMotion) {
-      return ExcludeSemantics(child: badge);
-    }
-    return ExcludeSemantics(child: _BreathingBadge(child: badge));
   }
 }
 

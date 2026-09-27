@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/storage_location_repository.dart';
 import '../../domain/storage_location.dart';
@@ -9,20 +10,23 @@ part 'storage_locations_controller.g.dart';
 
 /// Controller for managing storage location list state.
 ///
-/// Storages are scoped to the current working branch. Unassigned locations
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Storages are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch locations are
+/// excluded so they cannot leak across orgs.
 @Riverpod(keepAlive: true)
 class StorageLocationsController extends _$StorageLocationsController {
   StorageLocationRepository get _repository =>
       ref.read(storageLocationRepositoryProvider);
 
-  String? get _branchFilter => PBFilters.forBranchIncludingUnassigned(
-        ref.read(currentBranchIdProvider),
+  String? get _branchFilter => PBFilters.forBranchOrOrganization(
+        branchId: ref.read(currentBranchIdProvider),
+        organizationId: ref.read(currentOrganizationIdProvider),
       );
 
   @override
   Future<List<StorageLocation>> build() async {
     ref.watch(currentBranchIdProvider);
+    ref.watch(currentOrganizationIdProvider);
     final result = await _repository.fetchAll(filter: _branchFilter);
     return result.fold(
       (failure) => throw failure,
