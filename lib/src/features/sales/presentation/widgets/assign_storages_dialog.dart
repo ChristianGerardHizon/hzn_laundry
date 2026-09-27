@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../storages/domain/storage_location.dart';
 import '../../../storages/presentation/controllers/storage_locations_controller.dart';
+import 'assign_dialog_actions.dart';
 
 /// Dialog for assigning storage locations to sale service items
 /// and setting the number of packs (laundry bags).
@@ -121,217 +123,255 @@ class AssignStoragesDialog extends HookConsumerWidget {
 
     return ScaffoldMessenger(
       child: Builder(
-        builder: (context) => AlertDialog(
-          title: const Text('Assign Storage Locations'),
-          content: SizedBox(
-            width: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Storage assignments
-                  if (serviceItems.isNotEmpty)
-                    storagesAsync.when(
-                      loading: () => const SizedBox(
-                        height: 100,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (error, _) =>
-                          Text(Failure.displayErrorMessage(error)),
-                      data: (storages) {
-                        if (storages.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Text(
-                              'No storage locations available. You can skip this step and assign storage later.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        }
+        builder: (context) {
+          final media = MediaQuery.sizeOf(context);
+          final maxDialogHeight = media.height * 0.85;
+          final isCompact = media.width < Breakpoints.multiColumn;
 
-                        final availableStorages =
-                            storages.where((s) => s.isAvailable).toList();
-
-                        return Column(
+          return Dialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 400,
+                maxHeight: maxDialogHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Assign Storage Locations',
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: SingleChildScrollView(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Service item selector (only show if multiple)
-                            if (serviceItems.length > 1) ...[
-                              Text(
-                                'Select service to assign a location:',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                            // Storage assignments
+                            if (serviceItems.isNotEmpty)
+                              storagesAsync.when(
+                                loading: () => const SizedBox(
+                                  height: 100,
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
                                 ),
+                                error: (error, _) =>
+                                    Text(Failure.displayErrorMessage(error)),
+                                data: (storages) {
+                                  if (storages.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      child: Text(
+                                        'No storage locations available. You can skip this step and assign storage later.',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  final availableStorages = storages
+                                      .where((s) => s.isAvailable)
+                                      .toList();
+
+                                  return Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Service item selector (only show if multiple)
+                                      if (serviceItems.length > 1) ...[
+                                        Text(
+                                          'Select service to assign a location:',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: [
+                                            for (int i = 0;
+                                                i < serviceItems.length;
+                                                i++)
+                                              _ServiceItemChip(
+                                                item: serviceItems[i],
+                                                isActive:
+                                                    activeItemIndex.value == i,
+                                                hasAssignment: (assignments
+                                                            .value[serviceItems[i]
+                                                                .id] ??
+                                                        [])
+                                                    .isNotEmpty,
+                                                onTap: isSaving.value
+                                                    ? null
+                                                    : () => activeItemIndex
+                                                        .value = i,
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Divider(height: 1),
+                                        const SizedBox(height: 16),
+                                      ],
+                                      // Current service item label
+                                      _ActiveServiceLabel(
+                                        item: serviceItems[
+                                            activeItemIndex.value],
+                                        compact: isCompact,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // Storage grid - tappable chips
+                                      _StorageGrid(
+                                        storages: availableStorages,
+                                        selectedIds: assignments.value[
+                                                serviceItems[activeItemIndex
+                                                        .value]
+                                                    .id] ??
+                                            [],
+                                        disabled: isSaving.value,
+                                        onToggle: (storageId) {
+                                          final itemId = serviceItems[
+                                                  activeItemIndex.value]
+                                              .id;
+                                          final current =
+                                              Map<String, List<String>>.from(
+                                                  assignments.value);
+                                          final list = List<String>.from(
+                                              current[itemId] ?? []);
+
+                                          // Toggle: remove if already selected, add if not
+                                          if (list.contains(storageId)) {
+                                            list.remove(storageId);
+                                          } else {
+                                            list.add(storageId);
+                                          }
+
+                                          current[itemId] = list;
+                                          assignments.value = current;
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  for (int i = 0;
-                                      i < serviceItems.length;
-                                      i++)
-                                    _ServiceItemChip(
-                                      item: serviceItems[i],
-                                      isActive: activeItemIndex.value == i,
-                                      hasAssignment: (assignments
-                                                  .value[serviceItems[i].id] ??
-                                              [])
-                                          .isNotEmpty,
-                                      onTap: isSaving.value
-                                          ? null
-                                          : () => activeItemIndex.value = i,
-                                    ),
-                                ],
+
+                            // Packs (laundry bags) picker
+                            const Divider(),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Number of Packs',
+                              style: theme.textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'How many laundry bags were used?',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              const SizedBox(height: 16),
-                              const Divider(height: 1),
-                              const SizedBox(height: 16),
-                            ],
-                            // Current service item label
-                            _ActiveServiceLabel(
-                              item: serviceItems[activeItemIndex.value],
                             ),
                             const SizedBox(height: 12),
-                            // Storage grid - tappable chips
-                            _StorageGrid(
-                              storages: availableStorages,
-                              selectedIds: assignments.value[
-                                      serviceItems[activeItemIndex.value].id] ??
-                                  [],
-                              disabled: isSaving.value,
-                              onToggle: (storageId) {
-                                final itemId =
-                                    serviceItems[activeItemIndex.value].id;
-                                final current =
-                                    Map<String, List<String>>.from(
-                                        assignments.value);
-                                final list =
-                                    List<String>.from(current[itemId] ?? []);
-
-                                // Toggle: remove if already selected, add if not
-                                if (list.contains(storageId)) {
-                                  list.remove(storageId);
-                                } else {
-                                  list.add(storageId);
-                                }
-
-                                current[itemId] = list;
-                                assignments.value = current;
-                              },
-                            ),
+                            if (!isCustomPacksMode.value)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  ...[1, 2, 3, 4, 5, 6, 7, 8].map((value) {
+                                    final isSelected =
+                                        selectedPacks.value == value;
+                                    return ChoiceChip(
+                                      label: Text('$value'),
+                                      selected: isSelected,
+                                      onSelected: isSaving.value
+                                          ? null
+                                          : (_) =>
+                                              selectedPacks.value = value,
+                                      labelStyle: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.onSurface,
+                                      ),
+                                      selectedColor:
+                                          theme.colorScheme.primary,
+                                    );
+                                  }),
+                                  ActionChip(
+                                    label: const Text('Custom'),
+                                    avatar: const Icon(Icons.edit, size: 16),
+                                    onPressed: isSaving.value
+                                        ? null
+                                        : () {
+                                            isCustomPacksMode.value = true;
+                                            selectedPacks.value = null;
+                                          },
+                                  ),
+                                ],
+                              )
+                            else
+                              TextField(
+                                controller: customPacksController,
+                                autofocus: true,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                decoration: InputDecoration(
+                                  labelText: 'Number of packs',
+                                  border: const OutlineInputBorder(),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.grid_view,
+                                        size: 20),
+                                    tooltip: 'Show presets',
+                                    onPressed: isSaving.value
+                                        ? null
+                                        : () {
+                                            isCustomPacksMode.value = false;
+                                            selectedPacks.value = null;
+                                          },
+                                  ),
+                                ),
+                                onChanged: (value) {
+                                  final parsed = int.tryParse(value);
+                                  selectedPacks.value =
+                                      (parsed != null && parsed > 0)
+                                          ? parsed
+                                          : null;
+                                },
+                              ),
                           ],
-                        );
-                      },
-                    ),
-
-                  // Packs (laundry bags) picker
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Number of Packs',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'How many laundry bags were used?',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!isCustomPacksMode.value)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ...[1, 2, 3, 4, 5, 6, 7, 8].map((value) {
-                          final isSelected = selectedPacks.value == value;
-                          return ChoiceChip(
-                            label: Text('$value'),
-                            selected: isSelected,
-                            onSelected: isSaving.value
-                                ? null
-                                : (_) => selectedPacks.value = value,
-                            labelStyle: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface,
-                            ),
-                            selectedColor: theme.colorScheme.primary,
-                          );
-                        }),
-                        ActionChip(
-                          label: const Text('Custom'),
-                          avatar: const Icon(Icons.edit, size: 16),
-                          onPressed: isSaving.value
-                              ? null
-                              : () {
-                                  isCustomPacksMode.value = true;
-                                  selectedPacks.value = null;
-                                },
-                        ),
-                      ],
-                    )
-                  else
-                    TextField(
-                      controller: customPacksController,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      decoration: InputDecoration(
-                        labelText: 'Number of packs',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.grid_view, size: 20),
-                          tooltip: 'Show presets',
-                          onPressed: isSaving.value
-                              ? null
-                              : () {
-                                  isCustomPacksMode.value = false;
-                                  selectedPacks.value = null;
-                                },
                         ),
                       ),
-                      onChanged: (value) {
-                        final parsed = int.tryParse(value);
-                        selectedPacks.value =
-                            (parsed != null && parsed > 0) ? parsed : null;
-                      },
                     ),
-                ],
+                    const SizedBox(height: 12),
+                    AssignDialogActions(
+                      isSaving: isSaving.value,
+                      showSkip: !requirePacks,
+                      primaryLabel: 'Assign & Continue',
+                      compact: isCompact,
+                      onCancel: () => context.pop(null),
+                      onSkip: () => context.pop(true),
+                      onPrimary: handleAssign,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSaving.value ? null : () => context.pop(null),
-              child: const Text('Cancel'),
-            ),
-            if (!requirePacks)
-              TextButton(
-                onPressed: isSaving.value ? null : () => context.pop(true),
-                child: const Text('Skip'),
-              ),
-            FilledButton(
-              onPressed: isSaving.value ? null : handleAssign,
-              child: isSaving.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Assign & Continue'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -364,13 +404,50 @@ class _ServiceItemChip extends StatelessWidget {
 }
 
 class _ActiveServiceLabel extends StatelessWidget {
-  const _ActiveServiceLabel({required this.item});
+  const _ActiveServiceLabel({
+    required this.item,
+    this.compact = false,
+  });
 
   final SaleServiceItem item;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final title = Text(
+      '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final hint = Text(
+      'Tap to select locations',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(child: title),
+            ],
+          ),
+          const SizedBox(height: 4),
+          hint,
+        ],
+      );
+    }
 
     return Row(
       children: [
@@ -380,19 +457,9 @@ class _ActiveServiceLabel extends StatelessWidget {
           color: theme.colorScheme.primary,
         ),
         const SizedBox(width: 6),
-        Text(
-          '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          'Tap to select locations',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        Flexible(child: title),
+        const SizedBox(width: 8),
+        hint,
       ],
     );
   }

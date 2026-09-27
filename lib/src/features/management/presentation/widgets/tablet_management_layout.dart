@@ -22,9 +22,11 @@ import '../../../settings/presentation/widgets/dialogs/product_category_form_dia
 import '../../../settings/presentation/widgets/dialogs/quantity_unit_form_dialog.dart';
 import '../../../storages/presentation/controllers/storage_locations_controller.dart';
 import '../../../storages/presentation/widgets/storage_location_form_dialog.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../users/presentation/controllers/paginated_users_controller.dart';
+import '../../../users/presentation/controllers/org_pending_invites_controller.dart';
 import '../../../users/presentation/controllers/user_roles_controller.dart';
-import '../../../users/presentation/widgets/dialogs/create_user_dialog.dart';
+import '../../../users/presentation/widgets/dialogs/invite_user_dialog.dart';
 import '../../../users/presentation/widgets/dialogs/edit_role_dialog.dart';
 import '../../../users/presentation/widgets/user_list_panel.dart';
 import '../../../users/presentation/widgets/user_role_list_panel.dart';
@@ -149,16 +151,26 @@ class _UsersListWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
     final usersAsync = ref.watch(paginatedUsersControllerProvider);
     final usersController = ref.read(paginatedUsersControllerProvider.notifier);
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    final canInvite = org != null &&
+        (ref
+                .watch(currentOrganizationControllerProvider.notifier)
+                .membershipFor(org.id)
+                ?.canManageMembers ??
+            false);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'mgmt_users_fab',
-        onPressed: () => showCreateUserDialog(context),
-        tooltip: 'Add User',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canInvite
+          ? FloatingActionButton(
+              heroTag: 'mgmt_users_fab',
+              onPressed: () => showInviteUserDialog(context),
+              tooltip: t.organizations.invitePeople,
+              child: const Icon(Icons.person_add),
+            )
+          : null,
       body: usersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(
@@ -171,7 +183,10 @@ class _UsersListWrapper extends ConsumerWidget {
           onUserTap: (user) {
             ManagementUserDetailRoute(id: user.id).goScoped(context);
           },
-          onRefresh: () => usersController.refresh(),
+          onRefresh: () async {
+            await usersController.refresh();
+            await ref.read(orgPendingInvitesControllerProvider.notifier).refresh();
+          },
           onLoadMore: () => usersController.loadMore(),
         ),
       ),

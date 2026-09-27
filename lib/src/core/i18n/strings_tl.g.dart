@@ -41,6 +41,7 @@ class TranslationsTl with BaseTranslations<AppLocale, Translations> implements T
 	@override late final _TranslationsCommonTl common = _TranslationsCommonTl._(_root);
 	@override late final _TranslationsFailuresTl failures = _TranslationsFailuresTl._(_root);
 	@override late final _TranslationsFieldsTl fields = _TranslationsFieldsTl._(_root);
+	@override late final _TranslationsManagementTl management = _TranslationsManagementTl._(_root);
 	@override late final _TranslationsNavigationTl navigation = _TranslationsNavigationTl._(_root);
 	@override late final _TranslationsOrganizationsTl organizations = _TranslationsOrganizationsTl._(_root);
 	@override late final _TranslationsSortTl sort = _TranslationsSortTl._(_root);
@@ -202,6 +203,16 @@ class _TranslationsFieldsTl implements TranslationsFieldsEn {
 	@override String get gcashBank => 'GCash/Bank';
 }
 
+// Path: management
+class _TranslationsManagementTl implements TranslationsManagementEn {
+	_TranslationsManagementTl._(this._root);
+
+	final TranslationsTl _root; // ignore: unused_field
+
+	// Translations
+	@override String get usersSubtitle => 'Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito.';
+}
+
 // Path: navigation
 class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	_TranslationsNavigationTl._(this._root);
@@ -228,6 +239,11 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get users => 'Mga User';
 	@override String get roles => 'Mga Tungkulin';
 	@override String get branches => 'Mga Sangay';
+	@override String get machines => 'Mga Makina';
+	@override String get storages => 'Mga Storage';
+	@override String get productCategories => 'Mga Kategorya';
+	@override String get units => 'Mga Unit';
+	@override String get cashierGroups => 'Cashier';
 	@override String get more => 'Iba Pa';
 	@override String get sales => 'Cashier';
 	@override String get salesHistory => 'Mga Order';
@@ -318,10 +334,7 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	);
 	@override String get reviewNone => '—';
 	@override String get overviewTab => 'Pangkalahatan';
-	@override String get peopleTab => 'Mga Tao';
 	@override String get featuresTab => 'Mga Feature';
-	@override String get members => 'Mga Miyembro';
-	@override String get noMembers => 'Walang nakitang miyembro.';
 	@override String get featuresModules => 'Mga Module';
 	@override String get featuresNotifications => 'Mga Notification';
 	@override String get featuresWorkflow => 'Daloy ng order';
@@ -627,6 +640,7 @@ extension on TranslationsTl {
 			'fields.unpaid' => 'Hindi Bayad',
 			'fields.cash' => 'Cash',
 			'fields.gcashBank' => 'GCash/Bank',
+			'management.usersSubtitle' => 'Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito.',
 			'navigation.shortcuts' => 'Mga Shortcut',
 			'navigation.categories' => 'Mga Kategorya',
 			'navigation.showMore' => 'Magpakita pa',
@@ -646,6 +660,11 @@ extension on TranslationsTl {
 			'navigation.users' => 'Mga User',
 			'navigation.roles' => 'Mga Tungkulin',
 			'navigation.branches' => 'Mga Sangay',
+			'navigation.machines' => 'Mga Makina',
+			'navigation.storages' => 'Mga Storage',
+			'navigation.productCategories' => 'Mga Kategorya',
+			'navigation.units' => 'Mga Unit',
+			'navigation.cashierGroups' => 'Cashier',
 			'navigation.more' => 'Iba Pa',
 			'navigation.sales' => 'Cashier',
 			'navigation.salesHistory' => 'Mga Order',
@@ -724,10 +743,7 @@ extension on TranslationsTl {
 			'organizations.reviewInviteCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 naka-queue na imbitasyon', other: '${n} naka-queue na imbitasyon', ), 
 			'organizations.reviewNone' => '—',
 			'organizations.overviewTab' => 'Pangkalahatan',
-			'organizations.peopleTab' => 'Mga Tao',
 			'organizations.featuresTab' => 'Mga Feature',
-			'organizations.members' => 'Mga Miyembro',
-			'organizations.noMembers' => 'Walang nakitang miyembro.',
 			'organizations.featuresModules' => 'Mga Module',
 			'organizations.featuresNotifications' => 'Mga Notification',
 			'organizations.featuresWorkflow' => 'Daloy ng order',

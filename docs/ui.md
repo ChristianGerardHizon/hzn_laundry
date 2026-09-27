@@ -150,11 +150,11 @@ Firebase-style expandable sidebar (`lib/src/core/widgets/desktop_side_nav.dart`)
 | Operations flyout | Promos (when not expanded via Show more) |
 | People flyout | Employees |
 | Insights flyout | Reports, Activities |
-| Administration flyout | Management, Organizations |
+| Administration flyout | Users, Roles, Branches, Machines, Storages, Categories, Units, Cashier, Organizations |
 | Pinned above footer | System |
 | Footer | Logout + collapse/expand |
 
-Shown shortcuts are excluded from category flyouts. Empty groups (after permission filtering) are omitted. Collapse is session-only. Category rows open a flyout on hover when expanded, and on tap when collapsed.
+Shown shortcuts are excluded from most category flyouts. **Administration** always lists management sections (and Organizations) when those nav items are permitted — it does not require opening a Management hub first. Empty groups (after permission filtering) are omitted. Collapse is session-only. Category rows open a flyout on hover when expanded, and on tap when collapsed.
 
 List/detail master-detail layouts (e.g. a list panel beside a detail panel) are implemented per-page where the page needs one, not by the shell itself — check individual feature pages (e.g. `lib/src/features/products/presentation/pages/`) for whether a given screen adopts that pattern at these widths.
 
@@ -186,18 +186,17 @@ List/detail master-detail layouts (e.g. a list panel beside a detail panel) are 
                                                                     Appearance
 
                               ┌───────────────┐
-                              │ Management    │
+                              │ Administration│  (desktop flyout)
                               └───────┬───────┘
-         ┌───────┬──────┬──────┼──────┬────────┬─────────┬────────┐
-         ▼       ▼      ▼      ▼      ▼        ▼         ▼        ▼
-       Users   Roles Branches Machines Storages Categories Units  Cashier,
-                                                                  Import,
-                                                                  Settings
+         ┌───────┬──────┬──────┼──────┬────────┬─────────┬────────┬────────┐
+         ▼       ▼      ▼      ▼      ▼        ▼         ▼        ▼        ▼
+       Users   Roles Branches Machines Storages Categories Units  Cashier  Organizations
+         └──────────────────┬─────────────────────────────────────┘
+                            ▼
+                   Management shell (mode rail + list + detail)
 
-                              ┌───────────────┐
-                              │ Organizations │
-                              └───────────────┘
-                                Switch / invites / setup
+   Tablet/mobile: single Management nav item → /management/users (no landing hub).
+   Desktop: Administration flyout deep-links each section; mode rail switches in-shell.
 ```
 
 Sales History (`/sales`, list + report view) and the Cashier/POS screen (`/cashier`) are distinct routes — the nav item labelled "Sales History" points at `/sales`; the point-of-sale checkout flow lives at `/cashier` and is reached from within the app rather than as its own top-level nav destination.
@@ -258,7 +257,7 @@ public `/history/:token` stay outside the prefix.
 │   │   └── …/management/cashier-groups/:id -> Cashier Group Detail
 │
 ├── …/organizations                 -> Organizations
-│   └── …/organizations/:id         -> Organization Detail (Overview / People / Features)
+│   └── …/organizations/:id         -> Organization Detail (Overview / Features)
 │
 ├── …/promos                          -> Promos List
 │   └── …/promos/:id                  -> Promo Detail
@@ -281,7 +280,7 @@ public `/history/:token` stay outside the prefix.
     └── /auth-loading                -> Auth Loading
 ```
 
-`/users` and `/roles` also exist as separate top-level route files (`users.routes.dart`, `roles.routes.dart`) alongside the `/management/users` and `/management/roles` nested routes above — both are present in the codebase; which one a given entry point (e.g. a dashboard quick action vs. the Management nav item) links to depends on the calling widget, not audited exhaustively here.
+`/users` and `/roles` redirect to `/management/users` and `/management/roles` (legacy bookmarks). Staff are invited from Management → Users; accept/decline pending invites stays on the Organizations list.
 
 ### Shell Branches (12 nav-visible + Cashier)
 
@@ -366,8 +365,7 @@ Product Detail Page (/products/:id)
 
 Organization Detail Page (/organizations/:id)
 ├── Tab 0: Overview     -> OrganizationOverviewTab
-├── Tab 1: People       -> OrganizationPeopleTab
-└── Tab 2: Features     -> OrganizationFeaturesTab
+└── Tab 1: Features     -> OrganizationFeaturesTab
 ```
 
 Each such page keeps its tab widgets in `presentation/widgets/tabs/` (or similar) alongside the page, named `*_tab.dart`. Check the specific feature's `presentation/pages/*_detail_page.dart` for its exact tab set — they aren't identical across features (e.g. Employee Detail's tabs differ from Product Detail's).

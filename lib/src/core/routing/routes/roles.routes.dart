@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../features/users/presentation/pages/user_roles_page.dart';
-
 part 'roles.routes.g.dart';
 
-/// Top-level route for User Roles management.
+/// Legacy `/roles` — redirect to Management roles.
 @TypedGoRoute<RolesRoute>(path: RolesRoute.path)
 class RolesRoute extends GoRouteData with $RolesRoute {
   const RolesRoute();
@@ -13,7 +11,13 @@ class RolesRoute extends GoRouteData with $RolesRoute {
   static const path = '/roles';
 
   @override
-  Widget build(BuildContext context, GoRouterState state) {
-    return const UserRolesPage();
+  String? redirect(BuildContext context, GoRouterState state) {
+    final org = state.pathParameters['orgSlug'];
+    final branch = state.pathParameters['branchSlug'];
+    const suffix = '/management/roles';
+    if (org != null && branch != null) {
+      return '/$org/$branch$suffix';
+    }
+    return suffix;
   }
 }

@@ -6,7 +6,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
+import '../routing/org_scoped_navigation.dart';
+import '../routing/routes/management.routes.dart';
 import '../routing/routes/org_selection.routes.dart';
+import '../routing/routes/organizations.routes.dart';
 import 'desktop_nav_flyout.dart';
 import 'desktop_nav_item.dart';
 import 'nav_permissions.dart';
@@ -97,10 +100,46 @@ class DesktopSideNav extends HookConsumerWidget {
       if (item != null) tapItem(item);
     }
 
+    void navigateAdminSection(AdminFlyoutId id) {
+      switch (id) {
+        case AdminFlyoutId.users:
+          const ManagementUsersRoute().goScoped(context);
+        case AdminFlyoutId.roles:
+          const ManagementRolesRoute().goScoped(context);
+        case AdminFlyoutId.branches:
+          const ManagementBranchesRoute().goScoped(context);
+        case AdminFlyoutId.machines:
+          const ManagementMachinesRoute().goScoped(context);
+        case AdminFlyoutId.storages:
+          const ManagementStoragesRoute().goScoped(context);
+        case AdminFlyoutId.productCategories:
+          const ManagementProductCategoriesRoute().goScoped(context);
+        case AdminFlyoutId.quantityUnits:
+          const ManagementQuantityUnitsRoute().goScoped(context);
+        case AdminFlyoutId.cashierGroups:
+          const ManagementCashierGroupsRoute().goScoped(context);
+        case AdminFlyoutId.organizations:
+          const OrganizationsRoute().goScoped(context);
+      }
+    }
+
+    void tapFlyoutDestination(
+      AppNavCategory category,
+      DesktopFlyoutDestination dest,
+    ) {
+      if (category == AppNavCategory.administration) {
+        navigateAdminSection(dest.selectionKey as AdminFlyoutId);
+        return;
+      }
+      tapId(dest.selectionKey as NavId);
+    }
+
     void tapSearchResult(NavItem item) {
       tapItem(item);
       clearSearch();
     }
+
+    final location = GoRouterState.of(context).uri.path;
 
     Widget buildShortcutItem(NavId id) {
       final item = navItemFor(id, visibleItems);
@@ -229,12 +268,17 @@ class DesktopSideNav extends HookConsumerWidget {
                           ),
                           child: DesktopNavCategoryRow(
                             category: category,
-                            destinations: categoryDestinations(
+                            destinations: flyoutDestinationsFor(
                               category,
                               visibleItems,
                               shownShortcutIds,
+                              t,
                             ),
-                            selectedId: selectedId,
+                            selectedKey: flyoutSelectedKey(
+                              category,
+                              selectedId,
+                              location,
+                            ),
                             collapsed: collapsed.value,
                             selected: isNavCategorySelected(
                               selectedId,
@@ -242,7 +286,8 @@ class DesktopSideNav extends HookConsumerWidget {
                               visibleItems,
                               shownShortcutIds,
                             ),
-                            onDestinationTap: tapItem,
+                            onDestinationTap: (dest) =>
+                                tapFlyoutDestination(category, dest),
                             footer: category == AppNavCategory.administration
                                 ? superAdminFooter
                                 : null,

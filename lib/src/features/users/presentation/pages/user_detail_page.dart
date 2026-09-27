@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
-import '../../../../core/routing/routes/users.routes.dart';
+import '../../../../core/routing/routes/management.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
@@ -52,7 +52,7 @@ class UserDetailPage extends HookConsumerWidget {
               ? null
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => const UsersRoute().goScoped(context),
+                  onPressed: () => const ManagementUsersRoute().goScoped(context),
                 ),
         ),
         body: ErrorState.fromError(
@@ -68,7 +68,7 @@ class UserDetailPage extends HookConsumerWidget {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => const UsersRoute().goScoped(context),
+                      onPressed: () => const ManagementUsersRoute().goScoped(context),
                     ),
             ),
             body: const Center(
@@ -84,7 +84,7 @@ class UserDetailPage extends HookConsumerWidget {
                 ? null
                 : IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => const UsersRoute().goScoped(context),
+                    onPressed: () => const ManagementUsersRoute().goScoped(context),
                   ),
             title: Text('${user.name} - ${user.displayRole}'),
             actions: [
@@ -283,7 +283,7 @@ class UserDetailPage extends HookConsumerWidget {
                   .deleteUser(user.id);
               if (context.mounted) {
                 if (success) {
-                  const UsersRoute().goScoped(context);
+                  const ManagementUsersRoute().goScoped(context);
                   showSuccessSnackBar(context, message: 'User deleted');
                 } else {
                   showErrorSnackBar(context, message: 'Failed to delete user');
