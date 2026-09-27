@@ -69,7 +69,7 @@ Customer (member) management with sales history tracking. Customers are scoped t
 
 - **Sub-features**:
   - Customers list with search by name or phone (current branch only)
-  - Customer detail with info, branch, and full sales history
+  - Customer detail with info, branch, full sales history, and pending-payment balance due
   - Transfer a customer to another branch from the detail menu
   - Create/edit customer via dialog form (stamped with the current branch)
   - Soft delete (sets `isDeleted`); soft-deleted customers are hidden from lists and POS pickers
@@ -640,6 +640,7 @@ lib/src/
 
 ---
 
+| Sep 28 | Customer pending payments | Customer detail shows an all-time Balance due banner and a Pending sales-history filter for unpaid/partial orders with remaining amounts |
 | Sep 28 | Organization logo | Orgs can upload a single brand logo (Overview); logo shows in nav brand, org list, select-org tiles, splash, and switch overlay; falls back to letter initials |
 | Sep 28 | Machine busy warnings scoped | Assign-Machines warnings ignore voided/refunded sales and only count processing orders in the current branch/org; blank-branch machines/storages no longer leak across orgs (client filter + PB rule) |
 | Sep 28 | Quick move status | Order Details shows a "Move to {next status}" button under Services to advance Pending → Processing → Ready → Picked Up in one tap |
