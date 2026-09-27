@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../data/repositories/machine_repository.dart';
 import '../../domain/machine.dart';
@@ -9,19 +10,22 @@ part 'machines_controller.g.dart';
 
 /// Controller for managing machine list state.
 ///
-/// Machines are scoped to the current working branch. Unassigned machines
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Machines are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch machines are
+/// excluded so they cannot leak across orgs.
 @Riverpod(keepAlive: true)
 class MachinesController extends _$MachinesController {
   MachineRepository get _repository => ref.read(machineRepositoryProvider);
 
-  String? get _branchFilter => PBFilters.forBranchIncludingUnassigned(
-        ref.read(currentBranchIdProvider),
+  String? get _branchFilter => PBFilters.forBranchOrOrganization(
+        branchId: ref.read(currentBranchIdProvider),
+        organizationId: ref.read(currentOrganizationIdProvider),
       );
 
   @override
   Future<List<Machine>> build() async {
     ref.watch(currentBranchIdProvider);
+    ref.watch(currentOrganizationIdProvider);
     final result = await _repository.fetchAll(filter: _branchFilter);
     return result.fold(
       (failure) => throw failure,

@@ -444,6 +444,19 @@ function updateOrganization(e) {
     record.set("onboardingCompletedAt", body.onboardingCompletedAt);
   }
 
+  var logoFiles = [];
+  try {
+    logoFiles = e.findUploadedFiles("logo") || [];
+  } catch (_) {
+    logoFiles = [];
+  }
+  logoFiles = logoFiles.filter(function(f) { return !!f; });
+  if (logoFiles.length) {
+    record.set("logo", logoFiles);
+  } else if (body.logo === null || body.logo === "") {
+    record.set("logo", null);
+  }
+
   e.app.save(record);
   return e.json(200, exportRecord(record));
 }

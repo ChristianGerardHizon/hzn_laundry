@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -33,6 +34,12 @@ abstract class OrganizationRepository {
     DateTime? onboardingCompletedAt,
   });
 
+  /// Uploads or replaces the organization logo image.
+  FutureEither<Organization> updateLogo(String id, http.MultipartFile file);
+
+  /// Clears the organization logo.
+  FutureEither<Organization> clearLogo(String id);
+
   /// Platform-wide org metrics for `system.admin` (Super Admin dashboard).
   FutureEither<OrganizationPlatformStatsResponse> listPlatformStats();
 }
@@ -51,7 +58,7 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
       _pb.collection(PocketBaseCollections.organizations);
 
   Organization _fromMap(Map<String, dynamic> json) {
-    return OrganizationDto.fromJson(json).toEntity();
+    return OrganizationDto.fromJson(json).toEntity(baseUrl: _pb.baseURL);
   }
 
   @override
@@ -66,7 +73,8 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
           );
         }
         final record = await _collection.getOne(id);
-        return OrganizationDto.fromRecord(record).toEntity();
+        return OrganizationDto.fromRecord(record)
+            .toEntity(baseUrl: _pb.baseURL);
       },
       Failure.handle,
     ).run();
@@ -155,6 +163,70 @@ class OrganizationRepositoryImpl implements OrganizationRepository {
         if (response is! Map<String, dynamic>) {
           throw const DataFailure(
             'Invalid organization update response',
+            null,
+            'invalid_organization_response',
+          );
+        }
+        return _fromMap(response);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Organization> updateLogo(
+    String id,
+    http.MultipartFile file,
+  ) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (id.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/organizations/$id',
+          method: 'PATCH',
+          body: const <String, dynamic>{},
+          files: [file],
+        );
+        if (response is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid organization logo update response',
+            null,
+            'invalid_organization_response',
+          );
+        }
+        return _fromMap(response);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Organization> clearLogo(String id) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (id.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/organizations/$id',
+          method: 'PATCH',
+          body: {'logo': ''},
+        );
+        if (response is! Map<String, dynamic>) {
+          throw const DataFailure(
+            'Invalid organization logo clear response',
             null,
             'invalid_organization_response',
           );

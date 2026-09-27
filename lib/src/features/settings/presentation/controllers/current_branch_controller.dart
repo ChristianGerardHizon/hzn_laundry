@@ -126,11 +126,11 @@ class CurrentBranchController extends _$CurrentBranchController {
   Future<void> switchToAllBranches({String? displayName}) async {
     if (!await _checkIsAdmin()) return;
 
-    final orgName =
-        ref.read(currentOrganizationControllerProvider).value?.name;
+    final org = ref.read(currentOrganizationControllerProvider).value;
     await ref.read(organizationSwitchOverlayProvider.notifier).run(
           name: displayName,
-          organizationLabel: orgName,
+          organizationLabel: org?.name,
+          logoUrl: org?.logoUrl,
           action: () async {
             await _persistBranch(kAllBranchesSentinel);
             _isAllBranchesMode = true;
@@ -145,11 +145,11 @@ class CurrentBranchController extends _$CurrentBranchController {
     if (!await _checkIsAdmin()) return;
 
     final branch = await _fetchBranch(branchId);
-    final orgName =
-        ref.read(currentOrganizationControllerProvider).value?.name;
+    final org = ref.read(currentOrganizationControllerProvider).value;
     await ref.read(organizationSwitchOverlayProvider.notifier).run(
           name: branch?.name,
-          organizationLabel: orgName,
+          organizationLabel: org?.name,
+          logoUrl: org?.logoUrl,
           action: () async {
             await _persistBranch(branchId);
             _isAllBranchesMode = false;

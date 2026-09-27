@@ -11,6 +11,7 @@ class Organization with OrganizationMappable {
     required this.slug,
     this.contactNumber,
     this.address,
+    this.logoUrl,
     this.onboardingCompletedAt,
     this.isDeleted = false,
     this.created,
@@ -24,10 +25,15 @@ class Organization with OrganizationMappable {
   final String slug;
   final String? contactNumber;
   final String? address;
+
+  /// Pre-computed absolute URL for the org logo file, if any.
+  final String? logoUrl;
   final DateTime? onboardingCompletedAt;
   final bool isDeleted;
   final DateTime? created;
   final DateTime? updated;
 
   bool get isOnboarded => onboardingCompletedAt != null;
+
+  bool get hasLogo => logoUrl != null && logoUrl!.isNotEmpty;
 }

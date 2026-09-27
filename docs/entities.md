@@ -195,6 +195,7 @@ Multi-tenant laundry business. Collection writes go through custom hooks (`POST 
 | `slug` | String | Yes | URL-safe unique slug (route segment) |
 | `contactNumber` | String | No | Contact number |
 | `address` | String | No | Address |
+| `logo` | File | No | Organization brand logo (single image; surfaced as `logoUrl` on the client) |
 | `onboardingCompletedAt` | DateTime | No | Set when the create-organization setup dialog finishes (org + first branch created together) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |

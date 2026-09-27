@@ -75,6 +75,8 @@ class SaleDetailContent extends ConsumerWidget {
             compact: compact,
           ),
 
+          _QuickMoveStatusButton(sale: sale, compact: compact),
+
           // Packs Section
           if (sale.orderStatus != OrderStatus.pending)
             _PacksSection(
@@ -980,6 +982,177 @@ class SaleAssignmentInfoCard extends StatelessWidget {
   }
 }
 
+/// Advances [sale] to [status], running assignment dialogs when needed.
+///
+/// Returns `true` when the status was updated successfully.
+Future<bool> advanceSaleOrderStatus({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Sale sale,
+  required OrderStatus status,
+}) async {
+  if (status == sale.orderStatus) return false;
+
+  if (status == OrderStatus.processing) {
+    final serviceItems =
+        await ref.read(saleServiceItemsProvider(sale.id).future);
+    if (serviceItems.isNotEmpty && context.mounted) {
+      final result = await showAssignMachinesDialog(
+        context,
+        serviceItems: serviceItems,
+      );
+      if (result == null || !context.mounted) return false;
+    }
+  } else if (status == OrderStatus.ready) {
+    final prepared = await prepareOrderForReadyStatus(
+      context: context,
+      ref: ref,
+      saleId: sale.id,
+      sale: sale,
+    );
+    if (!prepared || !context.mounted) return false;
+  }
+
+  if (!context.mounted) return false;
+
+  final result = await ref
+      .read(salesRepositoryProvider)
+      .updateOrderStatus(sale.id, status);
+
+  if (!context.mounted) return false;
+
+  return result.fold(
+    (failure) {
+      showErrorSnackBar(context, message: failure.messageString);
+      return false;
+    },
+    (_) {
+      ref.invalidate(saleProvider(sale.id));
+      ref.invalidate(saleServiceItemsProvider(sale.id));
+      ref.invalidate(kanbanSalesProvider);
+      ref.invalidate(notPickedUpCountProvider);
+      ref.invalidate(todayCountProvider);
+      ref.invalidate(backlogPendingCountProvider);
+      return true;
+    },
+  );
+}
+
+/// One-tap control to advance [Sale.orderStatus] to the next workflow step.
+class _QuickMoveStatusButton extends HookConsumerWidget {
+  const _QuickMoveStatusButton({
+    required this.sale,
+    required this.compact,
+  });
+
+  final Sale sale;
+  final bool compact;
+
+  /// Matches order-status chip colors; picked-up uses a darker grey so
+  /// white label text stays readable (light greys read as disabled).
+  static Color _statusColor(OrderStatus status) => switch (status) {
+        OrderStatus.pending => Colors.amber.shade700,
+        OrderStatus.processing => Colors.blue,
+        OrderStatus.ready => Colors.green,
+        OrderStatus.pickedUp => Colors.blueGrey.shade700,
+      };
+
+  static IconData _statusIcon(OrderStatus status) => switch (status) {
+        OrderStatus.pending => Icons.schedule,
+        OrderStatus.processing => Icons.autorenew,
+        OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.pickedUp => Icons.local_shipping_outlined,
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isUpdating = useState(false);
+    final next = sale.orderStatus.next;
+    final statusLower = sale.status.toLowerCase();
+    final canChangeStatus =
+        statusLower != 'refunded' && statusLower != 'voided';
+
+    if (next == null || !canChangeStatus) {
+      return const SizedBox.shrink();
+    }
+
+    final busy = isUpdating.value;
+    final label = 'Move to ${next.displayName}';
+    final accent = _statusColor(next);
+    final onAccent =
+        ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
+            ? Colors.white
+            : Colors.black;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: compact ? 12 : 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: busy
+              ? null
+              : () async {
+                  isUpdating.value = true;
+                  await advanceSaleOrderStatus(
+                    context: context,
+                    ref: ref,
+                    sale: sale,
+                    status: next,
+                  );
+                  if (context.mounted) isUpdating.value = false;
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: accent,
+            foregroundColor: onAccent,
+            disabledBackgroundColor: accent.withValues(alpha: 0.55),
+            disabledForegroundColor: onAccent,
+            minimumSize: const Size.fromHeight(48),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 12 : 16,
+              vertical: 12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: busy
+                    ? CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: onAccent,
+                      )
+                    : Icon(_statusIcon(next), size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: onAccent,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              ExcludeSemantics(
+                child: Icon(
+                  Icons.arrow_forward,
+                  size: 20,
+                  color: onAccent,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Wraps [SaleHighlightBanner] with balance-due data from the payments provider.
 ///
 /// Tapping the banner opens a menu to change [Sale.orderStatus].
@@ -1007,47 +1180,14 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
     Future<void> updateOrderStatus(OrderStatus status) async {
       if (status == sale.orderStatus || isUpdating.value) return;
 
-      if (status == OrderStatus.processing) {
-        final serviceItems =
-            await ref.read(saleServiceItemsProvider(sale.id).future);
-        if (serviceItems.isNotEmpty && context.mounted) {
-          final result = await showAssignMachinesDialog(
-            context,
-            serviceItems: serviceItems,
-          );
-          if (result == null || !context.mounted) return;
-        }
-      } else if (status == OrderStatus.ready) {
-        final prepared = await prepareOrderForReadyStatus(
-          context: context,
-          ref: ref,
-          saleId: sale.id,
-          sale: sale,
-        );
-        if (!prepared || !context.mounted) return;
-      }
-
-      if (!context.mounted) return;
-
       isUpdating.value = true;
-      final result = await ref
-          .read(salesRepositoryProvider)
-          .updateOrderStatus(sale.id, status);
-      isUpdating.value = false;
-
-      if (!context.mounted) return;
-
-      result.fold(
-        (failure) => showErrorSnackBar(context, message: failure.messageString),
-        (_) {
-          ref.invalidate(saleProvider(sale.id));
-          ref.invalidate(saleServiceItemsProvider(sale.id));
-          ref.invalidate(kanbanSalesProvider);
-          ref.invalidate(notPickedUpCountProvider);
-          ref.invalidate(todayCountProvider);
-          ref.invalidate(backlogPendingCountProvider);
-        },
+      await advanceSaleOrderStatus(
+        context: context,
+        ref: ref,
+        sale: sale,
+        status: status,
       );
+      if (context.mounted) isUpdating.value = false;
     }
 
     Future<void> showStatusMenu() async {
