@@ -639,6 +639,7 @@ lib/src/
 
 ---
 
+| Sep 28 | Machine busy warnings scoped | Assign-Machines warnings ignore voided/refunded sales and only count processing orders in the current branch/org; blank-branch machines/storages no longer leak across orgs (client filter + PB rule) |
 | Sep 28 | Quick move status | Order Details shows a "Move to {next status}" button under Services to advance Pending → Processing → Ready → Picked Up in one tap |
 | Sep 26 | Flatten Administration nav | Desktop Administration flyout deep-links Users/Roles/Branches/Machines/Storages/Categories/Units/Cashier + Organizations (no Management hub hop); `/management` redirects to Users on mobile too |
 | Sep 26 | Invite-first Users | Removed Organizations People tab; Management Users invites staff (server ensures login account); list scoped to org members; accept stays on Organizations list |
