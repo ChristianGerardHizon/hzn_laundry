@@ -13,6 +13,17 @@ import 'assign_storages_dialog.dart';
 /// Returns true when the service line has at least one machine assigned.
 bool serviceItemHasMachine(SaleServiceItem item) => item.hasMachineAssigned;
 
+bool _serviceItemHasStorage(SaleServiceItem item) =>
+    item.storageName != null && item.storageName!.isNotEmpty;
+
+bool _machinesOk(List<SaleServiceItem> items) =>
+    items.isEmpty || items.every(serviceItemHasMachine);
+
+bool _packsOk(Sale sale) => sale.packs > 0;
+
+bool _storageOk(List<SaleServiceItem> items, bool storageRequired) =>
+    !storageRequired || items.isEmpty || items.every(_serviceItemHasStorage);
+
 Map<String, List<String>> _machineAssignmentsFrom(
   List<SaleServiceItem> items,
 ) {
@@ -69,7 +80,8 @@ Future<Sale> _freshSale(WidgetRef ref, String saleId, Sale fallback) async {
 
 /// Shows required machine then packs/storage dialogs for Ready-for-pickup.
 ///
-/// Returns `true` when the order has machines on every service line and
+/// Skips dialogs when washer, packs, and (when required) storage are already
+/// set. Returns `true` when the order has machines on every service line and
 /// `packs > 0`. Returns `false` if the user cancels or validation fails.
 Future<bool> prepareOrderForReadyStatus({
   required BuildContext context,
@@ -86,7 +98,19 @@ Future<bool> prepareOrderForReadyStatus({
             (_) => <SaleServiceItem>[],
           );
 
-  if (serviceItems.isNotEmpty) {
+  final storageRequired =
+      await ref.read(requireStorageEnabledProvider.future).catchError(
+            (_) => false,
+          );
+
+  var machinesOk = _machinesOk(serviceItems);
+  var packsOk = _packsOk(currentSale);
+  var storageOk = _storageOk(serviceItems, storageRequired);
+
+  // Everything already set — no prompts needed.
+  if (machinesOk && packsOk && storageOk) return true;
+
+  if (!machinesOk) {
     if (!context.mounted) return false;
     final machinesResult = await showAssignMachinesDialog(
       context,
@@ -96,25 +120,29 @@ Future<bool> prepareOrderForReadyStatus({
       requireAssignment: true,
     );
     if (machinesResult == null || !context.mounted) return false;
+
+    serviceItems = await _freshServiceItems(ref, saleId);
+    currentSale = await _freshSale(ref, saleId, currentSale);
+    machinesOk = _machinesOk(serviceItems);
+    packsOk = _packsOk(currentSale);
+    storageOk = _storageOk(serviceItems, storageRequired);
   }
 
-  serviceItems = await _freshServiceItems(ref, saleId);
-  currentSale = await _freshSale(ref, saleId, currentSale);
+  if (!packsOk || !storageOk) {
+    if (!context.mounted) return false;
+    final storageResult = await showAssignStoragesDialog(
+      context,
+      saleId: saleId,
+      serviceItems: serviceItems,
+      initialAssignments: _storageAssignmentsFrom(serviceItems),
+      initialPacks: currentSale.packs > 0 ? currentSale.packs : null,
+      requirePacks: true,
+    );
+    if (storageResult == null || !context.mounted) return false;
 
-  if (!context.mounted) return false;
-
-  final storageResult = await showAssignStoragesDialog(
-    context,
-    saleId: saleId,
-    serviceItems: serviceItems,
-    initialAssignments: _storageAssignmentsFrom(serviceItems),
-    initialPacks: currentSale.packs > 0 ? currentSale.packs : null,
-    requirePacks: true,
-  );
-  if (storageResult == null || !context.mounted) return false;
-
-  serviceItems = await _freshServiceItems(ref, saleId);
-  currentSale = await _freshSale(ref, saleId, currentSale);
+    serviceItems = await _freshServiceItems(ref, saleId);
+    currentSale = await _freshSale(ref, saleId, currentSale);
+  }
 
   if (serviceItems.isNotEmpty &&
       serviceItems.any((item) => !serviceItemHasMachine(item))) {
@@ -138,12 +166,8 @@ Future<bool> prepareOrderForReadyStatus({
     return false;
   }
 
-  final storageRequired =
-      ref.read(requireStorageEnabledProvider).value ?? false;
   if (storageRequired && serviceItems.isNotEmpty) {
-    final missing = serviceItems.any(
-      (item) => item.storageName == null || item.storageName!.isEmpty,
-    );
+    final missing = serviceItems.any((item) => !_serviceItemHasStorage(item));
     if (missing) {
       if (context.mounted) {
         showErrorSnackBar(
