@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../machines/domain/machine.dart';
 import '../../../machines/presentation/controllers/machine_usage_provider.dart';
 import '../../../machines/presentation/controllers/machines_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../services/domain/sale_service_item.dart';
+import 'assign_dialog_actions.dart';
 
 /// Dialog for assigning machines to sale service items.
 ///
@@ -125,256 +127,297 @@ class AssignMachinesDialog extends HookConsumerWidget {
 
     return ScaffoldMessenger(
       child: Builder(
-        builder: (context) => AlertDialog(
-          title: const Text('Assign Machines'),
-          content: SizedBox(
-            width: 400,
-            child: machinesAsync.when(
-              loading: () => const SizedBox(
-                height: 100,
-                child: Center(child: CircularProgressIndicator()),
+        builder: (context) {
+          final media = MediaQuery.sizeOf(context);
+          final maxDialogHeight = media.height * 0.85;
+          final isCompact = media.width < Breakpoints.multiColumn;
+
+          return Dialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 400,
+                maxHeight: maxDialogHeight,
               ),
-              error: (error, _) => Text(Failure.displayErrorMessage(error)),
-              data: (machines) {
-                if (machines.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      requireAssignment
-                          ? 'No machines available. Add a machine before marking this order ready.'
-                          : 'No machines available. You can skip this step and assign machines later.',
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Assign Machines',
+                      style: theme.textTheme.headlineSmall,
                     ),
-                  );
-                }
-
-                final availableMachines =
-                    machines.where((m) => m.isAvailable).toList();
-
-                final activeItemId =
-                    serviceItems[activeItemIndex.value].id;
-                final activeLoadCounts =
-                    loadCounts.value[activeItemId] ?? {};
-
-                return SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Service item selector (only show if multiple)
-                      if (serviceItems.length > 1) ...[
-                        Text(
-                          'Select service to assign machines:',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: machinesAsync.when(
+                        loading: () => const SizedBox(
+                          height: 100,
+                          child: Center(child: CircularProgressIndicator()),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            for (int i = 0; i < serviceItems.length; i++)
-                              _ServiceItemChip(
-                                item: serviceItems[i],
-                                isActive: activeItemIndex.value == i,
-                                assignedCount:
-                                    (assignments.value[serviceItems[i].id] ??
-                                            [])
-                                        .length,
-                                onTap: isSaving.value
-                                    ? null
-                                    : () => activeItemIndex.value = i,
+                        error: (error, _) =>
+                            Text(Failure.displayErrorMessage(error)),
+                        data: (machines) {
+                          if (machines.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Text(
+                                requireAssignment
+                                    ? 'No machines available. Add a machine before marking this order ready.'
+                                    : 'No machines available. You can skip this step and assign machines later.',
                               ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(height: 1),
-                        const SizedBox(height: 16),
-                      ],
-                      // Current service item label
-                      _ActiveServiceLabel(
-                        item: serviceItems[activeItemIndex.value],
-                      ),
-                      const SizedBox(height: 12),
-                      // Machine grid - tappable chips
-                      _MachineGrid(
-                        machines: availableMachines,
-                        selectedIds: assignments.value[activeItemId] ?? [],
-                        loadCounts: activeLoadCounts,
-                        disabled: isSaving.value,
-                        onToggle: (machineId) {
-                          final itemId =
+                            );
+                          }
+
+                          final availableMachines =
+                              machines.where((m) => m.isAvailable).toList();
+
+                          final activeItemId =
                               serviceItems[activeItemIndex.value].id;
-                          final currentAssignments =
-                              Map<String, List<String>>.from(
-                                  assignments.value);
-                          final currentCounts =
-                              Map<String, Map<String, int>>.from(
-                                  loadCounts.value);
-                          final list = List<String>.from(
-                              currentAssignments[itemId] ?? []);
-                          final counts = Map<String, int>.from(
-                              currentCounts[itemId] ?? {});
+                          final activeLoadCounts =
+                              loadCounts.value[activeItemId] ?? {};
 
-                          if (!list.contains(machineId)) {
-                            list.add(machineId);
-                            counts[machineId] = 1;
-                          } else {
-                            final current = counts[machineId] ?? 1;
-                            if (current < _MachineLoadRow._maxLoad) {
-                              counts[machineId] = current + 1;
-                            }
-                          }
-
-                          currentAssignments[itemId] = list;
-                          currentCounts[itemId] = counts;
-                          assignments.value = currentAssignments;
-                          loadCounts.value = currentCounts;
-                        },
-                        onDeselect: (machineId) {
-                          final itemId =
-                              serviceItems[activeItemIndex.value].id;
-                          final currentAssignments =
-                              Map<String, List<String>>.from(
-                                  assignments.value);
-                          final currentCounts =
-                              Map<String, Map<String, int>>.from(
-                                  loadCounts.value);
-                          final list = List<String>.from(
-                              currentAssignments[itemId] ?? []);
-                          final counts = Map<String, int>.from(
-                              currentCounts[itemId] ?? {});
-
-                          list.remove(machineId);
-                          counts.remove(machineId);
-
-                          currentAssignments[itemId] = list;
-                          currentCounts[itemId] = counts;
-                          assignments.value = currentAssignments;
-                          loadCounts.value = currentCounts;
-                        },
-                      ),
-                      // Per-machine load count steppers.
-                      Builder(
-                        builder: (context) {
-                          final selectedIds =
-                              assignments.value[activeItemId] ?? [];
-                          if (selectedIds.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          final selectedMachines = availableMachines
-                              .where((m) => selectedIds.contains(m.id))
-                              .toList();
-
-                          void removeMachine(String machineId) {
-                            final currentAssignments =
-                                Map<String, List<String>>.from(
-                                    assignments.value);
-                            final currentCounts =
-                                Map<String, Map<String, int>>.from(
-                                    loadCounts.value);
-                            final list = List<String>.from(
-                                currentAssignments[activeItemId] ?? []);
-                            final counts = Map<String, int>.from(
-                                currentCounts[activeItemId] ?? {});
-                            list.remove(machineId);
-                            counts.remove(machineId);
-                            currentAssignments[activeItemId] = list;
-                            currentCounts[activeItemId] = counts;
-                            assignments.value = currentAssignments;
-                            loadCounts.value = currentCounts;
-                          }
-
-                          void setLoad(String machineId, int load) {
-                            if (load == 0) {
-                              showDialog<bool>(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text('Remove machine?'),
-                                  content: const Text(
-                                    'Setting load to 0 will remove this machine from the assignment.',
+                          return SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Service item selector (only show if multiple)
+                                if (serviceItems.length > 1) ...[
+                                  Text(
+                                    'Select service to assign machines:',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(true),
-                                      child: const Text('Remove'),
-                                    ),
-                                  ],
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    children: [
+                                      for (int i = 0;
+                                          i < serviceItems.length;
+                                          i++)
+                                        _ServiceItemChip(
+                                          item: serviceItems[i],
+                                          isActive:
+                                              activeItemIndex.value == i,
+                                          assignedCount: (assignments
+                                                      .value[serviceItems[i].id] ??
+                                                  [])
+                                              .length,
+                                          onTap: isSaving.value
+                                              ? null
+                                              : () =>
+                                                  activeItemIndex.value = i,
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 16),
+                                ],
+                                // Current service item label
+                                _ActiveServiceLabel(
+                                  item: serviceItems[activeItemIndex.value],
+                                  compact: isCompact,
                                 ),
-                              ).then((confirmed) {
-                                if (confirmed == true) removeMachine(machineId);
-                              });
-                              return;
-                            }
-                            final currentCounts =
-                                Map<String, Map<String, int>>.from(
-                                    loadCounts.value);
-                            final counts = Map<String, int>.from(
-                                currentCounts[activeItemId] ?? {});
-                            counts[machineId] = load;
-                            currentCounts[activeItemId] = counts;
-                            loadCounts.value = currentCounts;
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 16),
-                              const Divider(height: 1),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Loads',
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              for (final m in selectedMachines)
-                                _MachineLoadRow(
-                                  machine: m,
-                                  loadCount: activeLoadCounts[m.id] ?? 1,
+                                const SizedBox(height: 12),
+                                // Machine grid - tappable chips
+                                _MachineGrid(
+                                  machines: availableMachines,
+                                  selectedIds:
+                                      assignments.value[activeItemId] ?? [],
+                                  loadCounts: activeLoadCounts,
                                   disabled: isSaving.value,
-                                  onChanged: (load) => setLoad(m.id, load),
+                                  onToggle: (machineId) {
+                                    final itemId = serviceItems[
+                                            activeItemIndex.value]
+                                        .id;
+                                    final currentAssignments =
+                                        Map<String, List<String>>.from(
+                                            assignments.value);
+                                    final currentCounts =
+                                        Map<String, Map<String, int>>.from(
+                                            loadCounts.value);
+                                    final list = List<String>.from(
+                                        currentAssignments[itemId] ?? []);
+                                    final counts = Map<String, int>.from(
+                                        currentCounts[itemId] ?? {});
+
+                                    if (!list.contains(machineId)) {
+                                      list.add(machineId);
+                                      counts[machineId] = 1;
+                                    } else {
+                                      final current = counts[machineId] ?? 1;
+                                      if (current <
+                                          _MachineLoadRow._maxLoad) {
+                                        counts[machineId] = current + 1;
+                                      }
+                                    }
+
+                                    currentAssignments[itemId] = list;
+                                    currentCounts[itemId] = counts;
+                                    assignments.value = currentAssignments;
+                                    loadCounts.value = currentCounts;
+                                  },
+                                  onDeselect: (machineId) {
+                                    final itemId = serviceItems[
+                                            activeItemIndex.value]
+                                        .id;
+                                    final currentAssignments =
+                                        Map<String, List<String>>.from(
+                                            assignments.value);
+                                    final currentCounts =
+                                        Map<String, Map<String, int>>.from(
+                                            loadCounts.value);
+                                    final list = List<String>.from(
+                                        currentAssignments[itemId] ?? []);
+                                    final counts = Map<String, int>.from(
+                                        currentCounts[itemId] ?? {});
+
+                                    list.remove(machineId);
+                                    counts.remove(machineId);
+
+                                    currentAssignments[itemId] = list;
+                                    currentCounts[itemId] = counts;
+                                    assignments.value = currentAssignments;
+                                    loadCounts.value = currentCounts;
+                                  },
                                 ),
-                            ],
+                                // Per-machine load count steppers.
+                                Builder(
+                                  builder: (context) {
+                                    final selectedIds =
+                                        assignments.value[activeItemId] ??
+                                            [];
+                                    if (selectedIds.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final selectedMachines = availableMachines
+                                        .where(
+                                            (m) => selectedIds.contains(m.id))
+                                        .toList();
+
+                                    void removeMachine(String machineId) {
+                                      final currentAssignments =
+                                          Map<String, List<String>>.from(
+                                              assignments.value);
+                                      final currentCounts =
+                                          Map<String, Map<String, int>>.from(
+                                              loadCounts.value);
+                                      final list = List<String>.from(
+                                          currentAssignments[activeItemId] ??
+                                              []);
+                                      final counts = Map<String, int>.from(
+                                          currentCounts[activeItemId] ?? {});
+                                      list.remove(machineId);
+                                      counts.remove(machineId);
+                                      currentAssignments[activeItemId] =
+                                          list;
+                                      currentCounts[activeItemId] = counts;
+                                      assignments.value = currentAssignments;
+                                      loadCounts.value = currentCounts;
+                                    }
+
+                                    void setLoad(String machineId, int load) {
+                                      if (load == 0) {
+                                        showDialog<bool>(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: const Text(
+                                                'Remove machine?'),
+                                            content: const Text(
+                                              'Setting load to 0 will remove this machine from the assignment.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.of(context)
+                                                        .pop(false),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () =>
+                                                    Navigator.of(context)
+                                                        .pop(true),
+                                                child: const Text('Remove'),
+                                              ),
+                                            ],
+                                          ),
+                                        ).then((confirmed) {
+                                          if (confirmed == true) {
+                                            removeMachine(machineId);
+                                          }
+                                        });
+                                        return;
+                                      }
+                                      final currentCounts =
+                                          Map<String, Map<String, int>>.from(
+                                              loadCounts.value);
+                                      final counts = Map<String, int>.from(
+                                          currentCounts[activeItemId] ?? {});
+                                      counts[machineId] = load;
+                                      currentCounts[activeItemId] = counts;
+                                      loadCounts.value = currentCounts;
+                                    }
+
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 16),
+                                        const Divider(height: 1),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Loads',
+                                          style: theme
+                                              .textTheme.labelMedium
+                                              ?.copyWith(
+                                            color: theme.colorScheme
+                                                .onSurfaceVariant,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        for (final m in selectedMachines)
+                                          _MachineLoadRow(
+                                            machine: m,
+                                            loadCount:
+                                                activeLoadCounts[m.id] ?? 1,
+                                            disabled: isSaving.value,
+                                            onChanged: (load) =>
+                                                setLoad(m.id, load),
+                                          ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isSaving.value ? null : () => context.pop(null),
-              child: const Text('Cancel'),
-            ),
-            if (!requireAssignment)
-              TextButton(
-                onPressed: isSaving.value ? null : () => context.pop(true),
-                child: const Text('Skip'),
+                    ),
+                    const SizedBox(height: 12),
+                    AssignDialogActions(
+                      isSaving: isSaving.value,
+                      showSkip: !requireAssignment,
+                      primaryLabel: 'Assign & Continue',
+                      compact: isCompact,
+                      onCancel: () => context.pop(null),
+                      onSkip: () => context.pop(true),
+                      onPrimary: handleAssign,
+                    ),
+                  ],
+                ),
               ),
-            FilledButton(
-              onPressed: isSaving.value ? null : handleAssign,
-              child: isSaving.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Assign & Continue'),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -430,13 +473,50 @@ class _ServiceItemChip extends StatelessWidget {
 }
 
 class _ActiveServiceLabel extends StatelessWidget {
-  const _ActiveServiceLabel({required this.item});
+  const _ActiveServiceLabel({
+    required this.item,
+    this.compact = false,
+  });
 
   final SaleServiceItem item;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final title = Text(
+      '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final hint = Text(
+      'Tap to add load, hold to remove',
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.local_laundry_service,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(child: title),
+            ],
+          ),
+          const SizedBox(height: 4),
+          hint,
+        ],
+      );
+    }
 
     return Row(
       children: [
@@ -446,19 +526,9 @@ class _ActiveServiceLabel extends StatelessWidget {
           color: theme.colorScheme.primary,
         ),
         const SizedBox(width: 6),
-        Text(
-          '${item.serviceName} (x${item.service?.formatQuantity(item.quantity) ?? '${item.quantity}'})',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          'Tap to add load, hold to remove',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        Flexible(child: title),
+        const SizedBox(width: 8),
+        hint,
       ],
     );
   }

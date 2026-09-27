@@ -7,33 +7,23 @@ part of 'users.routes.dart';
 // **************************************************************************
 
 List<RouteBase> get $appRoutes => [
-      $usersShellRoute,
+      $usersRoute,
     ];
 
-RouteBase get $usersShellRoute => ShellRouteData.$route(
-      factory: $UsersShellRouteExtension._fromState,
+RouteBase get $usersRoute => GoRouteData.$route(
+      path: '/users',
+      factory: $UsersRoute._fromState,
       routes: [
         GoRouteData.$route(
-          path: '/users',
-          factory: $UsersRoute._fromState,
-          routes: [
-            GoRouteData.$route(
-              path: ':id',
-              factory: $UserDetailRoute._fromState,
-            ),
-            GoRouteData.$route(
-              path: 'roles',
-              factory: $UserRolesRoute._fromState,
-            ),
-          ],
+          path: ':id',
+          factory: $UserDetailRoute._fromState,
+        ),
+        GoRouteData.$route(
+          path: 'roles',
+          factory: $UserRolesRoute._fromState,
         ),
       ],
     );
-
-extension $UsersShellRouteExtension on UsersShellRoute {
-  static UsersShellRoute _fromState(GoRouterState state) =>
-      const UsersShellRoute();
-}
 
 mixin $UsersRoute on GoRouteData {
   static UsersRoute _fromState(GoRouterState state) => const UsersRoute();

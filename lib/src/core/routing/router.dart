@@ -23,6 +23,7 @@ import 'routes/products.routes.dart';
 import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
 import 'routes/employees.routes.dart';
+import 'routes/roles.routes.dart';
 import 'routes/services.routes.dart';
 import 'routes/sales.routes.dart';
 import 'routes/sales_history.routes.dart';
@@ -31,6 +32,7 @@ import 'routes/activities.routes.dart';
 import 'routes/promos.routes.dart';
 import 'routes/subscriptions.routes.dart';
 import 'routes/system.routes.dart';
+import 'routes/users.routes.dart';
 import 'routes/version_lock.routes.dart';
 
 part 'router.g.dart';
@@ -103,6 +105,8 @@ GoRouter router(Ref ref) {
               $reportsRoute,
               $activitiesRoute,
               $managementShellRoute,
+              $usersRoute,
+              $rolesRoute,
               $organizationsRoute,
               $promosShellRoute,
               $systemShellRoute,

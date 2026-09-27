@@ -8,15 +8,15 @@ part of 'paginated_users_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Controller for managing paginated users list.
+/// Controller for managing paginated users list (scoped to current org members).
 
 @ProviderFor(PaginatedUsersController)
 final paginatedUsersControllerProvider = PaginatedUsersControllerProvider._();
 
-/// Controller for managing paginated users list.
+/// Controller for managing paginated users list (scoped to current org members).
 final class PaginatedUsersControllerProvider extends $AsyncNotifierProvider<
     PaginatedUsersController, PaginatedState<User>> {
-  /// Controller for managing paginated users list.
+  /// Controller for managing paginated users list (scoped to current org members).
   PaginatedUsersControllerProvider._()
       : super(
           from: null,
@@ -37,9 +37,9 @@ final class PaginatedUsersControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$paginatedUsersControllerHash() =>
-    r'1766ba4f5165a62939c4192011219a89d52ced7d';
+    r'b8a62aee7af1621adf3c364ea65529e463dda5a3';
 
-/// Controller for managing paginated users list.
+/// Controller for managing paginated users list (scoped to current org members).
 
 abstract class _$PaginatedUsersController
     extends $AsyncNotifier<PaginatedState<User>> {

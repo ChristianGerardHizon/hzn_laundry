@@ -466,8 +466,6 @@ class _SalesSummaryContent extends ConsumerWidget {
             for (var i = 0; i < salesCards.length; i++)
               SizedBox(
                 width: _kpiCardWidthAt(
-                  index: i,
-                  itemCount: salesCards.length,
                   cols: layout.cols,
                   cardWidth: layout.cardWidth,
                   maxWidth: constraints.maxWidth,
@@ -923,18 +921,16 @@ const _kpiMinCardWidth = 168.0;
   return (cols: cols, cardWidth: cardWidth);
 }
 
-/// Width for a KPI card in a Wrap grid. Incomplete last-row cards span full width.
+/// Width for a KPI card in a Wrap grid.
+///
+/// Incomplete last-row cards keep the normal column width (left-aligned)
+/// instead of stretching full width, which looked awkward on mobile.
 double _kpiCardWidthAt({
-  required int index,
-  required int itemCount,
   required int cols,
   required double cardWidth,
   required double maxWidth,
 }) {
   if (cols <= 1) return maxWidth;
-  final remainder = itemCount % cols;
-  if (remainder == 0) return cardWidth;
-  if (index >= itemCount - remainder) return maxWidth;
   return cardWidth;
 }
 
@@ -959,8 +955,6 @@ class _LoadingCards extends StatelessWidget {
             for (var i = 0; i < cardCount; i++)
               SizedBox(
                 width: _kpiCardWidthAt(
-                  index: i,
-                  itemCount: cardCount,
                   cols: layout.cols,
                   cardWidth: layout.cardWidth,
                   maxWidth: constraints.maxWidth,

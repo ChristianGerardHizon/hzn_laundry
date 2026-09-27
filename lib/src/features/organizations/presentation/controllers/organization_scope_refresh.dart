@@ -27,6 +27,7 @@ import '../../../storages/presentation/controllers/storage_locations_controller.
 import '../../../users/data/repositories/user_repository.dart';
 import '../../../users/data/repositories/user_role_repository.dart';
 import '../../../users/presentation/controllers/paginated_users_controller.dart';
+import '../../../users/presentation/controllers/org_pending_invites_controller.dart';
 import '../../../users/presentation/controllers/user_entity_cache.dart';
 import '../../../users/presentation/controllers/user_roles_controller.dart';
 
@@ -51,6 +52,7 @@ void invalidateOrganizationScopedProviders(Ref ref) {
   invalidate(promosControllerProvider);
   invalidate(employeesControllerProvider);
   invalidate(paginatedUsersControllerProvider);
+  invalidate(orgPendingInvitesControllerProvider);
   invalidate(userRolesControllerProvider);
   invalidate(machinesControllerProvider);
   invalidate(storageLocationsControllerProvider);

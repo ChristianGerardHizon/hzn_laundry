@@ -153,10 +153,10 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 
 - List of organizations you belong to, with your role and a switch action
 - `system.admin` users get an AppBar action to open Super Admin (`/super-admin`)
-- Org display page (`/organizations/:id`) with **Overview**, **People**, and **Features** tabs
+- Org display page (`/organizations/:id`) with **Overview** and **Features** tabs
 - Overview details editable with `members.manage`
-- People: invite by email + role; accept/decline pending invites
 - Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
+- Staff: invite and manage via **Management → Users** (invite → accept → role); accept/decline pending invites on the Organizations list
 - Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs
 
@@ -169,7 +169,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - Panel 3 (expanded): Detail panel or empty state
 
 **Modes:**
-- **Users** (`/management/users`) - User CRUD, role assignment, branch association
+- **Users** (`/management/users`) - Invite staff to the current org; after accept, manage role/branch; list is scoped to org members
 - **Roles** (`/management/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/management/branches`) - Multi-location support with address and contact info
 - **Machines** (`/management/machines`) - Laundry machine management including size and per-machine weight→load rules; scoped to the current branch; unassigned machines remain visible
@@ -373,11 +373,10 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 - Product Categories (list/detail)
 - Quantity Units (list/detail)
 - Cashier Layout / POS Groups (list/detail)
-- Import, Settings (pointer to org Features)
 
 ### Organizations
 - Memberships, invites, create-org setup dialog (`/organizations`)
-- Org display (`/organizations/:id`): Overview, People, Features
+- Org display (`/organizations/:id`): Overview, Features
 - Header org switcher (2+ memberships) shows a full-screen, non-dismissible loader for at least 3 seconds while the new org loads
 
 ### System Settings (this device)
@@ -513,7 +512,7 @@ Management and System sections use a 3-panel layout:
 | Panel 2 | 320px | List panel with AppBar title and FAB |
 | Panel 3 | Expanded | Detail panel or empty state |
 
-- **Management modes**: Users, Roles, Branches, Machines, Storages, Product Categories, Quantity Units, Cashier Layout, plus single-panel Import/Settings
+- **Management modes**: Users, Roles, Branches, Machines, Storages, Product Categories, Quantity Units, Cashier Layout (desktop Administration flyout deep-links each section)
 - **System modes**: Printers, Appearance (this device only)
 
 ### Navigation (permission-filtered, `nav_permissions.dart`)
@@ -640,6 +639,8 @@ lib/src/
 
 ---
 
+| Sep 26 | Flatten Administration nav | Desktop Administration flyout deep-links Users/Roles/Branches/Machines/Storages/Categories/Units/Cashier + Organizations (no Management hub hop); `/management` redirects to Users on mobile too |
+| Sep 26 | Invite-first Users | Removed Organizations People tab; Management Users invites staff (server ensures login account); list scoped to org members; accept stays on Organizations list |
 | Sep 25 | Activity log actor names | Request-scoped hooks now store `activityLogs.user`; UI shows expand/fetched names (not IDs), **System** when no actor, and drops raw Record ID from detail |
 | Sep 25 | Remove Management Import/Settings | Dropped unused Management Import and Settings nav, routes, CSV import UI, and legacy `/system/import` / `/system/feature-flags` redirects |
 | Sep 25 | Activity log details | Activity list shows a short what + who summary; tap opens `/activities/:id` with full changes, actor, affected record, and Open sale/customer/… CTA |
