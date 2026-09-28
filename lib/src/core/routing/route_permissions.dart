@@ -6,6 +6,7 @@ import '../routing/routes/employees.routes.dart';
 import '../routing/routes/management.routes.dart';
 import '../routing/routes/organizations.routes.dart';
 import '../routing/routes/products.routes.dart';
+import '../routing/routes/profile.routes.dart';
 import '../routing/routes/promos.routes.dart';
 import '../routing/routes/reports.routes.dart';
 import '../routing/routes/sales.routes.dart';
@@ -27,6 +28,7 @@ const List<String> scopedAppPaths = [
   OrganizationsRoute.path,
   PromosRoute.path,
   SystemRoute.path,
+  ProfileRoute.path,
   SalesRoute.path, // /cashier — in shell, not in bottom nav
 ];
 
@@ -41,7 +43,8 @@ bool matchesRoutePath(String location, String path) {
 /// Whether an unscoped [location] is allowed for [role].
 bool canAccessPath(String location, UserRole? role) {
   if (location == DashboardRoute.path ||
-      matchesRoutePath(location, OrganizationsRoute.path)) {
+      matchesRoutePath(location, OrganizationsRoute.path) ||
+      matchesRoutePath(location, ProfileRoute.path)) {
     return true;
   }
 

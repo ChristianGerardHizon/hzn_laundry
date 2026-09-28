@@ -21,6 +21,7 @@ import 'routes/management.routes.dart';
 import 'routes/organizations.routes.dart';
 import 'routes/org_selection.routes.dart';
 import 'routes/products.routes.dart';
+import 'routes/profile.routes.dart';
 import 'routes/customer_history.routes.dart';
 import 'routes/customers.routes.dart';
 import 'routes/employees.routes.dart';
@@ -111,6 +112,7 @@ GoRouter router(Ref ref) {
               $organizationsRoute,
               $promosShellRoute,
               $systemShellRoute,
+              $profileRoute,
             ],
           ),
         ],

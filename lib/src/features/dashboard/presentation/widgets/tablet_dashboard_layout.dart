@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/widgets/nav_permissions.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../users/domain/user_role.dart';
 import '../controllers/dashboard_date_override_provider.dart';
 import 'dashboard_alerts_row.dart';
@@ -22,6 +23,7 @@ class TabletDashboardLayout extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final userName = ref.watch(currentAuthProvider)?.user.name;
     final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
     final isOverridden = ref.watch(isDashboardDateOverriddenProvider);
     final overrideColor = theme.brightness == Brightness.dark
@@ -104,6 +106,26 @@ class TabletDashboardLayout extends HookConsumerWidget {
                     if (isOverridden) const DateOverrideBanner(),
                   ],
                 ),
+                if (userName != null && userName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 16,
+                        color: theme.colorScheme.outline,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        userName,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

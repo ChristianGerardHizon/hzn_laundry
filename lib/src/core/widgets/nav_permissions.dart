@@ -22,6 +22,7 @@ enum NavId {
   organizations,
   promos,
   system,
+  profile,
 }
 
 /// A navigation destination with its required permission.
@@ -147,6 +148,14 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.settings,
         label: t('system'),
         requiredPermission: Permissions.settingsView,
+      ),
+      NavItem(
+        id: NavId.profile,
+        index: 12,
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+        label: t('profile'),
+        // Profile is always visible
       ),
     ];
 

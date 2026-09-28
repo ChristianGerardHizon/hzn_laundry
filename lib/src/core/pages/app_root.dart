@@ -21,6 +21,7 @@ import '../routing/routes/reports.routes.dart';
 import '../routing/routes/activities.routes.dart';
 import '../routing/routes/sales_history.routes.dart';
 import '../routing/routes/promos.routes.dart';
+import '../routing/routes/profile.routes.dart';
 import '../routing/routes/system.routes.dart';
 import '../utils/breakpoints.dart';
 import '../widgets/branch_switcher.dart';
@@ -92,6 +93,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
     OrganizationsRoute.path, // 9: /organizations
     PromosRoute.path, // 10: /promos
     SystemRoute.path, // 11: /system
+    ProfileRoute.path, // 12: /profile
   ];
 
   /// Routes in order of navigation index.
@@ -108,6 +110,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
     OrganizationsRoute(), // 9
     PromosRoute(), // 10
     SystemRoute(), // 11
+    ProfileRoute(), // 12
   ];
 
   /// Strips `/{orgSlug}/{branchSlug}` so nav matching uses flat feature paths.
@@ -206,6 +209,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
           'management' => t.navigation.management,
           'organizations' => t.navigation.organizations,
           'system' => t.navigation.system,
+          'profile' => t.navigation.profile,
           _ => key,
         });
     final roleAsync = ref.watch(currentUserRoleProvider);

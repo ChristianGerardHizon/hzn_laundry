@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../i18n/strings.g.dart';
+import '../navigation/desktop_nav_presentation.dart';
 import '../routing/routes/org_selection.routes.dart';
 import 'branch_switcher.dart';
 import 'nav_permissions.dart';
@@ -33,10 +34,15 @@ class MobileDrawer extends ConsumerWidget {
     final isAdmin =
         ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
 
-    // Split visible items into primary (index <= 5) and secondary (index > 5)
-    final primaryItems = visibleItems.where((item) => item.index <= 5).toList();
-    final secondaryItems =
-        visibleItems.where((item) => item.index > 5).toList();
+    // Split visible items into primary (index <= 5) and secondary (index > 5).
+    // Profile is rendered in its own Account section above logout.
+    final primaryItems = visibleItems
+        .where((item) => item.index <= 5 && item.id != NavId.profile)
+        .toList();
+    final secondaryItems = visibleItems
+        .where((item) => item.index > 5 && item.id != NavId.profile)
+        .toList();
+    final profileItem = navItemFor(NavId.profile, visibleItems);
 
     Widget mapItem(NavItem item) {
       final visibleIndex = visibleItems.indexOf(item);
@@ -75,22 +81,21 @@ class MobileDrawer extends ConsumerWidget {
         secondaryItems.any((item) => item.id == NavId.organizations);
 
     return Drawer(
+      // Edge-to-edge mobile drawer (M3 defaults round the trailing edge and
+      // leave a floating gap against the viewport).
+      shape: const RoundedRectangleBorder(),
+      backgroundColor: theme.colorScheme.surface,
       child: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // Header
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-              ),
-              child: const Align(
-                alignment: Alignment.bottomLeft,
-                child: OrganizationNavBrand(
-                  logoSize: 48,
-                  compact: true,
-                  showServerUrl: true,
-                ),
+            // Compact header — avoid DrawerHeader's fixed 160px + bottom align.
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: OrganizationNavBrand(
+                logoSize: 40,
+                compact: true,
+                showServerUrl: true,
               ),
             ),
 
@@ -116,6 +121,20 @@ class MobileDrawer extends ConsumerWidget {
                   const SuperAdminRoute().go(context);
                 },
               ),
+
+            if (profileItem != null) ...[
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Text(
+                  t.navigation.account,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              mapItem(profileItem),
+            ],
 
             const Divider(),
 

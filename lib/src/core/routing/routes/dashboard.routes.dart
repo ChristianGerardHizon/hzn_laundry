@@ -15,7 +15,7 @@ import '../../../features/dashboard/presentation/widgets/quick_actions_section.d
 import '../../../features/dashboard/presentation/widgets/sales_summary_section.dart';
 import '../../../features/dashboard/presentation/widgets/tablet_dashboard_layout.dart';
 import '../../../features/dashboard/presentation/widgets/dashboard_footer.dart';
-import '../../../features/settings/presentation/controllers/current_branch_controller.dart';
+import '../../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../utils/breakpoints.dart';
 
 part 'dashboard.routes.g.dart';
@@ -108,7 +108,7 @@ class _MobileDashboardHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final branch = ref.watch(currentBranchControllerProvider).value;
+    final userName = ref.watch(currentAuthProvider)?.user.name;
     final effectiveDate = ref.watch(dashboardEffectiveDateProvider);
     final isOverridden = ref.watch(isDashboardDateOverriddenProvider);
     final overrideColor = theme.brightness == Brightness.dark
@@ -159,20 +159,20 @@ class _MobileDashboardHeader extends ConsumerWidget {
               ),
             ],
           ),
-          // Show current branch if available
-          if (branch != null)
+          // Show current user name when available
+          if (userName != null && userName.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 children: [
                   Icon(
-                    Icons.store,
+                    Icons.person_outline,
                     size: 16,
                     color: theme.colorScheme.outline,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    branch.name,
+                    userName,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.outline,
                     ),

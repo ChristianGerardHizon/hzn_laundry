@@ -455,6 +455,7 @@ App Root (Shell)
 │
 └── Main Shell (with navigation)
     ├── / (Dashboard)
+    ├── /profile (Current user profile)
     ├── /sales (Sales History)
     │   └── /sales/:id (Detail)
     ├── /cashier (Cashier/POS)
@@ -640,7 +641,7 @@ lib/src/
 
 ---
 
-| Sep 29 | Email-link invite accept | Invite emails include a secret token; `/invite.html` requires name + password, then `accept-by-token` creates the user, accepts membership, and marks email verified (no login account until then); Resend rotates the token |
+| Sep 29 | Dashboard user identity | Mobile/desktop dashboard show current user name; Profile is an Account nav section (drawer + desktop sidebar) opening `/profile` |
 | Sep 28 | Invite success page | Invite emails link to `/invite.html` with Continue in browser or Open in app (`hznlaundry://login`); accept still verifies email |
 | Sep 28 | Invite accept verifies email | Accepting an org invite marks the user's email verified |
 | Sep 28 | Users Invites section | Management Users splits Members and Invites into separate segments; invites get their own list, empty state, and expiry display |

@@ -163,6 +163,7 @@ class DesktopSideNav extends HookConsumerWidget {
 
     final dashboardItem = navItemFor(NavId.dashboard, visibleItems);
     final systemItem = navItemFor(NavId.system, visibleItems);
+    final profileItem = navItemFor(NavId.profile, visibleItems);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -294,7 +295,7 @@ class DesktopSideNav extends HookConsumerWidget {
                           ),
                         ),
                     ],
-                    if (systemItem != null) ...[
+                    if (profileItem != null || systemItem != null) ...[
                       SizedBox(height: collapsed.value ? 8 : 12),
                       if (!collapsed.value)
                         const Padding(
@@ -302,28 +303,50 @@ class DesktopSideNav extends HookConsumerWidget {
                           child: Divider(height: 1),
                         ),
                       SizedBox(height: collapsed.value ? 4 : 8),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: collapsed.value ? 8 : 12,
-                          vertical: 4,
+                      if (profileItem != null) ...[
+                        if (!collapsed.value)
+                          DesktopNavSectionHeader(label: t.navigation.account),
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: collapsed.value ? 8 : 12,
+                            vertical: 4,
+                          ),
+                          child: DesktopNavItem(
+                            icon: isNavItemSelected(selectedId, NavId.profile)
+                                ? profileItem.selectedIcon
+                                : profileItem.icon,
+                            label: profileItem.label,
+                            selected:
+                                isNavItemSelected(selectedId, NavId.profile),
+                            collapsed: collapsed.value,
+                            onTap: () => tapId(NavId.profile),
+                          ),
                         ),
-                        child: DesktopNavItem(
-                          icon: isNavItemSelected(selectedId, NavId.system)
-                              ? systemItem.selectedIcon
-                              : systemItem.icon,
-                          label: systemItem.label,
-                          selected: isNavItemSelected(selectedId, NavId.system),
-                          collapsed: collapsed.value,
-                          onTap: () => tapId(NavId.system),
-                          trailing: collapsed.value
-                              ? null
-                              : Icon(
-                                  Icons.chevron_right,
-                                  size: 18,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                      ],
+                      if (systemItem != null)
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: collapsed.value ? 8 : 12,
+                            vertical: 4,
+                          ),
+                          child: DesktopNavItem(
+                            icon: isNavItemSelected(selectedId, NavId.system)
+                                ? systemItem.selectedIcon
+                                : systemItem.icon,
+                            label: systemItem.label,
+                            selected:
+                                isNavItemSelected(selectedId, NavId.system),
+                            collapsed: collapsed.value,
+                            onTap: () => tapId(NavId.system),
+                            trailing: collapsed.value
+                                ? null
+                                : Icon(
+                                    Icons.chevron_right,
+                                    size: 18,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                          ),
                         ),
-                      ),
                     ],
                   ],
                 ),
