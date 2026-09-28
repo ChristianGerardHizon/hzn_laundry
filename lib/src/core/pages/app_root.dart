@@ -39,6 +39,9 @@ import '../widgets/tablet_nav_rail.dart';
 /// - Mobile (< 600px): Bottom navigation + drawer
 /// - Tablet (600-899px): Navigation rail
 /// - Tablet large / Desktop (>= 900px): Firebase-style [DesktopSideNav]
+///
+/// GoRouter's keyed [child] stays under a single [SubscriptionLockGate] in a
+/// stable content slot so mobile/tablet chrome swaps do not duplicate GlobalKeys.
 class AppRoot extends ConsumerStatefulWidget {
   const AppRoot({
     super.key,
@@ -186,6 +189,8 @@ class _AppRootState extends ConsumerState<AppRoot> {
     }
 
     final isMobile = Breakpoints.isMobile(context);
+    final useDesktopNav =
+        !isMobile && Breakpoints.isTabletLargeOrLarger(context);
 
     // Build permission-filtered nav items
     final t = Translations.of(context);
@@ -206,8 +211,33 @@ class _AppRootState extends ConsumerState<AppRoot> {
     final roleAsync = ref.watch(currentUserRoleProvider);
     final role = roleAsync.value;
     final visibleItems = filterNavItems(allNavItems, role);
+    final selectedIndex = _getSelectedIndex(context, visibleItems);
 
     final switchingOrg = ref.watch(organizationSwitchOverlayProvider).active;
+
+    // Single gate + keyed pane so GoRouter's child is never under two parents.
+    final mainPane = Expanded(
+      key: const ValueKey('app_root_main_pane'),
+      child: ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                OrganizationSwitcher(compact: true),
+                Expanded(child: BranchSwitcher(compact: true)),
+                FullscreenToggleButton(),
+              ],
+            ),
+            Expanded(
+              child: SubscriptionLockGate(child: widget.child),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return Stack(
       children: [
@@ -247,106 +277,54 @@ class _AppRootState extends ConsumerState<AppRoot> {
               SystemNavigator.pop();
             }
           },
-          child: isMobile
-              ? _buildMobileLayout(context, visibleItems)
-              : _buildTabletLayout(context, visibleItems),
+          child: Scaffold(
+            key: _scaffoldKey,
+            drawer: isMobile
+                ? MobileDrawer(
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (i) =>
+                        _onDestinationSelected(i, visibleItems),
+                    visibleItems: visibleItems,
+                  )
+                : null,
+            body: SafeArea(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!isMobile) ...[
+                    if (useDesktopNav)
+                      DesktopSideNav(
+                        selectedIndex: selectedIndex,
+                        onDestinationSelected: (i) =>
+                            _onDestinationSelected(i, visibleItems),
+                        visibleItems: visibleItems,
+                      )
+                    else
+                      TabletNavRail(
+                        selectedIndex: selectedIndex,
+                        onDestinationSelected: (i) =>
+                            _onDestinationSelected(i, visibleItems),
+                        visibleItems: visibleItems,
+                      ),
+                    const VerticalDivider(width: 1),
+                  ],
+                  mainPane,
+                ],
+              ),
+            ),
+            bottomNavigationBar: isMobile
+                ? MobileBottomNav(
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (i) =>
+                        _onDestinationSelected(i, visibleItems),
+                    onMoreTap: _openDrawer,
+                    visibleItems: visibleItems,
+                  )
+                : null,
+          ),
         ),
         if (switchingOrg) const OrganizationSwitchLoadingOverlay(),
       ],
-    );
-  }
-
-  Widget _buildMobileLayout(BuildContext context, List<NavItem> visibleItems) {
-    final selectedIndex = _getSelectedIndex(context, visibleItems);
-
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: MobileDrawer(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (i) => _onDestinationSelected(i, visibleItems),
-        visibleItems: visibleItems,
-      ),
-      body: SafeArea(
-        child: ColoredBox(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const OrganizationSwitcher(compact: true),
-                  const Expanded(child: BranchSwitcher(compact: true)),
-                  const FullscreenToggleButton(),
-                ],
-              ),
-              Expanded(
-                child: SubscriptionLockGate(child: widget.child),
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: MobileBottomNav(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (i) => _onDestinationSelected(i, visibleItems),
-        onMoreTap: _openDrawer,
-        visibleItems: visibleItems,
-      ),
-    );
-  }
-
-  Widget _buildTabletLayout(BuildContext context, List<NavItem> visibleItems) {
-    final selectedIndex = _getSelectedIndex(context, visibleItems);
-    final useDesktopNav = Breakpoints.isTabletLargeOrLarger(context);
-
-    return Scaffold(
-      body: SafeArea(
-        child: Row(
-          children: [
-            if (useDesktopNav)
-              DesktopSideNav(
-                selectedIndex: selectedIndex,
-                onDestinationSelected: (i) =>
-                    _onDestinationSelected(i, visibleItems),
-                visibleItems: visibleItems,
-              )
-            else
-              TabletNavRail(
-                selectedIndex: selectedIndex,
-                onDestinationSelected: (i) =>
-                    _onDestinationSelected(i, visibleItems),
-                visibleItems: visibleItems,
-              ),
-
-            const VerticalDivider(width: 1),
-
-            // Main content area
-            Expanded(
-              child: Scaffold(
-                body: ColoredBox(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const OrganizationSwitcher(compact: true),
-                          const Expanded(child: BranchSwitcher(compact: true)),
-                          const FullscreenToggleButton(),
-                        ],
-                      ),
-                      Expanded(
-                        child: SubscriptionLockGate(child: widget.child),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
