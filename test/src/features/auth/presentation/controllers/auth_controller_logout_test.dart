@@ -10,6 +10,7 @@ import 'package:hzn_laundry/src/features/auth/data/auth_repository.dart';
 import 'package:hzn_laundry/src/features/auth/domain/auth_state.dart';
 import 'package:hzn_laundry/src/features/auth/domain/user.dart';
 import 'package:hzn_laundry/src/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:hzn_laundry/src/features/auth/presentation/controllers/splash_gate_provider.dart';
 import 'package:hzn_laundry/src/features/organizations/presentation/controllers/current_organization_controller.dart';
 
 void main() {
@@ -47,6 +48,13 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(container.read(organizationSwitchOverlayProvider).active, isTrue);
 
+      // Mark splash min-duration elapsed so logout must reset it.
+      container.read(splashGateProvider.notifier).ensureStarted();
+      await Future<void>.delayed(
+        SplashGate.minDuration + const Duration(milliseconds: 50),
+      );
+      expect(container.read(splashGateProvider), isTrue);
+
       await container.read(authControllerProvider.notifier).logout().timeout(
             const Duration(seconds: 2),
             onTimeout: () => fail('logout hung waiting on storage delete'),
@@ -55,6 +63,7 @@ void main() {
       expect(repo.logoutCalled, isTrue);
       expect(container.read(authControllerProvider).value, isNull);
       expect(container.read(organizationSwitchOverlayProvider).active, isFalse);
+      expect(container.read(splashGateProvider), isFalse);
       expect(storage.deleteStarted, isTrue);
       expect(storage.deleteCompleted, isFalse);
     },

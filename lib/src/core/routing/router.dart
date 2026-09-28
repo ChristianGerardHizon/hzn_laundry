@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/auth/presentation/controllers/splash_gate_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
@@ -141,6 +142,10 @@ GoRouter router(Ref ref) {
 
   ref.listen(organizationSelectionConfirmedProvider, (previous, next) {
     router.refresh();
+  });
+
+  ref.listen(splashGateProvider, (previous, next) {
+    if (next) router.refresh();
   });
 
   Future.microtask(router.refresh);
