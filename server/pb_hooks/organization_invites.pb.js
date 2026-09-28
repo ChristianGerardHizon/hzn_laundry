@@ -48,6 +48,15 @@ routerAdd(
   $apis.requireAuth("users")
 );
 
+// Public: email-link accept + verify (token proves mailbox access). No auth.
+routerAdd(
+  "POST",
+  "/api/organization-invites/accept-by-token",
+  function(e) {
+    return require(__hooks + "/lib/organization_invites_helpers.js").acceptInviteByToken(e);
+  }
+);
+
 routerAdd(
   "POST",
   "/api/organization-invites/{id}/accept",

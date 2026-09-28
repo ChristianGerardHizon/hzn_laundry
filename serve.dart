@@ -12,13 +12,24 @@ void main() async {
 
   const httpAddr = '127.0.0.1:8088';
   final env = _loadEnvForPocketBase(root, httpAddr);
-  final publicDir = _resolvePublicDir(root, serverDir);
+  final public = _resolvePublicDir(root, serverDir);
 
   print('Starting PocketBase server (dev mode)...');
   print('HTTP:       http://$httpAddr');
   print('Data dir:   $serverDir/pb_data');
   print('Hooks dir:  $serverDir/pb_hooks');
-  print('Public dir: $publicDir');
+  print('Public dir: ${public.path}');
+  if (public.isRawWebFallback) {
+    stderr.writeln(
+      'WARNING: Serving raw web/ (Flutter templates). /login will stick on splash.',
+    );
+    stderr.writeln(
+      'Run: flutter build web --dart-define=ENV=dev',
+    );
+    stderr.writeln(
+      'Then restart serve (uses build/web), or copy build/web → server/pb_public.',
+    );
+  }
   print(
     'Resend:     ${env.containsKey('RESEND_API_KEY') ? 'RESEND_API_KEY set' : 'RESEND_API_KEY missing (invite/history emails will skip)'}',
   );
@@ -36,7 +47,7 @@ void main() async {
       '--migrationsDir',
       '$serverDir/pb_migrations',
       '--publicDir',
-      publicDir,
+      public.path,
       '--dev',
     ],
     environment: env,
@@ -72,12 +83,26 @@ Map<String, String> _loadEnvForPocketBase(String root, String httpAddr) {
   return env;
 }
 
-/// Prefer deployed `server/pb_public` when present; otherwise serve `web/`
-/// so local invite/reset/oauth static pages work without a Flutter web build.
-String _resolvePublicDir(String root, String serverDir) {
+/// Resolved public dir for PocketBase `--publicDir`.
+class _PublicDir {
+  const _PublicDir(this.path, {this.isRawWebFallback = false});
+
+  final String path;
+
+  /// True when serving source `web/` templates (Flutter SPA will not boot).
+  final bool isRawWebFallback;
+}
+
+/// Prefer deployed `server/pb_public`, then local `build/web`, then raw `web/`
+/// so invite/reset/oauth static pages work without a Flutter web build.
+_PublicDir _resolvePublicDir(String root, String serverDir) {
   final deployed = Directory('$serverDir/pb_public');
-  if (deployed.existsSync()) return deployed.path;
-  return '$root/web';
+  if (deployed.existsSync()) return _PublicDir(deployed.path);
+
+  final built = Directory('$root/build/web');
+  if (built.existsSync()) return _PublicDir(built.path);
+
+  return _PublicDir('$root/web', isRawWebFallback: true);
 }
 
 String? _findBinary(String root, String serverDir) {

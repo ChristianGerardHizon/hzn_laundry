@@ -156,7 +156,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - Org display page (`/organizations/:id`) with **Overview** and **Features** tabs
 - Overview: brand logo upload/replace/remove (managers) plus editable details with `members.manage`
 - Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
-- Staff: invite and manage via **Management → Users** (invite emails the invitee via Resend → they sign in → accept → role); accept/decline pending invites on the Organizations list
+- Staff: invite and manage via **Management → Users** (invite emails the invitee via Resend → invitee opens `/invite.html?token=…`, sets **name + password**, which creates the account, accepts membership, and marks email verified → then they can sign in); in-app accept/decline on Organizations remains for already-signed-in users
 - Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs; nav brand and select-org tiles show the org logo when set
 
@@ -640,6 +640,7 @@ lib/src/
 
 ---
 
+| Sep 29 | Email-link invite accept | Invite emails include a secret token; `/invite.html` requires name + password, then `accept-by-token` creates the user, accepts membership, and marks email verified (no login account until then); Resend rotates the token |
 | Sep 28 | Invite success page | Invite emails link to `/invite.html` with Continue in browser or Open in app (`hznlaundry://login`); accept still verifies email |
 | Sep 28 | Invite accept verifies email | Accepting an org invite marks the user's email verified |
 | Sep 28 | Users Invites section | Management Users splits Members and Invites into separate segments; invites get their own list, empty state, and expiry display |

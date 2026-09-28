@@ -30,7 +30,14 @@ echo "Data dir:    $SERVER_DIR/pb_data"
 echo "Hooks dir:   $SERVER_DIR/pb_hooks"
 PUBLIC_DIR="$SERVER_DIR/pb_public"
 if [ ! -d "$PUBLIC_DIR" ]; then
-  PUBLIC_DIR="$SCRIPT_DIR/web"
+  if [ -d "$SCRIPT_DIR/build/web" ]; then
+    PUBLIC_DIR="$SCRIPT_DIR/build/web"
+  else
+    PUBLIC_DIR="$SCRIPT_DIR/web"
+    echo "WARNING: Serving raw web/ (Flutter templates). /login will stick on splash." >&2
+    echo "Run: flutter build web --dart-define=ENV=dev" >&2
+    echo "Then restart serve (uses build/web), or copy build/web → server/pb_public." >&2
+  fi
 fi
 echo "Public dir:  $PUBLIC_DIR"
 if [ -n "${RESEND_API_KEY:-}" ]; then

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="You've been invited to HZN Laundry. Sign in on the web or open the app.">
+  <meta name="description" content="You've been invited to HZN Laundry. Set your name and password to accept.">
   <meta name="robots" content="noindex, nofollow">
   <title>Invitation — HZN Laundry</title>
   <link rel="icon" type="image/png" href="favicon.png">
@@ -17,6 +17,7 @@
       --accent-dark: #2F7A7C;
       --bg: #f4f6f8;
       --card: #ffffff;
+      --error: #b91c1c;
     }
 
     * { box-sizing: border-box; }
@@ -89,13 +90,46 @@
       font-weight: 600;
     }
 
+    .status {
+      margin: 0 0 16px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 0 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(69, 169, 171, 0.35);
+      border-color: var(--accent);
+    }
+
     .actions {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    a.btn {
+    a.btn, button.btn {
       display: block;
       text-align: center;
       text-decoration: none;
@@ -105,15 +139,22 @@
       font-weight: 600;
       cursor: pointer;
       border: 0;
+      font-family: inherit;
+      width: 100%;
     }
 
-    a.btn-primary {
+    a.btn-primary, button.btn-primary {
       background: var(--accent);
       color: #fff;
     }
 
-    a.btn-primary:hover {
+    a.btn-primary:hover, button.btn-primary:hover {
       background: var(--accent-dark);
+    }
+
+    a.btn-primary:disabled, button.btn-primary:disabled {
+      opacity: 0.6;
+      cursor: default;
     }
 
     a.btn-secondary {
@@ -141,23 +182,37 @@
       color: #94a3b8;
       text-align: center;
     }
+
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
   <main>
     <div class="header">
       <p class="brand" id="brand">HZN Laundry</p>
-      <h1>You're invited</h1>
-      <p id="subtitle">Sign in with the invited email to accept this invitation.</p>
+      <h1 id="title">You're invited</h1>
+      <p id="subtitle">Set your name and password to join.</p>
     </div>
     <div class="body">
       <p class="meta" id="meta" hidden></p>
-      <div class="actions">
-        <a class="btn btn-primary" id="webLogin" href="/login">Continue in browser</a>
+      <p class="status" id="status">Create your account details below, then accept.</p>
+      <form id="accept-form" hidden>
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" required autocomplete="name" maxlength="120">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+        <label for="passwordConfirm">Confirm password</label>
+        <input id="passwordConfirm" name="passwordConfirm" type="password" required minlength="8" autocomplete="new-password">
+        <div class="actions">
+          <button class="btn btn-primary" type="submit" id="submit">Accept invitation</button>
+        </div>
+      </form>
+      <div class="actions" id="actions" hidden>
+        <a class="btn btn-primary" id="webLogin" href="/login">Sign in to continue</a>
         <a class="btn btn-secondary" id="appLogin" href="#">Open in app</a>
       </div>
       <p class="hint" id="hint">
-        Use the same email address from the invite. After sign-in, open Organizations to accept.
+        Completing this form creates your account and confirms your email. Until then you cannot sign in.
       </p>
     </div>
     <p class="footer">&copy; HZN Laundry</p>
@@ -165,17 +220,24 @@
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
+      var token = (params.get('token') || '').trim();
       var org = (params.get('org') || '').trim();
       var role = (params.get('role') || '').trim();
       var email = (params.get('email') || '').trim();
       var env = (params.get('env') || '').trim().toLowerCase();
 
       var brandEl = document.getElementById('brand');
+      var titleEl = document.getElementById('title');
       var subtitleEl = document.getElementById('subtitle');
       var metaEl = document.getElementById('meta');
+      var statusEl = document.getElementById('status');
+      var formEl = document.getElementById('accept-form');
+      var actionsEl = document.getElementById('actions');
       var webLogin = document.getElementById('webLogin');
       var appLogin = document.getElementById('appLogin');
       var hintEl = document.getElementById('hint');
+      var submitBtn = document.getElementById('submit');
+      var nameInput = document.getElementById('name');
 
       if (env === 'staging' || env === 'stage') {
         brandEl.textContent = '[Staging] HZN Laundry';
@@ -192,63 +254,88 @@
         metaEl.hidden = false;
       }
 
-      if (org) {
-        subtitleEl.textContent =
-          "You've been invited to join " + org +
-          (role ? ' as ' + role : '') +
-          '. Choose how you want to sign in.';
-      }
-
-      var loginPath = '/login';
       if (email) {
-        loginPath += '?email=' + encodeURIComponent(email);
-      }
-      webLogin.href = loginPath;
-
-      var playStore =
-        'https://play.google.com/store/apps/details?id=com.hznsystems.hznlaundry';
-      var appScheme = 'hznlaundry://login';
-      if (email) {
-        appScheme += '?email=' + encodeURIComponent(email);
+        var local = email.split('@')[0] || '';
+        if (local) nameInput.value = local.replace(/[._+]+/g, ' ').replace(/\b\w/g, function (c) {
+          return c.toUpperCase();
+        });
       }
 
-      var ua = navigator.userAgent || '';
-      var isAndroid = /Android/i.test(ua);
-      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      function loginPathFor(addr) {
+        var path = '/login';
+        if (addr) path += '?email=' + encodeURIComponent(addr);
+        return path;
+      }
 
-      appLogin.addEventListener('click', function (e) {
-        e.preventDefault();
-        if (isAndroid) {
-          // Prefer installed app; fall back to Play Store, then web login.
-          var intent =
-            'intent://login' +
-            (email ? '?email=' + encodeURIComponent(email) : '') +
-            '#Intent;scheme=hznlaundry;package=com.hznsystems.hznlaundry;' +
-            'S.browser_fallback_url=' + encodeURIComponent(playStore) + ';end';
-          window.location.href = intent;
-          return;
-        }
-        if (isIOS) {
-          var start = Date.now();
+      function showLoginActions(addr) {
+        var loginPath = loginPathFor(addr);
+        webLogin.href = loginPath;
+        actionsEl.hidden = false;
+        hintEl.textContent =
+          'Sign in with ' + (addr || 'your email') + ' using your password or a login code.';
+
+        var playStore =
+          'https://play.google.com/store/apps/details?id=com.hznsystems.hznlaundry';
+        var appScheme = 'hznlaundry://login';
+        if (addr) appScheme += '?email=' + encodeURIComponent(addr);
+
+        var ua = navigator.userAgent || '';
+        var isAndroid = /Android/i.test(ua);
+        var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+        appLogin.onclick = function (e) {
+          e.preventDefault();
+          if (isAndroid) {
+            var intent =
+              'intent://login' +
+              (addr ? '?email=' + encodeURIComponent(addr) : '') +
+              '#Intent;scheme=hznlaundry;package=com.hznsystems.hznlaundry;' +
+              'S.browser_fallback_url=' + encodeURIComponent(playStore) + ';end';
+            window.location.href = intent;
+            return;
+          }
+          if (isIOS) {
+            var start = Date.now();
+            window.location.href = appScheme;
+            setTimeout(function () {
+              if (Date.now() - start < 1600) {
+                window.location.href = loginPath;
+              }
+            }, 1200);
+            return;
+          }
           window.location.href = appScheme;
           setTimeout(function () {
-            if (Date.now() - start < 1600) {
-              // App likely not installed — continue on web.
-              window.location.href = loginPath;
-            }
-          }, 1200);
-          return;
-        }
-        // Desktop / other: try scheme, then web.
-        window.location.href = appScheme;
-        setTimeout(function () {
-          window.location.href = loginPath;
-        }, 800);
-      });
+            window.location.href = loginPath;
+          }, 800);
+        };
+      }
 
-      if (!isAndroid && !isIOS) {
-        hintEl.textContent =
-          'On a phone, “Open in app” launches HZN Laundry if installed. Otherwise use Continue in browser.';
+      function showSuccess(addr, already) {
+        formEl.hidden = true;
+        titleEl.textContent = already ? 'Already accepted' : 'Invitation accepted';
+        subtitleEl.textContent = already
+          ? 'This invite was already accepted. Sign in to open your workspace.'
+          : 'Your email is confirmed. Sign in with your password or a login code.';
+        statusEl.className = 'status';
+        statusEl.textContent = already
+          ? 'You\'re already a member. Continue to sign in.'
+          : 'Account ready. You can sign in now.';
+        showLoginActions(addr || email);
+      }
+
+      function showError(message, keepForm) {
+        titleEl.textContent = keepForm ? 'You\'re invited' : 'Couldn\'t accept invite';
+        if (!keepForm) {
+          subtitleEl.textContent =
+            'Ask your admin to resend the invitation, or try signing in if you already joined.';
+          formEl.hidden = true;
+          showLoginActions(email);
+          webLogin.textContent = 'Go to sign in';
+          hintEl.textContent = 'If you already accepted, sign in with the invited email.';
+        }
+        statusEl.className = 'status error';
+        statusEl.textContent = message || 'This invite link is invalid or expired.';
       }
 
       function escapeHtml(s) {
@@ -259,6 +346,85 @@
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
       }
+
+      function apiMessage(data) {
+        if (!data) return null;
+        var msg = data.message || data.data || data.error || null;
+        if (typeof msg === 'object' && msg !== null) {
+          msg = msg.message || JSON.stringify(msg);
+        }
+        return msg;
+      }
+
+      if (!token) {
+        showError('This invite link is missing a token. Open the latest email from your admin.', false);
+        return;
+      }
+
+      formEl.hidden = false;
+
+      formEl.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var name = nameInput.value.trim();
+        var password = document.getElementById('password').value;
+        var passwordConfirm = document.getElementById('passwordConfirm').value;
+
+        if (!name) {
+          showError('Enter your name.', true);
+          return;
+        }
+        if (password.length < 8) {
+          showError('Password must be at least 8 characters.', true);
+          return;
+        }
+        if (password !== passwordConfirm) {
+          showError('Passwords do not match.', true);
+          return;
+        }
+
+        submitBtn.disabled = true;
+        statusEl.className = 'status';
+        statusEl.textContent = 'Accepting invitation…';
+
+        fetch('/api/organization-invites/accept-by-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token,
+            name: name,
+            password: password,
+            passwordConfirm: passwordConfirm,
+          }),
+        })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              return { ok: res.ok, status: res.status, data: data };
+            }).catch(function () {
+              return { ok: res.ok, status: res.status, data: null };
+            });
+          })
+          .then(function (result) {
+            if (result.ok && result.data && result.data.status === 'accepted') {
+              var addr = (result.data.email || email || '').trim();
+              showSuccess(addr, !!result.data.alreadyAccepted);
+              return;
+            }
+            submitBtn.disabled = false;
+            var fatal =
+              result.status === 404 ||
+              (apiMessage(result.data) || '').toLowerCase().indexOf('expired') !== -1 ||
+              (apiMessage(result.data) || '').toLowerCase().indexOf('no longer') !== -1;
+            showError(
+              apiMessage(result.data) ||
+                'Invite could not be accepted (HTTP ' + result.status + ').',
+              !fatal
+            );
+          })
+          .catch(function () {
+            submitBtn.disabled = false;
+            showError('Network error while accepting the invite. Check your connection and try again.', true);
+          });
+      });
     })();
   </script>
 </body>
