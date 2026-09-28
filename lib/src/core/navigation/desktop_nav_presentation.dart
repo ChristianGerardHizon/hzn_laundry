@@ -75,6 +75,7 @@ AppNavCategory? appNavCategoryFor(NavId id) {
       return AppNavCategory.administration;
     case NavId.dashboard:
     case NavId.system:
+    case NavId.profile:
       return null;
   }
 }
@@ -117,7 +118,7 @@ List<NavId> extraShortcutCandidates(
   List<NavItem> items,
   List<NavId> shownShortcutIds,
 ) {
-  final shown = {...shownShortcutIds, NavId.dashboard, NavId.system};
+  final shown = {...shownShortcutIds, NavId.dashboard, NavId.system, NavId.profile};
   return items
       .map((item) => item.id)
       .where((id) => !shown.contains(id))

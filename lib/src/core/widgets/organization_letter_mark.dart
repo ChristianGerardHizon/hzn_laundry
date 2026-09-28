@@ -1,8 +1,45 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+/// Warms disk/memory cache so the next logo paint can skip network + fade.
+Future<void> precacheOrganizationLogo(
+  BuildContext context,
+  String? logoUrl,
+) async {
+  if (logoUrl == null || logoUrl.isEmpty) return;
+  try {
+    await precacheImage(CachedNetworkImageProvider(logoUrl), context);
+  } catch (_) {
+    // Ignore — callers fall back to initials / errorWidget.
+  }
+}
+
+/// Org logo with zero fade so cache hits paint immediately.
+Widget organizationLogoImage({
+  required String imageUrl,
+  required double size,
+  required Widget Function(BuildContext context, String url) placeholder,
+  required Widget Function(BuildContext context, String url, Object error)
+      errorWidget,
+}) {
+  final pixelSize = (size * 3).clamp(48, 512).round();
+  return CachedNetworkImage(
+    imageUrl: imageUrl,
+    width: size,
+    height: size,
+    fit: BoxFit.cover,
+    fadeInDuration: Duration.zero,
+    fadeOutDuration: Duration.zero,
+    placeholderFadeInDuration: Duration.zero,
+    memCacheWidth: pixelSize,
+    memCacheHeight: pixelSize,
+    placeholder: placeholder,
+    errorWidget: errorWidget,
+  );
+}
+
 /// Circular organization mark: logo when available, otherwise letter initials.
-class OrganizationLetterMark extends StatelessWidget {
+class OrganizationLetterMark extends StatefulWidget {
   const OrganizationLetterMark({
     super.key,
     required this.name,
@@ -38,32 +75,55 @@ class OrganizationLetterMark extends StatelessWidget {
   }
 
   @override
+  State<OrganizationLetterMark> createState() => _OrganizationLetterMarkState();
+}
+
+class _OrganizationLetterMarkState extends State<OrganizationLetterMark> {
+  String? _prefetchedUrl;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _prefetchIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrganizationLetterMark oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.logoUrl != widget.logoUrl) {
+      _prefetchIfNeeded();
+    }
+  }
+
+  void _prefetchIfNeeded() {
+    final url = widget.logoUrl;
+    if (url == null || url.isEmpty || url == _prefetchedUrl) return;
+    _prefetchedUrl = url;
+    precacheOrganizationLogo(context, url);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final initials = initialsFor(name);
-    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+    final initials = OrganizationLetterMark.initialsFor(widget.name);
+    final hasLogo = widget.logoUrl != null && widget.logoUrl!.isNotEmpty;
+    final size = widget.size;
 
     final Widget badge;
     if (hasLogo) {
+      final fallback = _InitialsBadge(
+        size: size,
+        initials: initials,
+        colors: colors,
+        theme: theme,
+      );
       badge = ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: logoUrl!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => _InitialsBadge(
-            size: size,
-            initials: initials,
-            colors: colors,
-            theme: theme,
-          ),
-          errorWidget: (_, __, ___) => _InitialsBadge(
-            size: size,
-            initials: initials,
-            colors: colors,
-            theme: theme,
-          ),
+        child: organizationLogoImage(
+          imageUrl: widget.logoUrl!,
+          size: size,
+          placeholder: (_, __) => fallback,
+          errorWidget: (_, __, ___) => fallback,
         ),
       );
     } else {
@@ -76,7 +136,7 @@ class OrganizationLetterMark extends StatelessWidget {
     }
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    if (!breathe || reduceMotion) {
+    if (!widget.breathe || reduceMotion) {
       return ExcludeSemantics(child: badge);
     }
     return ExcludeSemantics(child: _BreathingBadge(child: badge));

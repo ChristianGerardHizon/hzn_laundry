@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/routing/routes/dashboard.routes.dart';
 import '../../../../core/routing/routes/management.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -31,6 +33,14 @@ class UserDetailPage extends HookConsumerWidget {
   final String userId;
   final UserTab initialTab;
 
+  void _goBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      const DashboardRoute().goScoped(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider(userId));
@@ -52,7 +62,7 @@ class UserDetailPage extends HookConsumerWidget {
               ? null
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => const ManagementUsersRoute().goScoped(context),
+                  onPressed: () => _goBack(context),
                 ),
         ),
         body: ErrorState.fromError(
@@ -68,7 +78,7 @@ class UserDetailPage extends HookConsumerWidget {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => const ManagementUsersRoute().goScoped(context),
+                      onPressed: () => _goBack(context),
                     ),
             ),
             body: const Center(
@@ -84,7 +94,7 @@ class UserDetailPage extends HookConsumerWidget {
                 ? null
                 : IconButton(
                     icon: const Icon(Icons.arrow_back),
-                    onPressed: () => const ManagementUsersRoute().goScoped(context),
+                    onPressed: () => _goBack(context),
                   ),
             title: Text('${user.name} - ${user.displayRole}'),
             actions: [

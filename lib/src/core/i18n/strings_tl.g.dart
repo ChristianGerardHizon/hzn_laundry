@@ -211,6 +211,11 @@ class _TranslationsManagementTl implements TranslationsManagementEn {
 
 	// Translations
 	@override String get usersSubtitle => 'Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito.';
+	@override String get membersSection => 'Mga Miyembro';
+	@override String get invitesSection => 'Mga Imbitasyon';
+	@override String get invitesSubtitle => 'Mga pending na imbitasyong naghihintay tanggapin.';
+	@override String get noPendingInvites => 'Walang pending na imbitasyon';
+	@override String get noPendingInvitesHint => 'Mag-imbita gamit ang + button. Makakatanggap sila ng email para mag-sign in at tumanggap.';
 }
 
 // Path: navigation
@@ -298,6 +303,11 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get accept => 'Tanggapin';
 	@override String get decline => 'Tanggihan';
 	@override String get revoke => 'Bawiin';
+	@override String get resendInvite => 'Ipadala muli';
+	@override String get inviteResent => 'Naipadala muli ang email ng imbitasyon';
+	@override String get inviteResendFailed => 'Hindi maipadala muli ang email ng imbitasyon';
+	@override String get inviteAlreadyAccepted => 'Natanggap na ang imbitasyong ito';
+	@override String get inviteNoLongerPending => 'Hindi na pending ang imbitasyong ito';
 	@override String get noOrganizations => 'Wala ka pang organisasyon.';
 	@override String get contactAdmin => 'Makipag-ugnayan sa iyong administrator para maimbitahan sa isang organisasyon.';
 	@override String get inviteSent => 'Naipadala ang imbitasyon';
@@ -649,6 +659,11 @@ extension on TranslationsTl {
 			'fields.cash' => 'Cash',
 			'fields.gcashBank' => 'GCash/Bank',
 			'management.usersSubtitle' => 'Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito.',
+			'management.membersSection' => 'Mga Miyembro',
+			'management.invitesSection' => 'Mga Imbitasyon',
+			'management.invitesSubtitle' => 'Mga pending na imbitasyong naghihintay tanggapin.',
+			'management.noPendingInvites' => 'Walang pending na imbitasyon',
+			'management.noPendingInvitesHint' => 'Mag-imbita gamit ang + button. Makakatanggap sila ng email para mag-sign in at tumanggap.',
 			'navigation.shortcuts' => 'Mga Shortcut',
 			'navigation.categories' => 'Mga Kategorya',
 			'navigation.showMore' => 'Magpakita pa',
@@ -718,6 +733,11 @@ extension on TranslationsTl {
 			'organizations.accept' => 'Tanggapin',
 			'organizations.decline' => 'Tanggihan',
 			'organizations.revoke' => 'Bawiin',
+			'organizations.resendInvite' => 'Ipadala muli',
+			'organizations.inviteResent' => 'Naipadala muli ang email ng imbitasyon',
+			'organizations.inviteResendFailed' => 'Hindi maipadala muli ang email ng imbitasyon',
+			'organizations.inviteAlreadyAccepted' => 'Natanggap na ang imbitasyong ito',
+			'organizations.inviteNoLongerPending' => 'Hindi na pending ang imbitasyong ito',
 			'organizations.noOrganizations' => 'Wala ka pang organisasyon.',
 			'organizations.contactAdmin' => 'Makipag-ugnayan sa iyong administrator para maimbitahan sa isang organisasyon.',
 			'organizations.inviteSent' => 'Naipadala ang imbitasyon',

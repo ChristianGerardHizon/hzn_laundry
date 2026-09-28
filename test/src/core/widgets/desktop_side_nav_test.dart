@@ -21,6 +21,7 @@ void main() {
         'management' => 'Management',
         'organizations' => 'Organizations',
         'system' => 'System',
+        'profile' => 'Profile',
         _ => key,
       });
 

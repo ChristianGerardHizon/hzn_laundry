@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/auth/presentation/controllers/splash_gate_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
@@ -260,6 +261,7 @@ abstract class RouterUtils {
 
     // 1. Still loading auth on splash - stay on splash
     if (isAuthLoading && isOnSplashPage) {
+      ref.read(splashGateProvider.notifier).ensureStarted();
       return SplashRoute.path;
     }
 
@@ -274,9 +276,12 @@ abstract class RouterUtils {
 
     // 3. Splash complete - redirect based on auth result
     if (isOnSplashPage && !isAuthLoading) {
+      ref.read(splashGateProvider.notifier).ensureStarted();
       if (!isAuthenticated) return LoginRoute.path;
       // Wait for org/branch (and their slugs) before leaving splash.
       if (isScopeLoading(ref)) return null;
+      // Hold splash until minimum duration elapses (max(3s, init)).
+      if (!ref.read(splashGateProvider)) return null;
 
       // Prefer subscription pay deep links over org picker / home.
       final pendingOnSplash = ref.read(pendingRedirectProvider.notifier).peek();
@@ -299,30 +304,12 @@ abstract class RouterUtils {
       return destination;
     }
 
-    // 4. Login page - redirect if authenticated
+    // 4. Login page - redirect if authenticated → splash (min duration + init)
     if (isOnLoginPage) {
       if (isAuthenticated) {
-        if (isScopeLoading(ref)) return SplashRoute.path;
-
-        final pendingOnLogin =
-            ref.read(pendingRedirectProvider.notifier).peek();
-        if (pendingOnLogin != null &&
-            isSubscriptionPayPath(Uri.tryParse(pendingOnLogin)?.path ?? '')) {
-          ref.read(pendingRedirectProvider.notifier).clear();
-          return pendingOnLogin;
-        }
-
-        final destination = postAuthDestination(ref);
-        if (destination == null) return ScopeRecoveryRoute.path;
-        if (destination == SelectOrganizationRoute.path) {
-          return destination;
-        }
-        final pendingUrl = ref.read(pendingRedirectProvider.notifier).peek();
-        if (pendingUrl != null) {
-          ref.read(pendingRedirectProvider.notifier).clear();
-          return pendingUrl;
-        }
-        return destination;
+        // Fresh splash hold after login (cold-start timer may already be done).
+        ref.read(splashGateProvider.notifier).reset();
+        return SplashRoute.path;
       }
       return null;
     }

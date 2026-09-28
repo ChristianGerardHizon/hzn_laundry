@@ -76,8 +76,7 @@
 				<string>com.hznsystems.hznlaundry</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<!-- Your app title -->
-					<string>example</string>
+					<string>hznlaundry</string>
 				</array>
 			</dict>
 		</array>
