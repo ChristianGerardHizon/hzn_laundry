@@ -3,8 +3,9 @@
 // ============================================================================
 // Auto-verify Users
 // ============================================================================
-// This app does not use email verification. Always mark auth users as
-// verified on create, and backfill any existing unverified users on boot.
+// Staff who self-register (or complete invite accept) are marked verified on
+// create. Invite send does NOT create a user — verified email + login only
+// after /invite.html name+password accept.
 //
 // Uses onRecordCreate (DB hook) rather than onRecordCreateRequest because
 // the verified field is a protected system field that fails request

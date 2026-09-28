@@ -474,7 +474,14 @@ Password reset page (linked from PocketBase reset emails):
 | Production | `https://hznlaundry.hznsystems.com/reset-password.html` |
 | Staging | `https://staging.hznlaundry.hznsystems.com/reset-password.html` |
 
-Source: [`web/privacy-policy.html`](web/privacy-policy.html) and [`web/reset-password.html`](web/reset-password.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** privacy-policy URL in Play Console → App content → Privacy policy.
+Invite landing page (linked from staff invite emails — choose web or app sign-in):
+
+| Environment | URL |
+|-------------|-----|
+| Production | `https://hznlaundry.hznsystems.com/invite.html` |
+| Staging | `https://staging.hznlaundry.hznsystems.com/invite.html` |
+
+Source: [`web/privacy-policy.html`](web/privacy-policy.html), [`web/reset-password.html`](web/reset-password.html), and [`web/invite.html`](web/invite.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** privacy-policy URL in Play Console → App content → Privacy policy.
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 

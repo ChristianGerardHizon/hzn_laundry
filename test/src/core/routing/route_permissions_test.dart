@@ -6,9 +6,10 @@ import 'package:hzn_laundry/src/features/users/domain/user_role.dart';
 
 void main() {
   group('canAccessPath', () {
-    test('dashboard and organizations are always allowed', () {
+    test('dashboard, organizations, and profile are always allowed', () {
       expect(canAccessPath(DashboardRoute.path, null), isTrue);
       expect(canAccessPath('/organizations', null), isTrue);
+      expect(canAccessPath('/profile', null), isTrue);
     });
 
     test('products requires products.view when role is set', () {

@@ -9,12 +9,14 @@ import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/organization_letter_mark.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/splash_gate_provider.dart';
 
 /// Splash page shown while the app is initializing.
 ///
 /// Displayed during auth state initialization on app startup.
 /// The router handles navigation based on auth state - this page
 /// simply watches auth state and displays a warming-up loading UI.
+/// Holds for at least [SplashGate.minDuration] after [SplashGate.ensureStarted].
 ///
 /// When a current organization is already resolved (logged-in cold start),
 /// shows that org's letter-mark and name with a "Powered by" footer.
@@ -23,6 +25,10 @@ class SplashPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Start the minimum splash hold; router leaves when elapsed + init ready.
+    ref.read(splashGateProvider.notifier).ensureStarted();
+    ref.watch(splashGateProvider);
+
     // Watch auth state - router will redirect when auth completes
     ref.watch(authControllerProvider);
     final orgAsync = ref.watch(currentOrganizationControllerProvider);
@@ -32,6 +38,14 @@ class SplashPage extends HookConsumerWidget {
 
     final verbIndex = useState(0);
     final ellipsisStep = useState(0);
+
+    // Warm logo cache during splash hold so branded mark / nav paint instantly.
+    useEffect(() {
+      final url = org?.logoUrl;
+      if (url == null || url.isEmpty) return null;
+      unawaited(precacheOrganizationLogo(context, url));
+      return null;
+    }, [org?.logoUrl]);
 
     useEffect(() {
       if (showOrgBrand) return null;

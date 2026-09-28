@@ -1,3 +1,8 @@
 {
-  "usersSubtitle": "Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito."
+  "usersSubtitle": "Mag-imbita ng staff sa organisasyong ito. Kapag tinanggap nila, pamahalaan ang tungkulin dito.",
+  "membersSection": "Mga Miyembro",
+  "invitesSection": "Mga Imbitasyon",
+  "invitesSubtitle": "Mga pending na imbitasyong naghihintay tanggapin.",
+  "noPendingInvites": "Walang pending na imbitasyon",
+  "noPendingInvitesHint": "Mag-imbita gamit ang + button. Makakatanggap sila ng email para mag-sign in at tumanggap."
 }

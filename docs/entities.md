@@ -229,7 +229,7 @@ Join between a user and an organization, with an org-scoped role.
 
 ### OrganizationInvite
 
-Email invite to join an organization. Token is server-hidden; clients accept/revoke by invite id.
+Email invite to join an organization. Token is server-hidden; email links accept via `POST /api/organization-invites/accept-by-token`. Authenticated clients may still accept/revoke/decline by invite id.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -237,6 +237,7 @@ Email invite to join an organization. Token is server-hidden; clients accept/rev
 | `email` | String | Yes | Invitee email |
 | `organizationId` | String (FK) | Yes | FK to Organization |
 | `role` | UserRole | Yes | Role granted on accept |
+| `token` | String | Yes | Secret 32-char token (hidden; email-link accept) |
 | `status` | String | Yes | `pending`, `accepted`, `expired`, or `revoked` |
 | `expiresAt` | DateTime | Yes | Expiry (7 days from create) |
 | `invitedBy` | String (FK) | Yes | FK to User |
@@ -244,7 +245,7 @@ Email invite to join an organization. Token is server-hidden; clients accept/rev
 
 **Collection:** `organizationInvites`
 
-Writes go through `POST /api/organization-invites`, `.../{id}/accept`, `.../{id}/revoke`, `.../{id}/decline`.
+Writes go through `POST /api/organization-invites`, `POST /api/organization-invites/accept-by-token` (public), `.../{id}/accept`, `.../{id}/revoke`, `.../{id}/decline`, `.../{id}/resend`.
 
 ---
 

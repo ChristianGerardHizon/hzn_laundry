@@ -22,6 +22,7 @@ abstract class OrganizationInviteRepository {
   });
   FutureEither<OrganizationMembership> accept(String inviteId);
   FutureEither<OrganizationInvite> revoke(String inviteId);
+  FutureEither<OrganizationInvite> resend(String inviteId);
   FutureEither<OrganizationInvite> decline(String inviteId);
   FutureEither<List<OrganizationInvite>> listMine(String email);
   FutureEither<List<OrganizationInvite>> listForOrganization(String orgId);
@@ -98,6 +99,22 @@ class OrganizationInviteRepositoryImpl implements OrganizationInviteRepository {
         );
         return OrganizationInviteDto.fromJson(
           _asMap(response, 'invalid_invite_revoke_response'),
+        ).toEntity();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrganizationInvite> resend(String inviteId) async {
+    return TaskEither.tryCatch(
+      () async {
+        final response = await _pb.send(
+          '/api/organization-invites/$inviteId/resend',
+          method: 'POST',
+        );
+        return OrganizationInviteDto.fromJson(
+          _asMap(response, 'invalid_invite_resend_response'),
         ).toEntity();
       },
       Failure.handle,

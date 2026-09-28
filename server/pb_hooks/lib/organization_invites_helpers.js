@@ -332,6 +332,7 @@ function createOrganization(e) {
   var subHelpers = require(__hooks + "/lib/organization_subscriptions_helpers.js");
 
   var createdOrg = null;
+  var pendingInviteEmails = [];
   var authId = e.auth.id;
   var contactNumber = trimStr(body.contactNumber);
   var address = trimStr(body.address);
@@ -381,7 +382,8 @@ function createOrganization(e) {
       for (i = 0; i < invites.length; i++) {
         var invite = invites[i];
         var inviteEmail = String(invite.email || "").trim().toLowerCase();
-        ensureUserAccountForInvite(txApp, inviteEmail);
+        // Do not create a users record here — account + verified email only
+        // after the invitee completes name/password on /invite.html.
         var inviteRecord = new Record(invitesCollection);
         inviteRecord.set("email", inviteEmail);
         inviteRecord.set("organization", org.id);
@@ -390,6 +392,11 @@ function createOrganization(e) {
         inviteRecord.set("status", "pending");
         inviteRecord.set("expiresAt", inviteExpiresAt);
         txApp.save(inviteRecord);
+        pendingInviteEmails.push({
+          email: inviteEmail,
+          role: invite.role,
+          token: inviteRecord.getString("token")
+        });
       }
     }
 
@@ -404,6 +411,18 @@ function createOrganization(e) {
 
     createdOrg = org;
   });
+
+  // Send after commit so a mail failure cannot roll back org creation.
+  var j;
+  for (j = 0; j < pendingInviteEmails.length; j++) {
+    notifyInviteCreated(
+      e.app,
+      pendingInviteEmails[j].email,
+      createdOrg.id,
+      pendingInviteEmails[j].role,
+      pendingInviteEmails[j].token
+    );
+  }
 
   return e.json(200, exportRecord(createdOrg));
 }
@@ -488,6 +507,186 @@ function updateFeatureFlag(e) {
   return e.json(200, exportRecord(record));
 }
 
+function escapeInviteHtml(s) {
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function encodeInviteQuery(s) {
+  return encodeURIComponent(String(s == null ? "" : s));
+}
+
+function resolveInviteOrgName(app, organizationId) {
+  try {
+    return app.findRecordById("organizations", organizationId).getString("name") || "an organization";
+  } catch (_) {
+    return "an organization";
+  }
+}
+
+function resolveInviteRoleName(app, roleId) {
+  try {
+    return app.findRecordById("userRoles", roleId).getString("name") || "Member";
+  } catch (_) {
+    return "Member";
+  }
+}
+
+function buildInviteEmail(orgName, roleName, loginUrl) {
+  var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var brand = historyConfig.getAppDisplayName();
+  var safeBrand = escapeInviteHtml(brand);
+  var safeOrg = escapeInviteHtml(orgName);
+  var safeRole = escapeInviteHtml(roleName);
+  var safeLink = escapeInviteHtml(loginUrl);
+  var ttlLabel = String(INVITE_TTL_DAYS);
+
+  var subject = "You're invited to join " + orgName + " on " + brand;
+  var preheader = "Accept your invitation to join " + orgName + " as " + roleName + ".";
+
+  var html =
+    "<!DOCTYPE html>" +
+    "<html lang=\"en\">" +
+    "<head>" +
+      "<meta charset=\"UTF-8\">" +
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+      "<meta name=\"x-apple-disable-message-reformatting\">" +
+      "<title>" + safeBrand + "</title>" +
+    "</head>" +
+    "<body style=\"margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1f2937;\">" +
+      "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">" + escapeInviteHtml(preheader) + "</div>" +
+      "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:#f4f6f8;\">" +
+        "<tr>" +
+          "<td align=\"center\" style=\"padding:32px 12px;\">" +
+            "<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(16,24,40,0.08);\">" +
+              "<tr>" +
+                "<td style=\"background:#45A9AB; padding:28px 32px;\">" +
+                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">" +
+                    "<tr>" +
+                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">" + safeBrand + "</td>" +
+                      "<td align=\"right\" style=\"color:#e6f5f5; font-size:13px;\">Invitation</td>" +
+                    "</tr>" +
+                  "</table>" +
+                "</td>" +
+              "</tr>" +
+              "<tr>" +
+                "<td style=\"padding:32px;\">" +
+                  "<h1 style=\"margin:0 0 16px; font-size:22px; line-height:1.3; color:#0f172a;\">You're invited</h1>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">You've been invited to join <strong>" + safeOrg + "</strong> as <strong>" + safeRole + "</strong>.</p>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Click the button below to accept. You'll set your name and a password (so you can sign in even if email codes fail), then your email is confirmed.</p>" +
+                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0;\">" +
+                    "<tr>" +
+                      "<td align=\"center\">" +
+                        "<a href=\"" + safeLink + "\" style=\"display:inline-block; background-color:#45A9AB; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:8px;\">Accept invitation</a>" +
+                      "</td>" +
+                    "</tr>" +
+                  "</table>" +
+                  "<p style=\"margin:0 0 8px; font-size:13px; line-height:1.5; color:#64748b;\">Button not working? Paste this link into your browser:</p>" +
+                  "<p style=\"margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all;\">" +
+                    "<a href=\"" + safeLink + "\" style=\"color:#2F7A7C; text-decoration:underline;\">" + safeLink + "</a>" +
+                  "</p>" +
+                  "<p style=\"margin:0; font-size:13px; line-height:1.6; color:#64748b;\">This invite expires in " + ttlLabel + " days. If you weren't expecting it, you can ignore this email.</p>" +
+                "</td>" +
+              "</tr>" +
+              "<tr>" +
+                "<td style=\"background-color:#f8fafc; padding:20px 32px; border-top:1px solid #e2e8f0;\">" +
+                  "<p style=\"margin:0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; " + safeBrand + ". All rights reserved.</p>" +
+                "</td>" +
+              "</tr>" +
+            "</table>" +
+          "</td>" +
+        "</tr>" +
+      "</table>" +
+    "</body>" +
+    "</html>";
+
+  var text =
+    "You're invited to join " + orgName + " as " + roleName + " on " + brand + ".\n\n" +
+    "Open this link to accept (set your name & password, confirms your email), then sign in anytime:\n" +
+    loginUrl + "\n\n" +
+    "This invite expires in " + ttlLabel + " days.\n";
+
+  return { subject: subject, html: html, text: text };
+}
+
+/**
+ * Sends invite email via Resend.
+ * Returns true on success, false on skip/failure (createInvite still soft-fails).
+ */
+function sendInviteEmail(toEmail, orgName, roleName, token) {
+  var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var apiKey = $os.getenv("RESEND_API_KEY");
+  if (!apiKey) {
+    console.log("[INVITE] RESEND_API_KEY not set; skip email to " + toEmail);
+    return false;
+  }
+
+  if (!token) {
+    console.log("[INVITE] missing token; skip email to " + toEmail);
+    return false;
+  }
+
+  var inviteUrl =
+    historyConfig.getAppBaseUrl() +
+    "/invite.html?token=" +
+    encodeInviteQuery(token) +
+    "&org=" +
+    encodeInviteQuery(orgName) +
+    "&role=" +
+    encodeInviteQuery(roleName) +
+    "&email=" +
+    encodeInviteQuery(toEmail);
+  var appEnv = String($os.getenv("APP_ENV") || "").toLowerCase();
+  if (appEnv) {
+    inviteUrl += "&env=" + encodeInviteQuery(appEnv);
+  }
+  var emailBody = buildInviteEmail(orgName, roleName, inviteUrl);
+
+  try {
+    var res = $http.send({
+      url: "https://api.resend.com/emails",
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: historyConfig.getFromEmail(),
+        to: [toEmail],
+        subject: emailBody.subject,
+        html: emailBody.html,
+        text: emailBody.text
+      }),
+      timeout: 15
+    });
+    if (res.statusCode >= 400) {
+      console.log(
+        "[INVITE] Resend error " +
+          res.statusCode +
+          ": " +
+          JSON.stringify(res.json)
+      );
+      return false;
+    }
+    console.log("[INVITE] email sent to " + toEmail);
+    return true;
+  } catch (err) {
+    console.log("[INVITE] failed to email " + toEmail + ": " + err);
+    return false;
+  }
+}
+
+function notifyInviteCreated(app, email, organizationId, roleId, token) {
+  var orgName = resolveInviteOrgName(app, organizationId);
+  var roleName = resolveInviteRoleName(app, roleId);
+  return sendInviteEmail(email, orgName, roleName, token);
+}
+
 function createInvite(e) {
   if (!e.auth) {
     throw new ForbiddenError("authentication required");
@@ -504,9 +703,8 @@ function createInvite(e) {
 
   requireManageOrgMembers(e, organization);
 
-  // Ensure a login account exists so the invitee can OTP/OAuth then accept.
-  // Do not assign role here — permissions come from users.role only after accept.
-  ensureUserAccountForInvite(e.app, email);
+  // Do not create a users record yet — login + verified email only after the
+  // invitee completes name/password on the email accept link.
 
   var collection = e.app.findCollectionByNameOrId("organizationInvites");
   var record = new Record(collection);
@@ -519,15 +717,22 @@ function createInvite(e) {
   record.set("expiresAt", expiresAt.toISOString());
 
   e.app.save(record);
+  notifyInviteCreated(
+    e.app,
+    email,
+    organization,
+    role,
+    record.getString("token")
+  );
   return e.json(200, exportRecord(record));
 }
 
 /**
- * Creates a users auth record when the invite email has no account yet.
- * Auto-verify hook marks verified on create. Random password — login via OTP/Google.
- * Role is intentionally omitted; acceptInvite sets users.role from the invite.
+ * Creates or updates the invitee auth user when they complete email-link accept.
+ * Name + password are required. Verified is set in applyInviteAcceptance (and
+ * auto-verify on first create). No account should exist from invite-send alone.
  */
-function ensureUserAccountForInvite(app, email) {
+function upsertUserOnInviteAccept(app, email, name, password, passwordConfirm) {
   var existing;
   try {
     existing = app.findFirstRecordByFilter(
@@ -538,21 +743,98 @@ function ensureUserAccountForInvite(app, email) {
   } catch (_) {
     existing = null;
   }
+
   if (existing) {
+    existing.set("name", name);
+    existing.set("password", password);
+    existing.set("passwordConfirm", passwordConfirm);
+    existing.set("isDeleted", false);
+    app.save(existing);
     return existing;
   }
 
   var collection = app.findCollectionByNameOrId("users");
   var record = new Record(collection);
-  var password = $security.randomString(32);
-  var localPart = email.split("@")[0] || "user";
   record.set("email", email);
-  record.set("name", localPart);
+  record.set("name", name);
   record.set("password", password);
-  record.set("passwordConfirm", password);
+  record.set("passwordConfirm", passwordConfirm);
   record.set("isDeleted", false);
   app.save(record);
   return record;
+}
+
+/**
+ * Applies membership + role + verified for [user] from a pending [invite].
+ * Marks the invite accepted. Caller must validate pending/expiry/email match.
+ */
+function applyInviteAcceptance(app, invite, user) {
+  var organizationId = invite.getString("organization");
+  var roleId = invite.getString("role");
+
+  var existing;
+  try {
+    existing = app.findFirstRecordByFilter(
+      "organizationMemberships",
+      "user = {:user} && organization = {:org}",
+      { user: user.id, org: organizationId }
+    );
+  } catch (_) {
+    existing = null;
+  }
+
+  var membership;
+  if (existing) {
+    membership = existing;
+    membership.set("role", roleId);
+    membership.set("status", "active");
+    app.save(membership);
+  } else {
+    var collection = app.findCollectionByNameOrId("organizationMemberships");
+    membership = new Record(collection);
+    membership.set("user", user.id);
+    membership.set("organization", organizationId);
+    membership.set("role", roleId);
+    membership.set("status", "active");
+    membership.set("invitedBy", invite.getString("invitedBy"));
+    membership.set("joinedAt", new Date().toISOString());
+    app.save(membership);
+  }
+
+  // Keep users.role in sync — nav permissions resolve from the auth user record.
+  // Accepting an invite also proves email ownership → mark verified.
+  try {
+    var authUser = app.findRecordById("users", user.id);
+    if (authUser) {
+      authUser.set("role", roleId);
+      if (!authUser.verified()) {
+        authUser.setVerified(true);
+        console.log(
+          "[INVITE] marked verified on accept: " + authUser.getString("email")
+        );
+      }
+      app.save(authUser);
+    }
+  } catch (_) {}
+
+  invite.set("status", "accepted");
+  invite.set("acceptedBy", user.id);
+  app.save(invite);
+
+  return membership;
+}
+
+function assertInvitePendingAndFresh(app, invite) {
+  if (invite.getString("status") !== "pending") {
+    throw new BadRequestError("invite is no longer valid");
+  }
+
+  var expiresAt = new Date(invite.getString("expiresAt"));
+  if (Date.now() > expiresAt.getTime()) {
+    invite.set("status", "expired");
+    app.save(invite);
+    throw new BadRequestError("invite has expired");
+  }
 }
 
 function acceptInvite(e) {
@@ -571,16 +853,7 @@ function acceptInvite(e) {
     throw new NotFoundError("invite not found");
   }
 
-  if (invite.getString("status") !== "pending") {
-    throw new BadRequestError("invite is no longer valid");
-  }
-
-  var expiresAt = new Date(invite.getString("expiresAt"));
-  if (Date.now() > expiresAt.getTime()) {
-    invite.set("status", "expired");
-    e.app.save(invite);
-    throw new BadRequestError("invite has expired");
-  }
+  assertInvitePendingAndFresh(e.app, invite);
 
   var authEmail = (e.auth.getString("email") || "").trim().toLowerCase();
   var inviteEmail = (invite.getString("email") || "").trim().toLowerCase();
@@ -588,51 +861,82 @@ function acceptInvite(e) {
     throw new ForbiddenError("this invite is for a different account");
   }
 
-  var organizationId = invite.getString("organization");
+  var membership = applyInviteAcceptance(e.app, invite, e.auth);
+  return e.json(200, exportRecord(membership));
+}
 
-  var existing;
+/**
+ * Public: accept + verify via the secret invite token from the email link.
+ * No auth required — possession of the token proves email access.
+ * Requires name + password so the invitee can sign in if OTP email fails.
+ * Idempotent when already accepted (profile fields ignored).
+ */
+function acceptInviteByToken(e) {
+  var body = e.requestInfo().body || {};
+  var token = String(body.token || "").trim();
+  if (!token) {
+    throw new BadRequestError("token is required");
+  }
+
+  var invite;
   try {
-    existing = e.app.findFirstRecordByFilter(
-      "organizationMemberships",
-      "user = {:user} && organization = {:org}",
-      { user: e.auth.id, org: organizationId }
+    invite = e.app.findFirstRecordByFilter(
+      "organizationInvites",
+      "token = {:token}",
+      { token: token }
     );
   } catch (_) {
-    existing = null;
+    invite = null;
+  }
+  if (!invite) {
+    throw new NotFoundError("invite not found");
   }
 
-  var membership;
-  if (existing) {
-    membership = existing;
-    membership.set("role", invite.getString("role"));
-    membership.set("status", "active");
-    e.app.save(membership);
-  } else {
-    var collection = e.app.findCollectionByNameOrId("organizationMemberships");
-    membership = new Record(collection);
-    membership.set("user", e.auth.id);
-    membership.set("organization", organizationId);
-    membership.set("role", invite.getString("role"));
-    membership.set("status", "active");
-    membership.set("invitedBy", invite.getString("invitedBy"));
-    membership.set("joinedAt", new Date().toISOString());
-    e.app.save(membership);
+  var inviteEmail = (invite.getString("email") || "").trim().toLowerCase();
+  var organizationId = invite.getString("organization");
+
+  if (invite.getString("status") === "accepted") {
+    return e.json(200, {
+      status: "accepted",
+      email: inviteEmail,
+      organizationId: organizationId,
+      alreadyAccepted: true
+    });
   }
 
-  // Keep users.role in sync — nav permissions resolve from the auth user record.
-  try {
-    var authUser = e.app.findRecordById("users", e.auth.id);
-    if (authUser) {
-      authUser.set("role", invite.getString("role"));
-      e.app.save(authUser);
-    }
-  } catch (_) {}
+  assertInvitePendingAndFresh(e.app, invite);
 
-  invite.set("status", "accepted");
-  invite.set("acceptedBy", e.auth.id);
-  e.app.save(invite);
+  var name = String(body.name || "").trim();
+  var password = String(body.password || "");
+  var passwordConfirm = String(body.passwordConfirm || "");
+  if (!name) {
+    throw new BadRequestError("name is required");
+  }
+  if (password.length < 8) {
+    throw new BadRequestError("password must be at least 8 characters");
+  }
+  if (password !== passwordConfirm) {
+    throw new BadRequestError("passwords do not match");
+  }
 
-  return e.json(200, exportRecord(membership));
+  var user = upsertUserOnInviteAccept(
+    e.app,
+    inviteEmail,
+    name,
+    password,
+    passwordConfirm
+  );
+
+  applyInviteAcceptance(e.app, invite, user);
+
+  console.log("[INVITE] accepted via email token for " + inviteEmail);
+
+  return e.json(200, {
+    status: "accepted",
+    email: inviteEmail,
+    organizationId: organizationId,
+    alreadyAccepted: false
+  });
 }
 
 function revokeInvite(e) {
@@ -659,6 +963,68 @@ function revokeInvite(e) {
 
   invite.set("status", "revoked");
   e.app.save(invite);
+  return e.json(200, exportRecord(invite));
+}
+
+/**
+ * Re-sends the invite email for a pending invite. Fails if Resend is unavailable.
+ */
+function resendInvite(e) {
+  if (!e.auth) {
+    throw new ForbiddenError("authentication required");
+  }
+
+  var id = e.request.pathValue("id");
+  var invite;
+  try {
+    invite = e.app.findRecordById("organizationInvites", id);
+  } catch (_) {
+    throw new NotFoundError("invite not found");
+  }
+  if (!invite) {
+    throw new NotFoundError("invite not found");
+  }
+
+  requireManageOrgMembers(e, invite.getString("organization"));
+
+  var status = invite.getString("status");
+  if (status === "accepted") {
+    throw new BadRequestError("invite already accepted");
+  }
+  if (status === "expired") {
+    throw new BadRequestError("invite has expired");
+  }
+  if (status !== "pending") {
+    throw new BadRequestError("invite is no longer pending");
+  }
+
+  var expiresAt = new Date(invite.getString("expiresAt"));
+  if (!isNaN(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
+    invite.set("status", "expired");
+    e.app.save(invite);
+    throw new BadRequestError("invite has expired");
+  }
+
+  var email = (invite.getString("email") || "").trim().toLowerCase();
+
+  // Rotate token so older email links stop working after a resend.
+  invite.set("token", $security.randomString(32));
+  // Extend expiry from resend time (same TTL as create).
+  var newExpires = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
+  invite.set("expiresAt", newExpires.toISOString());
+  e.app.save(invite);
+
+  var sent = notifyInviteCreated(
+    e.app,
+    email,
+    invite.getString("organization"),
+    invite.getString("role"),
+    invite.getString("token")
+  );
+  if (!sent) {
+    throw new ApiError(502, "failed to send invite email");
+  }
+
   return e.json(200, exportRecord(invite));
 }
 
@@ -803,7 +1169,9 @@ module.exports = {
   updateFeatureFlag: updateFeatureFlag,
   createInvite: createInvite,
   acceptInvite: acceptInvite,
+  acceptInviteByToken: acceptInviteByToken,
   revokeInvite: revokeInvite,
+  resendInvite: resendInvite,
   declineInvite: declineInvite,
   listOrganizationPlatformStats: listOrganizationPlatformStats
 };

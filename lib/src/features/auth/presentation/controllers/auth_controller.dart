@@ -10,6 +10,7 @@ import '../../../../core/routing/pending_redirect_provider.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../data/auth_repository.dart';
 import '../../domain/auth_state.dart';
+import 'splash_gate_provider.dart';
 
 part 'auth_controller.g.dart';
 
@@ -95,6 +96,7 @@ class AuthController extends _$AuthController {
     await _repository.logout();
     state = const AsyncData(null);
     ref.read(organizationSwitchOverlayProvider.notifier).clear();
+    ref.read(splashGateProvider.notifier).reset();
     unawaited(_clearPersistedOrganizationId());
   }
 
