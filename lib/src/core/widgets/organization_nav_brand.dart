@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -147,7 +146,7 @@ class OrganizationNavBrand extends ConsumerWidget {
 
 /// Org logo or initials in a circle with the same network-health border as
 /// [NetworkHealthLogo].
-class _OrganizationHealthMark extends ConsumerWidget {
+class _OrganizationHealthMark extends ConsumerStatefulWidget {
   const _OrganizationHealthMark({
     required this.name,
     required this.size,
@@ -159,7 +158,37 @@ class _OrganizationHealthMark extends ConsumerWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OrganizationHealthMark> createState() =>
+      _OrganizationHealthMarkState();
+}
+
+class _OrganizationHealthMarkState
+    extends ConsumerState<_OrganizationHealthMark> {
+  String? _prefetchedUrl;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _prefetchIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OrganizationHealthMark oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.logoUrl != widget.logoUrl) {
+      _prefetchIfNeeded();
+    }
+  }
+
+  void _prefetchIfNeeded() {
+    final url = widget.logoUrl;
+    if (url == null || url.isEmpty || url == _prefetchedUrl) return;
+    _prefetchedUrl = url;
+    precacheOrganizationLogo(context, url);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final connectivityAsync = ref.watch(pbConnectivityProvider);
@@ -170,29 +199,24 @@ class _OrganizationHealthMark extends ConsumerWidget {
     );
     const borderWidth = 2.5;
     final borderColor = NetworkHealthLogo.colorFor(status);
-    final initials = OrganizationNavBrand.initialsFor(name);
-    final hasLogo = logoUrl != null && logoUrl!.isNotEmpty;
+    final initials = OrganizationNavBrand.initialsFor(widget.name);
+    final hasLogo = widget.logoUrl != null && widget.logoUrl!.isNotEmpty;
+    final size = widget.size;
 
     Widget inner;
     if (hasLogo) {
+      final fallback = _NavInitials(
+        size: size,
+        initials: initials,
+        colors: colors,
+        theme: theme,
+      );
       inner = ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: logoUrl!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => _NavInitials(
-            size: size,
-            initials: initials,
-            colors: colors,
-            theme: theme,
-          ),
-          errorWidget: (_, __, ___) => _NavInitials(
-            size: size,
-            initials: initials,
-            colors: colors,
-            theme: theme,
-          ),
+        child: organizationLogoImage(
+          imageUrl: widget.logoUrl!,
+          size: size,
+          placeholder: (_, __) => fallback,
+          errorWidget: (_, __, ___) => fallback,
         ),
       );
     } else {
