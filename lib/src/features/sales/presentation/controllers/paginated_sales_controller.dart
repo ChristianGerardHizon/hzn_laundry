@@ -128,7 +128,16 @@ class PaginatedSalesController extends _$PaginatedSalesController {
   /// Refreshes the list (respects current search, sort, and filters).
   Future<void> refresh() async {
     state = const AsyncValue.loading();
+    await _reload();
+  }
 
+  /// Reloads list data without clearing the current UI (no loading flash).
+  ///
+  /// Use after mutations that change fields shown in the list (e.g. payment
+  /// status) so badges update while keeping the two-pane layout stable.
+  Future<void> refreshQuietly() => _reload();
+
+  Future<void> _reload() async {
     final result = _currentSearchQuery != null
         ? await _repository.searchPaginated(
             _currentSearchQuery!,
@@ -144,6 +153,8 @@ class PaginatedSalesController extends _$PaginatedSalesController {
             sort: _currentSort,
             filter: _listFilter,
           );
+
+    if (!ref.mounted) return;
 
     state = result.fold(
       (failure) => AsyncError(failure, StackTrace.current),
