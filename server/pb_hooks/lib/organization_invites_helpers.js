@@ -332,6 +332,7 @@ function createOrganization(e) {
   var subHelpers = require(__hooks + "/lib/organization_subscriptions_helpers.js");
 
   var createdOrg = null;
+  var pendingInviteEmails = [];
   var authId = e.auth.id;
   var contactNumber = trimStr(body.contactNumber);
   var address = trimStr(body.address);
@@ -390,6 +391,7 @@ function createOrganization(e) {
         inviteRecord.set("status", "pending");
         inviteRecord.set("expiresAt", inviteExpiresAt);
         txApp.save(inviteRecord);
+        pendingInviteEmails.push({ email: inviteEmail, role: invite.role });
       }
     }
 
@@ -404,6 +406,17 @@ function createOrganization(e) {
 
     createdOrg = org;
   });
+
+  // Send after commit so a mail failure cannot roll back org creation.
+  var j;
+  for (j = 0; j < pendingInviteEmails.length; j++) {
+    notifyInviteCreated(
+      e.app,
+      pendingInviteEmails[j].email,
+      createdOrg.id,
+      pendingInviteEmails[j].role
+    );
+  }
 
   return e.json(200, exportRecord(createdOrg));
 }
@@ -488,6 +501,179 @@ function updateFeatureFlag(e) {
   return e.json(200, exportRecord(record));
 }
 
+function escapeInviteHtml(s) {
+  if (s === null || s === undefined) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function encodeInviteQuery(s) {
+  return encodeURIComponent(String(s == null ? "" : s));
+}
+
+function resolveInviteOrgName(app, organizationId) {
+  try {
+    return app.findRecordById("organizations", organizationId).getString("name") || "an organization";
+  } catch (_) {
+    return "an organization";
+  }
+}
+
+function resolveInviteRoleName(app, roleId) {
+  try {
+    return app.findRecordById("userRoles", roleId).getString("name") || "Member";
+  } catch (_) {
+    return "Member";
+  }
+}
+
+function buildInviteEmail(orgName, roleName, loginUrl) {
+  var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var brand = historyConfig.getAppDisplayName();
+  var safeBrand = escapeInviteHtml(brand);
+  var safeOrg = escapeInviteHtml(orgName);
+  var safeRole = escapeInviteHtml(roleName);
+  var safeLink = escapeInviteHtml(loginUrl);
+  var ttlLabel = String(INVITE_TTL_DAYS);
+
+  var subject = "You're invited to join " + orgName + " on " + brand;
+  var preheader = "Accept your invitation to join " + orgName + " as " + roleName + ".";
+
+  var html =
+    "<!DOCTYPE html>" +
+    "<html lang=\"en\">" +
+    "<head>" +
+      "<meta charset=\"UTF-8\">" +
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+      "<meta name=\"x-apple-disable-message-reformatting\">" +
+      "<title>" + safeBrand + "</title>" +
+    "</head>" +
+    "<body style=\"margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1f2937;\">" +
+      "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">" + escapeInviteHtml(preheader) + "</div>" +
+      "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:#f4f6f8;\">" +
+        "<tr>" +
+          "<td align=\"center\" style=\"padding:32px 12px;\">" +
+            "<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(16,24,40,0.08);\">" +
+              "<tr>" +
+                "<td style=\"background:#45A9AB; padding:28px 32px;\">" +
+                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">" +
+                    "<tr>" +
+                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">" + safeBrand + "</td>" +
+                      "<td align=\"right\" style=\"color:#e6f5f5; font-size:13px;\">Invitation</td>" +
+                    "</tr>" +
+                  "</table>" +
+                "</td>" +
+              "</tr>" +
+              "<tr>" +
+                "<td style=\"padding:32px;\">" +
+                  "<h1 style=\"margin:0 0 16px; font-size:22px; line-height:1.3; color:#0f172a;\">You're invited</h1>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">You've been invited to join <strong>" + safeOrg + "</strong> as <strong>" + safeRole + "</strong>.</p>" +
+                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Sign in with this email address (web or app), then open Organizations to accept or decline the invite.</p>" +
+                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0;\">" +
+                    "<tr>" +
+                      "<td align=\"center\">" +
+                        "<a href=\"" + safeLink + "\" style=\"display:inline-block; background-color:#45A9AB; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:8px;\">View invitation</a>" +
+                      "</td>" +
+                    "</tr>" +
+                  "</table>" +
+                  "<p style=\"margin:0 0 8px; font-size:13px; line-height:1.5; color:#64748b;\">Button not working? Paste this link into your browser:</p>" +
+                  "<p style=\"margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all;\">" +
+                    "<a href=\"" + safeLink + "\" style=\"color:#2F7A7C; text-decoration:underline;\">" + safeLink + "</a>" +
+                  "</p>" +
+                  "<p style=\"margin:0; font-size:13px; line-height:1.6; color:#64748b;\">This invite expires in " + ttlLabel + " days. If you weren't expecting it, you can ignore this email.</p>" +
+                "</td>" +
+              "</tr>" +
+              "<tr>" +
+                "<td style=\"background-color:#f8fafc; padding:20px 32px; border-top:1px solid #e2e8f0;\">" +
+                  "<p style=\"margin:0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; " + safeBrand + ". All rights reserved.</p>" +
+                "</td>" +
+              "</tr>" +
+            "</table>" +
+          "</td>" +
+        "</tr>" +
+      "</table>" +
+    "</body>" +
+    "</html>";
+
+  var text =
+    "You're invited to join " + orgName + " as " + roleName + " on " + brand + ".\n\n" +
+    "Open this link to choose web or app sign-in, then accept in Organizations:\n" +
+    loginUrl + "\n\n" +
+    "This invite expires in " + ttlLabel + " days.\n";
+
+  return { subject: subject, html: html, text: text };
+}
+
+/**
+ * Sends invite email via Resend.
+ * Returns true on success, false on skip/failure (createInvite still soft-fails).
+ */
+function sendInviteEmail(toEmail, orgName, roleName) {
+  var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var apiKey = $os.getenv("RESEND_API_KEY");
+  if (!apiKey) {
+    console.log("[INVITE] RESEND_API_KEY not set; skip email to " + toEmail);
+    return false;
+  }
+
+  var inviteUrl =
+    historyConfig.getAppBaseUrl() +
+    "/invite.html?org=" +
+    encodeInviteQuery(orgName) +
+    "&role=" +
+    encodeInviteQuery(roleName) +
+    "&email=" +
+    encodeInviteQuery(toEmail);
+  var appEnv = String($os.getenv("APP_ENV") || "").toLowerCase();
+  if (appEnv) {
+    inviteUrl += "&env=" + encodeInviteQuery(appEnv);
+  }
+  var emailBody = buildInviteEmail(orgName, roleName, inviteUrl);
+
+  try {
+    var res = $http.send({
+      url: "https://api.resend.com/emails",
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: historyConfig.getFromEmail(),
+        to: [toEmail],
+        subject: emailBody.subject,
+        html: emailBody.html,
+        text: emailBody.text
+      }),
+      timeout: 15
+    });
+    if (res.statusCode >= 400) {
+      console.log(
+        "[INVITE] Resend error " +
+          res.statusCode +
+          ": " +
+          JSON.stringify(res.json)
+      );
+      return false;
+    }
+    console.log("[INVITE] email sent to " + toEmail);
+    return true;
+  } catch (err) {
+    console.log("[INVITE] failed to email " + toEmail + ": " + err);
+    return false;
+  }
+}
+
+function notifyInviteCreated(app, email, organizationId, roleId) {
+  var orgName = resolveInviteOrgName(app, organizationId);
+  var roleName = resolveInviteRoleName(app, roleId);
+  return sendInviteEmail(email, orgName, roleName);
+}
+
 function createInvite(e) {
   if (!e.auth) {
     throw new ForbiddenError("authentication required");
@@ -519,12 +705,14 @@ function createInvite(e) {
   record.set("expiresAt", expiresAt.toISOString());
 
   e.app.save(record);
+  notifyInviteCreated(e.app, email, organization, role);
   return e.json(200, exportRecord(record));
 }
 
 /**
  * Creates a users auth record when the invite email has no account yet.
- * Auto-verify hook marks verified on create. Random password — login via OTP/Google.
+ * Auto-verify may mark verified on create; acceptInvite also sets verified as
+ * the explicit email-confirm signal. Random password — login via OTP/Google.
  * Role is intentionally omitted; acceptInvite sets users.role from the invite.
  */
 function ensureUserAccountForInvite(app, email) {
@@ -620,10 +808,17 @@ function acceptInvite(e) {
   }
 
   // Keep users.role in sync — nav permissions resolve from the auth user record.
+  // Accepting an invite also proves email ownership → mark verified.
   try {
     var authUser = e.app.findRecordById("users", e.auth.id);
     if (authUser) {
       authUser.set("role", invite.getString("role"));
+      if (!authUser.verified()) {
+        authUser.setVerified(true);
+        console.log(
+          "[INVITE] marked verified on accept: " + authUser.getString("email")
+        );
+      }
       e.app.save(authUser);
     }
   } catch (_) {}
@@ -659,6 +854,59 @@ function revokeInvite(e) {
 
   invite.set("status", "revoked");
   e.app.save(invite);
+  return e.json(200, exportRecord(invite));
+}
+
+/**
+ * Re-sends the invite email for a pending invite. Fails if Resend is unavailable.
+ */
+function resendInvite(e) {
+  if (!e.auth) {
+    throw new ForbiddenError("authentication required");
+  }
+
+  var id = e.request.pathValue("id");
+  var invite;
+  try {
+    invite = e.app.findRecordById("organizationInvites", id);
+  } catch (_) {
+    throw new NotFoundError("invite not found");
+  }
+  if (!invite) {
+    throw new NotFoundError("invite not found");
+  }
+
+  requireManageOrgMembers(e, invite.getString("organization"));
+
+  var status = invite.getString("status");
+  if (status === "accepted") {
+    throw new BadRequestError("invite already accepted");
+  }
+  if (status === "expired") {
+    throw new BadRequestError("invite has expired");
+  }
+  if (status !== "pending") {
+    throw new BadRequestError("invite is no longer pending");
+  }
+
+  var expiresAt = new Date(invite.getString("expiresAt"));
+  if (!isNaN(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
+    invite.set("status", "expired");
+    e.app.save(invite);
+    throw new BadRequestError("invite has expired");
+  }
+
+  var email = (invite.getString("email") || "").trim().toLowerCase();
+  var sent = notifyInviteCreated(
+    e.app,
+    email,
+    invite.getString("organization"),
+    invite.getString("role")
+  );
+  if (!sent) {
+    throw new ApiError(502, "failed to send invite email");
+  }
+
   return e.json(200, exportRecord(invite));
 }
 
@@ -804,6 +1052,7 @@ module.exports = {
   createInvite: createInvite,
   acceptInvite: acceptInvite,
   revokeInvite: revokeInvite,
+  resendInvite: resendInvite,
   declineInvite: declineInvite,
   listOrganizationPlatformStats: listOrganizationPlatformStats
 };

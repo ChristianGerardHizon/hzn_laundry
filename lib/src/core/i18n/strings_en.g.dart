@@ -437,6 +437,21 @@ class TranslationsManagementEn {
 
 	/// en: 'Invite staff to this organization. After they accept, manage their roles here.'
 	String get usersSubtitle => 'Invite staff to this organization. After they accept, manage their roles here.';
+
+	/// en: 'Members'
+	String get membersSection => 'Members';
+
+	/// en: 'Invites'
+	String get invitesSection => 'Invites';
+
+	/// en: 'Pending invitations waiting to be accepted.'
+	String get invitesSubtitle => 'Pending invitations waiting to be accepted.';
+
+	/// en: 'No pending invites'
+	String get noPendingInvites => 'No pending invites';
+
+	/// en: 'Invite someone with the + button. They'll get an email to sign in and accept.'
+	String get noPendingInvitesHint => 'Invite someone with the + button. They\'ll get an email to sign in and accept.';
 }
 
 // Path: navigation
@@ -662,6 +677,21 @@ class TranslationsOrganizationsEn {
 
 	/// en: 'Revoke'
 	String get revoke => 'Revoke';
+
+	/// en: 'Resend'
+	String get resendInvite => 'Resend';
+
+	/// en: 'Invite email resent'
+	String get inviteResent => 'Invite email resent';
+
+	/// en: 'Could not resend invite email'
+	String get inviteResendFailed => 'Could not resend invite email';
+
+	/// en: 'This invite was already accepted'
+	String get inviteAlreadyAccepted => 'This invite was already accepted';
+
+	/// en: 'This invite is no longer pending'
+	String get inviteNoLongerPending => 'This invite is no longer pending';
 
 	/// en: 'You don't belong to any organizations yet.'
 	String get noOrganizations => 'You don\'t belong to any organizations yet.';
@@ -1393,6 +1423,11 @@ extension on Translations {
 			'fields.cash' => 'Cash',
 			'fields.gcashBank' => 'GCash/Bank',
 			'management.usersSubtitle' => 'Invite staff to this organization. After they accept, manage their roles here.',
+			'management.membersSection' => 'Members',
+			'management.invitesSection' => 'Invites',
+			'management.invitesSubtitle' => 'Pending invitations waiting to be accepted.',
+			'management.noPendingInvites' => 'No pending invites',
+			'management.noPendingInvitesHint' => 'Invite someone with the + button. They\'ll get an email to sign in and accept.',
 			'navigation.shortcuts' => 'Shortcuts',
 			'navigation.categories' => 'Categories',
 			'navigation.showMore' => 'Show more',
@@ -1462,6 +1497,11 @@ extension on Translations {
 			'organizations.accept' => 'Accept',
 			'organizations.decline' => 'Decline',
 			'organizations.revoke' => 'Revoke',
+			'organizations.resendInvite' => 'Resend',
+			'organizations.inviteResent' => 'Invite email resent',
+			'organizations.inviteResendFailed' => 'Could not resend invite email',
+			'organizations.inviteAlreadyAccepted' => 'This invite was already accepted',
+			'organizations.inviteNoLongerPending' => 'This invite is no longer pending',
 			'organizations.noOrganizations' => 'You don\'t belong to any organizations yet.',
 			'organizations.contactAdmin' => 'Contact your administrator to be invited to an organization.',
 			'organizations.inviteSent' => 'Invite sent',

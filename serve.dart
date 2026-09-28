@@ -11,28 +11,73 @@ void main() async {
   }
 
   const httpAddr = '127.0.0.1:8088';
+  final env = _loadEnvForPocketBase(root, httpAddr);
+  final publicDir = _resolvePublicDir(root, serverDir);
 
   print('Starting PocketBase server (dev mode)...');
   print('HTTP:       http://$httpAddr');
   print('Data dir:   $serverDir/pb_data');
   print('Hooks dir:  $serverDir/pb_hooks');
-  print('Public dir: $serverDir/pb_public');
+  print('Public dir: $publicDir');
+  print(
+    'Resend:     ${env.containsKey('RESEND_API_KEY') ? 'RESEND_API_KEY set' : 'RESEND_API_KEY missing (invite/history emails will skip)'}',
+  );
+  print('App URL:    ${env['APP_BASE_URL']}');
 
   final process = await Process.start(
     pb,
     [
       'serve',
       '--http=$httpAddr',
-      '--dir', '$serverDir/pb_data',
-      '--hooksDir', '$serverDir/pb_hooks',
-      '--migrationsDir', '$serverDir/pb_migrations',
-      '--publicDir', '$serverDir/pb_public',
+      '--dir',
+      '$serverDir/pb_data',
+      '--hooksDir',
+      '$serverDir/pb_hooks',
+      '--migrationsDir',
+      '$serverDir/pb_migrations',
+      '--publicDir',
+      publicDir,
       '--dev',
     ],
+    environment: env,
     mode: ProcessStartMode.inheritStdio,
   );
 
   exit(await process.exitCode);
+}
+
+/// Loads repo-root `.env` into a copy of [Platform.environment] for PocketBase
+/// hooks (`$os.getenv`). Sets local defaults for APP_BASE_URL / APP_ENV.
+Map<String, String> _loadEnvForPocketBase(String root, String httpAddr) {
+  final env = Map<String, String>.from(Platform.environment);
+  final dotenv = File('$root/.env');
+  if (dotenv.existsSync()) {
+    for (final raw in dotenv.readAsLinesSync()) {
+      final line = raw.trim();
+      if (line.isEmpty || line.startsWith('#')) continue;
+      final eq = line.indexOf('=');
+      if (eq <= 0) continue;
+      final key = line.substring(0, eq).trim();
+      var value = line.substring(eq + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.substring(1, value.length - 1);
+      }
+      if (key.isNotEmpty) env[key] = value;
+    }
+  }
+
+  env.putIfAbsent('APP_BASE_URL', () => 'http://$httpAddr');
+  env.putIfAbsent('APP_ENV', () => 'dev');
+  return env;
+}
+
+/// Prefer deployed `server/pb_public` when present; otherwise serve `web/`
+/// so local invite/reset/oauth static pages work without a Flutter web build.
+String _resolvePublicDir(String root, String serverDir) {
+  final deployed = Directory('$serverDir/pb_public');
+  if (deployed.existsSync()) return deployed.path;
+  return '$root/web';
 }
 
 String? _findBinary(String root, String serverDir) {

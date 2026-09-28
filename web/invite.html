@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="You've been invited to HZN Laundry. Sign in on the web or open the app.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Invitation — HZN Laundry</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #45A9AB;
+      --accent-dark: #2F7A7C;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: var(--accent);
+      color: #fff;
+      padding: 28px 28px 24px;
+    }
+
+    .header .brand {
+      margin: 0 0 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      opacity: 0.9;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      opacity: 0.95;
+    }
+
+    .body {
+      padding: 24px 28px 28px;
+    }
+
+    .meta {
+      margin: 0 0 20px;
+      padding: 14px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .meta strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    a.btn {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+    }
+
+    a.btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    a.btn-primary:hover {
+      background: var(--accent-dark);
+    }
+
+    a.btn-secondary {
+      background: #fff;
+      color: var(--accent-dark);
+      border: 1px solid var(--border);
+    }
+
+    a.btn-secondary:hover {
+      background: #f8fafc;
+    }
+
+    .hint {
+      margin: 16px 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .footer {
+      margin: 0;
+      padding: 16px 28px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="header">
+      <p class="brand" id="brand">HZN Laundry</p>
+      <h1>You're invited</h1>
+      <p id="subtitle">Sign in with the invited email to accept this invitation.</p>
+    </div>
+    <div class="body">
+      <p class="meta" id="meta" hidden></p>
+      <div class="actions">
+        <a class="btn btn-primary" id="webLogin" href="/login">Continue in browser</a>
+        <a class="btn btn-secondary" id="appLogin" href="#">Open in app</a>
+      </div>
+      <p class="hint" id="hint">
+        Use the same email address from the invite. After sign-in, open Organizations to accept.
+      </p>
+    </div>
+    <p class="footer">&copy; HZN Laundry</p>
+  </main>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var org = (params.get('org') || '').trim();
+      var role = (params.get('role') || '').trim();
+      var email = (params.get('email') || '').trim();
+      var env = (params.get('env') || '').trim().toLowerCase();
+
+      var brandEl = document.getElementById('brand');
+      var subtitleEl = document.getElementById('subtitle');
+      var metaEl = document.getElementById('meta');
+      var webLogin = document.getElementById('webLogin');
+      var appLogin = document.getElementById('appLogin');
+      var hintEl = document.getElementById('hint');
+
+      if (env === 'staging' || env === 'stage') {
+        brandEl.textContent = '[Staging] HZN Laundry';
+      } else if (env === 'dev' || env === 'development' || env === 'local') {
+        brandEl.textContent = '[Dev] HZN Laundry';
+      }
+
+      var metaParts = [];
+      if (org) metaParts.push('Organization: <strong>' + escapeHtml(org) + '</strong>');
+      if (role) metaParts.push('Role: <strong>' + escapeHtml(role) + '</strong>');
+      if (email) metaParts.push('Invited as: <strong>' + escapeHtml(email) + '</strong>');
+      if (metaParts.length) {
+        metaEl.innerHTML = metaParts.join('<br>');
+        metaEl.hidden = false;
+      }
+
+      if (org) {
+        subtitleEl.textContent =
+          "You've been invited to join " + org +
+          (role ? ' as ' + role : '') +
+          '. Choose how you want to sign in.';
+      }
+
+      var loginPath = '/login';
+      if (email) {
+        loginPath += '?email=' + encodeURIComponent(email);
+      }
+      webLogin.href = loginPath;
+
+      var playStore =
+        'https://play.google.com/store/apps/details?id=com.hznsystems.hznlaundry';
+      var appScheme = 'hznlaundry://login';
+      if (email) {
+        appScheme += '?email=' + encodeURIComponent(email);
+      }
+
+      var ua = navigator.userAgent || '';
+      var isAndroid = /Android/i.test(ua);
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+      appLogin.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isAndroid) {
+          // Prefer installed app; fall back to Play Store, then web login.
+          var intent =
+            'intent://login' +
+            (email ? '?email=' + encodeURIComponent(email) : '') +
+            '#Intent;scheme=hznlaundry;package=com.hznsystems.hznlaundry;' +
+            'S.browser_fallback_url=' + encodeURIComponent(playStore) + ';end';
+          window.location.href = intent;
+          return;
+        }
+        if (isIOS) {
+          var start = Date.now();
+          window.location.href = appScheme;
+          setTimeout(function () {
+            if (Date.now() - start < 1600) {
+              // App likely not installed — continue on web.
+              window.location.href = loginPath;
+            }
+          }, 1200);
+          return;
+        }
+        // Desktop / other: try scheme, then web.
+        window.location.href = appScheme;
+        setTimeout(function () {
+          window.location.href = loginPath;
+        }, 800);
+      });
+
+      if (!isAndroid && !isIOS) {
+        hintEl.textContent =
+          'On a phone, “Open in app” launches HZN Laundry if installed. Otherwise use Continue in browser.';
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+    })();
+  </script>
+</body>
+</html>

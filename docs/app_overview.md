@@ -156,7 +156,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - Org display page (`/organizations/:id`) with **Overview** and **Features** tabs
 - Overview: brand logo upload/replace/remove (managers) plus editable details with `members.manage`
 - Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
-- Staff: invite and manage via **Management → Users** (invite → accept → role); accept/decline pending invites on the Organizations list
+- Staff: invite and manage via **Management → Users** (invite emails the invitee via Resend → they sign in → accept → role); accept/decline pending invites on the Organizations list
 - Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs; nav brand and select-org tiles show the org logo when set
 
@@ -169,7 +169,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - Panel 3 (expanded): Detail panel or empty state
 
 **Modes:**
-- **Users** (`/management/users`) - Invite staff to the current org; after accept, manage role/branch; list is scoped to org members
+- **Users** (`/management/users`) - Members and Invites sections (Managers); invite staff via email; after accept, manage role/branch; list is scoped to org members
 - **Roles** (`/management/roles`) - Role and permission management (Admin, Manager, Cashier, Attendant)
 - **Branches** (`/management/branches`) - Multi-location support with address and contact info
 - **Machines** (`/management/machines`) - Laundry machine management including size and per-machine weight→load rules; scoped to the current branch; unassigned machines remain visible
@@ -640,6 +640,11 @@ lib/src/
 
 ---
 
+| Sep 28 | Invite success page | Invite emails link to `/invite.html` with Continue in browser or Open in app (`hznlaundry://login`); accept still verifies email |
+| Sep 28 | Invite accept verifies email | Accepting an org invite marks the user's email verified |
+| Sep 28 | Users Invites section | Management Users splits Members and Invites into separate segments; invites get their own list, empty state, and expiry display |
+| Sep 28 | Invite emails via Resend | Creating a staff invite (Users or org setup) emails the invitee via Resend with a sign-in link; accept still happens in-app after login |
+| Sep 28 | Splash min hold + shell fix | Splash stays ≥3s (longer if auth/org/branch still loading); post-login always goes through splash; AppRoot uses one stable `SubscriptionLockGate` content slot to stop blank dashboard GlobalKey clash |
 | Sep 28 | Customer pending payments | Customer detail shows an all-time Balance due banner and a Pending sales-history filter for unpaid/partial orders with remaining amounts |
 | Sep 28 | Organization logo | Orgs can upload a single brand logo (Overview); logo shows in nav brand, org list, select-org tiles, splash, and switch overlay; falls back to letter initials |
 | Sep 28 | Machine busy warnings scoped | Assign-Machines warnings ignore voided/refunded sales and only count processing orders in the current branch/org; blank-branch machines/storages no longer leak across orgs (client filter + PB rule) |

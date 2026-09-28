@@ -68,6 +68,15 @@ routerAdd(
 
 routerAdd(
   "POST",
+  "/api/organization-invites/{id}/resend",
+  function(e) {
+    return require(__hooks + "/lib/organization_invites_helpers.js").resendInvite(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "POST",
   "/api/organization-invites/{id}/decline",
   function(e) {
     return require(__hooks + "/lib/organization_invites_helpers.js").declineInvite(e);

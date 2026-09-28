@@ -1,3 +1,8 @@
 {
-  "usersSubtitle": "Invite staff to this organization. After they accept, manage their roles here."
+  "usersSubtitle": "Invite staff to this organization. After they accept, manage their roles here.",
+  "membersSection": "Members",
+  "invitesSection": "Invites",
+  "invitesSubtitle": "Pending invitations waiting to be accepted.",
+  "noPendingInvites": "No pending invites",
+  "noPendingInvitesHint": "Invite someone with the + button. They'll get an email to sign in and accept."
 }

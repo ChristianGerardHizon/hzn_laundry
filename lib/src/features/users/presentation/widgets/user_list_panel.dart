@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/foundation/paginated_state.dart';
 import '../../../../core/hooks/use_infinite_scroll.dart';
@@ -16,9 +17,12 @@ import '../controllers/user_search_controller.dart';
 import 'dialogs/search_fields_dialog.dart';
 import 'user_avatar.dart';
 
+enum _UsersPanelSection { members, invites }
+
 /// User list panel with search header and infinite scroll.
 ///
 /// Used in both mobile list page and tablet two-pane layout.
+/// Managers also get a separate Invites section (Members | Invites).
 class UserListPanel extends HookConsumerWidget {
   const UserListPanel({
     super.key,
@@ -40,18 +44,37 @@ class UserListPanel extends HookConsumerWidget {
     final theme = Theme.of(context);
     final t = Translations.of(context);
 
-    // Local state using hooks
     final searchController = useTextEditingController();
     final searchText = useState('');
+    final section = useState(_UsersPanelSection.members);
 
-    // Watch providers
     final searchFields = ref.watch(userSearchFieldsProvider);
     final activeFieldCount = searchFields.length;
     final paginatedController =
         ref.read(paginatedUsersControllerProvider.notifier);
-
-    // Search is active from the controller
     final isSearchActive = paginatedController.isSearchActive;
+
+    final org = ref.watch(currentOrganizationControllerProvider).value;
+    final canManage = org != null &&
+        (ref
+                .watch(currentOrganizationControllerProvider.notifier)
+                .membershipFor(org.id)
+                ?.canManageMembers ??
+            false);
+
+    // Keep invites loaded so the segment badge stays accurate.
+    final invitesAsync = canManage
+        ? ref.watch(orgPendingInvitesControllerProvider)
+        : const AsyncValue.data(<OrganizationInvite>[]);
+    final inviteCount = invitesAsync.value?.length ?? 0;
+
+    // If manage permission is lost, fall back to members.
+    useEffect(() {
+      if (!canManage && section.value == _UsersPanelSection.invites) {
+        section.value = _UsersPanelSection.members;
+      }
+      return null;
+    }, [canManage]);
 
     void performSearch() {
       final query = searchController.text.trim();
@@ -68,52 +91,89 @@ class UserListPanel extends HookConsumerWidget {
       paginatedController.clearSearch();
     }
 
-    // Infinite scroll hook
     final scrollController = useInfiniteScroll(
       onLoadMore: onLoadMore,
       hasMore: !paginatedState.hasReachedEnd,
       isLoading: paginatedState.isLoadingMore,
     );
 
+    final showingInvites = canManage && section.value == _UsersPanelSection.invites;
+
     return Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.navigation.users,
-                        style: theme.textTheme.titleLarge,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: theme.colorScheme.surfaceContainerHighest,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      showingInvites
+                          ? t.management.invitesSection
+                          : t.navigation.users,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      showingInvites
+                          ? t.management.invitesSubtitle
+                          : t.management.usersSubtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.management.usersSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                showingInvites
+                    ? '$inviteCount total'
+                    : '${paginatedState.totalItems} total',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+
+        if (canManage)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<_UsersPanelSection>(
+                segments: [
+                  ButtonSegment(
+                    value: _UsersPanelSection.members,
+                    label: Text(t.management.membersSection),
+                    icon: const Icon(Icons.people_outline, size: 18),
                   ),
-                ),
-                Text(
-                  '${paginatedState.totalItems} total',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
+                  ButtonSegment(
+                    value: _UsersPanelSection.invites,
+                    label: Text(
+                      inviteCount > 0
+                          ? '${t.management.invitesSection} ($inviteCount)'
+                          : t.management.invitesSection,
+                    ),
+                    icon: const Icon(Icons.mail_outline, size: 18),
+                  ),
+                ],
+                selected: {section.value},
+                onSelectionChanged: (next) {
+                  section.value = next.first;
+                },
+              ),
             ),
           ),
 
-          // Pending invites for this org (managers only)
-          const _PendingInvitesSection(),
-
-          // Search
+        if (showingInvites)
+          Expanded(
+            child: _InvitesPanel(onRefresh: onRefresh),
+          )
+        else ...[
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: isSearchActive
@@ -130,18 +190,14 @@ class UserListPanel extends HookConsumerWidget {
                     searchText: searchText.value,
                   ),
           ),
-
-          // User list
           Expanded(
             child: RefreshIndicator(
               onRefresh: onRefresh,
               child: ListView.builder(
                 controller: scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                // +1 for the end indicator
                 itemCount: paginatedState.items.length + 1,
                 itemBuilder: (context, index) {
-                  // Last item is the end indicator
                   if (index == paginatedState.items.length) {
                     return EndOfListIndicator(
                       isLoadingMore: paginatedState.isLoadingMore,
@@ -173,86 +229,233 @@ class UserListPanel extends HookConsumerWidget {
             ),
           ),
         ],
-      );
+      ],
+    );
   }
 }
 
-class _PendingInvitesSection extends HookConsumerWidget {
-  const _PendingInvitesSection();
+class _InvitesPanel extends HookConsumerWidget {
+  const _InvitesPanel({required this.onRefresh});
+
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final theme = Theme.of(context);
-    final org = ref.watch(currentOrganizationControllerProvider).value;
-    if (org == null) return const SizedBox.shrink();
-
-    final membership = ref
-        .watch(currentOrganizationControllerProvider.notifier)
-        .membershipFor(org.id);
-    final canManage = membership?.canManageMembers ?? false;
-    if (!canManage) return const SizedBox.shrink();
-
     final invitesAsync = ref.watch(orgPendingInvitesControllerProvider);
 
     return invitesAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => Center(
+        child: TextButton(
+          onPressed: () =>
+              ref.read(orgPendingInvitesControllerProvider.notifier).refresh(),
+          child: Text(t.common.retry),
+        ),
+      ),
       data: (invites) {
-        if (invites.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(
-                t.organizations.pendingOrgInvites,
-                style: theme.textTheme.titleSmall,
-              ),
+        if (invites.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.35,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.mail_outline,
+                            size: 48,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            t.management.noPendingInvites,
+                            style: theme.textTheme.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            t.management.noPendingInvitesHint,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ...invites.map(
-              (invite) => _PendingInviteTile(invite: invite),
-            ),
-            const Divider(height: 1),
-          ],
+          );
+        }
+
+        final dateFormat = DateFormat.yMMMd();
+
+        return RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: invites.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final invite = invites[index];
+              return _PendingInviteTile(
+                invite: invite,
+                expiresLabel: dateFormat.format(invite.expiresAt.toLocal()),
+              );
+            },
+          ),
         );
       },
     );
   }
 }
 
-class _PendingInviteTile extends ConsumerWidget {
-  const _PendingInviteTile({required this.invite});
+class _PendingInviteTile extends HookConsumerWidget {
+  const _PendingInviteTile({
+    required this.invite,
+    required this.expiresLabel,
+  });
 
   final OrganizationInvite invite;
+  final String expiresLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final theme = Theme.of(context);
+    final isResending = useState(false);
+    final isRevoking = useState(false);
+    final busy = isResending.value || isRevoking.value;
 
-    return ListTile(
-      dense: true,
-      title: Text(invite.email),
-      subtitle: Text(invite.roleName),
-      trailing: TextButton(
-        onPressed: () async {
-          final ok = await ref
-              .read(orgPendingInvitesControllerProvider.notifier)
-              .revoke(invite.id);
-          if (!context.mounted) return;
-          if (ok) {
-            showSuccessSnackBar(
-              context,
-              message: t.organizations.inviteRevoked,
-            );
-          } else {
-            showErrorSnackBar(
-              context,
-              message: 'Failed to revoke invite',
-            );
-          }
-        },
-        child: Text(t.organizations.revoke),
+    Future<void> handleResend() async {
+      isResending.value = true;
+      final result = await ref
+          .read(orgPendingInvitesControllerProvider.notifier)
+          .resend(invite.id);
+      isResending.value = false;
+      if (!context.mounted) return;
+      switch (result) {
+        case InviteResendResult.sent:
+          showSuccessSnackBar(
+            context,
+            message: t.organizations.inviteResent,
+          );
+        case InviteResendResult.alreadyAccepted:
+          showWarningSnackBar(
+            context,
+            message: t.organizations.inviteAlreadyAccepted,
+          );
+        case InviteResendResult.stale:
+          showWarningSnackBar(
+            context,
+            message: t.organizations.inviteNoLongerPending,
+          );
+        case InviteResendResult.failed:
+          showErrorSnackBar(
+            context,
+            message: t.organizations.inviteResendFailed,
+          );
+      }
+    }
+
+    Future<void> handleRevoke() async {
+      isRevoking.value = true;
+      final ok = await ref
+          .read(orgPendingInvitesControllerProvider.notifier)
+          .revoke(invite.id);
+      isRevoking.value = false;
+      if (!context.mounted) return;
+      if (ok) {
+        showSuccessSnackBar(
+          context,
+          message: t.organizations.inviteRevoked,
+        );
+      } else {
+        showErrorSnackBar(
+          context,
+          message: 'Failed to revoke invite',
+        );
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: theme.colorScheme.secondaryContainer,
+            foregroundColor: theme.colorScheme.onSecondaryContainer,
+            child: const Icon(Icons.mail_outline, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  invite.email,
+                  style: theme.textTheme.bodyLarge,
+                  softWrap: true,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (invite.roleName.isNotEmpty) invite.roleName,
+                    'Expires $expiresLabel',
+                  ].join(' · '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (isResending.value)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    else
+                      TextButton(
+                        onPressed: busy ? null : handleResend,
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: Text(t.organizations.resendInvite),
+                      ),
+                    TextButton(
+                      onPressed: busy ? null : handleRevoke,
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(t.organizations.revoke),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
