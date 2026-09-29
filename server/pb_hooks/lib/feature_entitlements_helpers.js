@@ -71,18 +71,19 @@ function subscriptionHelpers() {
  * can distinguish "not configured" from an empty array.
  */
 function readJsonArray(record, field) {
-  var raw;
+  // A JSON field comes back from record.get() as raw bytes (types.JSONRaw),
+  // which goja exposes as a Go slice: Array.isArray() is true but the items
+  // are byte values, not our keys. getString() returns the JSON text, so parse
+  // that instead of trusting record.get().
+  var text = "";
   try {
-    raw = record.get(field);
+    text = record.getString(field);
   } catch (_) {
     return null;
   }
-  if (raw === null || raw === undefined || raw === "") return null;
-  if (Array.isArray(raw)) return raw;
+  if (!text || text === "null") return null;
   try {
-    var s = typeof raw.string === "function" ? raw.string() : String(raw);
-    if (!s || s === "null") return null;
-    var parsed = JSON.parse(s);
+    var parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : null;
   } catch (_) {
     return null;
