@@ -243,7 +243,21 @@ class UserRepositoryImpl implements UserRepository {
   FutureEither<void> delete(String id) async {
     return TaskEither.tryCatch(
       () async {
-        await _collection.update(id, body: {'isDeleted': true});
+        // Auth email is required; soft-delete re-validates the merged record.
+        // Users with a blank email (legacy/OAuth edge cases) fail unless we
+        // supply a unique placeholder. Server hook mirrors this as backup.
+        final body = <String, dynamic>{'isDeleted': true};
+        try {
+          final record = await _collection.getOne(id);
+          final email = record.getStringValue('email').trim();
+          if (email.isEmpty) {
+            body['email'] = 'deleted+$id@deleted.local';
+          }
+        } catch (_) {
+          // Proceed; PocketBase users_soft_delete hook may still fill email.
+        }
+
+        await _collection.update(id, body: body);
         invalidateCache();
       },
       Failure.handle,
