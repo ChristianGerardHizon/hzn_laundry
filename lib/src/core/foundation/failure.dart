@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_mappable/dart_mappable.dart';
@@ -43,6 +44,29 @@ sealed class Failure with FailureMappable {
     return 'Something went wrong';
   }
 
+  /// Whether [error] should be reported to Sentry.
+  ///
+  /// Skips expected operational noise (validation, abort, timeouts, OTP) while
+  /// still reporting 5xx / unexpected failures for ops visibility.
+  static bool shouldCaptureToSentry(Object error) {
+    if (error is TimeoutException) return false;
+    if (error.toString().contains('User cancelled')) return false;
+
+    if (error is ClientException) {
+      if (error.isAbort || error.statusCode == 0) return false;
+
+      final code = error.statusCode;
+      // Client validation / auth / not-found — UI already surfaces these.
+      if (code == 400 || code == 401 || code == 403 || code == 404) {
+        return false;
+      }
+      // Keep 5xx (gateway timeout, Resend failure, etc.) for ops.
+      return true;
+    }
+
+    return true;
+  }
+
   static const fromMap = FailureMapper.fromMap;
   static const fromJson = FailureMapper.fromJson;
 
@@ -76,8 +100,9 @@ sealed class Failure with FailureMappable {
       return CancelledFailure(error, stackTrace, 'user_cancelled');
     }
 
-    // Report non-trivial errors to Sentry
-    Sentry.captureException(error, stackTrace: stackTrace);
+    if (shouldCaptureToSentry(error)) {
+      Sentry.captureException(error, stackTrace: stackTrace);
+    }
 
     // Handle presentation-related errors (UI layer)
     if (error is FormatException || error is StateError) {

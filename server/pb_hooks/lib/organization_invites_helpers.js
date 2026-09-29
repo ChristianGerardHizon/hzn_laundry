@@ -620,14 +620,22 @@ function buildInviteEmail(orgName, roleName, loginUrl) {
  */
 function sendInviteEmail(toEmail, orgName, roleName, token) {
   var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var trimmedTo = (toEmail || "").trim().toLowerCase();
+  if (!trimmedTo) {
+    console.log("[INVITE] blank recipient; skip email");
+    return false;
+  }
+
   var apiKey = $os.getenv("RESEND_API_KEY");
   if (!apiKey) {
-    console.log("[INVITE] RESEND_API_KEY not set; skip email to " + toEmail);
+    console.log(
+      "[INVITE] RESEND_API_KEY not set; skip email to " + trimmedTo
+    );
     return false;
   }
 
   if (!token) {
-    console.log("[INVITE] missing token; skip email to " + toEmail);
+    console.log("[INVITE] missing token; skip email to " + trimmedTo);
     return false;
   }
 
@@ -640,7 +648,7 @@ function sendInviteEmail(toEmail, orgName, roleName, token) {
     "&role=" +
     encodeInviteQuery(roleName) +
     "&email=" +
-    encodeInviteQuery(toEmail);
+    encodeInviteQuery(trimmedTo);
   var appEnv = String($os.getenv("APP_ENV") || "").toLowerCase();
   if (appEnv) {
     inviteUrl += "&env=" + encodeInviteQuery(appEnv);
@@ -657,7 +665,7 @@ function sendInviteEmail(toEmail, orgName, roleName, token) {
       },
       body: JSON.stringify({
         from: historyConfig.getFromEmail(),
-        to: [toEmail],
+        to: [trimmedTo],
         subject: emailBody.subject,
         html: emailBody.html,
         text: emailBody.text
@@ -673,10 +681,10 @@ function sendInviteEmail(toEmail, orgName, roleName, token) {
       );
       return false;
     }
-    console.log("[INVITE] email sent to " + toEmail);
+    console.log("[INVITE] email sent to " + trimmedTo);
     return true;
   } catch (err) {
-    console.log("[INVITE] failed to email " + toEmail + ": " + err);
+    console.log("[INVITE] failed to email " + trimmedTo + ": " + err);
     return false;
   }
 }
@@ -717,13 +725,21 @@ function createInvite(e) {
   record.set("expiresAt", expiresAt.toISOString());
 
   e.app.save(record);
-  notifyInviteCreated(
+  var sent = notifyInviteCreated(
     e.app,
     email,
     organization,
     role,
     record.getString("token")
   );
+  if (!sent) {
+    // Keep the invite so admins can retry via resend (local may lack Resend).
+    console.log(
+      "[INVITE] create: email not sent for invite " +
+        record.id +
+        "; record kept"
+    );
+  }
   return e.json(200, exportRecord(record));
 }
 
@@ -1006,6 +1022,9 @@ function resendInvite(e) {
   }
 
   var email = (invite.getString("email") || "").trim().toLowerCase();
+  if (!email) {
+    throw new BadRequestError("invite has no email address");
+  }
 
   // Rotate token so older email links stop working after a resend.
   invite.set("token", $security.randomString(32));
@@ -1022,7 +1041,13 @@ function resendInvite(e) {
     invite.getString("token")
   );
   if (!sent) {
-    throw new ApiError(502, "failed to send invite email");
+    var hasKey = !!$os.getenv("RESEND_API_KEY");
+    throw new ApiError(
+      502,
+      hasKey
+        ? "Failed to send invite email."
+        : "Failed to send invite email (email service not configured)."
+    );
   }
 
   return e.json(200, exportRecord(invite));
