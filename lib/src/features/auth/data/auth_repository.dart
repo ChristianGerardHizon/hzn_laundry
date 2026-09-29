@@ -237,6 +237,14 @@ class AuthRepositoryImpl implements AuthRepository {
       await _persistAuth(authDto);
       return _createAuthState(authDto);
     }, (error, stackTrace) {
+      // Expected OTP mistakes — do not go through Failure.handle (Sentry).
+      if (error is ClientException) {
+        final message = error.response['message']?.toString() ?? '';
+        if (error.statusCode == 400 &&
+            message.toLowerCase().contains('otp')) {
+          return AuthFailure(error, stackTrace, 'otp_invalid');
+        }
+      }
       final failure = Failure.handle(error, stackTrace);
       if (failure.messageString.toLowerCase().contains('otp')) {
         return AuthFailure(error, stackTrace, 'otp_invalid');

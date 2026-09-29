@@ -641,6 +641,7 @@ lib/src/
 
 ---
 
+| Sep 29 | Sentry soft-delete + noise | Soft-delete users with blank email (client + PB hook); skip Sentry for expected 4xx/abort/timeouts; harden invite resend email errors |
 | Sep 29 | Dashboard user identity | Mobile/desktop dashboard show current user name; Profile is an Account nav section (drawer + desktop sidebar) opening `/profile` |
 | Sep 28 | Invite success page | Invite emails link to `/invite.html` with Continue in browser or Open in app (`hznlaundry://login`); accept still verifies email |
 | Sep 28 | Invite accept verifies email | Accepting an org invite marks the user's email verified |
