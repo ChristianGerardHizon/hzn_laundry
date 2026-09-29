@@ -136,6 +136,15 @@ routerAdd(
 );
 
 routerAdd(
+  "PUT",
+  "/api/super-admin/organizations/{id}/limit-overrides/{key}",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").setLimitOverride(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
   "GET",
   "/api/super-admin/billing-settings",
   function(e) {

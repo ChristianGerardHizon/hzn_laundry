@@ -12,7 +12,8 @@ part of 'can_add_branch_provider.dart';
 ///
 /// Without [FeatureKey.multiBranch] an organization is limited to the branch
 /// it already has (the first branch is always allowed). Existing branches are
-/// never removed. The server enforces the same rule.
+/// never removed. The package / Super Admin branch limit also applies. The
+/// server enforces the same rules.
 
 @ProviderFor(canAddBranch)
 final canAddBranchProvider = CanAddBranchProvider._();
@@ -21,7 +22,8 @@ final canAddBranchProvider = CanAddBranchProvider._();
 ///
 /// Without [FeatureKey.multiBranch] an organization is limited to the branch
 /// it already has (the first branch is always allowed). Existing branches are
-/// never removed. The server enforces the same rule.
+/// never removed. The package / Super Admin branch limit also applies. The
+/// server enforces the same rules.
 
 final class CanAddBranchProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -29,7 +31,8 @@ final class CanAddBranchProvider extends $FunctionalProvider<bool, bool, bool>
   ///
   /// Without [FeatureKey.multiBranch] an organization is limited to the branch
   /// it already has (the first branch is always allowed). Existing branches are
-  /// never removed. The server enforces the same rule.
+  /// never removed. The package / Super Admin branch limit also applies. The
+  /// server enforces the same rules.
   CanAddBranchProvider._()
       : super(
           from: null,
@@ -63,4 +66,4 @@ final class CanAddBranchProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$canAddBranchHash() => r'8e5d21126bbf7edc8dbad32bd5a5fc620bc4295f';
+String _$canAddBranchHash() => r'0a67102ea7109674cad6e41995b959f0b7bc78fa';

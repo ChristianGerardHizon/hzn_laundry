@@ -35,8 +35,12 @@ abstract class SubscriptionRepository {
     required bool isPremade,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
 
+  /// [maxBranches] / [maxEmployees]: `0` means unlimited; `null` leaves the
+  /// value unchanged.
   FutureEither<SubscriptionPackage> updatePackage(
     String id, {
     String? name,
@@ -48,6 +52,8 @@ abstract class SubscriptionRepository {
     bool? isActive,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
 
   FutureEither<void> softDeletePackage(String id);
@@ -152,6 +158,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     required bool isPremade,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -168,6 +176,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
             if (organizationId != null && organizationId.isNotEmpty)
               'organizationId': organizationId,
             if (features != null) 'features': features,
+            if (maxBranches != null) 'maxBranches': maxBranches,
+            if (maxEmployees != null) 'maxEmployees': maxEmployees,
           },
         );
         if (response is! Map<String, dynamic>) {
@@ -195,6 +205,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     bool? isActive,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -216,6 +228,8 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (isActive != null) body['isActive'] = isActive;
         if (organizationId != null) body['organizationId'] = organizationId;
         if (features != null) body['features'] = features;
+        if (maxBranches != null) body['maxBranches'] = maxBranches;
+        if (maxEmployees != null) body['maxEmployees'] = maxEmployees;
 
         final response = await _pb.send(
           '/api/super-admin/subscription-packages/$id',

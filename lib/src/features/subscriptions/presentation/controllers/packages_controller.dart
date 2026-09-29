@@ -41,6 +41,8 @@ class PackagesController extends _$PackagesController {
     required bool isPremade,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     final result = await _repository.createPackage(
       name: name,
@@ -51,6 +53,8 @@ class PackagesController extends _$PackagesController {
       isPremade: isPremade,
       organizationId: organizationId,
       features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
     return result.fold(
       (failure) => null,
@@ -72,6 +76,8 @@ class PackagesController extends _$PackagesController {
     bool? isActive,
     String? organizationId,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     final result = await _repository.updatePackage(
       id,
@@ -84,6 +90,8 @@ class PackagesController extends _$PackagesController {
       isActive: isActive,
       organizationId: organizationId,
       features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
     return result.fold(
       (failure) => false,

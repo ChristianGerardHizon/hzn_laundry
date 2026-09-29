@@ -22,6 +22,20 @@ function featuresFromBody(value) {
   return featureHelpers.sanitizeFeatureList(value);
 }
 
+/**
+ * Package limit (max branches / employees) from a request value.
+ * null / "" / 0 mean unlimited (stored as 0). Anything else must be a
+ * positive integer.
+ */
+function limitFromBody(value, label) {
+  if (value === undefined || value === null || value === "") return 0;
+  var n = Number(value);
+  if (isNaN(n) || n < 0 || Math.floor(n) !== n) {
+    throw new BadRequestError(label + " must be a non-negative whole number");
+  }
+  return n;
+}
+
 function exportRecord(record) {
   if (record && typeof record.publicExport === "function") {
     return record.publicExport();
@@ -305,6 +319,8 @@ function createPackage(e) {
   record.set("isActive", body.isActive !== false && body.isActive !== "false");
   record.set("isDeleted", false);
   record.set("features", featuresFromBody(body.features));
+  record.set("maxBranches", limitFromBody(body.maxBranches, "maxBranches"));
+  record.set("maxEmployees", limitFromBody(body.maxEmployees, "maxEmployees"));
   if (body.organizationId) {
     record.set("organizationId", body.organizationId);
     record.set("isPremade", false);
@@ -351,6 +367,12 @@ function updatePackage(e) {
   }
   if (body.features !== undefined) {
     record.set("features", featuresFromBody(body.features));
+  }
+  if (body.maxBranches !== undefined) {
+    record.set("maxBranches", limitFromBody(body.maxBranches, "maxBranches"));
+  }
+  if (body.maxEmployees !== undefined) {
+    record.set("maxEmployees", limitFromBody(body.maxEmployees, "maxEmployees"));
   }
   e.app.save(record);
   return e.json(200, exportRecord(record));
@@ -421,6 +443,8 @@ function assignSubscriptionInApp(app, orgId, opts) {
     }
     pkg.set("intervalUnit", unit);
     pkg.set("features", featuresFromBody(cp.features));
+    pkg.set("maxBranches", limitFromBody(cp.maxBranches, "maxBranches"));
+    pkg.set("maxEmployees", limitFromBody(cp.maxEmployees, "maxEmployees"));
     pkg.set("isPremade", false);
     pkg.set("organizationId", orgId);
     pkg.set("isActive", true);

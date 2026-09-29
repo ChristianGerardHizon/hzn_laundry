@@ -495,6 +495,15 @@ class _AssignPackageDialog extends HookConsumerWidget {
                     'intervalUnit':
                         (values['customIntervalUnit'] as BillingIntervalUnit)
                             .name,
+                    // Blank = unlimited (0).
+                    'maxBranches': int.tryParse(
+                            (values['customMaxBranches'] as String? ?? '')
+                                .trim()) ??
+                        0,
+                    'maxEmployees': int.tryParse(
+                            (values['customMaxEmployees'] as String? ?? '')
+                                .trim()) ??
+                        0,
                   },
                   periodStart: periodStart,
                   periodEnd: periodEnd,
@@ -647,6 +656,40 @@ class _AssignPackageDialog extends HookConsumerWidget {
                                 ),
                               ],
                               validator: FormBuilderValidators.required(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FormBuilderTextField(
+                              name: 'customMaxBranches',
+                              decoration: const InputDecoration(
+                                labelText: 'Max branches',
+                                hintText: 'Unlimited',
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: FormBuilderValidators.compose([
+                                FormBuilderValidators.integer(),
+                                FormBuilderValidators.min(0),
+                              ]),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FormBuilderTextField(
+                              name: 'customMaxEmployees',
+                              decoration: const InputDecoration(
+                                labelText: 'Max employees',
+                                hintText: 'Unlimited',
+                              ),
+                              keyboardType: TextInputType.number,
+                              validator: FormBuilderValidators.compose([
+                                FormBuilderValidators.integer(),
+                                FormBuilderValidators.min(0),
+                              ]),
                             ),
                           ),
                         ],

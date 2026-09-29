@@ -91,6 +91,18 @@ class SubscriptionPackageDtoMapper
     opt: true,
     def: const [],
   );
+  static int? _$maxBranches(SubscriptionPackageDto v) => v.maxBranches;
+  static const Field<SubscriptionPackageDto, int> _f$maxBranches = Field(
+    'maxBranches',
+    _$maxBranches,
+    opt: true,
+  );
+  static int? _$maxEmployees(SubscriptionPackageDto v) => v.maxEmployees;
+  static const Field<SubscriptionPackageDto, int> _f$maxEmployees = Field(
+    'maxEmployees',
+    _$maxEmployees,
+    opt: true,
+  );
 
   @override
   final MappableFields<SubscriptionPackageDto> fields = const {
@@ -105,6 +117,8 @@ class SubscriptionPackageDtoMapper
     #isActive: _f$isActive,
     #isDeleted: _f$isDeleted,
     #features: _f$features,
+    #maxBranches: _f$maxBranches,
+    #maxEmployees: _f$maxEmployees,
   };
 
   static SubscriptionPackageDto _instantiate(DecodingData data) {
@@ -120,6 +134,8 @@ class SubscriptionPackageDtoMapper
       isActive: data.dec(_f$isActive),
       isDeleted: data.dec(_f$isDeleted),
       features: data.dec(_f$features),
+      maxBranches: data.dec(_f$maxBranches),
+      maxEmployees: data.dec(_f$maxEmployees),
     );
   }
 
@@ -146,11 +162,16 @@ mixin SubscriptionPackageDtoMappable {
         .encodeMap<SubscriptionPackageDto>(this as SubscriptionPackageDto);
   }
 
-  SubscriptionPackageDtoCopyWith<SubscriptionPackageDto, SubscriptionPackageDto,
-          SubscriptionPackageDto>
-      get copyWith => _SubscriptionPackageDtoCopyWithImpl<
-              SubscriptionPackageDto, SubscriptionPackageDto>(
-          this as SubscriptionPackageDto, $identity, $identity);
+  SubscriptionPackageDtoCopyWith<
+    SubscriptionPackageDto,
+    SubscriptionPackageDto,
+    SubscriptionPackageDto
+  >
+  get copyWith =>
+      _SubscriptionPackageDtoCopyWithImpl<
+        SubscriptionPackageDto,
+        SubscriptionPackageDto
+      >(this as SubscriptionPackageDto, $identity, $identity);
   @override
   String toString() {
     return SubscriptionPackageDtoMapper.ensureInitialized().stringifyValue(
@@ -177,16 +198,17 @@ mixin SubscriptionPackageDtoMappable {
 extension SubscriptionPackageDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, SubscriptionPackageDto, $Out> {
   SubscriptionPackageDtoCopyWith<$R, SubscriptionPackageDto, $Out>
-      get $asSubscriptionPackageDto => $base.as(
-            (v, t, t2) =>
-                _SubscriptionPackageDtoCopyWithImpl<$R, $Out>(v, t, t2),
-          );
+  get $asSubscriptionPackageDto => $base.as(
+    (v, t, t2) => _SubscriptionPackageDtoCopyWithImpl<$R, $Out>(v, t, t2),
+  );
 }
 
 abstract class SubscriptionPackageDtoCopyWith<
-    $R,
-    $In extends SubscriptionPackageDto,
-    $Out> implements ClassCopyWith<$R, $In, $Out> {
+  $R,
+  $In extends SubscriptionPackageDto,
+  $Out
+>
+    implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get features;
   $R call({
     String? id,
@@ -200,6 +222,8 @@ abstract class SubscriptionPackageDtoCopyWith<
     bool? isActive,
     bool? isDeleted,
     List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
   SubscriptionPackageDtoCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -235,39 +259,45 @@ class _SubscriptionPackageDtoCopyWithImpl<$R, $Out>
     bool? isActive,
     bool? isDeleted,
     List<String>? features,
-  }) =>
-      $apply(
-        FieldCopyWithData({
-          if (id != null) #id: id,
-          if (name != null) #name: name,
-          if (description != null) #description: description,
-          if (price != null) #price: price,
-          if (intervalCount != null) #intervalCount: intervalCount,
-          if (intervalUnit != null) #intervalUnit: intervalUnit,
-          if (isPremade != null) #isPremade: isPremade,
-          if (organizationId != $none) #organizationId: organizationId,
-          if (isActive != null) #isActive: isActive,
-          if (isDeleted != null) #isDeleted: isDeleted,
-          if (features != null) #features: features,
-        }),
-      );
+    Object? maxBranches = $none,
+    Object? maxEmployees = $none,
+  }) => $apply(
+    FieldCopyWithData({
+      if (id != null) #id: id,
+      if (name != null) #name: name,
+      if (description != null) #description: description,
+      if (price != null) #price: price,
+      if (intervalCount != null) #intervalCount: intervalCount,
+      if (intervalUnit != null) #intervalUnit: intervalUnit,
+      if (isPremade != null) #isPremade: isPremade,
+      if (organizationId != $none) #organizationId: organizationId,
+      if (isActive != null) #isActive: isActive,
+      if (isDeleted != null) #isDeleted: isDeleted,
+      if (features != null) #features: features,
+      if (maxBranches != $none) #maxBranches: maxBranches,
+      if (maxEmployees != $none) #maxEmployees: maxEmployees,
+    }),
+  );
   @override
   SubscriptionPackageDto $make(CopyWithData data) => SubscriptionPackageDto(
-        id: data.get(#id, or: $value.id),
-        name: data.get(#name, or: $value.name),
-        description: data.get(#description, or: $value.description),
-        price: data.get(#price, or: $value.price),
-        intervalCount: data.get(#intervalCount, or: $value.intervalCount),
-        intervalUnit: data.get(#intervalUnit, or: $value.intervalUnit),
-        isPremade: data.get(#isPremade, or: $value.isPremade),
-        organizationId: data.get(#organizationId, or: $value.organizationId),
-        isActive: data.get(#isActive, or: $value.isActive),
-        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-        features: data.get(#features, or: $value.features),
-      );
+    id: data.get(#id, or: $value.id),
+    name: data.get(#name, or: $value.name),
+    description: data.get(#description, or: $value.description),
+    price: data.get(#price, or: $value.price),
+    intervalCount: data.get(#intervalCount, or: $value.intervalCount),
+    intervalUnit: data.get(#intervalUnit, or: $value.intervalUnit),
+    isPremade: data.get(#isPremade, or: $value.isPremade),
+    organizationId: data.get(#organizationId, or: $value.organizationId),
+    isActive: data.get(#isActive, or: $value.isActive),
+    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+    features: data.get(#features, or: $value.features),
+    maxBranches: data.get(#maxBranches, or: $value.maxBranches),
+    maxEmployees: data.get(#maxEmployees, or: $value.maxEmployees),
+  );
 
   @override
   SubscriptionPackageDtoCopyWith<$R2, SubscriptionPackageDto, $Out2>
-      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-          _SubscriptionPackageDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+      _SubscriptionPackageDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

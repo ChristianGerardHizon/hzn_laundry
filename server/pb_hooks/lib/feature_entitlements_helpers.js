@@ -42,6 +42,23 @@ var GUARDED_COLLECTIONS = {
   posGroups: { feature: "posGroups", orgVia: "branch>organization" }
 };
 
+// Numeric limits. Package value (`packageField`, 0 = unlimited) unless a
+// organizationLimitOverrides row exists (its `value`, 0 = unlimited).
+// `used` counts non-deleted records of `collection` in the organization.
+// Keep in sync with lib/src/features/entitlements/domain/limit_key.dart
+var LIMIT_CATALOG = [
+  { key: "branches", label: "Branches", collection: "branches", packageField: "maxBranches" },
+  { key: "employees", label: "Employees", collection: "employees", packageField: "maxEmployees" }
+];
+
+function limitEntry(key) {
+  var i;
+  for (i = 0; i < LIMIT_CATALOG.length; i++) {
+    if (LIMIT_CATALOG[i].key === key) return LIMIT_CATALOG[i];
+  }
+  return null;
+}
+
 function catalogKeys() {
   var out = [];
   var i;
@@ -224,6 +241,115 @@ function isFeatureEntitled(app, orgId, key) {
   return true;
 }
 
+function countActive(app, collection, orgId) {
+  try {
+    return app.findRecordsByFilter(
+      collection,
+      "organization = {:org} && (isDeleted = false || isDeleted = null)",
+      "",
+      0,
+      0,
+      { org: orgId }
+    ).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function loadLimitOverrides(app, orgId) {
+  var map = {};
+  var rows = [];
+  try {
+    rows = app.findRecordsByFilter(
+      "organizationLimitOverrides",
+      "organization = {:org}",
+      "",
+      50,
+      0,
+      { org: orgId }
+    );
+  } catch (_) {
+    rows = [];
+  }
+  var i;
+  for (i = 0; i < rows.length; i++) {
+    map[rows[i].getString("limitKey")] = rows[i];
+  }
+  return map;
+}
+
+/** Active subscription package record for the org, or null. */
+function loadLimitPackage(app, orgId) {
+  var sub = findActiveSubscription(app, orgId);
+  if (!sub) return null;
+  try {
+    return app.findRecordById("subscriptionPackages", sub.getString("package"));
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Resolves one limit. `ctx` ({ pkg, overrides }) can be shared across keys.
+ * Returns { key, limit (null = unlimited), used, planLimit, overrideValue,
+ * source: plan | superAdmin | unlimited, note }.
+ */
+function resolveLimit(app, orgId, key, ctx) {
+  var entry = limitEntry(key);
+  ctx = ctx || {
+    pkg: loadLimitPackage(app, orgId),
+    overrides: loadLimitOverrides(app, orgId)
+  };
+  var planLimit = null;
+  if (ctx.pkg) {
+    var pv = ctx.pkg.getInt(entry.packageField);
+    if (pv > 0) planLimit = pv;
+  }
+  var limit = planLimit;
+  var source = planLimit === null ? "unlimited" : "plan";
+  var overrideValue = null;
+  var note = "";
+  var row = ctx.overrides[key];
+  if (row) {
+    overrideValue = row.getInt("value");
+    limit = overrideValue > 0 ? overrideValue : null;
+    source = "superAdmin";
+    note = row.getString("note");
+  }
+  return {
+    key: key,
+    limit: limit,
+    used: countActive(app, entry.collection, orgId),
+    planLimit: planLimit,
+    overrideValue: overrideValue,
+    source: source,
+    note: note
+  };
+}
+
+function resolveLimits(app, orgId) {
+  var ctx = {
+    pkg: loadLimitPackage(app, orgId),
+    overrides: loadLimitOverrides(app, orgId)
+  };
+  var out = [];
+  var i;
+  for (i = 0; i < LIMIT_CATALOG.length; i++) {
+    out.push(resolveLimit(app, orgId, LIMIT_CATALOG[i].key, ctx));
+  }
+  return out;
+}
+
+/** Throws ForbiddenError when creating one more record would exceed the limit. */
+function assertWithinLimit(app, orgId, key) {
+  var r = resolveLimit(app, orgId, key);
+  if (r.limit !== null && r.used >= r.limit) {
+    throw new ForbiddenError(
+      limitEntry(key).label + " limit reached (" + r.limit + ")"
+    );
+  }
+}
+
 /** Follows a "field>field>organization" path from a record to an org id. */
 function resolveOrgId(app, record, orgVia) {
   var parts = orgVia.split(">");
@@ -273,6 +399,23 @@ function guardRecordWrite(e) {
       "The " + rule.feature + " feature is not enabled for this organization"
     );
   }
+  if (collectionName === "employees") guardEmployeeLimit(e, orgId);
+}
+
+/**
+ * Employee limit: applies to new employees and to restoring a soft-deleted
+ * one (isDeleted true -> false). Other updates are never blocked.
+ */
+function guardEmployeeLimit(e, orgId) {
+  if (e.record.getBool("isDeleted")) return;
+  if (!e.record.isNew()) {
+    var wasDeleted = false;
+    try {
+      wasDeleted = e.record.original().getBool("isDeleted");
+    } catch (_) {}
+    if (!wasDeleted) return;
+  }
+  assertWithinLimit(e.app, orgId, "employees");
 }
 
 /** True when the customer's organization has the customer history link. */
@@ -293,7 +436,10 @@ function guardBranchCreate(e) {
   } catch (_) {}
   var orgId = e.record.getString("organization");
   if (!orgId) return;
-  if (isFeatureEntitled(e.app, orgId, "multiBranch")) return;
+  if (isFeatureEntitled(e.app, orgId, "multiBranch")) {
+    assertWithinLimit(e.app, orgId, "branches");
+    return;
+  }
   var existing = [];
   try {
     existing = e.app.findRecordsByFilter(
@@ -323,12 +469,15 @@ function guardedCollectionNames() {
   return out;
 }
 
-function exportItems(result) {
+/** Full entitlements payload: feature items plus numeric limits. */
+function exportAll(app, orgId) {
+  var result = resolveEntitlements(app, orgId);
   return {
     hasSubscription: result.hasSubscription,
     packageId: result.packageId,
     packageName: result.packageName,
-    items: result.items
+    items: result.items,
+    limits: resolveLimits(app, orgId)
   };
 }
 
@@ -337,7 +486,7 @@ function getEntitlements(e) {
   var subs = subscriptionHelpers();
   var orgId = e.request.pathValue("id");
   subs.requireOrgMember(e, orgId);
-  return e.json(200, exportItems(resolveEntitlements(e.app, orgId)));
+  return e.json(200, exportAll(e.app, orgId));
 }
 
 function logOverrideActivity(e, action, recordId, key, orgId, detail) {
@@ -421,7 +570,95 @@ function setFeatureOverride(e) {
     );
   }
 
-  return e.json(200, exportItems(resolveEntitlements(e.app, orgId)));
+  return e.json(200, exportAll(e.app, orgId));
+}
+
+function logLimitActivity(e, action, recordId, key, orgId, detail) {
+  var orgName = orgId;
+  try {
+    orgName = e.app.findRecordById("organizations", orgId).getString("name") || orgId;
+  } catch (_) {}
+  var entry = limitEntry(key);
+  var label = entry ? entry.label + " limit" : key;
+  try {
+    var log = new Record(e.app.findCollectionByNameOrId("activityLogs"));
+    log.set("collection", "organizationLimitOverrides");
+    log.set("recordId", recordId);
+    log.set("action", action);
+    log.set("description", label + " for " + orgName + ": " + detail);
+    if (e.auth) log.set("user", e.auth.id);
+    e.app.save(log);
+  } catch (err) {
+    console.log("[ENTITLEMENTS] activity log failed: " + err);
+  }
+}
+
+// PUT /api/super-admin/organizations/{id}/limit-overrides/{key}
+// body: { value: <whole number> | null, note?: string }
+// null clears the override (follow plan); 0 forces unlimited.
+function setLimitOverride(e) {
+  var subs = subscriptionHelpers();
+  subs.requireSystemAdmin(e);
+  var orgId = e.request.pathValue("id");
+  var key = e.request.pathValue("key");
+  if (!limitEntry(key)) throw new BadRequestError("unknown limit key");
+  try {
+    e.app.findRecordById("organizations", orgId);
+  } catch (_) {
+    throw new NotFoundError("organization not found");
+  }
+
+  var info = e.requestInfo();
+  var body = (info && info.body) || {};
+  var existing = null;
+  try {
+    existing = e.app.findFirstRecordByFilter(
+      "organizationLimitOverrides",
+      "organization = {:org} && limitKey = {:key}",
+      { org: orgId, key: key }
+    );
+  } catch (_) {
+    existing = null;
+  }
+
+  var valueRaw = body.value;
+  var note = String(body.note || "").trim();
+
+  if (valueRaw === null || valueRaw === undefined || valueRaw === "") {
+    if (existing) {
+      var clearedId = existing.id;
+      e.app.delete(existing);
+      logLimitActivity(e, "delete", clearedId, key, orgId, "now follows the subscription plan");
+    }
+  } else {
+    var value = Number(valueRaw);
+    if (isNaN(value) || value < 0 || Math.floor(value) !== value) {
+      throw new BadRequestError("value must be a non-negative whole number");
+    }
+    var record = existing;
+    if (!record) {
+      record = new Record(
+        e.app.findCollectionByNameOrId("organizationLimitOverrides")
+      );
+      record.set("organization", orgId);
+      record.set("limitKey", key);
+    }
+    record.set("value", value);
+    record.set("note", note);
+    record.set("updatedBy", e.auth.id);
+    var isNew = !existing;
+    e.app.save(record);
+    logLimitActivity(
+      e,
+      isNew ? "create" : "update",
+      record.id,
+      key,
+      orgId,
+      value > 0 ? "set to " + value + " by Super Admin" : "set to unlimited by Super Admin"
+    );
+  }
+
+  return e.json(200, exportAll(e.app, orgId));
 }
 
 module.exports = {
@@ -437,5 +674,8 @@ module.exports = {
   isCustomerHistoryEntitled: isCustomerHistoryEntitled,
   guardedCollectionNames: guardedCollectionNames,
   getEntitlements: getEntitlements,
-  setFeatureOverride: setFeatureOverride
+  setFeatureOverride: setFeatureOverride,
+  LIMIT_CATALOG: LIMIT_CATALOG,
+  resolveLimits: resolveLimits,
+  setLimitOverride: setLimitOverride
 };

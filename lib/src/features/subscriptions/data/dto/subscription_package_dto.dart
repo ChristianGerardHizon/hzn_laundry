@@ -21,6 +21,8 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
     this.isActive = true,
     this.isDeleted = false,
     this.features = const [],
+    this.maxBranches,
+    this.maxEmployees,
   });
 
   final String id;
@@ -34,6 +36,8 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
   final bool isActive;
   final bool isDeleted;
   final List<String> features;
+  final int? maxBranches;
+  final int? maxEmployees;
 
   factory SubscriptionPackageDto.fromJson(Map<String, dynamic> json) {
     return SubscriptionPackageDto(
@@ -48,6 +52,8 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
       isActive: json['isActive'] as bool? ?? true,
       isDeleted: json['isDeleted'] as bool? ?? false,
       features: _asFeatureKeys(json['features']),
+      maxBranches: _asLimit(json['maxBranches']),
+      maxEmployees: _asLimit(json['maxEmployees']),
     );
   }
 
@@ -70,8 +76,16 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
       isActive: isActive,
       isDeleted: isDeleted,
       features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
   }
+}
+
+/// A limit of 0 / missing means unlimited.
+int? _asLimit(dynamic value) {
+  final v = _asInt(value);
+  return v > 0 ? v : null;
 }
 
 /// Missing/legacy `features` means the package predates entitlements and

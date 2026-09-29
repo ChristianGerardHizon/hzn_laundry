@@ -231,6 +231,12 @@ class _PackageCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Branches: ${package.maxBranches ?? 'Unlimited'} · '
+                    'Employees: ${package.maxEmployees ?? 'Unlimited'}',
+                    style: const TextStyle(color: _kMuted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -279,6 +285,11 @@ class _PackageFormDialog extends HookConsumerWidget {
         final features =
             (values['features'] as List?)?.whereType<String>().toList() ??
                 <String>[];
+        // Blank = unlimited (sent as 0).
+        int limitOf(String name) =>
+            int.tryParse((values[name] as String?)?.trim() ?? '') ?? 0;
+        final maxBranches = limitOf('maxBranches');
+        final maxEmployees = limitOf('maxEmployees');
 
         final notifier = ref.read(packagesControllerProvider().notifier);
         if (isEditing) {
@@ -291,6 +302,8 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalUnit: intervalUnit,
             isPremade: isPremade,
             features: features,
+            maxBranches: maxBranches,
+            maxEmployees: maxEmployees,
           );
           if (!context.mounted) return;
           if (ok) {
@@ -316,6 +329,8 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalUnit: intervalUnit,
             isPremade: isPremade,
             features: features,
+            maxBranches: maxBranches,
+            maxEmployees: maxEmployees,
           );
           if (!context.mounted) return;
           if (created != null) {
@@ -361,6 +376,8 @@ class _PackageFormDialog extends HookConsumerWidget {
                 'isPremade': package?.isPremade ?? true,
                 'features': package?.features ??
                     [for (final f in FeatureKey.values) f.key],
+                'maxBranches': package?.maxBranches?.toString() ?? '',
+                'maxEmployees': package?.maxEmployees?.toString() ?? '',
               },
               child: SingleChildScrollView(
                 child: Column(
@@ -444,6 +461,40 @@ class _PackageFormDialog extends HookConsumerWidget {
                       title: Text(t.subscriptions.isPremade),
                       decoration:
                           const InputDecoration(border: InputBorder.none),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: 'maxBranches',
+                            decoration: const InputDecoration(
+                              labelText: 'Max branches',
+                              hintText: 'Unlimited',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(),
+                              FormBuilderValidators.min(0),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: 'maxEmployees',
+                            decoration: const InputDecoration(
+                              labelText: 'Max employees',
+                              hintText: 'Unlimited',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(),
+                              FormBuilderValidators.min(0),
+                            ]),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     FormBuilderCheckboxGroup<String>(

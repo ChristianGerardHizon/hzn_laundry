@@ -7,6 +7,7 @@ import '../../../../../core/widgets/form_feedback.dart';
 import '../../../../entitlements/domain/feature_key.dart';
 import '../../../../entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../../../entitlements/presentation/widgets/plan_features_section.dart';
+import '../../../../entitlements/presentation/widgets/plan_limits_section.dart';
 import '../../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../../settings/domain/feature_flag.dart';
 import '../../controllers/current_organization_controller.dart';
@@ -138,6 +139,8 @@ class OrganizationFeaturesTab extends HookConsumerWidget {
     return ListView(
       children: [
         PlanFeaturesSection(organizationId: organizationId),
+        const Divider(thickness: 4, height: 32),
+        PlanLimitsSection(organizationId: organizationId),
         const Divider(thickness: 4, height: 32),
         if (historyLinkEnabled) ...[
           Padding(

@@ -1,16 +1,19 @@
+import 'entitlement_limit.dart';
 import 'feature_entitlement.dart';
 import 'feature_key.dart';
 
-/// Resolved feature entitlements for one organization.
+/// Resolved feature entitlements and limits for one organization.
 class OrganizationEntitlements {
   const OrganizationEntitlements({
     required this.items,
+    this.limits = const {},
     this.hasSubscription = true,
     this.packageName = '',
   });
 
-  /// Everything enabled. Used while unresolved or when the fetch fails, so a
-  /// transient error never hides the whole app (the server still enforces).
+  /// Everything enabled and unlimited. Used while unresolved or when the fetch
+  /// fails, so a transient error never hides the whole app (the server still
+  /// enforces).
   factory OrganizationEntitlements.allEnabled() {
     return OrganizationEntitlements(
       hasSubscription: false,
@@ -26,6 +29,7 @@ class OrganizationEntitlements {
   }
 
   final Map<FeatureKey, FeatureEntitlement> items;
+  final Map<LimitKey, EntitlementLimit> limits;
   final bool hasSubscription;
   final String packageName;
 
@@ -40,7 +44,15 @@ class OrganizationEntitlements {
 
   bool isEnabled(FeatureKey feature) => of(feature).enabled;
 
+  /// Limit for [key]; unlimited when missing from the response.
+  EntitlementLimit limitOf(LimitKey key) =>
+      limits[key] ?? EntitlementLimit.unlimited(key);
+
   /// Entitlements in catalog order.
   List<FeatureEntitlement> get ordered =>
       [for (final f in FeatureKey.values) of(f)];
+
+  /// Limits in catalog order.
+  List<EntitlementLimit> get orderedLimits =>
+      [for (final l in LimitKey.values) limitOf(l)];
 }

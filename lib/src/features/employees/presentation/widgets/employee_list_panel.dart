@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/employees.routes.dart';
+import '../../../entitlements/domain/entitlement_limit.dart';
+import '../../../entitlements/presentation/controllers/can_add_employee_provider.dart';
+import '../../../entitlements/presentation/controllers/entitlement_limit_provider.dart';
 import '../../domain/employee.dart';
 import '../controllers/employees_controller.dart';
 import 'employee_form_dialog.dart';
@@ -23,6 +26,8 @@ class EmployeeListPanel extends HookConsumerWidget {
     final theme = Theme.of(context);
     final searchController = useTextEditingController();
     final searchQuery = useState('');
+    final canAdd = ref.watch(canAddEmployeeProvider);
+    final employeeLimit = ref.watch(entitlementLimitProvider(LimitKey.employees));
 
     useEffect(() {
       void listener() {
@@ -110,7 +115,11 @@ class EmployeeListPanel extends HookConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showEmployeeFormDialog(context),
+        onPressed: canAdd ? () => showEmployeeFormDialog(context) : null,
+        tooltip: canAdd
+            ? 'Add Employee'
+            : 'Employee limit reached (${employeeLimit.limit})',
+        backgroundColor: canAdd ? null : theme.disabledColor,
         child: const Icon(Icons.add),
       ),
     );

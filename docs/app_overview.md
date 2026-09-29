@@ -146,7 +146,7 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 
 #### Super Admin & Subscriptions
 - `/super-admin` — Dashboard (org KPIs + subscription badges; tap an org for subscription details dialog) with sidenav (tablet+) or bottom nav + More drawer (mobile) for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
-- Package form includes a **feature checklist**; the org details dialog has **Feature access** (per feature: Plan / On / Off override with optional note). Entitlements resolve as: Super Admin override → package `features` → dependency (e.g. Attendance needs Employees)
+- Package form includes a **feature checklist**; the org details dialog has **Feature access** (per feature: Plan / On / Off override with optional note). Entitlements resolve as: Super Admin override → package `features` → dependency (e.g. Attendance needs Employees). The package form also has **Max branches / Max employees** (blank = unlimited); the dialog's **Limits** section overrides them per org
 - `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); optional grace banners and lock gate (platform billing toggles) in the authenticated shell
 
 #### Organizations (`/organizations`)
@@ -642,6 +642,7 @@ lib/src/
 
 ---
 
+| Sep 29 | Branch & employee limits | Packages have optional `maxBranches` / `maxEmployees` (blank = unlimited; also settable on custom packages). Super Admin can override per org (Organization dialog → Feature access → Limits, "Plan" clears). Org Features tab shows read-only "Usage & limits". Add Branch / Add Employee are disabled at the limit; PocketBase hooks reject creating (and restoring employees) beyond it with 403. Existing data is never deleted. `entitlements` payload gains `limits`; `PUT /api/super-admin/organizations/{id}/limit-overrides/{key}` |
 | Sep 29 | Entitlement feature flags | Each subscription package lists included features (Employees, Attendance, Products, Promos, Reports, Activities + sub-features: consumable usage, machine load rules, storages, cashier layout groups, customer history link, multi-branch). Super Admin can force any feature on/off per org (Organization dialog → Feature access). Org Features tab shows read-only plan status with "Enabled/Disabled by Super Admin" labels. Nav, routes, dashboard, POS, and PocketBase write hooks honor the resolved entitlements; `GET /api/organizations/{id}/entitlements`, `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}` |
 | Sep 29 | Sentry soft-delete + noise | Soft-delete users with blank email (client + PB hook); skip Sentry for expected 4xx/abort/timeouts; harden invite resend email errors |
 | Sep 29 | Dashboard user identity | Mobile/desktop dashboard show current user name; Profile is an Account nav section (drawer + desktop sidebar) opening `/profile` |

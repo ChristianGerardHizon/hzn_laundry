@@ -268,6 +268,8 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 | `isActive` | bool | Yes | Available for assignment |
 | `isDeleted` | bool | Yes | Soft delete |
 | `features` | JSON (string[]) | Yes | Feature keys included in the package (see `FeatureKey`); missing/legacy = all |
+| `maxBranches` | int | No | Max branches per org on this package; blank/0 = unlimited |
+| `maxEmployees` | int | No | Max non-deleted `employees` records per org; blank/0 = unlimited |
 
 **Collection:** `subscriptionPackages`
 
@@ -285,6 +287,21 @@ Super Admin per-org override of a feature entitlement, regardless of the subscri
 | `updatedBy` | String (FK) | No | FK to User (Super Admin) |
 
 **Collection:** `organizationFeatureOverrides` (unique on `organization` + `featureKey`; list/view for org members; writes only through `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}`)
+
+### OrganizationLimitOverride
+
+Super Admin per-org override of a numeric limit (`branches`, `employees`). No row = use the package value (`maxBranches` / `maxEmployees`); no package limit = unlimited. `value` 0 = forced unlimited. Existing data over a limit is never deleted; only creating new records (and restoring soft-deleted employees) is blocked.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization (cascade delete) |
+| `limitKey` | String | Yes | `branches` or `employees` |
+| `value` | int | Yes | Override limit (0 = unlimited) |
+| `note` | String | No | Why the override was set |
+| `updatedBy` | String (FK) | No | FK to User (Super Admin) |
+
+**Collection:** `organizationLimitOverrides` (unique on `organization` + `limitKey`; list/view for org members; writes only through `PUT /api/super-admin/organizations/{id}/limit-overrides/{key}`)
 
 ### OrganizationSubscription
 

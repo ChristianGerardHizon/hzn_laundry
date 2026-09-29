@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../domain/entitlement_limit.dart';
 import '../../domain/feature_key.dart';
 import '../../domain/organization_entitlements.dart';
 import '../dto/organization_entitlements_dto.dart';
@@ -20,6 +21,15 @@ abstract class EntitlementRepository {
     String organizationId,
     FeatureKey feature, {
     required bool? enabled,
+    String? note,
+  });
+
+  /// Super Admin only. [value] `null` clears the override (follow plan);
+  /// `0` forces unlimited.
+  FutureEither<OrganizationEntitlements> setLimitOverride(
+    String organizationId,
+    LimitKey limit, {
+    required int? value,
     String? note,
   });
 }
@@ -88,6 +98,37 @@ class EntitlementRepositoryImpl implements EntitlementRepository {
           method: 'PUT',
           body: {
             'enabled': enabled,
+            if (note != null) 'note': note,
+          },
+        );
+        return _parse(response);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrganizationEntitlements> setLimitOverride(
+    String organizationId,
+    LimitKey limit, {
+    required int? value,
+    String? note,
+  }) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (organizationId.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+        final response = await _pb.send(
+          '/api/super-admin/organizations/$organizationId'
+          '/limit-overrides/${limit.key}',
+          method: 'PUT',
+          body: {
+            'value': value,
             if (note != null) 'note': note,
           },
         );
