@@ -390,6 +390,29 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get onboarded => 'Naka-onboard';
 	@override String get notOnboarded => 'Hindi pa naka-onboard';
 	@override String get statsLoadError => 'Hindi ma-load ang stats ng organisasyon.';
+	@override String get filterAll => 'Lahat';
+	@override String get filterOther => 'Iba pa';
+	@override String get filterByStatus => 'I-filter ayon sa status';
+	@override String get sortBy => 'I-sort ayon sa';
+	@override String get sortRevenue => 'Kita';
+	@override String get sortOrders => 'Mga Order';
+	@override String get sortCustomers => 'Mga Customer';
+	@override String get sortName => 'Pangalan (A-Z)';
+	@override String get subscriptionHealth => 'Kalagayan ng subscription';
+	@override String get clearFilters => 'I-clear ang mga filter';
+	@override String get noOrganizationsMatchFilters => 'Walang organisasyong tumugma sa mga filter na ito.';
+	@override String graceEndsInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: 'Matatapos ang grace sa 1 araw',
+		other: 'Matatapos ang grace sa ${n} araw',
+	);
+	@override String pendingPayments({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: '1 nakabinbing bayad',
+		other: '${n} nakabinbing bayad',
+	);
+	@override String organizationsCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: '1 organisasyon',
+		other: '${n} organisasyon',
+	);
 }
 
 // Path: sort
@@ -814,6 +837,20 @@ extension on TranslationsTl {
 			'organizations.onboarded' => 'Naka-onboard',
 			'organizations.notOnboarded' => 'Hindi pa naka-onboard',
 			'organizations.statsLoadError' => 'Hindi ma-load ang stats ng organisasyon.',
+			'organizations.filterAll' => 'Lahat',
+			'organizations.filterOther' => 'Iba pa',
+			'organizations.filterByStatus' => 'I-filter ayon sa status',
+			'organizations.sortBy' => 'I-sort ayon sa',
+			'organizations.sortRevenue' => 'Kita',
+			'organizations.sortOrders' => 'Mga Order',
+			'organizations.sortCustomers' => 'Mga Customer',
+			'organizations.sortName' => 'Pangalan (A-Z)',
+			'organizations.subscriptionHealth' => 'Kalagayan ng subscription',
+			'organizations.clearFilters' => 'I-clear ang mga filter',
+			'organizations.noOrganizationsMatchFilters' => 'Walang organisasyong tumugma sa mga filter na ito.',
+			'organizations.graceEndsInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: 'Matatapos ang grace sa 1 araw', other: 'Matatapos ang grace sa ${n} araw', ), 
+			'organizations.pendingPayments' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 nakabinbing bayad', other: '${n} nakabinbing bayad', ), 
+			'organizations.organizationsCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 organisasyon', other: '${n} organisasyon', ), 
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',

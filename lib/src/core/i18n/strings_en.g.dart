@@ -926,6 +926,57 @@ class TranslationsOrganizationsEn {
 
 	/// en: 'Could not load organization stats.'
 	String get statsLoadError => 'Could not load organization stats.';
+
+	/// en: 'All'
+	String get filterAll => 'All';
+
+	/// en: 'Other'
+	String get filterOther => 'Other';
+
+	/// en: 'Filter by status'
+	String get filterByStatus => 'Filter by status';
+
+	/// en: 'Sort by'
+	String get sortBy => 'Sort by';
+
+	/// en: 'Revenue'
+	String get sortRevenue => 'Revenue';
+
+	/// en: 'Orders'
+	String get sortOrders => 'Orders';
+
+	/// en: 'Customers'
+	String get sortCustomers => 'Customers';
+
+	/// en: 'Name (A-Z)'
+	String get sortName => 'Name (A-Z)';
+
+	/// en: 'Subscription health'
+	String get subscriptionHealth => 'Subscription health';
+
+	/// en: 'Clear filters'
+	String get clearFilters => 'Clear filters';
+
+	/// en: 'No organizations match these filters.'
+	String get noOrganizationsMatchFilters => 'No organizations match these filters.';
+
+	/// en: '(one) {Grace ends in 1 day} (other) {Grace ends in $n days}'
+	String graceEndsInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Grace ends in 1 day',
+		other: 'Grace ends in ${n} days',
+	);
+
+	/// en: '(one) {1 pending payment} (other) {$n pending payments}'
+	String pendingPayments({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 pending payment',
+		other: '${n} pending payments',
+	);
+
+	/// en: '(one) {1 organization} (other) {$n organizations}'
+	String organizationsCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 organization',
+		other: '${n} organizations',
+	);
 }
 
 // Path: sort
@@ -1578,6 +1629,20 @@ extension on Translations {
 			'organizations.onboarded' => 'Onboarded',
 			'organizations.notOnboarded' => 'Not onboarded',
 			'organizations.statsLoadError' => 'Could not load organization stats.',
+			'organizations.filterAll' => 'All',
+			'organizations.filterOther' => 'Other',
+			'organizations.filterByStatus' => 'Filter by status',
+			'organizations.sortBy' => 'Sort by',
+			'organizations.sortRevenue' => 'Revenue',
+			'organizations.sortOrders' => 'Orders',
+			'organizations.sortCustomers' => 'Customers',
+			'organizations.sortName' => 'Name (A-Z)',
+			'organizations.subscriptionHealth' => 'Subscription health',
+			'organizations.clearFilters' => 'Clear filters',
+			'organizations.noOrganizationsMatchFilters' => 'No organizations match these filters.',
+			'organizations.graceEndsInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Grace ends in 1 day', other: 'Grace ends in ${n} days', ), 
+			'organizations.pendingPayments' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 pending payment', other: '${n} pending payments', ), 
+			'organizations.organizationsCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 organization', other: '${n} organizations', ), 
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',

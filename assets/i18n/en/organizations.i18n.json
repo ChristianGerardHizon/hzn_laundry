@@ -110,5 +110,28 @@
   "metricCustomers": "Customers",
   "onboarded": "Onboarded",
   "notOnboarded": "Not onboarded",
-  "statsLoadError": "Could not load organization stats."
+  "statsLoadError": "Could not load organization stats.",
+  "filterAll": "All",
+  "filterOther": "Other",
+  "filterByStatus": "Filter by status",
+  "sortBy": "Sort by",
+  "sortRevenue": "Revenue",
+  "sortOrders": "Orders",
+  "sortCustomers": "Customers",
+  "sortName": "Name (A-Z)",
+  "subscriptionHealth": "Subscription health",
+  "clearFilters": "Clear filters",
+  "noOrganizationsMatchFilters": "No organizations match these filters.",
+  "graceEndsInDays(n)": {
+    "one": "Grace ends in 1 day",
+    "other": "Grace ends in $n days"
+  },
+  "pendingPayments(n)": {
+    "one": "1 pending payment",
+    "other": "$n pending payments"
+  },
+  "organizationsCount(n)": {
+    "one": "1 organization",
+    "other": "$n organizations"
+  }
 }
