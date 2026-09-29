@@ -504,7 +504,7 @@ App Root (Shell)
 | Mobile | Bottom Nav | First 3 visible items + More |
 | Mobile | Drawer | Full permission-filtered menu |
 | Tablet (600–899px) | `TabletNavRail` | Icons + selected label |
-| Tablet large / Desktop (≥900px) | `DesktopSideNav` | Expandable grouped sidebar (shortcuts + category flyouts) |
+| Tablet large / Desktop (≥900px) | `DesktopSideNav` | Expandable grouped sidebar (pinned + collapsible groups) |
 
 #### 3-Panel Master-Detail Layouts (Tablet)
 Management and System sections use a 3-panel layout:
@@ -642,6 +642,7 @@ lib/src/
 
 ---
 
+| Sep 29 | Desktop sidebar: logical groups + pins | `DesktopSideNav` drops "Shortcuts / Categories / Show more" and hover flyouts. Every page is now one click: Dashboard, **Pinned** (user-chosen), then collapsible groups Operations, People, Insights, Setup, Administration (Setup/Administration start collapsed). Hover a row and click the pin (or long-press on touch) to pin/unpin. Pins and collapsed groups are saved locally per user (`shared_preferences`, `NavPreferencesController`); defaults pin Orders, Products, Services, Customers. Profile, System, Logout and collapse are a fixed footer. Collapsed rail keeps icon-only pinned items + tap flyouts |
 | Sep 29 | Branch & employee limits | Packages have optional `maxBranches` / `maxEmployees` (blank = unlimited; also settable on custom packages). Super Admin can override per org (Organization dialog → Feature access → Limits, "Plan" clears). Org Features tab shows read-only "Usage & limits". Add Branch / Add Employee are disabled at the limit; PocketBase hooks reject creating (and restoring employees) beyond it with 403. Existing data is never deleted. `entitlements` payload gains `limits`; `PUT /api/super-admin/organizations/{id}/limit-overrides/{key}` |
 | Sep 29 | Entitlement feature flags | Each subscription package lists included features (Employees, Attendance, Products, Promos, Reports, Activities + sub-features: consumable usage, machine load rules, storages, cashier layout groups, customer history link, multi-branch). Super Admin can force any feature on/off per org (Organization dialog → Feature access). Org Features tab shows read-only plan status with "Enabled/Disabled by Super Admin" labels. Nav, routes, dashboard, POS, and PocketBase write hooks honor the resolved entitlements; `GET /api/organizations/{id}/entitlements`, `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}` |
 | Sep 29 | Super Admin dashboard redesign | Compact top bar replaces the tall hero; revenue hero KPI + subscription health strip; org list gains search by name/slug, status filter chips with counts, and sort menu; org cards get a status accent, aligned metrics row, and pending-payment/grace/expiry hints; nav rail/bottom nav polish; design tokens in `super_admin_theme.dart` |

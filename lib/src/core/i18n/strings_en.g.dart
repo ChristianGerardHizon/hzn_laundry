@@ -462,18 +462,6 @@ class TranslationsNavigationEn {
 
 	// Translations
 
-	/// en: 'Shortcuts'
-	String get shortcuts => 'Shortcuts';
-
-	/// en: 'Categories'
-	String get categories => 'Categories';
-
-	/// en: 'Show more'
-	String get showMore => 'Show more';
-
-	/// en: 'Show less'
-	String get showLess => 'Show less';
-
 	/// en: 'Operations'
 	String get operations => 'Operations';
 
@@ -485,6 +473,24 @@ class TranslationsNavigationEn {
 
 	/// en: 'Administration'
 	String get administration => 'Administration';
+
+	/// en: 'Setup'
+	String get setup => 'Setup';
+
+	/// en: 'Pinned'
+	String get pinned => 'Pinned';
+
+	/// en: 'Pin to top'
+	String get pinToTop => 'Pin to top';
+
+	/// en: 'Unpin'
+	String get unpin => 'Unpin';
+
+	/// en: 'Expand section'
+	String get expandGroup => 'Expand section';
+
+	/// en: 'Collapse section'
+	String get collapseGroup => 'Collapse section';
 
 	/// en: 'Collapse navigation'
 	String get collapseNav => 'Collapse navigation';
@@ -1479,14 +1485,16 @@ extension on Translations {
 			'management.invitesSubtitle' => 'Pending invitations waiting to be accepted.',
 			'management.noPendingInvites' => 'No pending invites',
 			'management.noPendingInvitesHint' => 'Invite someone with the + button. They\'ll get an email to sign in and accept.',
-			'navigation.shortcuts' => 'Shortcuts',
-			'navigation.categories' => 'Categories',
-			'navigation.showMore' => 'Show more',
-			'navigation.showLess' => 'Show less',
 			'navigation.operations' => 'Operations',
 			'navigation.people' => 'People',
 			'navigation.insights' => 'Insights',
 			'navigation.administration' => 'Administration',
+			'navigation.setup' => 'Setup',
+			'navigation.pinned' => 'Pinned',
+			'navigation.pinToTop' => 'Pin to top',
+			'navigation.unpin' => 'Unpin',
+			'navigation.expandGroup' => 'Expand section',
+			'navigation.collapseGroup' => 'Collapse section',
 			'navigation.collapseNav' => 'Collapse navigation',
 			'navigation.expandNav' => 'Expand navigation',
 			'navigation.dashboard' => 'Dashboard',

@@ -7,6 +7,8 @@ import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
+import '../navigation/nav_preferences.dart';
+import '../navigation/nav_preferences_controller.dart';
 import '../routing/org_scoped_navigation.dart';
 import '../routing/routes/management.routes.dart';
 import '../routing/routes/org_selection.routes.dart';
@@ -42,7 +44,6 @@ class DesktopSideNav extends HookConsumerWidget {
     final t = Translations.of(context);
     final theme = Theme.of(context);
     final collapsed = useState(false);
-    final showAllShortcuts = useState(false);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
     final searchFocusNode = useFocusNode();
@@ -61,31 +62,39 @@ class DesktopSideNav extends HookConsumerWidget {
 
     final entitlements =
         ref.watch(currentOrganizationEntitlementsProvider).value;
-    final isAdmin =
-        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
-    final defaultShortcuts = visibleShortcutIds(visibleItems);
-    final extraShortcuts =
-        extraShortcutCandidates(visibleItems, defaultShortcuts);
-    final shownShortcutIds = {
-      ...defaultShortcuts,
-      if (showAllShortcuts.value) ...extraShortcuts,
-    };
-    final categories = [
-      ...visibleCategories(visibleItems, shownShortcutIds),
-    ];
+    final isAdmin = ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
+
+    // Local, per-user customisation. `null` while the first read is in flight.
+    final prefsAsync = ref.watch(navPreferencesControllerProvider);
+    final prefs =
+        prefsAsync.hasError ? NavPreferences.defaults : prefsAsync.value;
+    final prefsController = ref.read(navPreferencesControllerProvider.notifier);
+
+    final location = GoRouterState.of(context).uri.path;
+
     // Keep Administration visible for system admins so the Super Admin
-    // footer remains reachable even when its destinations are shortcuts.
-    if (isAdmin &&
-        !categories.contains(AppNavCategory.administration)) {
+    // link remains reachable.
+    final categories = [...visibleCategories(visibleItems, const {})];
+    if (isAdmin && !categories.contains(AppNavCategory.administration)) {
       categories.add(AppNavCategory.administration);
     }
-    final superAdminFooter = isAdmin
-        ? DesktopNavFlyoutFooter(
-            icon: Icons.admin_panel_settings_outlined,
-            label: t.organizations.superAdmin,
-            onTap: () => const SuperAdminRoute().go(context),
-          )
-        : null;
+    final destinationsByCategory = {
+      for (final category in categories)
+        category: flyoutDestinationsFor(
+          category,
+          visibleItems,
+          const {},
+          t,
+          isFeatureEnabled: entitlements?.isEnabled,
+        ),
+    };
+    final pinned = prefs == null
+        ? const <DesktopFlyoutDestination>[]
+        : resolvePinnedDestinations(
+            prefs.pinnedKeys,
+            destinationsByCategory.values.expand((d) => d),
+          );
+    final pinnedKeys = {for (final d in pinned) navPinKey(d.selectionKey)};
 
     void clearSearch() {
       searchQuery.value = '';
@@ -126,15 +135,13 @@ class DesktopSideNav extends HookConsumerWidget {
       }
     }
 
-    void tapFlyoutDestination(
-      AppNavCategory category,
-      DesktopFlyoutDestination dest,
-    ) {
-      if (category == AppNavCategory.administration) {
-        navigateAdminSection(dest.selectionKey as AdminFlyoutId);
-        return;
+    void tapDestination(DesktopFlyoutDestination dest) {
+      final key = dest.selectionKey;
+      if (key is AdminFlyoutId) {
+        navigateAdminSection(key);
+      } else {
+        tapId(key as NavId);
       }
-      tapId(dest.selectionKey as NavId);
     }
 
     void tapSearchResult(NavItem item) {
@@ -142,17 +149,43 @@ class DesktopSideNav extends HookConsumerWidget {
       clearSearch();
     }
 
-    final location = GoRouterState.of(context).uri.path;
+    final superAdminFooter = isAdmin
+        ? DesktopNavFlyoutFooter(
+            icon: Icons.admin_panel_settings_outlined,
+            label: t.organizations.superAdmin,
+            onTap: () => const SuperAdminRoute().go(context),
+          )
+        : null;
 
-    Widget buildShortcutItem(NavId id) {
-      final item = navItemFor(id, visibleItems);
+    Widget pinnableTile(
+      DesktopFlyoutDestination dest, {
+      required bool isPinned,
+      required String keyPrefix,
+    }) {
+      final pinKey = navPinKey(dest.selectionKey);
+      final selected = isDestinationSelected(dest, selectedId, location);
+      return Padding(
+        key: ValueKey('$keyPrefix:$pinKey'),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+        child: DesktopPinnableNavItem(
+          icon: selected ? dest.selectedIcon : dest.icon,
+          label: dest.label,
+          selected: selected,
+          pinned: isPinned,
+          pinTooltip: isPinned ? t.navigation.unpin : t.navigation.pinToTop,
+          onTap: () => tapDestination(dest),
+          onTogglePin: () => prefsController.togglePin(pinKey),
+        ),
+      );
+    }
+
+    Widget plainTile(NavItem? item, NavId id, {Widget? trailing}) {
       if (item == null) return const SizedBox.shrink();
       final selected = isNavItemSelected(selectedId, id);
-
       return Padding(
         padding: EdgeInsets.symmetric(
           horizontal: collapsed.value ? 8 : 12,
-          vertical: 2,
+          vertical: collapsed.value ? 2 : 1,
         ),
         child: DesktopNavItem(
           icon: selected ? item.selectedIcon : item.icon,
@@ -160,13 +193,142 @@ class DesktopSideNav extends HookConsumerWidget {
           selected: selected,
           collapsed: collapsed.value,
           onTap: () => tapId(id),
+          trailing: collapsed.value ? null : trailing,
         ),
+      );
+    }
+
+    Widget buildGroup(AppNavCategory category) {
+      final entries = [
+        for (final d in destinationsByCategory[category]!)
+          if (!pinnedKeys.contains(navPinKey(d.selectionKey))) d,
+      ];
+      final showSuperAdmin =
+          isAdmin && category == AppNavCategory.administration;
+      if (entries.isEmpty && !showSuperAdmin) return const SizedBox.shrink();
+
+      // Children are discarded while [prefs] is still loading.
+      final isCollapsed = prefs?.isCollapsed(category) ?? false;
+      // A collapsed group still shows the page you are on, so you never lose
+      // your place in the sidebar.
+      final shown = isCollapsed
+          ? [
+              for (final d in entries)
+                if (isDestinationSelected(d, selectedId, location)) d,
+            ]
+          : entries;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DesktopNavGroupHeader(
+            label: appNavCategoryLabel(category, t),
+            expanded: !isCollapsed,
+            toggleTooltip: isCollapsed
+                ? t.navigation.expandGroup
+                : t.navigation.collapseGroup,
+            onToggle: () => prefsController.toggleGroup(category),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            alignment: Alignment.topCenter,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final d in shown)
+                  pinnableTile(d, isPinned: false, keyPrefix: 'group'),
+                if (showSuperAdmin && !isCollapsed)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+                    child: DesktopNavItem(
+                      icon: superAdminFooter!.icon,
+                      label: superAdminFooter.label,
+                      selected: false,
+                      onTap: superAdminFooter.onTap,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       );
     }
 
     final dashboardItem = navItemFor(NavId.dashboard, visibleItems);
     final systemItem = navItemFor(NavId.system, visibleItems);
     final profileItem = navItemFor(NavId.profile, visibleItems);
+
+    // Expanded: everything inline (no hover flyouts) so each page is one click.
+    final expandedChildren = <Widget>[
+      plainTile(dashboardItem, NavId.dashboard),
+      if (pinned.isNotEmpty) ...[
+        DesktopNavSectionHeader(label: t.navigation.pinned),
+        for (final d in pinned)
+          pinnableTile(d, isPinned: true, keyPrefix: 'pinned'),
+      ],
+      for (final category in categories) buildGroup(category),
+    ];
+
+    // Collapsed rail: icons only; groups open as flyouts on tap.
+    final railChildren = <Widget>[
+      plainTile(dashboardItem, NavId.dashboard),
+      for (final d in pinned)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          child: DesktopNavItem(
+            icon: isDestinationSelected(d, selectedId, location)
+                ? d.selectedIcon
+                : d.icon,
+            label: d.label,
+            selected: isDestinationSelected(d, selectedId, location),
+            collapsed: true,
+            onTap: () => tapDestination(d),
+          ),
+        ),
+      if (pinned.isNotEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Divider(height: 1),
+        ),
+      for (final category in categories)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          child: DesktopNavCategoryRow(
+            category: category,
+            destinations: destinationsByCategory[category]!,
+            selectedKey: flyoutSelectedKey(category, selectedId, location),
+            collapsed: true,
+            selected: destinationsByCategory[category]!.any(
+              (d) => isDestinationSelected(d, selectedId, location),
+            ),
+            onDestinationTap: tapDestination,
+            footer: category == AppNavCategory.administration
+                ? superAdminFooter
+                : null,
+          ),
+        ),
+    ];
+
+    final collapseButton = IconButton(
+      tooltip:
+          collapsed.value ? t.navigation.expandNav : t.navigation.collapseNav,
+      style: IconButton.styleFrom(fixedSize: const Size.square(40)),
+      icon: Icon(collapsed.value ? Icons.chevron_right : Icons.chevron_left),
+      onPressed: () {
+        final next = !collapsed.value;
+        if (next) clearSearch();
+        collapsed.value = next;
+      },
+    );
+
+    final logoutItem = DesktopNavItem(
+      icon: Icons.logout,
+      label: t.auth.logoutButton,
+      selected: false,
+      collapsed: collapsed.value,
+      onTap: () => _confirmLogout(context, ref, t),
+    );
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -209,150 +371,11 @@ class DesktopSideNav extends HookConsumerWidget {
               children: [
                 ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: [
-                    if (dashboardItem != null)
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: collapsed.value ? 8 : 12,
-                          vertical: 2,
-                        ),
-                        child: DesktopNavItem(
-                          icon: isNavItemSelected(selectedId, NavId.dashboard)
-                              ? dashboardItem.selectedIcon
-                              : dashboardItem.icon,
-                          label: dashboardItem.label,
-                          selected:
-                              isNavItemSelected(selectedId, NavId.dashboard),
-                          collapsed: collapsed.value,
-                          onTap: () => tapId(NavId.dashboard),
-                        ),
-                      ),
-                    if (defaultShortcuts.isNotEmpty) ...[
-                      if (!collapsed.value)
-                        DesktopNavSectionHeader(label: t.navigation.shortcuts),
-                      for (final id in defaultShortcuts) buildShortcutItem(id),
-                      if (!collapsed.value && extraShortcuts.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          child: TextButton.icon(
-                            onPressed: () => showAllShortcuts.value =
-                                !showAllShortcuts.value,
-                            icon: Icon(
-                              showAllShortcuts.value
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                              size: 18,
-                            ),
-                            label: Text(
-                              showAllShortcuts.value
-                                  ? t.navigation.showLess
-                                  : t.navigation.showMore,
-                            ),
-                            style: TextButton.styleFrom(
-                              alignment: Alignment.centerLeft,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ),
-                        ),
-                      if (showAllShortcuts.value)
-                        for (final id in extraShortcuts) buildShortcutItem(id),
-                    ],
-                    if (categories.isNotEmpty) ...[
-                      if (!collapsed.value)
-                        DesktopNavSectionHeader(label: t.navigation.categories),
-                      for (final category in categories)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: collapsed.value ? 8 : 12,
-                            vertical: 4,
-                          ),
-                          child: DesktopNavCategoryRow(
-                            category: category,
-                            destinations: flyoutDestinationsFor(
-                              category,
-                              visibleItems,
-                              shownShortcutIds,
-                              t,
-                              isFeatureEnabled: entitlements?.isEnabled,
-                            ),
-                            selectedKey: flyoutSelectedKey(
-                              category,
-                              selectedId,
-                              location,
-                            ),
-                            collapsed: collapsed.value,
-                            selected: isNavCategorySelected(
-                              selectedId,
-                              category,
-                              visibleItems,
-                              shownShortcutIds,
-                            ),
-                            onDestinationTap: (dest) =>
-                                tapFlyoutDestination(category, dest),
-                            footer: category == AppNavCategory.administration
-                                ? superAdminFooter
-                                : null,
-                          ),
-                        ),
-                    ],
-                    if (profileItem != null || systemItem != null) ...[
-                      SizedBox(height: collapsed.value ? 8 : 12),
-                      if (!collapsed.value)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Divider(height: 1),
-                        ),
-                      SizedBox(height: collapsed.value ? 4 : 8),
-                      if (profileItem != null) ...[
-                        if (!collapsed.value)
-                          DesktopNavSectionHeader(label: t.navigation.account),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: collapsed.value ? 8 : 12,
-                            vertical: 4,
-                          ),
-                          child: DesktopNavItem(
-                            icon: isNavItemSelected(selectedId, NavId.profile)
-                                ? profileItem.selectedIcon
-                                : profileItem.icon,
-                            label: profileItem.label,
-                            selected:
-                                isNavItemSelected(selectedId, NavId.profile),
-                            collapsed: collapsed.value,
-                            onTap: () => tapId(NavId.profile),
-                          ),
-                        ),
-                      ],
-                      if (systemItem != null)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: collapsed.value ? 8 : 12,
-                            vertical: 4,
-                          ),
-                          child: DesktopNavItem(
-                            icon: isNavItemSelected(selectedId, NavId.system)
-                                ? systemItem.selectedIcon
-                                : systemItem.icon,
-                            label: systemItem.label,
-                            selected:
-                                isNavItemSelected(selectedId, NavId.system),
-                            collapsed: collapsed.value,
-                            onTap: () => tapId(NavId.system),
-                            trailing: collapsed.value
-                                ? null
-                                : Icon(
-                                    Icons.chevron_right,
-                                    size: 18,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                          ),
-                        ),
-                    ],
-                  ],
+                  children: prefs == null
+                      ? const <Widget>[]
+                      : collapsed.value
+                          ? railChildren
+                          : expandedChildren,
                 ),
                 if (isSearching)
                   Positioned(
@@ -371,40 +394,39 @@ class DesktopSideNav extends HookConsumerWidget {
             ),
           ),
           const Divider(height: 1),
+          // Always-reachable footer: account, settings, sign out + collapse.
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              collapsed.value ? 4 : 8,
-              12,
-              collapsed.value ? 4 : 8,
-              12,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DesktopNavItem(
-                  icon: Icons.logout,
-                  label: t.auth.logoutButton,
-                  selected: false,
-                  collapsed: collapsed.value,
-                  onTap: () => _confirmLogout(context, ref, t),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    tooltip: collapsed.value
-                        ? t.navigation.expandNav
-                        : t.navigation.collapseNav,
-                    icon: Icon(
-                      collapsed.value
-                          ? Icons.chevron_right
-                          : Icons.chevron_left,
-                    ),
-                    onPressed: () {
-                      final next = !collapsed.value;
-                      if (next) clearSearch();
-                      collapsed.value = next;
-                    },
+                plainTile(profileItem, NavId.profile),
+                plainTile(
+                  systemItem,
+                  NavId.system,
+                  trailing: Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: collapsed.value ? 8 : 12,
+                    vertical: 1,
+                  ),
+                  child: collapsed.value
+                      ? Column(
+                          children: [logoutItem, collapseButton],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: logoutItem),
+                            const SizedBox(width: 4),
+                            collapseButton,
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -479,7 +501,8 @@ class _NavSearchField extends StatelessWidget {
           ),
           suffixIcon: hasText
               ? IconButton(
-                  tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                  tooltip:
+                      MaterialLocalizations.of(context).deleteButtonTooltip,
                   icon: Icon(
                     Icons.cancel,
                     size: 18,

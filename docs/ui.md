@@ -124,37 +124,45 @@ Firebase-style expandable sidebar (`lib/src/core/widgets/desktop_side_nav.dart`)
 ```
 ┌────────────────┬──────────────────────────────────┐
 │ LOGO  HZN …    │ [Branch Switcher]   [Fullscreen] │
-│ Dashboard      ├──────────────────────────────────┤
-│ Shortcuts      │                                  │
-│  Orders        │                                  │
-│  Products      │          CONTENT AREA            │
-│  Services      │                                  │
-│  Customers     │                                  │
-│  Show more     │                                  │
-│ Categories     │                                  │
-│  Operations ▸  │  <- hover/tap flyout             │
-│  People ▸      │                                  │
-│  Insights ▸    │                                  │
-│  Administration▸                                  │
+│ [Search pages] ├──────────────────────────────────┤
+│ Dashboard      │                                  │
+│ PINNED         │                                  │
+│  Orders     📌 │                                  │
+│  Products   📌 │          CONTENT AREA            │
+│  Customers  📌 │                                  │
+│ OPERATIONS  ⌄  │                                  │
+│  Promos        │                                  │
+│ PEOPLE      ⌄  │                                  │
+│  Employees     │                                  │
+│ INSIGHTS    ⌄  │                                  │
+│  Reports …     │                                  │
+│ SETUP       ›  │  <- collapsed by default         │
+│ ADMINISTRATION›│                                  │
+├────────────────┤                                  │
+│ Profile        │  <- fixed footer                 │
 │ System      ▸  │                                  │
-│ Logout         │                                  │
-│ < collapse     │                                  │
+│ Logout     [<] │                                  │
 └────────────────┴──────────────────────────────────┘
 ```
 
+Every destination is visible inline (no hover flyouts), grouped by intent:
+
 | Slot | Items |
 |------|--------|
-| Pinned top | Dashboard |
-| Default shortcuts | Orders, Products, Services, Customers |
-| Show more extras | Employees, Reports, Activities, Management, Organizations, Promos |
-| Operations flyout | Promos (when not expanded via Show more) |
-| People flyout | Employees |
-| Insights flyout | Reports, Activities |
-| Administration flyout | Users, Roles, Branches, Machines, Storages, Categories, Units, Cashier, Organizations |
-| Pinned above footer | System |
-| Footer | Logout + collapse/expand |
+| Top | Dashboard (always) |
+| Pinned | User-chosen destinations, in pin order. Defaults for a new user: Orders, Products, Services, Customers |
+| Operations | Orders, Products, Services, Promos |
+| People | Customers, Employees |
+| Insights | Reports, Activities |
+| Setup (collapsed by default) | Branches, Machines, Storages, Categories, Units, Cashier |
+| Administration (collapsed by default) | Users, Roles, Organizations, Super Admin (system admins) |
+| Footer | Profile, System, Logout, collapse/expand |
 
-Shown shortcuts are excluded from most category flyouts. **Administration** always lists management sections (and Organizations) when those nav items are permitted — it does not require opening a Management hub first. Empty groups (after permission filtering) are omitted. Collapse is session-only. Category rows open a flyout on hover when expanded, and on tap when collapsed.
+**Pinning:** hover a row and click the pin button (also reachable by keyboard focus), or long-press on touch. Pinned rows move out of their group into **Pinned**; unpin returns them. Pins and collapsed groups are stored on-device with `shared_preferences`, namespaced by user id (`NavPreferencesController`, `nav.pinned.<userId>`, `nav.collapsed.<userId>`), so they survive restarts but do not sync across devices. Pins for destinations the user can no longer access are hidden but kept.
+
+**Groups:** click a group title to collapse/expand. A collapsed group still shows the page you are currently on. Empty groups (after permission/feature filtering and pinning) are omitted. Setup and Administration list management sections (and Organizations) directly whenever the Management / Organizations nav items are permitted.
+
+**Collapsed rail (72px):** icon-only Dashboard and pinned items, then one icon per group that opens a flyout on tap.
 
 List/detail master-detail layouts (e.g. a list panel beside a detail panel) are implemented per-page where the page needs one, not by the shell itself — check individual feature pages (e.g. `lib/src/features/products/presentation/pages/`) for whether a given screen adopts that pattern at these widths.
 

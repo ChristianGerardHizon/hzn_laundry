@@ -225,14 +225,17 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get shortcuts => 'Mga Shortcut';
-	@override String get categories => 'Mga Kategorya';
-	@override String get showMore => 'Magpakita pa';
-	@override String get showLess => 'Magpakita ng mas kaunti';
 	@override String get operations => 'Operasyon';
 	@override String get people => 'Mga Tao';
 	@override String get insights => 'Mga Insight';
 	@override String get administration => 'Administrasyon';
+	@override String get setup => 'Setup';
+	@override String get account => 'Account';
+	@override String get pinned => 'Naka-pin';
+	@override String get pinToTop => 'I-pin sa itaas';
+	@override String get unpin => 'I-unpin';
+	@override String get expandGroup => 'Buksan ang seksyon';
+	@override String get collapseGroup => 'Isara ang seksyon';
 	@override String get collapseNav => 'I-collapse ang navigation';
 	@override String get expandNav => 'I-expand ang navigation';
 	@override String get dashboard => 'Dashboard';
@@ -258,7 +261,6 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get customers => 'Mga Customer';
 	@override String get employees => 'Mga Empleyado';
 	@override String get system => 'Sistema';
-	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
 	@override String get allBranches => 'Lahat ng Sangay';
 	@override String get switchingBranch => 'Pinapalitan ang sangay…';
@@ -687,14 +689,17 @@ extension on TranslationsTl {
 			'management.invitesSubtitle' => 'Mga pending na imbitasyong naghihintay tanggapin.',
 			'management.noPendingInvites' => 'Walang pending na imbitasyon',
 			'management.noPendingInvitesHint' => 'Mag-imbita gamit ang + button. Makakatanggap sila ng email para mag-sign in at tumanggap.',
-			'navigation.shortcuts' => 'Mga Shortcut',
-			'navigation.categories' => 'Mga Kategorya',
-			'navigation.showMore' => 'Magpakita pa',
-			'navigation.showLess' => 'Magpakita ng mas kaunti',
 			'navigation.operations' => 'Operasyon',
 			'navigation.people' => 'Mga Tao',
 			'navigation.insights' => 'Mga Insight',
 			'navigation.administration' => 'Administrasyon',
+			'navigation.setup' => 'Setup',
+			'navigation.account' => 'Account',
+			'navigation.pinned' => 'Naka-pin',
+			'navigation.pinToTop' => 'I-pin sa itaas',
+			'navigation.unpin' => 'I-unpin',
+			'navigation.expandGroup' => 'Buksan ang seksyon',
+			'navigation.collapseGroup' => 'Isara ang seksyon',
 			'navigation.collapseNav' => 'I-collapse ang navigation',
 			'navigation.expandNav' => 'I-expand ang navigation',
 			'navigation.dashboard' => 'Dashboard',
@@ -720,7 +725,6 @@ extension on TranslationsTl {
 			'navigation.customers' => 'Mga Customer',
 			'navigation.employees' => 'Mga Empleyado',
 			'navigation.system' => 'Sistema',
-			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',
 			'navigation.allBranches' => 'Lahat ng Sangay',
 			'navigation.switchingBranch' => 'Pinapalitan ang sangay…',

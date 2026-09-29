@@ -4,11 +4,18 @@ import '../../features/entitlements/domain/feature_key.dart';
 import '../i18n/strings.g.dart';
 import '../widgets/nav_permissions.dart';
 
-/// Sidebar grouping for Firebase-style desktop navigation.
+/// Sidebar grouping for desktop navigation.
+///
+/// - [operations]: day-to-day work (orders, catalog, promos)
+/// - [people]: customers and staff
+/// - [insights]: reports and audit trail
+/// - [setup]: business configuration (branches, machines, catalog structure)
+/// - [administration]: access control and organizations
 enum AppNavCategory {
   operations,
   people,
   insights,
+  setup,
   administration,
 }
 
@@ -41,21 +48,52 @@ class DesktopFlyoutDestination {
   final String label;
 }
 
-/// Default daily shortcuts shown before "Show more".
-const List<NavId> defaultShortcutIds = [
+/// Stable key used to persist a pinned destination (a [NavId] or [AdminFlyoutId]).
+String navPinKey(Object selectionKey) => switch (selectionKey) {
+      NavId id => 'nav.${id.name}',
+      AdminFlyoutId id => 'admin.${id.name}',
+      _ => selectionKey.toString(),
+    };
+
+/// Destinations pinned for a user who has never customised the sidebar.
+final List<String> defaultPinnedKeys = [
   NavId.salesHistory,
   NavId.products,
   NavId.services,
   NavId.customers,
-];
+].map(navPinKey).toList(growable: false);
+
+/// Groups collapsed by default (rarely used configuration areas).
+final Set<String> defaultCollapsedGroups = {
+  AppNavCategory.setup.name,
+  AppNavCategory.administration.name,
+};
 
 /// All categories in display order.
 const List<AppNavCategory> appNavCategories = [
   AppNavCategory.operations,
   AppNavCategory.people,
   AppNavCategory.insights,
+  AppNavCategory.setup,
   AppNavCategory.administration,
 ];
+
+/// Which admin group an [AdminFlyoutId] belongs to.
+AppNavCategory adminFlyoutCategory(AdminFlyoutId id) {
+  switch (id) {
+    case AdminFlyoutId.users:
+    case AdminFlyoutId.roles:
+    case AdminFlyoutId.organizations:
+      return AppNavCategory.administration;
+    case AdminFlyoutId.branches:
+    case AdminFlyoutId.machines:
+    case AdminFlyoutId.storages:
+    case AdminFlyoutId.productCategories:
+    case AdminFlyoutId.quantityUnits:
+    case AdminFlyoutId.cashierGroups:
+      return AppNavCategory.setup;
+  }
+}
 
 /// Maps a destination to its sidebar category, if any.
 AppNavCategory? appNavCategoryFor(NavId id) {
@@ -90,6 +128,8 @@ String appNavCategoryLabel(AppNavCategory category, Translations t) {
       return t.navigation.people;
     case AppNavCategory.insights:
       return t.navigation.insights;
+    case AppNavCategory.setup:
+      return t.navigation.setup;
     case AppNavCategory.administration:
       return t.navigation.administration;
   }
@@ -103,27 +143,11 @@ IconData appNavCategoryIcon(AppNavCategory category) {
       return Icons.groups_outlined;
     case AppNavCategory.insights:
       return Icons.insights_outlined;
+    case AppNavCategory.setup:
+      return Icons.tune_outlined;
     case AppNavCategory.administration:
       return Icons.admin_panel_settings_outlined;
   }
-}
-
-/// Visible shortcut ids from [items], preserving [defaultShortcutIds] order.
-List<NavId> visibleShortcutIds(List<NavItem> items) {
-  final visible = items.map((item) => item.id).toSet();
-  return defaultShortcutIds.where(visible.contains).toList(growable: false);
-}
-
-/// Extra visible destinations suitable for "Show more" (not dashboard/system/shortcuts).
-List<NavId> extraShortcutCandidates(
-  List<NavItem> items,
-  List<NavId> shownShortcutIds,
-) {
-  final shown = {...shownShortcutIds, NavId.dashboard, NavId.system, NavId.profile};
-  return items
-      .map((item) => item.id)
-      .where((id) => !shown.contains(id))
-      .toList(growable: false);
 }
 
 /// Category items from [items] excluding ids already shown as shortcuts.
@@ -233,7 +257,8 @@ List<DesktopFlyoutDestination> administrationFlyoutDestinations(
   return destinations;
 }
 
-/// Flyout rows for [category] (Administration uses section deep-links).
+/// Destinations for [category]. Setup and Administration use section
+/// deep-links; the other groups use top-level nav items.
 List<DesktopFlyoutDestination> flyoutDestinationsFor(
   AppNavCategory category,
   List<NavItem> items,
@@ -241,12 +266,18 @@ List<DesktopFlyoutDestination> flyoutDestinationsFor(
   Translations t, {
   bool Function(FeatureKey feature)? isFeatureEnabled,
 }) {
-  if (category == AppNavCategory.administration) {
+  if (category == AppNavCategory.setup ||
+      category == AppNavCategory.administration) {
     return administrationFlyoutDestinations(
       items,
       t,
       isFeatureEnabled: isFeatureEnabled,
-    );
+    )
+        .where(
+          (d) =>
+              adminFlyoutCategory(d.selectionKey as AdminFlyoutId) == category,
+        )
+        .toList(growable: false);
   }
   return categoryDestinations(category, items, excludedIds)
       .map(
@@ -265,32 +296,47 @@ List<AppNavCategory> visibleCategories(
   List<NavItem> items,
   Set<NavId> excludedIds,
 ) {
-  return appNavCategories
-      .where((category) {
-        if (category == AppNavCategory.administration) {
-          return hasAdministrationFlyoutDestinations(items);
-        }
-        return categoryDestinations(category, items, excludedIds).isNotEmpty;
-      })
-      .toList(growable: false);
+  return appNavCategories.where((category) {
+    if (category == AppNavCategory.setup) {
+      return navItemFor(NavId.management, items) != null;
+    }
+    if (category == AppNavCategory.administration) {
+      return hasAdministrationFlyoutDestinations(items);
+    }
+    return categoryDestinations(category, items, excludedIds).isNotEmpty;
+  }).toList(growable: false);
 }
 
 /// Whether [selectedId] matches [id].
 bool isNavItemSelected(NavId selectedId, NavId id) => selectedId == id;
 
-/// Whether any destination in [category] is the selected item.
-bool isNavCategorySelected(
+/// Whether [destination] is the active page.
+///
+/// [NavId] destinations match [selectedId]; [AdminFlyoutId] destinations match
+/// the current [location] (org-scoped paths supported).
+bool isDestinationSelected(
+  DesktopFlyoutDestination destination,
   NavId selectedId,
-  AppNavCategory category,
-  List<NavItem> items,
-  Set<NavId> excludedIds,
+  String location,
 ) {
-  if (category == AppNavCategory.administration) {
-    return selectedId == NavId.management ||
-        selectedId == NavId.organizations;
-  }
-  return categoryDestinations(category, items, excludedIds)
-      .any((item) => item.id == selectedId);
+  final key = destination.selectionKey;
+  if (key is AdminFlyoutId) return adminFlyoutIdFromPath(location) == key;
+  return key == selectedId;
+}
+
+/// Pinned destinations in the user's pin order.
+///
+/// Keys with no matching destination (permission/feature removed) are skipped
+/// but should stay in storage so they reappear if access returns.
+List<DesktopFlyoutDestination> resolvePinnedDestinations(
+  List<String> pinnedKeys,
+  Iterable<DesktopFlyoutDestination> available,
+) {
+  final byKey = {for (final d in available) navPinKey(d.selectionKey): d};
+  return [
+    for (final key in pinnedKeys)
+      if (byKey[key] != null) byKey[key]!,
+  ];
 }
 
 /// Resolves which Administration flyout row matches [location] (org-scoped OK).
@@ -328,7 +374,8 @@ Object flyoutSelectedKey(
   NavId selectedId,
   String location,
 ) {
-  if (category == AppNavCategory.administration) {
+  if (category == AppNavCategory.setup ||
+      category == AppNavCategory.administration) {
     return adminFlyoutIdFromPath(location) ?? selectedId;
   }
   return selectedId;

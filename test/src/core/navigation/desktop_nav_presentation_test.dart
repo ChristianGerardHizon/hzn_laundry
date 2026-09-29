@@ -15,57 +15,7 @@ void main() {
   final t = AppLocale.en.buildSync();
 
   group('desktop_nav_presentation', () {
-    test(
-        'visibleShortcutIds preserves default order for permitted destinations',
-        () {
-      final shortcuts = visibleShortcutIds(allItems);
-
-      expect(
-        shortcuts,
-        [
-          NavId.salesHistory,
-          NavId.products,
-          NavId.services,
-          NavId.customers,
-        ],
-      );
-    });
-
-    test('visibleShortcutIds omits destinations the user cannot see', () {
-      final visible = _itemsWith({
-        NavId.dashboard,
-        NavId.products,
-        NavId.customers,
-        NavId.organizations,
-      });
-
-      expect(
-        visibleShortcutIds(visible),
-        [NavId.products, NavId.customers],
-      );
-    });
-
-    test('extraShortcutCandidates follow nav order excluding dashboard/system',
-        () {
-      final extras = extraShortcutCandidates(
-        allItems,
-        visibleShortcutIds(allItems),
-      );
-
-      expect(
-        extras,
-        [
-          NavId.employees,
-          NavId.reports,
-          NavId.activities,
-          NavId.management,
-          NavId.organizations,
-          NavId.promos,
-        ],
-      );
-    });
-
-    test('categoryDestinations excludes shortcuts from category flyouts', () {
+    test('categoryDestinations excludes given ids from category flyouts', () {
       const excluded = {
         NavId.salesHistory,
         NavId.products,
@@ -123,23 +73,44 @@ void main() {
       });
 
       expect(
-        administrationFlyoutDestinations(visible, t)
-            .map((d) => d.selectionKey),
+        administrationFlyoutDestinations(visible, t).map((d) => d.selectionKey),
         [AdminFlyoutId.organizations],
       );
     });
 
-    test('visibleCategories keeps Administration when Management is a shortcut',
+    test(
+        'flyoutDestinationsFor splits Management into Setup and Administration',
         () {
-      final excluded = {
-        ...visibleShortcutIds(allItems),
-        NavId.management,
-        NavId.organizations,
-      };
+      List<Object> keys(AppNavCategory c) =>
+          flyoutDestinationsFor(c, allItems, const {}, t)
+              .map((d) => d.selectionKey)
+              .toList();
 
+      expect(keys(AppNavCategory.setup), [
+        AdminFlyoutId.branches,
+        AdminFlyoutId.machines,
+        AdminFlyoutId.storages,
+        AdminFlyoutId.productCategories,
+        AdminFlyoutId.quantityUnits,
+        AdminFlyoutId.cashierGroups,
+      ]);
+      expect(keys(AppNavCategory.administration), [
+        AdminFlyoutId.users,
+        AdminFlyoutId.roles,
+        AdminFlyoutId.organizations,
+      ]);
+    });
+
+    test('visibleCategories lists every group in display order', () {
       expect(
-        visibleCategories(allItems, excluded),
-        contains(AppNavCategory.administration),
+        visibleCategories(allItems, const {}),
+        [
+          AppNavCategory.operations,
+          AppNavCategory.people,
+          AppNavCategory.insights,
+          AppNavCategory.setup,
+          AppNavCategory.administration,
+        ],
       );
     });
 
@@ -149,49 +120,94 @@ void main() {
         NavId.customers,
         NavId.organizations,
       });
-      final excluded = visibleShortcutIds(staffItems).toSet();
 
       expect(
-        visibleCategories(staffItems, excluded),
+        visibleCategories(staffItems, const {}),
+        [AppNavCategory.people, AppNavCategory.administration],
+      );
+    });
+
+    test('visibleCategories hides Setup without Management', () {
+      final visible = _itemsWith({NavId.dashboard, NavId.organizations});
+
+      expect(
+        visibleCategories(visible, const {}),
         [AppNavCategory.administration],
       );
     });
 
-    test('isNavCategorySelected is true when a category child is active', () {
-      const excluded = {
-        NavId.salesHistory,
-        NavId.products,
-        NavId.services,
-        NavId.customers,
-      };
+    test('isDestinationSelected matches nav ids and admin paths', () {
+      const customers = DesktopFlyoutDestination(
+        selectionKey: NavId.customers,
+        icon: Icons.people,
+        selectedIcon: Icons.people,
+        label: 'Customers',
+      );
+      const roles = DesktopFlyoutDestination(
+        selectionKey: AdminFlyoutId.roles,
+        icon: Icons.people,
+        selectedIcon: Icons.people,
+        label: 'Roles',
+      );
 
+      expect(isDestinationSelected(customers, NavId.customers, '/x'), isTrue);
+      expect(isDestinationSelected(customers, NavId.products, '/x'), isFalse);
       expect(
-        isNavCategorySelected(
-          NavId.employees,
-          AppNavCategory.people,
-          allItems,
-          excluded,
-        ),
+        isDestinationSelected(roles, NavId.management, '/a/b/management/roles'),
         isTrue,
       );
       expect(
-        isNavCategorySelected(
-          NavId.customers,
-          AppNavCategory.people,
-          allItems,
-          excluded,
-        ),
+        isDestinationSelected(roles, NavId.customers, '/a/b/customers'),
         isFalse,
       );
-      expect(
-        isNavCategorySelected(
-          NavId.management,
-          AppNavCategory.administration,
-          allItems,
-          {...excluded, NavId.management, NavId.organizations},
-        ),
-        isTrue,
-      );
+    });
+
+    group('pins', () {
+      final all = [
+        for (final c in appNavCategories)
+          ...flyoutDestinationsFor(c, allItems, const {}, t),
+      ];
+
+      test('navPinKey is stable and distinguishes nav and admin ids', () {
+        expect(navPinKey(NavId.customers), 'nav.customers');
+        expect(navPinKey(AdminFlyoutId.roles), 'admin.roles');
+      });
+
+      test('defaults pin the four daily destinations', () {
+        expect(defaultPinnedKeys, [
+          'nav.salesHistory',
+          'nav.products',
+          'nav.services',
+          'nav.customers',
+        ]);
+      });
+
+      test('resolvePinnedDestinations keeps pin order and skips unknown keys',
+          () {
+        final resolved = resolvePinnedDestinations(
+          ['nav.customers', 'nav.gone', 'admin.roles', 'nav.products'],
+          all,
+        );
+
+        expect(
+          resolved.map((d) => d.selectionKey),
+          [NavId.customers, AdminFlyoutId.roles, NavId.products],
+        );
+      });
+
+      test('resolvePinnedDestinations drops pins the user cannot see', () {
+        final staff = _itemsWith({NavId.dashboard, NavId.customers});
+        final available = [
+          for (final c in appNavCategories)
+            ...flyoutDestinationsFor(c, staff, const {}, t),
+        ];
+
+        expect(
+          resolvePinnedDestinations(defaultPinnedKeys, available)
+              .map((d) => d.selectionKey),
+          [NavId.customers],
+        );
+      });
     });
 
     test('adminFlyoutIdFromPath resolves management and org locations', () {
