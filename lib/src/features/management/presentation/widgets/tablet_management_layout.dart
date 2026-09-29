@@ -8,6 +8,7 @@ import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/routing/routes/management.routes.dart';
+import '../../../entitlements/presentation/controllers/can_add_branch_provider.dart';
 import '../../../machines/presentation/controllers/machines_controller.dart';
 import '../../../machines/presentation/widgets/machine_form_dialog.dart';
 import '../../../pos/presentation/controllers/pos_groups_controller.dart';
@@ -293,13 +294,17 @@ class _BranchesListWrapper extends HookConsumerWidget {
       appliedQuery.value = '';
     }
 
+    final canAdd = ref.watch(canAddBranchProvider);
+
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'branch_fab',
-        onPressed: () => showBranchFormDialog(context),
-        tooltip: 'Add Branch',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canAdd
+          ? FloatingActionButton(
+              heroTag: 'branch_fab',
+              onPressed: () => showBranchFormDialog(context),
+              tooltip: 'Add Branch',
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(

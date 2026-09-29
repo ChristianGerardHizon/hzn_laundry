@@ -267,8 +267,24 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 | `organizationId` | String (FK) | No | Set for custom packages tied to one org |
 | `isActive` | bool | Yes | Available for assignment |
 | `isDeleted` | bool | Yes | Soft delete |
+| `features` | JSON (string[]) | Yes | Feature keys included in the package (see `FeatureKey`); missing/legacy = all |
 
 **Collection:** `subscriptionPackages`
+
+### OrganizationFeatureOverride
+
+Super Admin per-org override of a feature entitlement, regardless of the subscription package. No row = follow the plan.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization (cascade delete) |
+| `featureKey` | String | Yes | One of the catalog keys (`employees`, `attendance`, `products`, `promos`, `reports`, `activities`, `consumableUsage`, `machineLoadRules`, `storages`, `posGroups`, `customerHistoryLink`, `multiBranch`) |
+| `enabled` | bool | Yes | `true` = force on, `false` = force off |
+| `note` | String | No | Why the override was set (shown to org admins) |
+| `updatedBy` | String (FK) | No | FK to User (Super Admin) |
+
+**Collection:** `organizationFeatureOverrides` (unique on `organization` + `featureKey`; list/view for org members; writes only through `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}`)
 
 ### OrganizationSubscription
 

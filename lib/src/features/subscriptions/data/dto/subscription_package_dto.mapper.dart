@@ -84,6 +84,13 @@ class SubscriptionPackageDtoMapper
     opt: true,
     def: false,
   );
+  static List<String> _$features(SubscriptionPackageDto v) => v.features;
+  static const Field<SubscriptionPackageDto, List<String>> _f$features = Field(
+    'features',
+    _$features,
+    opt: true,
+    def: const [],
+  );
 
   @override
   final MappableFields<SubscriptionPackageDto> fields = const {
@@ -97,6 +104,7 @@ class SubscriptionPackageDtoMapper
     #organizationId: _f$organizationId,
     #isActive: _f$isActive,
     #isDeleted: _f$isDeleted,
+    #features: _f$features,
   };
 
   static SubscriptionPackageDto _instantiate(DecodingData data) {
@@ -111,6 +119,7 @@ class SubscriptionPackageDtoMapper
       organizationId: data.dec(_f$organizationId),
       isActive: data.dec(_f$isActive),
       isDeleted: data.dec(_f$isDeleted),
+      features: data.dec(_f$features),
     );
   }
 
@@ -137,16 +146,11 @@ mixin SubscriptionPackageDtoMappable {
         .encodeMap<SubscriptionPackageDto>(this as SubscriptionPackageDto);
   }
 
-  SubscriptionPackageDtoCopyWith<
-    SubscriptionPackageDto,
-    SubscriptionPackageDto,
-    SubscriptionPackageDto
-  >
-  get copyWith =>
-      _SubscriptionPackageDtoCopyWithImpl<
-        SubscriptionPackageDto,
-        SubscriptionPackageDto
-      >(this as SubscriptionPackageDto, $identity, $identity);
+  SubscriptionPackageDtoCopyWith<SubscriptionPackageDto, SubscriptionPackageDto,
+          SubscriptionPackageDto>
+      get copyWith => _SubscriptionPackageDtoCopyWithImpl<
+              SubscriptionPackageDto, SubscriptionPackageDto>(
+          this as SubscriptionPackageDto, $identity, $identity);
   @override
   String toString() {
     return SubscriptionPackageDtoMapper.ensureInitialized().stringifyValue(
@@ -173,17 +177,17 @@ mixin SubscriptionPackageDtoMappable {
 extension SubscriptionPackageDtoValueCopy<$R, $Out>
     on ObjectCopyWith<$R, SubscriptionPackageDto, $Out> {
   SubscriptionPackageDtoCopyWith<$R, SubscriptionPackageDto, $Out>
-  get $asSubscriptionPackageDto => $base.as(
-    (v, t, t2) => _SubscriptionPackageDtoCopyWithImpl<$R, $Out>(v, t, t2),
-  );
+      get $asSubscriptionPackageDto => $base.as(
+            (v, t, t2) =>
+                _SubscriptionPackageDtoCopyWithImpl<$R, $Out>(v, t, t2),
+          );
 }
 
 abstract class SubscriptionPackageDtoCopyWith<
-  $R,
-  $In extends SubscriptionPackageDto,
-  $Out
->
-    implements ClassCopyWith<$R, $In, $Out> {
+    $R,
+    $In extends SubscriptionPackageDto,
+    $Out> implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get features;
   $R call({
     String? id,
     String? name,
@@ -195,6 +199,7 @@ abstract class SubscriptionPackageDtoCopyWith<
     String? organizationId,
     bool? isActive,
     bool? isDeleted,
+    List<String>? features,
   });
   SubscriptionPackageDtoCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -211,6 +216,13 @@ class _SubscriptionPackageDtoCopyWithImpl<$R, $Out>
   late final ClassMapperBase<SubscriptionPackageDto> $mapper =
       SubscriptionPackageDtoMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get features =>
+      ListCopyWith(
+        $value.features,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(features: v),
+      );
+  @override
   $R call({
     String? id,
     String? name,
@@ -222,37 +234,40 @@ class _SubscriptionPackageDtoCopyWithImpl<$R, $Out>
     Object? organizationId = $none,
     bool? isActive,
     bool? isDeleted,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (name != null) #name: name,
-      if (description != null) #description: description,
-      if (price != null) #price: price,
-      if (intervalCount != null) #intervalCount: intervalCount,
-      if (intervalUnit != null) #intervalUnit: intervalUnit,
-      if (isPremade != null) #isPremade: isPremade,
-      if (organizationId != $none) #organizationId: organizationId,
-      if (isActive != null) #isActive: isActive,
-      if (isDeleted != null) #isDeleted: isDeleted,
-    }),
-  );
+    List<String>? features,
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (name != null) #name: name,
+          if (description != null) #description: description,
+          if (price != null) #price: price,
+          if (intervalCount != null) #intervalCount: intervalCount,
+          if (intervalUnit != null) #intervalUnit: intervalUnit,
+          if (isPremade != null) #isPremade: isPremade,
+          if (organizationId != $none) #organizationId: organizationId,
+          if (isActive != null) #isActive: isActive,
+          if (isDeleted != null) #isDeleted: isDeleted,
+          if (features != null) #features: features,
+        }),
+      );
   @override
   SubscriptionPackageDto $make(CopyWithData data) => SubscriptionPackageDto(
-    id: data.get(#id, or: $value.id),
-    name: data.get(#name, or: $value.name),
-    description: data.get(#description, or: $value.description),
-    price: data.get(#price, or: $value.price),
-    intervalCount: data.get(#intervalCount, or: $value.intervalCount),
-    intervalUnit: data.get(#intervalUnit, or: $value.intervalUnit),
-    isPremade: data.get(#isPremade, or: $value.isPremade),
-    organizationId: data.get(#organizationId, or: $value.organizationId),
-    isActive: data.get(#isActive, or: $value.isActive),
-    isDeleted: data.get(#isDeleted, or: $value.isDeleted),
-  );
+        id: data.get(#id, or: $value.id),
+        name: data.get(#name, or: $value.name),
+        description: data.get(#description, or: $value.description),
+        price: data.get(#price, or: $value.price),
+        intervalCount: data.get(#intervalCount, or: $value.intervalCount),
+        intervalUnit: data.get(#intervalUnit, or: $value.intervalUnit),
+        isPremade: data.get(#isPremade, or: $value.isPremade),
+        organizationId: data.get(#organizationId, or: $value.organizationId),
+        isActive: data.get(#isActive, or: $value.isActive),
+        isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+        features: data.get(#features, or: $value.features),
+      );
 
   @override
   SubscriptionPackageDtoCopyWith<$R2, SubscriptionPackageDto, $Out2>
-  $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
-      _SubscriptionPackageDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+      $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+          _SubscriptionPackageDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

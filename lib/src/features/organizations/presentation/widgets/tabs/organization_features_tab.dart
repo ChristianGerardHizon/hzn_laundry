@@ -4,6 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../../../core/widgets/form_feedback.dart';
+import '../../../../entitlements/domain/feature_key.dart';
+import '../../../../entitlements/presentation/controllers/organization_entitlements_provider.dart';
+import '../../../../entitlements/presentation/widgets/plan_features_section.dart';
 import '../../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../../settings/domain/feature_flag.dart';
 import '../../controllers/current_organization_controller.dart';
@@ -72,7 +75,6 @@ class OrganizationFeaturesTab extends HookConsumerWidget {
             ref.invalidate(requireMachineEnabledProvider);
             ref.invalidate(requirePackEnabledProvider);
             ref.invalidate(requireStorageEnabledProvider);
-            ref.invalidate(consumableUsageEnabledProvider);
           }
           showSuccessSnackBar(
             context,
@@ -98,6 +100,15 @@ class OrganizationFeaturesTab extends HookConsumerWidget {
       );
     }
 
+    // Entitlements gate which org-controlled settings are relevant. Fail open
+    // while loading / on error.
+    final entitlements =
+        ref.watch(organizationEntitlementsProvider(organizationId)).value;
+    final historyLinkEnabled =
+        entitlements?.isEnabled(FeatureKey.customerHistoryLink) ?? true;
+    final storagesEnabled =
+        entitlements?.isEnabled(FeatureKey.storages) ?? true;
+
     FeatureFlag? flag(String key) =>
         flags.value.where((f) => f.key == key).firstOrNull;
 
@@ -118,45 +129,34 @@ class OrganizationFeaturesTab extends HookConsumerWidget {
             : (v) => handleToggle(keyName, v),
         secondary: Icon(
           icon,
-          color: enabled ? theme.colorScheme.primary : theme.colorScheme.outline,
+          color:
+              enabled ? theme.colorScheme.primary : theme.colorScheme.outline,
         ),
       );
     }
 
     return ListView(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            t.organizations.featuresModules,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary,
+        PlanFeaturesSection(organizationId: organizationId),
+        const Divider(thickness: 4, height: 32),
+        if (historyLinkEnabled) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              t.organizations.featuresNotifications,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
             ),
           ),
-        ),
-        switchTile(
-          keyName: FeatureFlagKeys.consumableUsage,
-          title: t.organizations.consumableUsage,
-          icon: Icons.science_outlined,
-          defaultValue: false,
-        ),
-        const Divider(thickness: 4, height: 32),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(
-            t.organizations.featuresNotifications,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
+          switchTile(
+            keyName: FeatureFlagKeys.emailUpdatesEnabled,
+            title: t.organizations.sendHistoryEmails,
+            icon: Icons.email_outlined,
+            defaultValue: true,
           ),
-        ),
-        switchTile(
-          keyName: FeatureFlagKeys.emailUpdatesEnabled,
-          title: t.organizations.sendHistoryEmails,
-          icon: Icons.email_outlined,
-          defaultValue: true,
-        ),
-        const Divider(thickness: 4, height: 32),
+          const Divider(thickness: 4, height: 32),
+        ],
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
@@ -178,12 +178,13 @@ class OrganizationFeaturesTab extends HookConsumerWidget {
           icon: Icons.shopping_bag_outlined,
           defaultValue: false,
         ),
-        switchTile(
-          keyName: FeatureFlagKeys.requireStorage,
-          title: t.organizations.requireStorage,
-          icon: Icons.inventory_2_outlined,
-          defaultValue: false,
-        ),
+        if (storagesEnabled)
+          switchTile(
+            keyName: FeatureFlagKeys.requireStorage,
+            title: t.organizations.requireStorage,
+            icon: Icons.inventory_2_outlined,
+            defaultValue: false,
+          ),
         if (!canManage)
           Padding(
             padding: const EdgeInsets.all(16),

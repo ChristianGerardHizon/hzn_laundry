@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../entitlements/presentation/widgets/org_feature_access_dialog.dart';
 import '../../../organizations/domain/organization_platform_stats.dart';
 import '../../../organizations/presentation/controllers/organization_platform_stats_controller.dart';
 import '../../data/repositories/subscription_repository.dart';
@@ -43,8 +44,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
     final t = Translations.of(context);
     final dateFmt = useMemoized(() => DateFormat.yMMMd());
     final status = _parseStatus(org.subscriptionStatus);
-    final hasSubscription = org.subscriptionStatus != null &&
-        org.subscriptionStatus!.isNotEmpty;
+    final hasSubscription =
+        org.subscriptionStatus != null && org.subscriptionStatus!.isNotEmpty;
 
     return ScaffoldMessenger(
       child: Builder(
@@ -125,6 +126,21 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: () => showOrgFeatureAccessDialog(
+                        context,
+                        organizationId: org.id,
+                        organizationName: org.name,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _kBrandTeal,
+                        side: const BorderSide(color: _kBrandTeal),
+                        minimumSize: const Size.fromHeight(44),
+                      ),
+                      icon: const Icon(Icons.tune),
+                      label: const Text('Feature access'),
+                    ),
+                    const SizedBox(height: 10),
                     FilledButton.icon(
                       onPressed: () => _showAssignDialog(context, ref),
                       style: FilledButton.styleFrom(
@@ -243,14 +259,13 @@ class _LockDialog extends HookConsumerWidget {
       if (isSaving.value) return;
       isSaving.value = true;
       try {
-        final result = await ref
-            .read(subscriptionRepositoryProvider)
-            .lockOrganization(
-              organizationId,
-              note: noteController.text.trim().isEmpty
-                  ? null
-                  : noteController.text.trim(),
-            );
+        final result =
+            await ref.read(subscriptionRepositoryProvider).lockOrganization(
+                  organizationId,
+                  note: noteController.text.trim().isEmpty
+                      ? null
+                      : noteController.text.trim(),
+                );
         if (!context.mounted) return;
         result.fold(
           (_) => showErrorSnackBar(
@@ -338,15 +353,14 @@ class _UnlockDialog extends HookConsumerWidget {
       if (isSaving.value) return;
       isSaving.value = true;
       try {
-        final result = await ref
-            .read(subscriptionRepositoryProvider)
-            .unlockOrganization(
-              organizationId,
-              until: until.value,
-              note: noteController.text.trim().isEmpty
-                  ? null
-                  : noteController.text.trim(),
-            );
+        final result =
+            await ref.read(subscriptionRepositoryProvider).unlockOrganization(
+                  organizationId,
+                  until: until.value,
+                  note: noteController.text.trim().isEmpty
+                      ? null
+                      : noteController.text.trim(),
+                );
         if (!context.mounted) return;
         result.fold(
           (_) => showErrorSnackBar(
@@ -662,9 +676,8 @@ class _AssignPackageDialog extends HookConsumerWidget {
                         labelText: t.subscriptions.periodEnd,
                       ),
                       validator: (end) {
-                        final start = formKey
-                            .currentState?.fields['periodStart']?.value
-                            as DateTime?;
+                        final start = formKey.currentState
+                            ?.fields['periodStart']?.value as DateTime?;
                         if (end != null && start == null) {
                           return t.subscriptions.periodStartRequiredWithEnd;
                         }

@@ -6,6 +6,8 @@ import '../../../../core/foundation/failure.dart';
 import '../../../../core/foundation/type_defs.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../domain/feature_flag.dart';
 import '../dto/feature_flag_dto.dart';
@@ -139,6 +141,10 @@ Future<bool> requirePackEnabled(Ref ref) async {
 /// Defaults to false (fail closed — no blocking).
 @Riverpod(keepAlive: true)
 Future<bool> requireStorageEnabled(Ref ref) async {
+  // No storage locations without the storages feature => nothing to require.
+  final entitlements =
+      await ref.watch(currentOrganizationEntitlementsProvider.future);
+  if (!entitlements.isEnabled(FeatureKey.storages)) return false;
   final flags = await _flagsForCurrentOrg(ref);
   return _flagEnabled(
     flags,
@@ -147,13 +153,13 @@ Future<bool> requireStorageEnabled(Ref ref) async {
   );
 }
 
-/// Shows consumable usage on orders. Defaults to false (fail closed).
+/// Shows consumable usage on orders.
+///
+/// Now an entitlement (subscription package + Super Admin override) rather
+/// than an org-managed flag; see [FeatureKey.consumableUsage].
 @Riverpod(keepAlive: true)
 Future<bool> consumableUsageEnabled(Ref ref) async {
-  final flags = await _flagsForCurrentOrg(ref);
-  return _flagEnabled(
-    flags,
-    FeatureFlagKeys.consumableUsage,
-    defaultValue: false,
-  );
+  final entitlements =
+      await ref.watch(currentOrganizationEntitlementsProvider.future);
+  return entitlements.isEnabled(FeatureKey.consumableUsage);
 }

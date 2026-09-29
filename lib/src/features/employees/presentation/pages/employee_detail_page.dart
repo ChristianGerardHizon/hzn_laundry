@@ -7,6 +7,8 @@ import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../settings/presentation/controllers/branches_controller.dart';
 import '../controllers/employee_provider.dart';
 import '../controllers/employees_controller.dart';
@@ -28,9 +30,13 @@ class EmployeeDetailPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final employeeAsync = ref.watch(employeeProvider(employeeId));
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-    final tabController = useTabController(initialLength: 3);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final showAttendance =
+        ref.watch(featureEnabledProvider(FeatureKey.attendance));
+    final tabController = useTabController(
+      initialLength: showAttendance ? 3 : 2,
+      keys: [showAttendance],
+    );
 
     return employeeAsync.when(
       data: (employee) {
@@ -88,10 +94,10 @@ class EmployeeDetailPage extends HookConsumerWidget {
             ],
             bottom: TabBar(
               controller: tabController,
-              tabs: const [
-                Tab(text: 'Info'),
-                Tab(text: 'Attendance'),
-                Tab(text: 'Deductions'),
+              tabs: [
+                const Tab(text: 'Info'),
+                if (showAttendance) const Tab(text: 'Attendance'),
+                const Tab(text: 'Deductions'),
               ],
             ),
           ),
@@ -127,7 +133,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
                   ),
                 ],
               ),
-              EmployeeAttendanceTab(employeeId: employeeId),
+              if (showAttendance) EmployeeAttendanceTab(employeeId: employeeId),
               EmployeeDeductionsTab(employeeId: employeeId),
             ],
           ),
@@ -155,8 +161,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Delete Employee'),
-          content:
-              const Text('Are you sure you want to delete this employee?'),
+          content: const Text('Are you sure you want to delete this employee?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -192,10 +197,8 @@ class EmployeeDetailPage extends HookConsumerWidget {
     final branches =
         ref.watch(branchesControllerProvider).asData?.value ?? const [];
     final byId = {for (final b in branches) b.id: b.name};
-    final names = employee.branchIds
-        .map((id) => byId[id])
-        .whereType<String>()
-        .toList();
+    final names =
+        employee.branchIds.map((id) => byId[id]).whereType<String>().toList();
     if (names.isEmpty) return employee.branchIds.join(', ');
     return names.join(', ');
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../features/entitlements/domain/feature_key.dart';
+import '../../features/entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../features/settings/domain/branch.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
@@ -30,7 +32,11 @@ class BranchSwitcher extends ConsumerWidget {
     final branchesAsync = ref.watch(branchesControllerProvider);
     final roleAsync = ref.watch(currentUserRoleProvider);
     final isAllBranches = ref.watch(isAllBranchesProvider);
-    final canSwitch = roleAsync.value?.isAdmin ?? false;
+    final multiBranch = ref.watch(featureEnabledProvider(FeatureKey.multiBranch));
+    // Without multiBranch the switcher (and All Branches) is hidden, unless
+    // the admin is already in All Branches mode and needs a way out.
+    final canSwitch =
+        (roleAsync.value?.isAdmin ?? false) && (multiBranch || isAllBranches);
 
     return currentBranchAsync.when(
       data: (currentBranch) {

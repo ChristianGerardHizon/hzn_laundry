@@ -54,7 +54,7 @@ final class PackagesControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$packagesControllerHash() =>
-    r'56be1db4b844f0a83b894e220254ac9fcad1077e';
+    r'41ad3811dbe6d9c3fbb7be4b6795bf7328a5eee0';
 
 /// Super Admin list of subscription packages.
 

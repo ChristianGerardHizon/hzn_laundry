@@ -4,6 +4,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../../../core/routing/routes/management.routes.dart';
+import '../../../entitlements/presentation/controllers/can_add_branch_provider.dart';
 import '../../domain/branch.dart';
 import '../controllers/branches_controller.dart';
 import '../widgets/dialogs/branch_form_dialog.dart';
@@ -21,10 +22,12 @@ class BranchesPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Branches'),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showBranchFormDialog(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: ref.watch(canAddBranchProvider)
+          ? FloatingActionButton(
+              onPressed: () => showBranchFormDialog(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(

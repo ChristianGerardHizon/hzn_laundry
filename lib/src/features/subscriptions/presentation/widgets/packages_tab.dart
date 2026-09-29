@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
+import '../../../entitlements/domain/feature_key.dart';
 import '../../domain/billing_interval_unit.dart';
 import '../../domain/subscription_package.dart';
 import '../controllers/packages_controller.dart';
@@ -93,8 +94,7 @@ class PackagesTab extends HookConsumerWidget {
                         currency: currency,
                         onEdit: () =>
                             _showPackageDialog(context, ref, package: pkg),
-                        onDelete: () =>
-                            _confirmDelete(context, ref, pkg),
+                        onDelete: () => _confirmDelete(context, ref, pkg),
                       );
                     },
                   ),
@@ -276,6 +276,9 @@ class _PackageFormDialog extends HookConsumerWidget {
         final intervalCount = int.parse(values['intervalCount'].toString());
         final intervalUnit = values['intervalUnit'] as BillingIntervalUnit;
         final isPremade = values['isPremade'] as bool? ?? true;
+        final features =
+            (values['features'] as List?)?.whereType<String>().toList() ??
+                <String>[];
 
         final notifier = ref.read(packagesControllerProvider().notifier);
         if (isEditing) {
@@ -287,6 +290,7 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalCount: intervalCount,
             intervalUnit: intervalUnit,
             isPremade: isPremade,
+            features: features,
           );
           if (!context.mounted) return;
           if (ok) {
@@ -311,6 +315,7 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalCount: intervalCount,
             intervalUnit: intervalUnit,
             isPremade: isPremade,
+            features: features,
           );
           if (!context.mounted) return;
           if (created != null) {
@@ -354,6 +359,8 @@ class _PackageFormDialog extends HookConsumerWidget {
                 'intervalUnit':
                     package?.intervalUnit ?? BillingIntervalUnit.month,
                 'isPremade': package?.isPremade ?? true,
+                'features': package?.features ??
+                    [for (final f in FeatureKey.values) f.key],
               },
               child: SingleChildScrollView(
                 child: Column(
@@ -435,7 +442,25 @@ class _PackageFormDialog extends HookConsumerWidget {
                     FormBuilderSwitch(
                       name: 'isPremade',
                       title: Text(t.subscriptions.isPremade),
-                      decoration: const InputDecoration(border: InputBorder.none),
+                      decoration:
+                          const InputDecoration(border: InputBorder.none),
+                    ),
+                    const SizedBox(height: 8),
+                    FormBuilderCheckboxGroup<String>(
+                      name: 'features',
+                      orientation: OptionsOrientation.vertical,
+                      decoration: const InputDecoration(
+                        labelText: 'Included features',
+                        border: InputBorder.none,
+                      ),
+                      activeColor: _kBrandTeal,
+                      options: [
+                        for (final f in FeatureKey.values)
+                          FormBuilderFieldOption<String>(
+                            value: f.key,
+                            child: Text(f.label),
+                          ),
+                      ],
                     ),
                   ],
                 ),

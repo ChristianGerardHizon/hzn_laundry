@@ -116,6 +116,25 @@ routerAdd(
   $apis.requireAuth("users")
 );
 
+// Feature entitlements (package base + Super Admin overrides)
+routerAdd(
+  "GET",
+  "/api/organizations/{id}/entitlements",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").getEntitlements(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "PUT",
+  "/api/super-admin/organizations/{id}/feature-overrides/{key}",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").setFeatureOverride(e);
+  },
+  $apis.requireAuth("users")
+);
+
 routerAdd(
   "GET",
   "/api/super-admin/billing-settings",

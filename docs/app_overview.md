@@ -146,6 +146,7 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 
 #### Super Admin & Subscriptions
 - `/super-admin` — Dashboard (org KPIs + subscription badges; tap an org for subscription details dialog) with sidenav (tablet+) or bottom nav + More drawer (mobile) for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
+- Package form includes a **feature checklist**; the org details dialog has **Feature access** (per feature: Plan / On / Off override with optional note). Entitlements resolve as: Super Admin override → package `features` → dependency (e.g. Attendance needs Employees)
 - `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); optional grace banners and lock gate (platform billing toggles) in the authenticated shell
 
 #### Organizations (`/organizations`)
@@ -155,7 +156,7 @@ Every signed-in user can see this tab (no permission gate) so pending invites ar
 - `system.admin` users get an AppBar action to open Super Admin (`/super-admin`)
 - Org display page (`/organizations/:id`) with **Overview** and **Features** tabs
 - Overview: brand logo upload/replace/remove (managers) plus editable details with `members.manage`
-- Features: per-org workflow flags (`emailUpdatesEnabled`, `requireMachine`, `requirePack`, `requireStorage`, `consumableUsage`)
+- Features: read-only **Plan features** list (package base + Super Admin overrides, each labeled Included in plan / Enabled by Super Admin / Disabled by Super Admin / Not in plan) plus org-controlled workflow flags (`emailUpdatesEnabled` when customer history link is entitled, `requireMachine`, `requirePack`, `requireStorage` when storages is entitled). `consumableUsage` is now an entitlement, not an org toggle
 - Staff: invite and manage via **Management → Users** (invite emails the invitee via Resend → invitee opens `/invite.html?token=…`, sets **name + password**, which creates the account, accepts membership, and marks email verified → then they can sign in); in-app accept/decline on Organizations remains for already-signed-in users
 - Create a new organization (gated on global `organizations.create`) via a setup dialog: org details, first branch (required), **subscription package (required)**, optional team invites; the organization is created only when required setup is submitted (subscription is assigned in the same server transaction)
 - Compact org switcher appears next to the branch switcher only when you belong to 2+ orgs; nav brand and select-org tiles show the org logo when set
@@ -641,6 +642,7 @@ lib/src/
 
 ---
 
+| Sep 29 | Entitlement feature flags | Each subscription package lists included features (Employees, Attendance, Products, Promos, Reports, Activities + sub-features: consumable usage, machine load rules, storages, cashier layout groups, customer history link, multi-branch). Super Admin can force any feature on/off per org (Organization dialog → Feature access). Org Features tab shows read-only plan status with "Enabled/Disabled by Super Admin" labels. Nav, routes, dashboard, POS, and PocketBase write hooks honor the resolved entitlements; `GET /api/organizations/{id}/entitlements`, `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}` |
 | Sep 29 | Sentry soft-delete + noise | Soft-delete users with blank email (client + PB hook); skip Sentry for expected 4xx/abort/timeouts; harden invite resend email errors |
 | Sep 29 | Dashboard user identity | Mobile/desktop dashboard show current user name; Profile is an Account nav section (drawer + desktop sidebar) opening `/profile` |
 | Sep 28 | Invite success page | Invite emails link to `/invite.html` with Continue in browser or Open in app (`hznlaundry://login`); accept still verifies email |

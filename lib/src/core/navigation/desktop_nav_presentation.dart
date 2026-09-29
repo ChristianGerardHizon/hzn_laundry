@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../features/entitlements/domain/feature_key.dart';
 import '../i18n/strings.g.dart';
 import '../widgets/nav_permissions.dart';
 
@@ -150,10 +151,16 @@ bool hasAdministrationFlyoutDestinations(List<NavItem> items) {
 ///
 /// Visibility follows the parent Management / Organizations nav permissions.
 /// Shortcut exclusions do not hide these rows — sections stay under Administration.
+///
+/// [isFeatureEnabled] hides Storages / Cashier Layout when their feature is
+/// off for the organization (defaults to everything enabled).
 List<DesktopFlyoutDestination> administrationFlyoutDestinations(
   List<NavItem> items,
-  Translations t,
-) {
+  Translations t, {
+  bool Function(FeatureKey feature)? isFeatureEnabled,
+}) {
+  bool featureOn(FeatureKey feature) =>
+      isFeatureEnabled == null || isFeatureEnabled(feature);
   final destinations = <DesktopFlyoutDestination>[];
 
   if (navItemFor(NavId.management, items) != null) {
@@ -182,12 +189,13 @@ List<DesktopFlyoutDestination> administrationFlyoutDestinations(
         selectedIcon: Icons.local_laundry_service,
         label: t.navigation.machines,
       ),
-      DesktopFlyoutDestination(
-        selectionKey: AdminFlyoutId.storages,
-        icon: Icons.inventory_2_outlined,
-        selectedIcon: Icons.inventory_2,
-        label: t.navigation.storages,
-      ),
+      if (featureOn(FeatureKey.storages))
+        DesktopFlyoutDestination(
+          selectionKey: AdminFlyoutId.storages,
+          icon: Icons.inventory_2_outlined,
+          selectedIcon: Icons.inventory_2,
+          label: t.navigation.storages,
+        ),
       DesktopFlyoutDestination(
         selectionKey: AdminFlyoutId.productCategories,
         icon: Icons.category_outlined,
@@ -200,12 +208,13 @@ List<DesktopFlyoutDestination> administrationFlyoutDestinations(
         selectedIcon: Icons.straighten,
         label: t.navigation.units,
       ),
-      DesktopFlyoutDestination(
-        selectionKey: AdminFlyoutId.cashierGroups,
-        icon: Icons.point_of_sale_outlined,
-        selectedIcon: Icons.point_of_sale,
-        label: t.navigation.cashierGroups,
-      ),
+      if (featureOn(FeatureKey.posGroups))
+        DesktopFlyoutDestination(
+          selectionKey: AdminFlyoutId.cashierGroups,
+          icon: Icons.point_of_sale_outlined,
+          selectedIcon: Icons.point_of_sale,
+          label: t.navigation.cashierGroups,
+        ),
     ]);
   }
 
@@ -229,10 +238,15 @@ List<DesktopFlyoutDestination> flyoutDestinationsFor(
   AppNavCategory category,
   List<NavItem> items,
   Set<NavId> excludedIds,
-  Translations t,
-) {
+  Translations t, {
+  bool Function(FeatureKey feature)? isFeatureEnabled,
+}) {
   if (category == AppNavCategory.administration) {
-    return administrationFlyoutDestinations(items, t);
+    return administrationFlyoutDestinations(
+      items,
+      t,
+      isFeatureEnabled: isFeatureEnabled,
+    );
   }
   return categoryDestinations(category, items, excludedIds)
       .map(

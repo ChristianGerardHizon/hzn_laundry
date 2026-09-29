@@ -43,6 +43,8 @@ import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
 import '../../../pos/presentation/components/variable_price_dialog.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../promos/data/repositories/customer_promo_repository.dart';
 import '../../../promos/data/repositories/promo_repository.dart';
 import '../../../promos/domain/customer_promo.dart';
@@ -201,6 +203,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
     final lastRecipeServiceId = useRef<String?>(null);
     final isCopyingLast = useState(false);
 
+    final promosEnabled = ref.watch(featureEnabledProvider(FeatureKey.promos));
     final usageEnabled =
         ref.watch(consumableUsageEnabledProvider).value ?? false;
     final role = ref.watch(currentUserRoleProvider).value;
@@ -498,20 +501,22 @@ class _CreateOrderDialog extends HookConsumerWidget {
           final promoRepo = ref.read(promoRepositoryProvider);
           final branchFilter = ref.read(currentBranchFilterProvider);
 
-          if (redeemPromo != null) {
-            customerPromoRepo.redeemReward(redeemPromo.id, createdSale.id);
+          if (promosEnabled) {
+            if (redeemPromo != null) {
+              customerPromoRepo.redeemReward(redeemPromo.id, createdSale.id);
+            }
+
+            // Increment order counts and auto-enroll
+            customerPromoRepo.incrementAndAutoEnroll(
+              customer.id,
+              promoRepo,
+              excludeCustomerPromoId: redeemPromo?.id,
+              branchFilter: branchFilter,
+            );
+
+            // Invalidate promo providers for this customer
+            ref.invalidate(redeemablePromosProvider(customer.id));
           }
-
-          // Increment order counts and auto-enroll
-          customerPromoRepo.incrementAndAutoEnroll(
-            customer.id,
-            promoRepo,
-            excludeCustomerPromoId: redeemPromo?.id,
-            branchFilter: branchFilter,
-          );
-
-          // Invalidate promo providers for this customer
-          ref.invalidate(redeemablePromosProvider(customer.id));
 
           // Refresh dashboard and sales list
           ref.invalidate(kanbanSalesProvider);
@@ -633,7 +638,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
                     const SizedBox(height: 20),
 
                     // Loyalty rewards (only when customer selected)
-                    if (selectedCustomer.value != null) ...[
+                    if (promosEnabled && selectedCustomer.value != null) ...[
                       LoyaltyRewardsSection(
                         customerId: selectedCustomer.value!.id,
                         selectedPromo: selectedPromoRedemption.value,

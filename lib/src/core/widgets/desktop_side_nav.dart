@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../i18n/strings.g.dart';
 import '../navigation/desktop_nav_presentation.dart';
 import '../routing/org_scoped_navigation.dart';
@@ -58,6 +59,8 @@ class DesktopSideNav extends HookConsumerWidget {
         ? filterNavItemsByQuery(visibleItems, searchQuery.value)
         : const <NavItem>[];
 
+    final entitlements =
+        ref.watch(currentOrganizationEntitlementsProvider).value;
     final isAdmin =
         ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
     final defaultShortcuts = visibleShortcutIds(visibleItems);
@@ -274,6 +277,7 @@ class DesktopSideNav extends HookConsumerWidget {
                               visibleItems,
                               shownShortcutIds,
                               t,
+                              isFeatureEnabled: entitlements?.isEnabled,
                             ),
                             selectedKey: flyoutSelectedKey(
                               category,

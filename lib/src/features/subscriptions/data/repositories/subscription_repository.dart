@@ -34,6 +34,7 @@ abstract class SubscriptionRepository {
     required BillingIntervalUnit intervalUnit,
     required bool isPremade,
     String? organizationId,
+    List<String>? features,
   });
 
   FutureEither<SubscriptionPackage> updatePackage(
@@ -46,6 +47,7 @@ abstract class SubscriptionRepository {
     bool? isPremade,
     bool? isActive,
     String? organizationId,
+    List<String>? features,
   });
 
   FutureEither<void> softDeletePackage(String id);
@@ -149,6 +151,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     required BillingIntervalUnit intervalUnit,
     required bool isPremade,
     String? organizationId,
+    List<String>? features,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -164,6 +167,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
             'isPremade': isPremade,
             if (organizationId != null && organizationId.isNotEmpty)
               'organizationId': organizationId,
+            if (features != null) 'features': features,
           },
         );
         if (response is! Map<String, dynamic>) {
@@ -190,6 +194,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     bool? isPremade,
     bool? isActive,
     String? organizationId,
+    List<String>? features,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -210,6 +215,7 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (isPremade != null) body['isPremade'] = isPremade;
         if (isActive != null) body['isActive'] = isActive;
         if (organizationId != null) body['organizationId'] = organizationId;
+        if (features != null) body['features'] = features;
 
         final response = await _pb.send(
           '/api/super-admin/subscription-packages/$id',

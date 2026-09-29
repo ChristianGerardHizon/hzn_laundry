@@ -91,11 +91,7 @@ var DEFAULT_FEATURE_FLAGS = [
     enabled: false,
     description: "Block moving to Ready if no storage location is assigned",
   },
-  {
-    key: "consumableUsage",
-    enabled: false,
-    description: "Record detergent and fabric-conditioner usage on orders",
-  },
+  // consumableUsage is now an entitlement (see feature_entitlements_helpers.js).
 ];
 
 function seedOrgFeatureFlags(app, orgId) {

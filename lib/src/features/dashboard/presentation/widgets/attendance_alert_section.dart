@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/packages/theme/feedback_colors.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/nav_permissions.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../employees/presentation/controllers/attendance_controller.dart';
 import '../../../employees/presentation/controllers/employees_controller.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
@@ -12,6 +14,7 @@ import '../controllers/dashboard_date_override_provider.dart';
 
 /// Whether the attendance warning should appear on the dashboard.
 bool watchShowAttendanceAlert(WidgetRef ref) {
+  if (!ref.watch(featureEnabledProvider(FeatureKey.attendance))) return false;
   final role = ref.watch(currentUserRoleProvider).value;
   final canViewAttendance = role == null ||
       role.isAdmin ||
@@ -53,6 +56,9 @@ class AttendanceAlertSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(featureEnabledProvider(FeatureKey.attendance))) {
+      return const SizedBox.shrink();
+    }
     // Hide if user has no attendance permission
     final roleAsync = ref.watch(currentUserRoleProvider);
     final role = roleAsync.value;

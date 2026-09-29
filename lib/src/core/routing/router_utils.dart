@@ -8,6 +8,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/controllers/splash_gate_provider.dart';
+import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
@@ -462,6 +463,18 @@ abstract class RouterUtils {
       if (!canAccessPath(unscoped, role)) {
         final prefix = uriPath.substring(0, scopePrefixLength);
         return '$prefix${fallbackPathFor(role)}';
+      }
+
+      // 7. Feature entitlement guards (subscription + Super Admin overrides).
+      // Skipped while entitlements are still loading; server guards apply.
+      final entitlements =
+          ref.read(currentOrganizationEntitlementsProvider).value;
+      final feature = featureForPath(unscoped);
+      if (entitlements != null &&
+          feature != null &&
+          !entitlements.isEnabled(feature)) {
+        final prefix = uriPath.substring(0, scopePrefixLength);
+        return '$prefix${DashboardRoute.path}';
       }
     }
 

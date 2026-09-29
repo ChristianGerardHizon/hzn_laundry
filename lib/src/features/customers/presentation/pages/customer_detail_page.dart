@@ -24,6 +24,8 @@ import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../promos/domain/customer_promo.dart';
 import '../../../promos/presentation/controllers/customer_promos_provider.dart';
 import '../../../settings/domain/branch.dart';
@@ -144,8 +146,10 @@ class CustomerDetailPage extends HookConsumerWidget {
               const SizedBox(height: 16),
 
               // Loyalty programs section
-              _CustomerLoyaltySection(customerId: customerId),
-              const SizedBox(height: 16),
+              if (ref.watch(featureEnabledProvider(FeatureKey.promos))) ...[
+                _CustomerLoyaltySection(customerId: customerId),
+                const SizedBox(height: 16),
+              ],
 
               // Sales history section
               Card(

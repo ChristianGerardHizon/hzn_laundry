@@ -6,6 +6,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../widgets/form_feedback.dart';
+import '../../../features/entitlements/presentation/controllers/can_add_branch_provider.dart';
 import '../../../features/machines/presentation/controllers/machines_controller.dart';
 import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
 import '../../../features/settings/presentation/widgets/product_category_detail_panel.dart';
@@ -576,12 +577,14 @@ class _ManagementBranchesListPage extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'branch_fab',
-        onPressed: () => showBranchFormDialog(context),
-        tooltip: 'Add Branch',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: ref.watch(canAddBranchProvider)
+          ? FloatingActionButton(
+              heroTag: 'branch_fab',
+              onPressed: () => showBranchFormDialog(context),
+              tooltip: 'Add Branch',
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(

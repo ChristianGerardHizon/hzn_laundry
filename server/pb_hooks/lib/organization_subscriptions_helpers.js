@@ -5,6 +5,22 @@
 
 var orgHelpers = require(__hooks + "/lib/organization_invites_helpers.js");
 var historyConfig = require(__hooks + "/send_history_link_config.js");
+var featureHelpers = require(__hooks + "/lib/feature_entitlements_helpers.js");
+
+/** Feature list for a new package: sanitized body value, or the full catalog. */
+function featuresFromBody(value) {
+  if (value === undefined || value === null) {
+    return featureHelpers.catalogKeys();
+  }
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch (_) {
+      value = [];
+    }
+  }
+  return featureHelpers.sanitizeFeatureList(value);
+}
 
 function exportRecord(record) {
   if (record && typeof record.publicExport === "function") {
@@ -288,6 +304,7 @@ function createPackage(e) {
   record.set("isPremade", body.isPremade !== false && body.isPremade !== "false");
   record.set("isActive", body.isActive !== false && body.isActive !== "false");
   record.set("isDeleted", false);
+  record.set("features", featuresFromBody(body.features));
   if (body.organizationId) {
     record.set("organizationId", body.organizationId);
     record.set("isPremade", false);
@@ -331,6 +348,9 @@ function updatePackage(e) {
   }
   if (body.isDeleted !== undefined) {
     record.set("isDeleted", body.isDeleted === true || body.isDeleted === "true");
+  }
+  if (body.features !== undefined) {
+    record.set("features", featuresFromBody(body.features));
   }
   e.app.save(record);
   return e.json(200, exportRecord(record));
@@ -400,6 +420,7 @@ function assignSubscriptionInApp(app, orgId, opts) {
       throw new BadRequestError("intervalUnit must be day, month, or year");
     }
     pkg.set("intervalUnit", unit);
+    pkg.set("features", featuresFromBody(cp.features));
     pkg.set("isPremade", false);
     pkg.set("organizationId", orgId);
     pkg.set("isActive", true);
@@ -1254,5 +1275,7 @@ module.exports = {
   runDailyBillingJob: runDailyBillingJob,
   listOrganizationPlatformStatsEnriched: listOrganizationPlatformStatsEnriched,
   requireSystemAdmin: requireSystemAdmin,
+  requireOrgMember: requireOrgMember,
+  findActiveSubscription: findActiveSubscription,
   hasPermission: orgHelpers.hasPermission
 };
