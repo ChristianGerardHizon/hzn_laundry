@@ -1580,7 +1580,8 @@ class _ServiceSubtotal extends StatelessWidget {
     final displayTotal = customTotal ?? computed;
     final isOverridden = customTotal != null;
     final isTiered = tiers.isNotEmpty;
-    final unitLabel = service.quantityUnit?.shortPlural ?? 'kg';
+    final unitLabel = service.quantityUnit?.shortPlural ??
+        (service.weightBased ? 'kg' : 'pcs');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
