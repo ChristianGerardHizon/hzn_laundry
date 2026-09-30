@@ -234,13 +234,18 @@ class _AppRootState extends ConsumerState<AppRoot> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                OrganizationSwitcher(compact: true),
-                Expanded(child: BranchSwitcher(compact: true)),
-                FullscreenToggleButton(),
-              ],
+            // Scope bar: where am I working (org / branch). Kept light and
+            // left-aligned so it reads as context, not as page chrome.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  OrganizationSwitcher(compact: true),
+                  Expanded(child: BranchSwitcher(compact: true)),
+                  FullscreenToggleButton(),
+                ],
+              ),
             ),
             Expanded(
               child: SubscriptionLockGate(child: widget.child),

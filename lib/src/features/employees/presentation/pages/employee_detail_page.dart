@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../entitlements/domain/feature_key.dart';
@@ -55,51 +56,34 @@ class EmployeeDetailPage extends HookConsumerWidget {
         final theme = Theme.of(context);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(employee.name),
+          appBar: DetailAppBar(
+            title: employee.name,
             automaticallyImplyLeading: !isTablet,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(employeeProvider(employeeId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () =>
-                    showEmployeeFormDialog(context, employee: employee),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, employee.id),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('Delete'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+            onRefresh: () {
+              ref.invalidate(employeeProvider(employeeId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => showEmployeeFormDialog(context, employee: employee),
+            menuItems: const [
+              DetailMenuItem(
+                value: 'delete',
+                label: 'Delete',
+                icon: Icons.delete,
+                destructive: true,
               ),
             ],
-            bottom: TabBar(
-              controller: tabController,
-              tabs: [
-                const Tab(text: 'Info'),
-                if (showAttendance) const Tab(text: 'Attendance'),
-                const Tab(text: 'Deductions'),
-              ],
-            ),
+            onMenuSelected: (value) =>
+                _handleMenuAction(context, ref, value, employee.id),
+            tabController: tabController,
+            tabs: [
+              const Tab(text: 'Info'),
+              if (showAttendance) const Tab(text: 'Attendance'),
+              const Tab(text: 'Deductions'),
+            ],
           ),
           body: TabBarView(
             controller: tabController,

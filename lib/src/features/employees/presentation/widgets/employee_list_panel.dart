@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/list/list.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
@@ -57,23 +58,12 @@ class EmployeeListPanel extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search employees...',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: searchQuery.value.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => searchController.clear(),
-                      )
-                    : null,
-              ),
-            ),
+          ListToolbar(
+            controller: searchController,
+            hintText: 'Search employees...',
+            // Filtering is live via the controller listener; nothing to submit.
+            onSearch: () {},
+            onTextChanged: (_) {},
           ),
           Expanded(
             child: filteredEmployees.isEmpty
@@ -133,25 +123,19 @@ class _EmployeeListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final currencyFormat =
         NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
-    return ListTile(
+    return AppListRow(
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(
-          Icons.badge,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
+        radius: 22,
+        backgroundColor: scheme.primaryContainer,
+        child: Icon(Icons.badge, color: scheme.onPrimaryContainer),
       ),
       title: Text(employee.name),
-      subtitle: Text(
-        currencyFormat.format(employee.baseSalary),
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      subtitle: Text(currencyFormat.format(employee.baseSalary)),
+      trailing: const Icon(Icons.chevron_right),
       onTap: () => EmployeeDetailRoute(id: employee.id).goScoped(context),
     );
   }

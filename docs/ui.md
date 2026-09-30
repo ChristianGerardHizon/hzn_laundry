@@ -66,35 +66,68 @@ Defined in `lib/src/core/utils/breakpoints.dart` (`Breakpoints`):
 
 `MobileBottomNav` (`lib/src/core/widgets/mobile_bottom_nav.dart`) shows only the **first 3 permission-visible nav items** plus a "More" destination that opens the drawer — not a fixed 5-item set. Which 3 items appear depends on the signed-in user's role permissions (see [Navigation Configuration](#navigation-configuration)).
 
+### Mobile list screen anatomy
+
+Every list screen should follow the same vertical budget so content starts high on the screen:
+
+```
+┌─────────────────────────────────────┐
+│ (Org ▾) (Branch ▾)                  │  <- scope bar: light outlined chips (a display-only branch is a plain label)
+│ ← Users                     [roles] │  <- AppBar owns the title (flat, same surface as scope bar)
+│ [ Members 12 | Invites (2) ]        │  <- ListSectionTabs: counts inline, no "N total" row
+│ (🔍 Search…            ) [tune]     │  <- ListToolbar: 44dp pill field + filter/sort actions
+│ ◉ Name                     [Admin]  │  <- two-line row: name + secondary line, tonal chip trailing
+│   email@example.com                 │
+│ ─────── End of the list ─────────── │  <- quiet hairline footer
+│                     [+ Invite people]│  <- labelled extended FAB for the primary create action
+└─────────────────────────────────────┘
+```
+
+Shared building blocks live in `lib/src/core/widgets/list/`:
+
+| Widget | Use |
+|--------|-----|
+| `ListToolbar` | Search field (or dismissible active-query chip) + optional sort/filter actions; filter badge only when count > 0 |
+| `ListSectionTabs<T>` | Compact segmented tabs with inline counts (`highlightCount` draws an attention badge, e.g. pending invites) |
+| `AppListRow` / `RowChip` | The single list row: 48dp+ rounded tile with avatar/image leading, title + subtitle, trailing widget; selected state uses `secondaryContainer`. `RowChip` is the tonal role/status chip (optional colored dot, ≥ 4.5:1 label contrast). Used by Users, Roles, Sales, Products, Customers, Employees, Services, Promos and Product Categories |
+| `ListPanelHeader` | Title + count pill for panes with no AppBar (tablet/desktop master pane). Mobile pages that already have an AppBar pass `showHeader: false` to the panel |
+
+Rules: one title per screen; touch targets ≥ 44dp; secondary text uses `onSurfaceVariant` (≥ 4.5:1); status/role are chips, not grey subtext.
+
 ### Mobile Drawer (`MobileDrawer`, accessed via hamburger or "More")
+
+Pill-style rows (56dp, rounded `secondaryContainer` for the selected page) grouped with the same categories as the desktop sidebar (`appNavCategoryFor`). The branch switcher is the same compact chip used in the shell scope bar.
 
 ```
 ┌───────────────────────┐
 │  ╭─────╮              │
 │  │ LOGO│  HZN Laundry  │
-│  ╰─────╯  Laundry Management System │
-│           <pocketbase url>          │
-├───────────────────────┤
-│  [Branch Switcher]     │
-├───────────────────────┤
+│  ╰─────╯  <pocketbase url>           │
+│  (Branch ▾)            │
 │ 🏠 Dashboard           │
+│  OPERATIONS            │
 │ 🧾 Sales History       │
 │ 📦 Products            │
 │ 🩺 Services            │
+│ 🎟️ Promos              │
+│  PEOPLE                │
 │ 👤 Customers           │
 │ 🪪 Employees            │
-├───────────────────────┤   <- Divider after index 5
+│  INSIGHTS              │
 │ 📊 Reports             │
 │ 🕓 Activities           │
+│  ADMINISTRATION        │
 │ 🏢 Organization        │
-│ 🎟️ Promos              │
+│ 🛡️ Super Admin         │
+│  ACCOUNT               │
+│ 👤 Profile             │
 │ ⚙️ System              │
-├───────────────────────┤
-│ 🚪 Logout              │
+│ ────────────────────── │
+│ 🚪 Logout (error color)│
 └───────────────────────┘
 ```
 
-Items are permission-filtered (`filterNavItems`) before this split — a role without `system.admin` only sees the items its permissions unlock, in this same relative order. `MobileDrawer` splits the *visible* list into a "primary" group (original index ≤ 5: Dashboard, Sales History, Products, Services, Customers, Employees) above a divider, and a "secondary" group (index > 5: Reports, Activities, Organization, Promos, System) below it.
+Items are permission-filtered (`filterNavItems`) first; a section is omitted when none of its items are visible. Super Admin (system admins) appears under Administration after Organizations. Destinations with no category (System) sit in the Account section with Profile.
 
 ---
 
@@ -361,6 +394,8 @@ Mobile bottom nav uses `visibleItems.take(3)` from this same permission-filtered
 ---
 
 ## Tabbed Detail Pages
+
+**Header (`DetailAppBar`, `core/widgets/detail_app_bar.dart`):** User, Product, Employee, Customer, Service and Promo detail pages share one AppBar: title with an optional subtitle (e.g. role, phone), an always-visible Edit icon, and a single overflow menu (Refresh first, then page actions; destructive items in the error color). With three or fewer tabs the `TabBar` fills the width; with four or more (`DetailAppBar.maxFillTabs`) it scrolls so labels are never truncated. Sale and Organization detail keep bespoke AppBars (print menu, refresh spinner).
 
 Several detail pages across the app use a `TabBar`/`TabBarView` pattern rather than a single scroll view — e.g. `lib/src/features/products/presentation/pages/product_detail_page.dart`, plus `sale_detail_page.dart`, `user_detail_page.dart`, `employee_detail_page.dart`, and `organization_detail_page.dart`. Product Detail is representative:
 

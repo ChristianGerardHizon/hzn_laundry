@@ -258,18 +258,19 @@ class _ManagementUsersListPage extends ConsumerWidget {
         title: Text(t.navigation.users),
         actions: [
           IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
+            icon: const Icon(Icons.admin_panel_settings_outlined),
             tooltip: t.navigation.roles,
             onPressed: () => const ManagementRolesRoute().goScoped(context),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       floatingActionButton: canInvite
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               heroTag: 'mgmt_users_fab',
               onPressed: () => showInviteUserDialog(context),
-              tooltip: t.organizations.invitePeople,
-              child: const Icon(Icons.person_add),
+              icon: const Icon(Icons.person_add_alt_1),
+              label: Text(t.organizations.invitePeople),
             )
           : null,
       body: paginatedAsync.when(
@@ -281,6 +282,8 @@ class _ManagementUsersListPage extends ConsumerWidget {
                     .refresh(),
       ),
         data: (paginatedState) => UserListPanel(
+          // The AppBar already says "Users"; don't repeat it in the panel.
+          showHeader: false,
           paginatedState: paginatedState,
           selectedId: null,
           onUserTap: (user) {
@@ -326,6 +329,8 @@ class _ManagementRolesListPage extends ConsumerWidget {
                     ref.read(userRolesControllerProvider.notifier).refresh(),
       ),
         data: (roles) => UserRoleListPanel(
+          // The AppBar already says "Roles"; don't repeat it in the panel.
+          showHeader: false,
           roles: roles,
           selectedId: null,
           onRefresh: () =>

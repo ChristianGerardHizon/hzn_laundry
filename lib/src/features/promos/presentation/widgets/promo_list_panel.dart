@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/list/list.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
@@ -53,23 +54,12 @@ class PromoListPanel extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search promos...',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: searchQuery.value.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => searchController.clear(),
-                      )
-                    : null,
-              ),
-            ),
+          ListToolbar(
+            controller: searchController,
+            hintText: 'Search promos...',
+            // Filtering is live via the controller listener; nothing to submit.
+            onSearch: () {},
+            onTextChanged: (_) {},
           ),
           Expanded(
             child: filteredPromos.isEmpty
@@ -131,44 +121,28 @@ class _PromoListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat('MMM d');
+    final active = promo.isCurrentlyActive;
 
-    return ListTile(
+    return AppListRow(
       leading: CircleAvatar(
-        backgroundColor: promo.isCurrentlyActive
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest,
+        radius: 22,
+        backgroundColor:
+            active ? scheme.primaryContainer : scheme.surfaceContainerHighest,
         child: Icon(
           Icons.loyalty,
-          color: promo.isCurrentlyActive
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurfaceVariant,
+          color:
+              active ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
         ),
       ),
       title: Text(promo.name),
-      subtitle: Row(
-        children: [
-          Text(
-            promo.rewardDisplay,
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${dateFormat.format(promo.startDate)} - ${dateFormat.format(promo.endDate)}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      subtitle: Text(
+        '${promo.rewardDisplay} · ${dateFormat.format(promo.startDate)} - ${dateFormat.format(promo.endDate)}',
       ),
-      trailing: promo.isCurrentlyActive
-          ? Icon(Icons.circle, size: 10, color: theme.colorScheme.primary)
-          : Icon(Icons.circle, size: 10,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
+      trailing: active
+          ? const RowChip(label: 'Active', color: Colors.green)
+          : null,
       onTap: () => PromoDetailRoute(id: promo.id).goScoped(context),
     );
   }

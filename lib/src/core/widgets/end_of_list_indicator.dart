@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 /// Widget shown at the end of a paginated list.
 ///
-/// Displays either a loading indicator (when loading more) or
-/// an "End of the list" message (when all items are loaded).
+/// Displays either a loading indicator (when loading more) or a quiet
+/// "End of the list" footer (when all items are loaded). The footer is
+/// deliberately low-key (hairlines + small text) so it never competes with
+/// the list content.
 class EndOfListIndicator extends StatelessWidget {
   const EndOfListIndicator({
     super.key,
@@ -28,10 +30,11 @@ class EndOfListIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
 
     if (isLoadingMore) {
       return Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -44,9 +47,7 @@ class EndOfListIndicator extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 loadingMessage,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: color),
               ),
             ],
           ),
@@ -55,26 +56,21 @@ class EndOfListIndicator extends StatelessWidget {
     }
 
     if (hasReachedEnd) {
+      // Extra bottom padding keeps the last row clear of the FAB.
       return Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                size: 24,
-                color: theme.colorScheme.outline,
-              ),
-              const SizedBox(height: 8),
-              Text(
+        padding: const EdgeInsets.fromLTRB(32, 20, 32, 88),
+        child: Row(
+          children: [
+            const Expanded(child: Divider()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
                 endMessage,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
+                style: theme.textTheme.labelMedium?.copyWith(color: color),
               ),
-            ],
-          ),
+            ),
+            const Expanded(child: Divider()),
+          ],
         ),
       );
     }

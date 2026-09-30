@@ -10,6 +10,7 @@ import '../../features/settings/presentation/controllers/current_branch_controll
 import '../i18n/strings.g.dart';
 import '../routing/routes/dashboard.routes.dart';
 import 'nav_permissions.dart';
+import 'scope_chip.dart';
 
 /// Branch switcher widget for the sidebar/drawer and app branch bar.
 ///
@@ -158,10 +159,7 @@ class _AdminBranchDropdown extends StatelessWidget {
         vertical: compact ? 0 : 4,
       ),
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: scopeChipDecoration(theme, compact: compact),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
@@ -247,10 +245,12 @@ class _BranchDisplay extends StatelessWidget {
         horizontal: compact ? 12 : 12,
         vertical: compact ? 0 : 12,
       ),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+      alignment: compact ? Alignment.centerLeft : Alignment.center,
+      // Display-only: a plain label in compact mode so it doesn't look tappable.
+      decoration: scopeChipDecoration(
+        theme,
+        compact: compact,
+        interactive: false,
       ),
       child: Row(
         children: [
@@ -308,10 +308,11 @@ class _NoBranchDisplay extends StatelessWidget {
         horizontal: compact ? 12 : 12,
         vertical: compact ? 0 : 12,
       ),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+      alignment: compact ? Alignment.centerLeft : Alignment.center,
+      decoration: scopeChipDecoration(
+        theme,
+        compact: compact,
+        interactive: false,
       ),
       child: Row(
         children: [
