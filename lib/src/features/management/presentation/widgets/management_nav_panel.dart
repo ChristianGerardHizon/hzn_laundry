@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/i18n/strings.g.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 
 /// Organization management modes.
 enum ManagementMode {
@@ -15,7 +18,7 @@ enum ManagementMode {
 }
 
 /// Vertical navigation panel for selecting organization mode.
-class ManagementNavPanel extends StatelessWidget {
+class ManagementNavPanel extends ConsumerWidget {
   const ManagementNavPanel({
     super.key,
     required this.currentMode,
@@ -29,9 +32,12 @@ class ManagementNavPanel extends StatelessWidget {
   final ValueChanged<ManagementMode> onModeChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final t = Translations.of(context);
+    final showStorages = ref.watch(featureEnabledProvider(FeatureKey.storages));
+    final showCashierGroups =
+        ref.watch(featureEnabledProvider(FeatureKey.posGroups));
 
     return SizedBox(
       width: 80,
@@ -82,14 +88,16 @@ class ManagementNavPanel extends StatelessWidget {
                   isSelected: currentMode == ManagementMode.machines,
                   onTap: () => onModeChanged(ManagementMode.machines),
                 ),
-                const SizedBox(height: 4),
-                _NavButton(
-                  icon: Icons.inventory_2_outlined,
-                  selectedIcon: Icons.inventory_2,
-                  label: t.navigation.storages,
-                  isSelected: currentMode == ManagementMode.storages,
-                  onTap: () => onModeChanged(ManagementMode.storages),
-                ),
+                if (showStorages) ...[
+                  const SizedBox(height: 4),
+                  _NavButton(
+                    icon: Icons.inventory_2_outlined,
+                    selectedIcon: Icons.inventory_2,
+                    label: t.navigation.storages,
+                    isSelected: currentMode == ManagementMode.storages,
+                    onTap: () => onModeChanged(ManagementMode.storages),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 _NavButton(
                   icon: Icons.category_outlined,
@@ -106,14 +114,16 @@ class ManagementNavPanel extends StatelessWidget {
                   isSelected: currentMode == ManagementMode.quantityUnits,
                   onTap: () => onModeChanged(ManagementMode.quantityUnits),
                 ),
-                const SizedBox(height: 4),
-                _NavButton(
-                  icon: Icons.point_of_sale_outlined,
-                  selectedIcon: Icons.point_of_sale,
-                  label: t.navigation.cashierGroups,
-                  isSelected: currentMode == ManagementMode.cashierGroups,
-                  onTap: () => onModeChanged(ManagementMode.cashierGroups),
-                ),
+                if (showCashierGroups) ...[
+                  const SizedBox(height: 4),
+                  _NavButton(
+                    icon: Icons.point_of_sale_outlined,
+                    selectedIcon: Icons.point_of_sale,
+                    label: t.navigation.cashierGroups,
+                    isSelected: currentMode == ManagementMode.cashierGroups,
+                    onTap: () => onModeChanged(ManagementMode.cashierGroups),
+                  ),
+                ],
               ],
             ),
           ),

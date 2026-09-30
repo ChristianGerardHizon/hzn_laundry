@@ -79,6 +79,12 @@ class PaymentMapper extends ClassMapperBase<Payment> {
     _$voidReason,
     opt: true,
   );
+  static String? _$voidedById(Payment v) => v.voidedById;
+  static const Field<Payment, String> _f$voidedById = Field(
+    'voidedById',
+    _$voidedById,
+    opt: true,
+  );
   static DateTime? _$created(Payment v) => v.created;
   static const Field<Payment, DateTime> _f$created = Field(
     'created',
@@ -106,6 +112,7 @@ class PaymentMapper extends ClassMapperBase<Payment> {
     #postedDate: _f$postedDate,
     #voidedAt: _f$voidedAt,
     #voidReason: _f$voidReason,
+    #voidedById: _f$voidedById,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -124,6 +131,7 @@ class PaymentMapper extends ClassMapperBase<Payment> {
       postedDate: data.dec(_f$postedDate),
       voidedAt: data.dec(_f$voidedAt),
       voidReason: data.dec(_f$voidReason),
+      voidedById: data.dec(_f$voidedById),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -199,6 +207,7 @@ abstract class PaymentCopyWith<$R, $In extends Payment, $Out>
     DateTime? postedDate,
     DateTime? voidedAt,
     String? voidReason,
+    String? voidedById,
     DateTime? created,
     DateTime? updated,
   });
@@ -227,6 +236,7 @@ class _PaymentCopyWithImpl<$R, $Out>
     Object? postedDate = $none,
     Object? voidedAt = $none,
     Object? voidReason = $none,
+    Object? voidedById = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -243,6 +253,7 @@ class _PaymentCopyWithImpl<$R, $Out>
       if (postedDate != $none) #postedDate: postedDate,
       if (voidedAt != $none) #voidedAt: voidedAt,
       if (voidReason != $none) #voidReason: voidReason,
+      if (voidedById != $none) #voidedById: voidedById,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -261,6 +272,7 @@ class _PaymentCopyWithImpl<$R, $Out>
     postedDate: data.get(#postedDate, or: $value.postedDate),
     voidedAt: data.get(#voidedAt, or: $value.voidedAt),
     voidReason: data.get(#voidReason, or: $value.voidReason),
+    voidedById: data.get(#voidedById, or: $value.voidedById),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

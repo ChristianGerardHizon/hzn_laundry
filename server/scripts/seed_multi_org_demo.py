@@ -537,7 +537,8 @@ def main() -> int:
             "branch": sunrise_branch["id"],
             "price": 180,
             "isVariablePrice": False,
-            "weightBased": False,
+            "weightBased": True,
+            "quantityUnit": "ulr7qlh8r4qej8u",  # Kilograms
             "isDeleted": False,
             "isDefault": True,
         },
@@ -554,7 +555,8 @@ def main() -> int:
             "branch": sunrise_branch["id"],
             "price": 120,
             "isVariablePrice": False,
-            "weightBased": False,
+            "weightBased": True,
+            "quantityUnit": "ulr7qlh8r4qej8u",  # Kilograms
             "isDeleted": False,
             "isDefault": False,
         },

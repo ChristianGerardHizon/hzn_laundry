@@ -8,6 +8,8 @@ import '../../../core/i18n/strings.g.dart';
 import '../../../core/utils/breakpoints.dart';
 import '../../../core/utils/currency_format.dart';
 import '../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../entitlements/domain/feature_key.dart';
+import '../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../domain/pos_group.dart';
 import 'cart_controller.dart';
 import 'components/cart_view.dart';
@@ -26,7 +28,11 @@ class PosScreen extends HookConsumerWidget {
 
     // Watch POS groups for the current branch
     final posGroupsAsync = ref.watch(posGroupsControllerProvider);
-    final groups = posGroupsAsync.value ?? [];
+    final posGroupsEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.posGroups));
+    final showProducts = ref.watch(featureEnabledProvider(FeatureKey.products));
+    final groups =
+        posGroupsEnabled ? (posGroupsAsync.value ?? []) : <PosGroup>[];
     final hasGroups = groups.isNotEmpty;
     final isAllBranches = ref.watch(isAllBranchesProvider);
 
@@ -37,10 +43,12 @@ class PosScreen extends HookConsumerWidget {
             scaffoldKey: scaffoldKey,
             hasGroups: hasGroups,
             groups: groups,
+            showProducts: showProducts,
           )
         : _DesktopLayout(
             hasGroups: hasGroups,
             groups: groups,
+            showProducts: showProducts,
           );
 
     if (!isAllBranches) return content;
@@ -119,10 +127,12 @@ class _DesktopLayout extends StatelessWidget {
   const _DesktopLayout({
     required this.hasGroups,
     required this.groups,
+    required this.showProducts,
   });
 
   final bool hasGroups;
   final List<PosGroup> groups;
+  final bool showProducts;
 
   @override
   Widget build(BuildContext context) {
@@ -160,17 +170,19 @@ class _DesktopLayout extends StatelessWidget {
                   const Expanded(
                     child: ServiceGrid(),
                   ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'Products',
-                      style: theme.textTheme.titleMedium,
+                  if (showProducts) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'Products',
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ),
-                  ),
-                  const Expanded(
-                    child: ProductGrid(),
-                  ),
+                    const Expanded(
+                      child: ProductGrid(),
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -195,11 +207,13 @@ class _MobileLayout extends ConsumerWidget {
     required this.scaffoldKey,
     required this.hasGroups,
     required this.groups,
+    required this.showProducts,
   });
 
   final GlobalKey<ScaffoldState> scaffoldKey;
   final bool hasGroups;
   final List<PosGroup> groups;
+  final bool showProducts;
 
   void _showCartSheet(BuildContext context) {
     final theme = Theme.of(context);
@@ -325,17 +339,19 @@ class _MobileLayout extends ConsumerWidget {
             const Expanded(
               child: ServiceGrid(),
             ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                'Products',
-                style: theme.textTheme.titleMedium,
+            if (showProducts) ...[
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'Products',
+                  style: theme.textTheme.titleMedium,
+                ),
               ),
-            ),
-            const Expanded(
-              child: ProductGrid(),
-            ),
+              const Expanded(
+                child: ProductGrid(),
+              ),
+            ],
           ],
         ],
       ),

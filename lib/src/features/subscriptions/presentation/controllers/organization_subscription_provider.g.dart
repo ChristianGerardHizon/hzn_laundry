@@ -27,7 +27,7 @@ final class OrganizationSubscriptionProvider extends $FunctionalProvider<
       {required OrganizationSubscriptionFamily super.from,
       required String super.argument})
       : super(
-          retry: null,
+          retry: retryUnlessForbidden,
           name: r'organizationSubscriptionProvider',
           isAutoDispose: true,
           dependencies: null,
@@ -72,7 +72,7 @@ final class OrganizationSubscriptionProvider extends $FunctionalProvider<
 }
 
 String _$organizationSubscriptionHash() =>
-    r'63fbfcfe738bfd7f5299f376f61fbbc91f2f7eb0';
+    r'1d4cfe6c9a14b0a36034fc54426f431b15aa39d4';
 
 /// Single organization subscription by organization ID.
 
@@ -81,7 +81,7 @@ final class OrganizationSubscriptionFamily extends $Family
         $FunctionalFamilyOverride<FutureOr<OrganizationSubscription?>, String> {
   OrganizationSubscriptionFamily._()
       : super(
-          retry: null,
+          retry: retryUnlessForbidden,
           name: r'organizationSubscriptionProvider',
           dependencies: null,
           $allTransitiveDependencies: null,

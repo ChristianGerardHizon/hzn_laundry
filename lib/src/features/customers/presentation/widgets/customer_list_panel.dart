@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/widgets/list/list.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -57,23 +58,12 @@ class CustomerListPanel extends HookConsumerWidget {
       body: Column(
         children: [
           // Search bar
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search customers...',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: searchQuery.value.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => searchController.clear(),
-                      )
-                    : null,
-              ),
-            ),
+          ListToolbar(
+            controller: searchController,
+            hintText: 'Search customers...',
+            // Filtering is live via the controller listener; nothing to submit.
+            onSearch: () {},
+            onTextChanged: (_) {},
           ),
 
           // Customers list
@@ -143,25 +133,19 @@ class _CustomerListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
-    return ListTile(
+    return AppListRow(
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(
-          Icons.person,
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
+        radius: 22,
+        backgroundColor: scheme.primaryContainer,
+        child: Icon(Icons.person, color: scheme.onPrimaryContainer),
       ),
       title: Text(customer.name),
       subtitle: customer.phone != null && customer.phone!.isNotEmpty
-          ? Text(
-              customer.phone!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
+          ? Text(customer.phone!)
           : null,
+      trailing: const Icon(Icons.chevron_right),
       onTap: () => CustomerDetailRoute(id: customer.id).goScoped(context),
     );
   }

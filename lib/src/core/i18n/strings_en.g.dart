@@ -462,18 +462,6 @@ class TranslationsNavigationEn {
 
 	// Translations
 
-	/// en: 'Shortcuts'
-	String get shortcuts => 'Shortcuts';
-
-	/// en: 'Categories'
-	String get categories => 'Categories';
-
-	/// en: 'Show more'
-	String get showMore => 'Show more';
-
-	/// en: 'Show less'
-	String get showLess => 'Show less';
-
 	/// en: 'Operations'
 	String get operations => 'Operations';
 
@@ -485,6 +473,24 @@ class TranslationsNavigationEn {
 
 	/// en: 'Administration'
 	String get administration => 'Administration';
+
+	/// en: 'Setup'
+	String get setup => 'Setup';
+
+	/// en: 'Pinned'
+	String get pinned => 'Pinned';
+
+	/// en: 'Pin to top'
+	String get pinToTop => 'Pin to top';
+
+	/// en: 'Unpin'
+	String get unpin => 'Unpin';
+
+	/// en: 'Expand section'
+	String get expandGroup => 'Expand section';
+
+	/// en: 'Collapse section'
+	String get collapseGroup => 'Collapse section';
 
 	/// en: 'Collapse navigation'
 	String get collapseNav => 'Collapse navigation';
@@ -926,6 +932,57 @@ class TranslationsOrganizationsEn {
 
 	/// en: 'Could not load organization stats.'
 	String get statsLoadError => 'Could not load organization stats.';
+
+	/// en: 'All'
+	String get filterAll => 'All';
+
+	/// en: 'Other'
+	String get filterOther => 'Other';
+
+	/// en: 'Filter by status'
+	String get filterByStatus => 'Filter by status';
+
+	/// en: 'Sort by'
+	String get sortBy => 'Sort by';
+
+	/// en: 'Revenue'
+	String get sortRevenue => 'Revenue';
+
+	/// en: 'Orders'
+	String get sortOrders => 'Orders';
+
+	/// en: 'Customers'
+	String get sortCustomers => 'Customers';
+
+	/// en: 'Name (A-Z)'
+	String get sortName => 'Name (A-Z)';
+
+	/// en: 'Subscription health'
+	String get subscriptionHealth => 'Subscription health';
+
+	/// en: 'Clear filters'
+	String get clearFilters => 'Clear filters';
+
+	/// en: 'No organizations match these filters.'
+	String get noOrganizationsMatchFilters => 'No organizations match these filters.';
+
+	/// en: '(one) {Grace ends in 1 day} (other) {Grace ends in $n days}'
+	String graceEndsInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: 'Grace ends in 1 day',
+		other: 'Grace ends in ${n} days',
+	);
+
+	/// en: '(one) {1 pending payment} (other) {$n pending payments}'
+	String pendingPayments({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 pending payment',
+		other: '${n} pending payments',
+	);
+
+	/// en: '(one) {1 organization} (other) {$n organizations}'
+	String organizationsCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '1 organization',
+		other: '${n} organizations',
+	);
 }
 
 // Path: sort
@@ -1253,6 +1310,72 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'days'
 	String get days => 'days';
+
+	/// en: 'Subscription'
+	String get subscriptionTab => 'Subscription';
+
+	/// en: 'Current package'
+	String get currentPackage => 'Current package';
+
+	/// en: 'Billing cycle'
+	String get billingCycle => 'Billing cycle';
+
+	/// en: 'Daily'
+	String get cycleDaily => 'Daily';
+
+	/// en: 'Monthly'
+	String get cycleMonthly => 'Monthly';
+
+	/// en: 'Yearly'
+	String get cycleYearly => 'Yearly';
+
+	/// en: 'Every $count $unit'
+	String cycleEvery({required Object count, required Object unit}) => 'Every ${count} ${unit}';
+
+	/// en: 'days'
+	String get unitDays => 'days';
+
+	/// en: 'months'
+	String get unitMonths => 'months';
+
+	/// en: 'years'
+	String get unitYears => 'years';
+
+	/// en: 'Next payment due'
+	String get nextPaymentDue => 'Next payment due';
+
+	/// en: 'Pay $amount'
+	String payAmount({required Object amount}) => 'Pay ${amount}';
+
+	/// en: 'Payment under review'
+	String get paymentUnderReview => 'Payment under review';
+
+	/// en: 'Payment history'
+	String get paymentHistory => 'Payment history';
+
+	/// en: 'No payments submitted yet.'
+	String get noPayments => 'No payments submitted yet.';
+
+	/// en: 'View proof'
+	String get viewProof => 'View proof';
+
+	/// en: 'Could not load payment history'
+	String get paymentsLoadFailed => 'Could not load payment history';
+
+	/// en: 'Billing access required'
+	String get noBillingAccessTitle => 'Billing access required';
+
+	/// en: 'You don't have access to this organization's billing. Ask an organization admin to pay the subscription.'
+	String get noBillingAccess => 'You don\'t have access to this organization\'s billing. Ask an organization admin to pay the subscription.';
+
+	/// en: 'Ask your organization admin to pay the subscription.'
+	String get askAdminToPay => 'Ask your organization admin to pay the subscription.';
+
+	/// en: 'Back to app'
+	String get backToApp => 'Back to app';
+
+	/// en: 'Note'
+	String get noteLabel => 'Note';
 }
 
 // Path: validation
@@ -1428,14 +1551,16 @@ extension on Translations {
 			'management.invitesSubtitle' => 'Pending invitations waiting to be accepted.',
 			'management.noPendingInvites' => 'No pending invites',
 			'management.noPendingInvitesHint' => 'Invite someone with the + button. They\'ll get an email to sign in and accept.',
-			'navigation.shortcuts' => 'Shortcuts',
-			'navigation.categories' => 'Categories',
-			'navigation.showMore' => 'Show more',
-			'navigation.showLess' => 'Show less',
 			'navigation.operations' => 'Operations',
 			'navigation.people' => 'People',
 			'navigation.insights' => 'Insights',
 			'navigation.administration' => 'Administration',
+			'navigation.setup' => 'Setup',
+			'navigation.pinned' => 'Pinned',
+			'navigation.pinToTop' => 'Pin to top',
+			'navigation.unpin' => 'Unpin',
+			'navigation.expandGroup' => 'Expand section',
+			'navigation.collapseGroup' => 'Collapse section',
 			'navigation.collapseNav' => 'Collapse navigation',
 			'navigation.expandNav' => 'Expand navigation',
 			'navigation.dashboard' => 'Dashboard',
@@ -1578,6 +1703,20 @@ extension on Translations {
 			'organizations.onboarded' => 'Onboarded',
 			'organizations.notOnboarded' => 'Not onboarded',
 			'organizations.statsLoadError' => 'Could not load organization stats.',
+			'organizations.filterAll' => 'All',
+			'organizations.filterOther' => 'Other',
+			'organizations.filterByStatus' => 'Filter by status',
+			'organizations.sortBy' => 'Sort by',
+			'organizations.sortRevenue' => 'Revenue',
+			'organizations.sortOrders' => 'Orders',
+			'organizations.sortCustomers' => 'Customers',
+			'organizations.sortName' => 'Name (A-Z)',
+			'organizations.subscriptionHealth' => 'Subscription health',
+			'organizations.clearFilters' => 'Clear filters',
+			'organizations.noOrganizationsMatchFilters' => 'No organizations match these filters.',
+			'organizations.graceEndsInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'Grace ends in 1 day', other: 'Grace ends in ${n} days', ), 
+			'organizations.pendingPayments' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 pending payment', other: '${n} pending payments', ), 
+			'organizations.organizationsCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '1 organization', other: '${n} organizations', ), 
 			'sort.sortBy' => 'Sort By',
 			'sort.direction' => 'Direction',
 			'sort.ascending' => 'Ascending',
@@ -1680,6 +1819,28 @@ extension on Translations {
 			'subscriptions.goToPayment' => 'Go to payment',
 			'subscriptions.orgDetails' => 'Organization details',
 			'subscriptions.days' => 'days',
+			'subscriptions.subscriptionTab' => 'Subscription',
+			'subscriptions.currentPackage' => 'Current package',
+			'subscriptions.billingCycle' => 'Billing cycle',
+			'subscriptions.cycleDaily' => 'Daily',
+			'subscriptions.cycleMonthly' => 'Monthly',
+			'subscriptions.cycleYearly' => 'Yearly',
+			'subscriptions.cycleEvery' => ({required Object count, required Object unit}) => 'Every ${count} ${unit}',
+			'subscriptions.unitDays' => 'days',
+			'subscriptions.unitMonths' => 'months',
+			'subscriptions.unitYears' => 'years',
+			'subscriptions.nextPaymentDue' => 'Next payment due',
+			'subscriptions.payAmount' => ({required Object amount}) => 'Pay ${amount}',
+			'subscriptions.paymentUnderReview' => 'Payment under review',
+			'subscriptions.paymentHistory' => 'Payment history',
+			'subscriptions.noPayments' => 'No payments submitted yet.',
+			'subscriptions.viewProof' => 'View proof',
+			'subscriptions.paymentsLoadFailed' => 'Could not load payment history',
+			'subscriptions.noBillingAccessTitle' => 'Billing access required',
+			'subscriptions.noBillingAccess' => 'You don\'t have access to this organization\'s billing. Ask an organization admin to pay the subscription.',
+			'subscriptions.askAdminToPay' => 'Ask your organization admin to pay the subscription.',
+			'subscriptions.backToApp' => 'Back to app',
+			'subscriptions.noteLabel' => 'Note',
 			'validation.required' => 'This field is required',
 			'validation.invalidEmail' => 'Please enter a valid email address',
 			'validation.invalidPhone' => 'Please enter a valid phone number',

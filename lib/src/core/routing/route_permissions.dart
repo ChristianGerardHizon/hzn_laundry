@@ -1,3 +1,4 @@
+import '../../features/entitlements/domain/feature_key.dart';
 import '../../features/users/domain/user_role.dart';
 import '../routing/routes/activities.routes.dart';
 import '../routing/routes/customers.routes.dart';
@@ -93,6 +94,34 @@ bool canAccessPath(String location, UserRole? role) {
     return requires(Permissions.settingsView);
   }
   return true;
+}
+
+/// Feature that must be enabled for the org to open an unscoped [location].
+///
+/// Returns null when the path is not feature-gated. Storages and Cashier
+/// Layout are matched under both `/management` and legacy `/system` paths.
+FeatureKey? featureForPath(String location) {
+  if (matchesRoutePath(location, ProductsRoute.path)) {
+    return FeatureKey.products;
+  }
+  if (matchesRoutePath(location, EmployeesRoute.path)) {
+    return FeatureKey.employees;
+  }
+  if (matchesRoutePath(location, ReportsRoute.path)) {
+    return FeatureKey.reports;
+  }
+  if (matchesRoutePath(location, ActivitiesRoute.path)) {
+    return FeatureKey.activities;
+  }
+  if (matchesRoutePath(location, PromosRoute.path)) {
+    return FeatureKey.promos;
+  }
+  if (matchesRoutePath(location, ManagementRoute.path) ||
+      matchesRoutePath(location, SystemRoute.path)) {
+    if (location.contains('/storages')) return FeatureKey.storages;
+    if (location.contains('/cashier-groups')) return FeatureKey.posGroups;
+  }
+  return null;
 }
 
 /// First allowed shell path for [role] (unscoped).

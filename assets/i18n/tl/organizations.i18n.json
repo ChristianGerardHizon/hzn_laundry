@@ -110,5 +110,28 @@
   "metricCustomers": "Mga Customer",
   "onboarded": "Naka-onboard",
   "notOnboarded": "Hindi pa naka-onboard",
-  "statsLoadError": "Hindi ma-load ang stats ng organisasyon."
+  "statsLoadError": "Hindi ma-load ang stats ng organisasyon.",
+  "filterAll": "Lahat",
+  "filterOther": "Iba pa",
+  "filterByStatus": "I-filter ayon sa status",
+  "sortBy": "I-sort ayon sa",
+  "sortRevenue": "Kita",
+  "sortOrders": "Mga Order",
+  "sortCustomers": "Mga Customer",
+  "sortName": "Pangalan (A-Z)",
+  "subscriptionHealth": "Kalagayan ng subscription",
+  "clearFilters": "I-clear ang mga filter",
+  "noOrganizationsMatchFilters": "Walang organisasyong tumugma sa mga filter na ito.",
+  "graceEndsInDays(n)": {
+    "one": "Matatapos ang grace sa 1 araw",
+    "other": "Matatapos ang grace sa $n araw"
+  },
+  "pendingPayments(n)": {
+    "one": "1 nakabinbing bayad",
+    "other": "$n nakabinbing bayad"
+  },
+  "organizationsCount(n)": {
+    "one": "1 organisasyon",
+    "other": "$n organisasyon"
+  }
 }

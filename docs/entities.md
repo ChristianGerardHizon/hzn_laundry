@@ -267,8 +267,41 @@ SaaS billing for each organization (not customer laundry packages). Super Admin 
 | `organizationId` | String (FK) | No | Set for custom packages tied to one org |
 | `isActive` | bool | Yes | Available for assignment |
 | `isDeleted` | bool | Yes | Soft delete |
+| `features` | JSON (string[]) | Yes | Feature keys included in the package (see `FeatureKey`); missing/legacy = all |
+| `maxBranches` | int | No | Max branches per org on this package; blank/0 = unlimited |
+| `maxEmployees` | int | No | Max non-deleted `employees` records per org; blank/0 = unlimited |
 
 **Collection:** `subscriptionPackages`
+
+### OrganizationFeatureOverride
+
+Super Admin per-org override of a feature entitlement, regardless of the subscription package. No row = follow the plan.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization (cascade delete) |
+| `featureKey` | String | Yes | One of the catalog keys (`employees`, `attendance`, `products`, `promos`, `reports`, `activities`, `consumableUsage`, `machineLoadRules`, `storages`, `posGroups`, `customerHistoryLink`, `multiBranch`) |
+| `enabled` | bool | Yes | `true` = force on, `false` = force off |
+| `note` | String | No | Why the override was set (shown to org admins) |
+| `updatedBy` | String (FK) | No | FK to User (Super Admin) |
+
+**Collection:** `organizationFeatureOverrides` (unique on `organization` + `featureKey`; list/view for org members; writes only through `PUT /api/super-admin/organizations/{id}/feature-overrides/{key}`)
+
+### OrganizationLimitOverride
+
+Super Admin per-org override of a numeric limit (`branches`, `employees`). No row = use the package value (`maxBranches` / `maxEmployees`); no package limit = unlimited. `value` 0 = forced unlimited. Existing data over a limit is never deleted; only creating new records (and restoring soft-deleted employees) is blocked.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | String | Yes | PocketBase record ID |
+| `organization` | String (FK) | Yes | FK to Organization (cascade delete) |
+| `limitKey` | String | Yes | `branches` or `employees` |
+| `value` | int | Yes | Override limit (0 = unlimited) |
+| `note` | String | No | Why the override was set |
+| `updatedBy` | String (FK) | No | FK to User (Super Admin) |
+
+**Collection:** `organizationLimitOverrides` (unique on `organization` + `limitKey`; list/view for org members; writes only through `PUT /api/super-admin/organizations/{id}/limit-overrides/{key}`)
 
 ### OrganizationSubscription
 
@@ -678,6 +711,8 @@ A finalized transaction/receipt.
 | `notes` | String | No | Internal notes |
 | `postedDate` | DateTime | No | Editable business/transaction date |
 | `readyForPickupAt` | DateTime | No | Optional promised ready-for-pickup date/time |
+| `voidedById` | String (FK) | No | User who voided the sale |
+| `voidedAt` | DateTime | No | Timestamp when the sale was voided |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
@@ -789,6 +824,7 @@ A payment transaction against a sale.
 | `postedDate` | DateTime | No | Editable business/transaction date |
 | `voidedAt` | DateTime | No | Timestamp voided |
 | `voidReason` | String | No | Admin note for the void |
+| `voidedById` | String (FK) | No | User who voided the payment |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 

@@ -20,6 +20,21 @@ To mirror the three real local orgs (plus users/roles/services) onto staging, se
 - HZN: customer Ana, service HZN Demo Wash, order `DEMO-HZN-001`
 - Private Cleaners data (`Private Secret Wash`, Dee, `DEMO-PRIV-001`) is hidden
 
+# Sunrise full store (production)
+
+Seeded by `python server/scripts/seed_sunrise_full_store.py --apply` (dry-run without `--apply`). Uses `PROD_URL` / `PROD_EMAIL` / `PROD_PASSWORD` from `.env`. Idempotent; does **not** add Manager/Cashier/Attendant login users — Christian remains sole Admin.
+
+**What to verify after switching to Sunrise Laundry on prod**
+- Org picker / subscription shows **Basic** (active)
+- Services: Regular Wash, Wash Dry Fold, Full Service, Dry Only, Comforter / Bulky (demo Sunrise Wash / Dry Fold soft-deleted)
+- Products: Powder Scoop, Fabcon Scoop, Color Safe, Baking Soda, Extra Soak + house Detergent / Softener / Bleach
+- POS **Main Menu** lists the five services + five retail products
+- Machines: Washer 1–2 + Dryer 1–2; storages Front Shelf / Back Shelf
+- Employees: Rosa, Miguel, Liza, Carlo (no linked user accounts)
+- Promo: **Sunrise Loyal 5** (free 5kg after 5 orders)
+- New order: add service + retail product; Full Service / Wash Dry Fold prefill Detergent + Softener
+- Settings → Team: only Christian as member
+
 # Other Test Accounts
 
 Login is email + password. Use the email stored on each role's user record in PocketBase Admin (formerly usernames `admin` / `manager` / `cashier` / `attendant`).

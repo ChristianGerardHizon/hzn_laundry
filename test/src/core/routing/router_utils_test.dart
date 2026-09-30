@@ -11,6 +11,24 @@ void main() {
     });
   });
 
+  group('RouterUtils.subscriptionPayOrgId', () {
+    test('extracts the organization id from a pay path', () {
+      expect(
+        RouterUtils.subscriptionPayOrgId('/subscription/pay/ucsv84n7zynxw11'),
+        'ucsv84n7zynxw11',
+      );
+      expect(
+        RouterUtils.subscriptionPayOrgId('/subscription/pay/abc?x=1'),
+        'abc',
+      );
+    });
+
+    test('returns null for other paths', () {
+      expect(RouterUtils.subscriptionPayOrgId('/subscription/pay'), isNull);
+      expect(RouterUtils.subscriptionPayOrgId('/acme/main/sales'), isNull);
+    });
+  });
+
   group('RouterUtils.replaceScopeSegment', () {
     test('replaces org and branch segments', () {
       expect(

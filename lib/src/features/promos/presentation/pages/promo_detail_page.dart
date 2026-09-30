@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../domain/promo.dart';
@@ -75,42 +76,28 @@ class _PromoDetailContent extends ConsumerWidget {
     final dateFormat = DateFormat('MMM d, y');
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(promo.name),
+      appBar: DetailAppBar(
+        title: promo.name,
         automaticallyImplyLeading: !isTablet,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref.invalidate(promoProvider(promoId));
-              showInfoSnackBar(
-                context,
-                message: 'Refreshing...',
-                duration: const Duration(seconds: 1),
-              );
-            },
-            tooltip: 'Refresh',
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _showEditDialog(context, ref),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) =>
-                _handleMenuAction(context, ref, value, promo.id),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'delete',
-                child: ListTile(
-                  leading: Icon(Icons.delete, color: Colors.red),
-                  title: Text('Delete'),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
+        onRefresh: () {
+          ref.invalidate(promoProvider(promoId));
+          showInfoSnackBar(
+            context,
+            message: 'Refreshing...',
+            duration: const Duration(seconds: 1),
+          );
+        },
+        onEdit: () => _showEditDialog(context, ref),
+        menuItems: const [
+          DetailMenuItem(
+            value: 'delete',
+            label: 'Delete',
+            icon: Icons.delete,
+            destructive: true,
           ),
         ],
+        onMenuSelected: (value) =>
+            _handleMenuAction(context, ref, value, promo.id),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

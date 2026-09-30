@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/entitlements/domain/feature_key.dart';
 import '../../features/users/domain/user_role.dart';
 import '../../features/users/presentation/controllers/user_provider.dart';
 import '../../features/users/presentation/controllers/user_role_provider.dart';
@@ -34,6 +35,7 @@ class NavItem {
     required this.selectedIcon,
     required this.label,
     this.requiredPermission,
+    this.requiredFeature,
   });
 
   /// Stable destination identity for desktop grouping.
@@ -48,6 +50,10 @@ class NavItem {
   /// The permission key required to view this nav item.
   /// Null means always visible (e.g. dashboard).
   final String? requiredPermission;
+
+  /// Subscription/Super Admin feature that must be enabled for this org.
+  /// Null means the destination is not feature-gated.
+  final FeatureKey? requiredFeature;
 }
 
 /// All nav items with their permission requirements.
@@ -76,6 +82,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.inventory_2,
         label: t('products'),
         requiredPermission: Permissions.productsView,
+        requiredFeature: FeatureKey.products,
       ),
       NavItem(
         id: NavId.services,
@@ -100,6 +107,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.badge,
         label: t('employees'),
         requiredPermission: Permissions.employeesView,
+        requiredFeature: FeatureKey.employees,
       ),
       NavItem(
         id: NavId.reports,
@@ -108,6 +116,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.analytics,
         label: t('reports'),
         requiredPermission: Permissions.reportsView,
+        requiredFeature: FeatureKey.reports,
       ),
       NavItem(
         id: NavId.activities,
@@ -116,6 +125,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.history,
         label: t('activities'),
         requiredPermission: Permissions.systemAdmin,
+        requiredFeature: FeatureKey.activities,
       ),
       NavItem(
         id: NavId.management,
@@ -140,6 +150,7 @@ List<NavItem> buildAllNavItems(String Function(String key) t) => [
         selectedIcon: Icons.loyalty,
         label: 'Promos',
         requiredPermission: Permissions.systemAdmin,
+        requiredFeature: FeatureKey.promos,
       ),
       NavItem(
         id: NavId.system,
@@ -173,13 +184,28 @@ Future<UserRole?> currentUserRole(Ref ref) async {
   return ref.watch(userRoleProvider(user.roleId!).future);
 }
 
-/// Filters nav items based on the user's permissions.
-/// Admins see everything. Others see only items they have permission for.
-List<NavItem> filterNavItems(List<NavItem> allItems, UserRole? role) {
-  if (role == null) return allItems; // No role loaded yet, show all
-  if (role.isAdmin) return allItems;
+/// Filters nav items based on the user's permissions and feature entitlements.
+///
+/// Admins see every permission-gated item; others see only items they have
+/// permission for. Feature gating applies to everyone (including admins): a
+/// feature that is off for the organization is hidden.
+///
+/// [isFeatureEnabled] defaults to "everything enabled" (e.g. in tests).
+List<NavItem> filterNavItems(
+  List<NavItem> allItems,
+  UserRole? role, {
+  bool Function(FeatureKey feature)? isFeatureEnabled,
+}) {
+  bool featureOk(NavItem item) {
+    final feature = item.requiredFeature;
+    if (feature == null || isFeatureEnabled == null) return true;
+    return isFeatureEnabled(feature);
+  }
 
   return allItems.where((item) {
+    if (!featureOk(item)) return false;
+    if (role == null) return true; // No role loaded yet, show all
+    if (role.isAdmin) return true;
     if (item.requiredPermission == null) return true;
     return role.hasPermission(item.requiredPermission!);
   }).toList();

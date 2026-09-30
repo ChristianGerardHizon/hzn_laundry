@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../data/repositories/branch_repository.dart';
 import '../../domain/branch.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
@@ -61,6 +62,8 @@ class BranchesController extends _$BranchesController {
       (newBranch) {
         final currentList = state.value ?? [];
         state = AsyncData([newBranch, ...currentList]);
+        // Branch count changed: refresh limits/usage.
+        ref.invalidate(currentOrganizationEntitlementsProvider);
         return true;
       },
     );
@@ -93,6 +96,7 @@ class BranchesController extends _$BranchesController {
         final currentList = state.value ?? [];
         final updatedList = currentList.where((b) => b.id != id).toList();
         state = AsyncData(updatedList);
+        ref.invalidate(currentOrganizationEntitlementsProvider);
         return true;
       },
     );

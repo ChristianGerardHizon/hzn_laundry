@@ -66,35 +66,68 @@ Defined in `lib/src/core/utils/breakpoints.dart` (`Breakpoints`):
 
 `MobileBottomNav` (`lib/src/core/widgets/mobile_bottom_nav.dart`) shows only the **first 3 permission-visible nav items** plus a "More" destination that opens the drawer — not a fixed 5-item set. Which 3 items appear depends on the signed-in user's role permissions (see [Navigation Configuration](#navigation-configuration)).
 
+### Mobile list screen anatomy
+
+Every list screen should follow the same vertical budget so content starts high on the screen:
+
+```
+┌─────────────────────────────────────┐
+│ (Org ▾) (Branch ▾)                  │  <- scope bar: light outlined chips (a display-only branch is a plain label)
+│ ← Users                     [roles] │  <- AppBar owns the title (flat, same surface as scope bar)
+│ [ Members 12 | Invites (2) ]        │  <- ListSectionTabs: counts inline, no "N total" row
+│ (🔍 Search…            ) [tune]     │  <- ListToolbar: 44dp pill field + filter/sort actions
+│ ◉ Name                     [Admin]  │  <- two-line row: name + secondary line, tonal chip trailing
+│   email@example.com                 │
+│ ─────── End of the list ─────────── │  <- quiet hairline footer
+│                     [+ Invite people]│  <- labelled extended FAB for the primary create action
+└─────────────────────────────────────┘
+```
+
+Shared building blocks live in `lib/src/core/widgets/list/`:
+
+| Widget | Use |
+|--------|-----|
+| `ListToolbar` | Search field (or dismissible active-query chip) + optional sort/filter actions; filter badge only when count > 0 |
+| `ListSectionTabs<T>` | Compact segmented tabs with inline counts (`highlightCount` draws an attention badge, e.g. pending invites) |
+| `AppListRow` / `RowChip` | The single list row: 48dp+ rounded tile with avatar/image leading, title + subtitle, trailing widget; selected state uses `secondaryContainer`. `RowChip` is the tonal role/status chip (optional colored dot, ≥ 4.5:1 label contrast). Used by Users, Roles, Sales, Products, Customers, Employees, Services, Promos and Product Categories |
+| `ListPanelHeader` | Title + count pill for panes with no AppBar (tablet/desktop master pane). Mobile pages that already have an AppBar pass `showHeader: false` to the panel |
+
+Rules: one title per screen; touch targets ≥ 44dp; secondary text uses `onSurfaceVariant` (≥ 4.5:1); status/role are chips, not grey subtext.
+
 ### Mobile Drawer (`MobileDrawer`, accessed via hamburger or "More")
+
+Pill-style rows (56dp, rounded `secondaryContainer` for the selected page) grouped with the same categories as the desktop sidebar (`appNavCategoryFor`). The branch switcher is the same compact chip used in the shell scope bar.
 
 ```
 ┌───────────────────────┐
 │  ╭─────╮              │
 │  │ LOGO│  HZN Laundry  │
-│  ╰─────╯  Laundry Management System │
-│           <pocketbase url>          │
-├───────────────────────┤
-│  [Branch Switcher]     │
-├───────────────────────┤
+│  ╰─────╯  <pocketbase url>           │
+│  (Branch ▾)            │
 │ 🏠 Dashboard           │
+│  OPERATIONS            │
 │ 🧾 Sales History       │
 │ 📦 Products            │
 │ 🩺 Services            │
+│ 🎟️ Promos              │
+│  PEOPLE                │
 │ 👤 Customers           │
 │ 🪪 Employees            │
-├───────────────────────┤   <- Divider after index 5
+│  INSIGHTS              │
 │ 📊 Reports             │
 │ 🕓 Activities           │
+│  ADMINISTRATION        │
 │ 🏢 Organization        │
-│ 🎟️ Promos              │
+│ 🛡️ Super Admin         │
+│  ACCOUNT               │
+│ 👤 Profile             │
 │ ⚙️ System              │
-├───────────────────────┤
-│ 🚪 Logout              │
+│ ────────────────────── │
+│ 🚪 Logout (error color)│
 └───────────────────────┘
 ```
 
-Items are permission-filtered (`filterNavItems`) before this split — a role without `system.admin` only sees the items its permissions unlock, in this same relative order. `MobileDrawer` splits the *visible* list into a "primary" group (original index ≤ 5: Dashboard, Sales History, Products, Services, Customers, Employees) above a divider, and a "secondary" group (index > 5: Reports, Activities, Organization, Promos, System) below it.
+Items are permission-filtered (`filterNavItems`) first; a section is omitted when none of its items are visible. Super Admin (system admins) appears under Administration after Organizations. Destinations with no category (System) sit in the Account section with Profile.
 
 ---
 
@@ -124,37 +157,45 @@ Firebase-style expandable sidebar (`lib/src/core/widgets/desktop_side_nav.dart`)
 ```
 ┌────────────────┬──────────────────────────────────┐
 │ LOGO  HZN …    │ [Branch Switcher]   [Fullscreen] │
-│ Dashboard      ├──────────────────────────────────┤
-│ Shortcuts      │                                  │
-│  Orders        │                                  │
-│  Products      │          CONTENT AREA            │
-│  Services      │                                  │
-│  Customers     │                                  │
-│  Show more     │                                  │
-│ Categories     │                                  │
-│  Operations ▸  │  <- hover/tap flyout             │
-│  People ▸      │                                  │
-│  Insights ▸    │                                  │
-│  Administration▸                                  │
+│ [Search pages] ├──────────────────────────────────┤
+│ Dashboard      │                                  │
+│ PINNED         │                                  │
+│  Orders     📌 │                                  │
+│  Products   📌 │          CONTENT AREA            │
+│  Customers  📌 │                                  │
+│ OPERATIONS  ⌄  │                                  │
+│  Promos        │                                  │
+│ PEOPLE      ⌄  │                                  │
+│  Employees     │                                  │
+│ INSIGHTS    ⌄  │                                  │
+│  Reports …     │                                  │
+│ SETUP       ›  │  <- collapsed by default         │
+│ ADMINISTRATION›│                                  │
+├────────────────┤                                  │
+│ Profile        │  <- fixed footer                 │
 │ System      ▸  │                                  │
-│ Logout         │                                  │
-│ < collapse     │                                  │
+│ Logout     [<] │                                  │
 └────────────────┴──────────────────────────────────┘
 ```
 
+Every destination is visible inline (no hover flyouts), grouped by intent:
+
 | Slot | Items |
 |------|--------|
-| Pinned top | Dashboard |
-| Default shortcuts | Orders, Products, Services, Customers |
-| Show more extras | Employees, Reports, Activities, Management, Organizations, Promos |
-| Operations flyout | Promos (when not expanded via Show more) |
-| People flyout | Employees |
-| Insights flyout | Reports, Activities |
-| Administration flyout | Users, Roles, Branches, Machines, Storages, Categories, Units, Cashier, Organizations |
-| Pinned above footer | System |
-| Footer | Logout + collapse/expand |
+| Top | Dashboard (always) |
+| Pinned | User-chosen destinations, in pin order. Defaults for a new user: Orders, Products, Services, Customers |
+| Operations | Orders, Products, Services, Promos |
+| People | Customers, Employees |
+| Insights | Reports, Activities |
+| Setup (collapsed by default) | Branches, Machines, Storages, Categories, Units, Cashier |
+| Administration (collapsed by default) | Users, Roles, Organizations, Super Admin (system admins) |
+| Footer | Profile, System, Logout, collapse/expand |
 
-Shown shortcuts are excluded from most category flyouts. **Administration** always lists management sections (and Organizations) when those nav items are permitted — it does not require opening a Management hub first. Empty groups (after permission filtering) are omitted. Collapse is session-only. Category rows open a flyout on hover when expanded, and on tap when collapsed.
+**Pinning:** hover a row and click the pin button (also reachable by keyboard focus), or long-press on touch. Pinned rows move out of their group into **Pinned**; unpin returns them. Pins and collapsed groups are stored on-device with `shared_preferences`, namespaced by user id (`NavPreferencesController`, `nav.pinned.<userId>`, `nav.collapsed.<userId>`), so they survive restarts but do not sync across devices. Pins for destinations the user can no longer access are hidden but kept.
+
+**Groups:** click a group title to collapse/expand. A collapsed group still shows the page you are currently on. Empty groups (after permission/feature filtering and pinning) are omitted. Setup and Administration list management sections (and Organizations) directly whenever the Management / Organizations nav items are permitted.
+
+**Collapsed rail (72px):** icon-only Dashboard and pinned items, then one icon per group that opens a flyout on tap.
 
 List/detail master-detail layouts (e.g. a list panel beside a detail panel) are implemented per-page where the page needs one, not by the shell itself — check individual feature pages (e.g. `lib/src/features/products/presentation/pages/`) for whether a given screen adopts that pattern at these widths.
 
@@ -353,6 +394,8 @@ Mobile bottom nav uses `visibleItems.take(3)` from this same permission-filtered
 ---
 
 ## Tabbed Detail Pages
+
+**Header (`DetailAppBar`, `core/widgets/detail_app_bar.dart`):** User, Product, Employee, Customer, Service and Promo detail pages share one AppBar: title with an optional subtitle (e.g. role, phone), an always-visible Edit icon, and a single overflow menu (Refresh first, then page actions; destructive items in the error color). With three or fewer tabs the `TabBar` fills the width; with four or more (`DetailAppBar.maxFillTabs`) it scrolls so labels are never truncated. Sale and Organization detail keep bespoke AppBars (print menu, refresh spinner).
 
 Several detail pages across the app use a `TabBar`/`TabBarView` pattern rather than a single scroll view — e.g. `lib/src/features/products/presentation/pages/product_detail_page.dart`, plus `sale_detail_page.dart`, `user_detail_page.dart`, `employee_detail_page.dart`, and `organization_detail_page.dart`. Product Detail is representative:
 

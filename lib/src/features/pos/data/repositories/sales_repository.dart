@@ -192,7 +192,8 @@ class SalesRepositoryImpl implements SalesRepository {
           'postedDate':
               (postedDate ?? DateTime.now()).toUtc().toIso8601String(),
           if (sale.readyForPickupAt != null)
-            'readyForPickupAt': sale.readyForPickupAt!.toUtc().toIso8601String(),
+            'readyForPickupAt':
+                sale.readyForPickupAt!.toUtc().toIso8601String(),
         };
         final saleRecord = await _sales.create(body: saleBody);
 
@@ -272,13 +273,22 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<Sale> updateOrderStatus(String id, OrderStatus status) async {
     return TaskEither.tryCatch(
       () async {
+        final current = await _sales.getOne(id);
+        final currentSaleStatus =
+            current.getStringValue('status').toLowerCase();
+
         final data = <String, dynamic>{
           'orderStatus': status.name,
         };
-        // Set pickedUpAt and mark sale as completed when status changes to pickedUp
         if (status == OrderStatus.pickedUp) {
           data['pickedUpAt'] = DateTime.now().toUtc().toIso8601String();
           data['status'] = 'completed';
+        } else {
+          data['pickedUpAt'] = '';
+          if (currentSaleStatus != 'refunded' &&
+              currentSaleStatus != 'voided') {
+            data['status'] = 'pending';
+          }
         }
         final record = await _sales.update(id, body: data);
         return _toSaleEntity(record);
@@ -291,7 +301,15 @@ class SalesRepositoryImpl implements SalesRepository {
   FutureEither<Sale> updateSaleStatus(String id, String status) async {
     return TaskEither.tryCatch(
       () async {
-        final record = await _sales.update(id, body: {'status': status});
+        final body = <String, dynamic>{'status': status};
+        if (status.toLowerCase() == 'voided') {
+          final userId = _pb.authStore.record?.id;
+          if (userId != null && userId.isNotEmpty) {
+            body['voidedBy'] = userId;
+          }
+          body['voidedAt'] = DateTime.now().toUtc().toIso8601String();
+        }
+        final record = await _sales.update(id, body: body);
         return _toSaleEntity(record);
       },
       Failure.handle,
@@ -299,7 +317,8 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<List<Sale>> getSales({String? branchFilter, DateTime? date}) async {
+  FutureEither<List<Sale>> getSales(
+      {String? branchFilter, DateTime? date}) async {
     return TaskEither.tryCatch(
       () async {
         var filter = branchFilter ?? '';
@@ -536,8 +555,7 @@ class SalesRepositoryImpl implements SalesRepository {
 
         final totalOrders = totalResult.totalItems;
         final paidCount = paidResult.totalItems;
-        final unpaidCount =
-            (totalOrders - paidCount).clamp(0, totalOrders);
+        final unpaidCount = (totalOrders - paidCount).clamp(0, totalOrders);
 
         final startDay =
             DateTime(startDate.year, startDate.month, startDate.day);

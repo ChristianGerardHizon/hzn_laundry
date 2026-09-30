@@ -18,6 +18,9 @@ class SubscriptionPackage with SubscriptionPackageMappable {
     this.organizationId,
     this.isActive = true,
     this.isDeleted = false,
+    this.features = const [],
+    this.maxBranches,
+    this.maxEmployees,
   });
 
   final String id;
@@ -30,4 +33,13 @@ class SubscriptionPackage with SubscriptionPackageMappable {
   final String? organizationId;
   final bool isActive;
   final bool isDeleted;
+
+  /// Feature keys (see `FeatureKey.key`) included in this package.
+  final List<String> features;
+
+  /// Max branches per organization. `null` = unlimited.
+  final int? maxBranches;
+
+  /// Max employees per organization. `null` = unlimited.
+  final int? maxEmployees;
 }

@@ -39,7 +39,6 @@ class MobileBottomNav extends StatelessWidget {
           ? selectedIndex
           : bottomItems.length,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      height: 60,
       onDestinationSelected: (index) {
         if (index == bottomItems.length) {
           // "More" tapped - open drawer

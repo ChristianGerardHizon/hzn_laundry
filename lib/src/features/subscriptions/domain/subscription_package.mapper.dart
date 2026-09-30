@@ -77,6 +77,25 @@ class SubscriptionPackageMapper extends ClassMapperBase<SubscriptionPackage> {
     opt: true,
     def: false,
   );
+  static List<String> _$features(SubscriptionPackage v) => v.features;
+  static const Field<SubscriptionPackage, List<String>> _f$features = Field(
+    'features',
+    _$features,
+    opt: true,
+    def: const [],
+  );
+  static int? _$maxBranches(SubscriptionPackage v) => v.maxBranches;
+  static const Field<SubscriptionPackage, int> _f$maxBranches = Field(
+    'maxBranches',
+    _$maxBranches,
+    opt: true,
+  );
+  static int? _$maxEmployees(SubscriptionPackage v) => v.maxEmployees;
+  static const Field<SubscriptionPackage, int> _f$maxEmployees = Field(
+    'maxEmployees',
+    _$maxEmployees,
+    opt: true,
+  );
 
   @override
   final MappableFields<SubscriptionPackage> fields = const {
@@ -90,6 +109,9 @@ class SubscriptionPackageMapper extends ClassMapperBase<SubscriptionPackage> {
     #organizationId: _f$organizationId,
     #isActive: _f$isActive,
     #isDeleted: _f$isDeleted,
+    #features: _f$features,
+    #maxBranches: _f$maxBranches,
+    #maxEmployees: _f$maxEmployees,
   };
 
   static SubscriptionPackage _instantiate(DecodingData data) {
@@ -104,6 +126,9 @@ class SubscriptionPackageMapper extends ClassMapperBase<SubscriptionPackage> {
       organizationId: data.dec(_f$organizationId),
       isActive: data.dec(_f$isActive),
       isDeleted: data.dec(_f$isDeleted),
+      features: data.dec(_f$features),
+      maxBranches: data.dec(_f$maxBranches),
+      maxEmployees: data.dec(_f$maxEmployees),
     );
   }
 
@@ -177,6 +202,7 @@ abstract class SubscriptionPackageCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get features;
   $R call({
     String? id,
     String? name,
@@ -188,6 +214,9 @@ abstract class SubscriptionPackageCopyWith<
     String? organizationId,
     bool? isActive,
     bool? isDeleted,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
   SubscriptionPackageCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -203,6 +232,13 @@ class _SubscriptionPackageCopyWithImpl<$R, $Out>
   late final ClassMapperBase<SubscriptionPackage> $mapper =
       SubscriptionPackageMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get features =>
+      ListCopyWith(
+        $value.features,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(features: v),
+      );
+  @override
   $R call({
     String? id,
     String? name,
@@ -214,6 +250,9 @@ class _SubscriptionPackageCopyWithImpl<$R, $Out>
     Object? organizationId = $none,
     bool? isActive,
     bool? isDeleted,
+    List<String>? features,
+    Object? maxBranches = $none,
+    Object? maxEmployees = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != null) #id: id,
@@ -226,6 +265,9 @@ class _SubscriptionPackageCopyWithImpl<$R, $Out>
       if (organizationId != $none) #organizationId: organizationId,
       if (isActive != null) #isActive: isActive,
       if (isDeleted != null) #isDeleted: isDeleted,
+      if (features != null) #features: features,
+      if (maxBranches != $none) #maxBranches: maxBranches,
+      if (maxEmployees != $none) #maxEmployees: maxEmployees,
     }),
   );
   @override
@@ -240,6 +282,9 @@ class _SubscriptionPackageCopyWithImpl<$R, $Out>
     organizationId: data.get(#organizationId, or: $value.organizationId),
     isActive: data.get(#isActive, or: $value.isActive),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+    features: data.get(#features, or: $value.features),
+    maxBranches: data.get(#maxBranches, or: $value.maxBranches),
+    maxEmployees: data.get(#maxEmployees, or: $value.maxEmployees),
   );
 
   @override

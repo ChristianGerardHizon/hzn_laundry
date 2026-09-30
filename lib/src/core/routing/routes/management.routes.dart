@@ -6,6 +6,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
 import '../../widgets/form_feedback.dart';
+import '../../../features/entitlements/presentation/controllers/can_add_branch_provider.dart';
 import '../../../features/machines/presentation/controllers/machines_controller.dart';
 import '../../../features/machines/presentation/widgets/machine_form_dialog.dart';
 import '../../../features/settings/presentation/widgets/product_category_detail_panel.dart';
@@ -257,18 +258,19 @@ class _ManagementUsersListPage extends ConsumerWidget {
         title: Text(t.navigation.users),
         actions: [
           IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
+            icon: const Icon(Icons.admin_panel_settings_outlined),
             tooltip: t.navigation.roles,
             onPressed: () => const ManagementRolesRoute().goScoped(context),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       floatingActionButton: canInvite
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               heroTag: 'mgmt_users_fab',
               onPressed: () => showInviteUserDialog(context),
-              tooltip: t.organizations.invitePeople,
-              child: const Icon(Icons.person_add),
+              icon: const Icon(Icons.person_add_alt_1),
+              label: Text(t.organizations.invitePeople),
             )
           : null,
       body: paginatedAsync.when(
@@ -280,6 +282,8 @@ class _ManagementUsersListPage extends ConsumerWidget {
                     .refresh(),
       ),
         data: (paginatedState) => UserListPanel(
+          // The AppBar already says "Users"; don't repeat it in the panel.
+          showHeader: false,
           paginatedState: paginatedState,
           selectedId: null,
           onUserTap: (user) {
@@ -325,6 +329,8 @@ class _ManagementRolesListPage extends ConsumerWidget {
                     ref.read(userRolesControllerProvider.notifier).refresh(),
       ),
         data: (roles) => UserRoleListPanel(
+          // The AppBar already says "Roles"; don't repeat it in the panel.
+          showHeader: false,
           roles: roles,
           selectedId: null,
           onRefresh: () =>
@@ -576,12 +582,14 @@ class _ManagementBranchesListPage extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'branch_fab',
-        onPressed: () => showBranchFormDialog(context),
-        tooltip: 'Add Branch',
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: ref.watch(canAddBranchProvider)
+          ? FloatingActionButton(
+              heroTag: 'branch_fab',
+              onPressed: () => showBranchFormDialog(context),
+              tooltip: 'Add Branch',
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: branchesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorState.fromError(

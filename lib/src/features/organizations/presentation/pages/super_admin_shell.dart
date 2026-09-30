@@ -15,8 +15,6 @@ import '../widgets/dialogs/create_organization_setup_dialog.dart';
 import '../widgets/super_admin_mobile_bottom_nav.dart';
 import '../widgets/super_admin_nav_panel.dart';
 
-const _kInk = Color(0xFF0B0B0B);
-
 /// Adaptive shell for the platform Super Admin hub.
 ///
 /// - Tablet+: persistent [SuperAdminNavPanel] + routed content
@@ -32,7 +30,6 @@ class SuperAdminShell extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final isCreating = useState(false);
     final scaffoldKey = useMemoized(GlobalKey<ScaffoldState>.new);
     final location = GoRouterState.of(context).uri.path;
@@ -77,71 +74,87 @@ class SuperAdminShell extends HookConsumerWidget {
       }
     }
 
-    final header = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          TextButton.icon(
-            onPressed: isCreating.value
-                ? null
-                : () => const SelectOrganizationRoute().go(context),
-            style: TextButton.styleFrom(
-              foregroundColor: kSuperAdminBrandTeal,
-              minimumSize: const Size(44, 44),
-            ),
-            icon: const Icon(Icons.arrow_back),
-            label: Text(t.organizations.back),
-          ),
-          const Spacer(),
-          FilledButton.icon(
-            onPressed: isCreating.value ? null : openCreate,
-            style: FilledButton.styleFrom(
-              backgroundColor: kSuperAdminBrandTeal,
-              foregroundColor: _kInk,
-              minimumSize: const Size(44, 44),
-            ),
-            icon: isCreating.value
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: _kInk,
-                    ),
-                  )
-                : const Icon(Icons.add_business_outlined),
-            label: Text(t.organizations.create),
-          ),
-        ],
+    const spinner = SizedBox(
+      width: 18,
+      height: 18,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: kSuperAdminInk,
       ),
     );
 
-    final titleBlock = Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-      child: Column(
+    final topBar = Padding(
+      padding: EdgeInsets.fromLTRB(isTablet ? 24 : 8, 8, isTablet ? 24 : 12, 4),
+      child: Row(
         children: [
-          Assets.icons.appIconTransparent.image(
-            width: 48,
-            height: 48,
+          IconButton(
+            tooltip: t.organizations.back,
+            onPressed: isCreating.value
+                ? null
+                : () => const SelectOrganizationRoute().go(context),
+            style: IconButton.styleFrom(
+              foregroundColor: kSuperAdminBrandTeal,
+              minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
+            ),
+            icon: const Icon(Icons.arrow_back),
           ),
-          const SizedBox(height: 12),
-          Text(
-            t.organizations.superAdminTitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
+          if (!isTablet) ...[
+            Assets.icons.appIconTransparent.image(width: 32, height: 32),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t.organizations.superAdminTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
                 ),
+                if (isTablet)
+                  Text(
+                    t.organizations.superAdminSubtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: kSuperAdminMuted,
+                        ),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            t.organizations.superAdminSubtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurface.withValues(alpha: 0.62),
-                  height: 1.35,
-                ),
-          ),
+          const SizedBox(width: 8),
+          if (isTablet)
+            FilledButton.icon(
+              onPressed: isCreating.value ? null : openCreate,
+              style: FilledButton.styleFrom(
+                backgroundColor: kSuperAdminBrandTeal,
+                foregroundColor: kSuperAdminInk,
+                minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
+              ),
+              icon: isCreating.value
+                  ? spinner
+                  : const Icon(Icons.add_business_outlined),
+              label: Text(t.organizations.create),
+            )
+          else
+            IconButton.filled(
+              tooltip: t.organizations.create,
+              onPressed: isCreating.value ? null : openCreate,
+              style: IconButton.styleFrom(
+                backgroundColor: kSuperAdminBrandTeal,
+                foregroundColor: kSuperAdminInk,
+                minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
+              ),
+              icon: isCreating.value
+                  ? spinner
+                  : const Icon(Icons.add_business_outlined),
+            ),
         ],
       ),
     );
@@ -161,7 +174,7 @@ class SuperAdminShell extends HookConsumerWidget {
         builder: (context) {
           return Scaffold(
             key: scaffoldKey,
-            backgroundColor: _kInk,
+            backgroundColor: kSuperAdminInk,
             drawer: isTablet
                 ? null
                 : Drawer(
@@ -183,8 +196,7 @@ class SuperAdminShell extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        header,
-                        titleBlock,
+                        topBar,
                         Expanded(child: child),
                       ],
                     ),

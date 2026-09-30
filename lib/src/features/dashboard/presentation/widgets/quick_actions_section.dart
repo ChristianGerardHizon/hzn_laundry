@@ -6,6 +6,8 @@ import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/nav_permissions.dart';
 import '../../../customers/presentation/widgets/customer_form_sheet.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../employees/presentation/widgets/attendance_dialog.dart';
 import '../../../sales/presentation/widgets/create_order_dialog.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
@@ -33,9 +35,12 @@ class QuickActionsSection extends ConsumerWidget {
     final role = roleAsync.value;
     final isAdmin = role?.isAdmin ?? false;
     final isAllBranches = ref.watch(isAllBranchesProvider);
-    final canAttendance = isAdmin ||
-        (role?.hasPermission(Permissions.attendanceView) ?? false) ||
-        (role?.hasPermission(Permissions.attendanceCreate) ?? false);
+    final attendanceFeatureOn =
+        ref.watch(featureEnabledProvider(FeatureKey.attendance));
+    final canAttendance = attendanceFeatureOn &&
+        (isAdmin ||
+            (role?.hasPermission(Permissions.attendanceView) ?? false) ||
+            (role?.hasPermission(Permissions.attendanceCreate) ?? false));
     final canCreateSale =
         isAdmin || (role?.hasPermission(Permissions.salesCreate) ?? false);
     final canCreateCustomer =

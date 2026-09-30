@@ -87,6 +87,12 @@ class PaymentDtoMapper extends ClassMapperBase<PaymentDto> {
     _$voidReason,
     opt: true,
   );
+  static String? _$voidedBy(PaymentDto v) => v.voidedBy;
+  static const Field<PaymentDto, String> _f$voidedBy = Field(
+    'voidedBy',
+    _$voidedBy,
+    opt: true,
+  );
   static String? _$created(PaymentDto v) => v.created;
   static const Field<PaymentDto, String> _f$created = Field(
     'created',
@@ -116,6 +122,7 @@ class PaymentDtoMapper extends ClassMapperBase<PaymentDto> {
     #postedDate: _f$postedDate,
     #voidedAt: _f$voidedAt,
     #voidReason: _f$voidReason,
+    #voidedBy: _f$voidedBy,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -136,6 +143,7 @@ class PaymentDtoMapper extends ClassMapperBase<PaymentDto> {
       postedDate: data.dec(_f$postedDate),
       voidedAt: data.dec(_f$voidedAt),
       voidReason: data.dec(_f$voidReason),
+      voidedBy: data.dec(_f$voidedBy),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -216,6 +224,7 @@ abstract class PaymentDtoCopyWith<$R, $In extends PaymentDto, $Out>
     String? postedDate,
     String? voidedAt,
     String? voidReason,
+    String? voidedBy,
     String? created,
     String? updated,
   });
@@ -246,51 +255,55 @@ class _PaymentDtoCopyWithImpl<$R, $Out>
     Object? postedDate = $none,
     Object? voidedAt = $none,
     Object? voidReason = $none,
+    Object? voidedBy = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (sale != null) #sale: sale,
-      if (amount != null) #amount: amount,
-      if (paymentMethod != null) #paymentMethod: paymentMethod,
-      if (type != null) #type: type,
-      if (isVoided != null) #isVoided: isVoided,
-      if (paymentRef != $none) #paymentRef: paymentRef,
-      if (paymentProof != $none) #paymentProof: paymentProof,
-      if (notes != $none) #notes: notes,
-      if (postedDate != $none) #postedDate: postedDate,
-      if (voidedAt != $none) #voidedAt: voidedAt,
-      if (voidReason != $none) #voidReason: voidReason,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (sale != null) #sale: sale,
+          if (amount != null) #amount: amount,
+          if (paymentMethod != null) #paymentMethod: paymentMethod,
+          if (type != null) #type: type,
+          if (isVoided != null) #isVoided: isVoided,
+          if (paymentRef != $none) #paymentRef: paymentRef,
+          if (paymentProof != $none) #paymentProof: paymentProof,
+          if (notes != $none) #notes: notes,
+          if (postedDate != $none) #postedDate: postedDate,
+          if (voidedAt != $none) #voidedAt: voidedAt,
+          if (voidReason != $none) #voidReason: voidReason,
+          if (voidedBy != $none) #voidedBy: voidedBy,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   PaymentDto $make(CopyWithData data) => PaymentDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    sale: data.get(#sale, or: $value.sale),
-    amount: data.get(#amount, or: $value.amount),
-    paymentMethod: data.get(#paymentMethod, or: $value.paymentMethod),
-    type: data.get(#type, or: $value.type),
-    isVoided: data.get(#isVoided, or: $value.isVoided),
-    paymentRef: data.get(#paymentRef, or: $value.paymentRef),
-    paymentProof: data.get(#paymentProof, or: $value.paymentProof),
-    notes: data.get(#notes, or: $value.notes),
-    postedDate: data.get(#postedDate, or: $value.postedDate),
-    voidedAt: data.get(#voidedAt, or: $value.voidedAt),
-    voidReason: data.get(#voidReason, or: $value.voidReason),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        sale: data.get(#sale, or: $value.sale),
+        amount: data.get(#amount, or: $value.amount),
+        paymentMethod: data.get(#paymentMethod, or: $value.paymentMethod),
+        type: data.get(#type, or: $value.type),
+        isVoided: data.get(#isVoided, or: $value.isVoided),
+        paymentRef: data.get(#paymentRef, or: $value.paymentRef),
+        paymentProof: data.get(#paymentProof, or: $value.paymentProof),
+        notes: data.get(#notes, or: $value.notes),
+        postedDate: data.get(#postedDate, or: $value.postedDate),
+        voidedAt: data.get(#voidedAt, or: $value.voidedAt),
+        voidReason: data.get(#voidReason, or: $value.voidReason),
+        voidedBy: data.get(#voidedBy, or: $value.voidedBy),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   PaymentDtoCopyWith<$R2, PaymentDto, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
-  ) => _PaymentDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
+  ) =>
+      _PaymentDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

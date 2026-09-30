@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
+import '../../../entitlements/domain/feature_key.dart';
 import '../../domain/billing_interval_unit.dart';
 import '../../domain/subscription_package.dart';
 import '../controllers/packages_controller.dart';
@@ -93,8 +94,7 @@ class PackagesTab extends HookConsumerWidget {
                         currency: currency,
                         onEdit: () =>
                             _showPackageDialog(context, ref, package: pkg),
-                        onDelete: () =>
-                            _confirmDelete(context, ref, pkg),
+                        onDelete: () => _confirmDelete(context, ref, pkg),
                       );
                     },
                   ),
@@ -231,6 +231,12 @@ class _PackageCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Branches: ${package.maxBranches ?? 'Unlimited'} · '
+                    'Employees: ${package.maxEmployees ?? 'Unlimited'}',
+                    style: const TextStyle(color: _kMuted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -276,6 +282,14 @@ class _PackageFormDialog extends HookConsumerWidget {
         final intervalCount = int.parse(values['intervalCount'].toString());
         final intervalUnit = values['intervalUnit'] as BillingIntervalUnit;
         final isPremade = values['isPremade'] as bool? ?? true;
+        final features =
+            (values['features'] as List?)?.whereType<String>().toList() ??
+                <String>[];
+        // Blank = unlimited (sent as 0).
+        int limitOf(String name) =>
+            int.tryParse((values[name] as String?)?.trim() ?? '') ?? 0;
+        final maxBranches = limitOf('maxBranches');
+        final maxEmployees = limitOf('maxEmployees');
 
         final notifier = ref.read(packagesControllerProvider().notifier);
         if (isEditing) {
@@ -287,6 +301,9 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalCount: intervalCount,
             intervalUnit: intervalUnit,
             isPremade: isPremade,
+            features: features,
+            maxBranches: maxBranches,
+            maxEmployees: maxEmployees,
           );
           if (!context.mounted) return;
           if (ok) {
@@ -311,6 +328,9 @@ class _PackageFormDialog extends HookConsumerWidget {
             intervalCount: intervalCount,
             intervalUnit: intervalUnit,
             isPremade: isPremade,
+            features: features,
+            maxBranches: maxBranches,
+            maxEmployees: maxEmployees,
           );
           if (!context.mounted) return;
           if (created != null) {
@@ -354,6 +374,10 @@ class _PackageFormDialog extends HookConsumerWidget {
                 'intervalUnit':
                     package?.intervalUnit ?? BillingIntervalUnit.month,
                 'isPremade': package?.isPremade ?? true,
+                'features': package?.features ??
+                    [for (final f in FeatureKey.values) f.key],
+                'maxBranches': package?.maxBranches?.toString() ?? '',
+                'maxEmployees': package?.maxEmployees?.toString() ?? '',
               },
               child: SingleChildScrollView(
                 child: Column(
@@ -435,7 +459,59 @@ class _PackageFormDialog extends HookConsumerWidget {
                     FormBuilderSwitch(
                       name: 'isPremade',
                       title: Text(t.subscriptions.isPremade),
-                      decoration: const InputDecoration(border: InputBorder.none),
+                      decoration:
+                          const InputDecoration(border: InputBorder.none),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: 'maxBranches',
+                            decoration: const InputDecoration(
+                              labelText: 'Max branches',
+                              hintText: 'Unlimited',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(),
+                              FormBuilderValidators.min(0),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: 'maxEmployees',
+                            decoration: const InputDecoration(
+                              labelText: 'Max employees',
+                              hintText: 'Unlimited',
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(),
+                              FormBuilderValidators.min(0),
+                            ]),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    FormBuilderCheckboxGroup<String>(
+                      name: 'features',
+                      orientation: OptionsOrientation.vertical,
+                      decoration: const InputDecoration(
+                        labelText: 'Included features',
+                        border: InputBorder.none,
+                      ),
+                      activeColor: _kBrandTeal,
+                      options: [
+                        for (final f in FeatureKey.values)
+                          FormBuilderFieldOption<String>(
+                            value: f.key,
+                            child: Text(f.label),
+                          ),
+                      ],
                     ),
                   ],
                 ),
