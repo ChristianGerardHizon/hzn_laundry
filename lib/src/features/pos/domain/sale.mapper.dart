@@ -108,6 +108,18 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$readyForPickupAt,
     opt: true,
   );
+  static String? _$voidedById(Sale v) => v.voidedById;
+  static const Field<Sale, String> _f$voidedById = Field(
+    'voidedById',
+    _$voidedById,
+    opt: true,
+  );
+  static DateTime? _$voidedAt(Sale v) => v.voidedAt;
+  static const Field<Sale, DateTime> _f$voidedAt = Field(
+    'voidedAt',
+    _$voidedAt,
+    opt: true,
+  );
   static DateTime? _$created(Sale v) => v.created;
   static const Field<Sale, DateTime> _f$created = Field(
     'created',
@@ -139,6 +151,8 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #notes: _f$notes,
     #postedDate: _f$postedDate,
     #readyForPickupAt: _f$readyForPickupAt,
+    #voidedById: _f$voidedById,
+    #voidedAt: _f$voidedAt,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -161,6 +175,8 @@ class SaleMapper extends ClassMapperBase<Sale> {
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
       readyForPickupAt: data.dec(_f$readyForPickupAt),
+      voidedById: data.dec(_f$voidedById),
+      voidedAt: data.dec(_f$voidedAt),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -229,6 +245,8 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     String? notes,
     DateTime? postedDate,
     DateTime? readyForPickupAt,
+    String? voidedById,
+    DateTime? voidedAt,
     DateTime? created,
     DateTime? updated,
   });
@@ -259,6 +277,8 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     Object? notes = $none,
     Object? postedDate = $none,
     Object? readyForPickupAt = $none,
+    Object? voidedById = $none,
+    Object? voidedAt = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -279,6 +299,8 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
       if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
+      if (voidedById != $none) #voidedById: voidedById,
+      if (voidedAt != $none) #voidedAt: voidedAt,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -301,6 +323,8 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
     readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
+    voidedById: data.get(#voidedById, or: $value.voidedById),
+    voidedAt: data.get(#voidedAt, or: $value.voidedAt),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

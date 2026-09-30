@@ -16,15 +16,16 @@ import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
+import '../../../users/presentation/controllers/user_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
+import '../controllers/sale_refresh.dart';
 import '../controllers/sale_service_items_provider.dart';
 import 'assign_machines_dialog.dart';
 import 'assign_storages_dialog.dart';
 import 'prepare_order_for_ready.dart';
 import 'set_packs_dialog.dart';
 import 'sale_highlight_banner.dart';
-import 'sale_status_chip.dart';
 import 'sale_usage_section.dart';
 
 /// Reusable sale detail content widget.
@@ -136,43 +137,35 @@ class _SaleHeaderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        sale.receiptNumber,
-                        style: (compact
-                                ? theme.textTheme.bodyLarge
-                                : theme.textTheme.titleMedium)
-                            ?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        sale.postedDate != null
-                            ? dateFormat.format(sale.postedDate!)
-                            : 'Unknown date',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (sale.readyForPickupAt != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
+                if (compact) ...[
+                  Text(
+                    sale.receiptNumber,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Text(
+                  sale.postedDate != null
+                      ? dateFormat.format(sale.postedDate!)
+                      : 'Unknown date',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                SaleStatusChip(status: sale.status),
+                if (sale.readyForPickupAt != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
             if (sale.customerName != null && sale.customerName!.isNotEmpty) ...[
@@ -1058,12 +1051,7 @@ Future<bool> advanceSaleOrderStatus({
       return false;
     },
     (_) {
-      ref.invalidate(saleProvider(sale.id));
-      ref.invalidate(saleServiceItemsProvider(sale.id));
-      ref.invalidate(kanbanSalesProvider);
-      ref.invalidate(notPickedUpCountProvider);
-      ref.invalidate(todayCountProvider);
-      ref.invalidate(backlogPendingCountProvider);
+      refreshSaleRelatedProviders(ref, saleId: sale.id);
       return true;
     },
   );
@@ -1229,12 +1217,18 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
       }
     }
 
+    final voidedByName = sale.voidedById != null && sale.voidedById!.isNotEmpty
+        ? ref.watch(userProvider(sale.voidedById!)).value?.name
+        : null;
+
     return SaleHighlightBanner(
       orderStatus: sale.orderStatus,
       isPaid: sale.isPaid,
       saleStatus: sale.status,
       paymentStatus: sale.paymentStatus,
       balanceDue: balanceDue,
+      voidedByName: voidedByName,
+      voidedAt: sale.voidedAt,
       onTap: canChangeStatus ? showStatusMenu : null,
     );
   }

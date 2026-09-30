@@ -28,6 +28,8 @@ class SaleDto with SaleDtoMappable {
   final String? notes;
   final String? postedDate;
   final String? readyForPickupAt;
+  final String? voidedBy;
+  final String? voidedAt;
   final String? created;
   final String? updated;
 
@@ -50,6 +52,8 @@ class SaleDto with SaleDtoMappable {
     this.notes,
     this.postedDate,
     this.readyForPickupAt,
+    this.voidedBy,
+    this.voidedAt,
     this.created,
     this.updated,
   });
@@ -74,6 +78,8 @@ class SaleDto with SaleDtoMappable {
       notes: record.getStringValue('notes'),
       postedDate: record.get<String>('postedDate'),
       readyForPickupAt: record.get<String>('readyForPickupAt'),
+      voidedBy: record.getStringValue('voidedBy'),
+      voidedAt: record.get<String>('voidedAt'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -93,10 +99,14 @@ class SaleDto with SaleDtoMappable {
       packs: packs,
       pickedUpAt: parseToLocal(pickedUpAt),
       customerId: customer != null && customer!.isNotEmpty ? customer : null,
-      customerName: customerName != null && customerName!.isNotEmpty ? customerName : null,
+      customerName: customerName != null && customerName!.isNotEmpty
+          ? customerName
+          : null,
       notes: notes,
       postedDate: parseToLocal(postedDate),
       readyForPickupAt: parseToLocal(readyForPickupAt),
+      voidedById: voidedBy != null && voidedBy!.isNotEmpty ? voidedBy : null,
+      voidedAt: parseToLocal(voidedAt),
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

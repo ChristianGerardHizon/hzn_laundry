@@ -303,8 +303,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
         final entries = <PaymentsDailySummaryEntry>[];
         for (final record in records) {
-          final dateStr =
-              record.get<dynamic>('paymentDate')?.toString() ?? '';
+          final dateStr = record.get<dynamic>('paymentDate')?.toString() ?? '';
           final parsed = DateTime.tryParse(dateStr);
           if (parsed == null) continue;
 
@@ -415,11 +414,16 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }) async {
     return TaskEither.tryCatch(
       () async {
-        await _payments.update(id, body: {
+        final body = <String, dynamic>{
           'isVoided': true,
           'voidedAt': DateTime.now().toUtc().toIso8601String(),
           'voidReason': reason ?? '',
-        });
+        };
+        final userId = _pb.authStore.record?.id;
+        if (userId != null && userId.isNotEmpty) {
+          body['voidedBy'] = userId;
+        }
+        await _payments.update(id, body: body);
 
         await _updateSaleIsPaid(saleId);
       },

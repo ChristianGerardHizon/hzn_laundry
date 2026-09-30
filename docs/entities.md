@@ -711,6 +711,8 @@ A finalized transaction/receipt.
 | `notes` | String | No | Internal notes |
 | `postedDate` | DateTime | No | Editable business/transaction date |
 | `readyForPickupAt` | DateTime | No | Optional promised ready-for-pickup date/time |
+| `voidedById` | String (FK) | No | User who voided the sale |
+| `voidedAt` | DateTime | No | Timestamp when the sale was voided |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
@@ -822,6 +824,7 @@ A payment transaction against a sale.
 | `postedDate` | DateTime | No | Editable business/transaction date |
 | `voidedAt` | DateTime | No | Timestamp voided |
 | `voidReason` | String | No | Admin note for the void |
+| `voidedById` | String (FK) | No | User who voided the payment |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 

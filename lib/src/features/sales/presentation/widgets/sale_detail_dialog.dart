@@ -163,8 +163,11 @@ class _DialogFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final showPayment =
-        sale != null && !sale!.isPaid; // shows for unpaid and partial
+    final statusLower = sale?.status.toLowerCase() ?? '';
+    final showPayment = sale != null &&
+        !sale!.isPaid &&
+        statusLower != 'voided' &&
+        statusLower != 'refunded';
     final totalPaidAsync =
         showPayment ? ref.watch(saleTotalPaidProvider(saleId)) : null;
 
@@ -274,9 +277,8 @@ class _DialogPrintMenu extends HookConsumerWidget {
       final orgName = org?.name;
       final businessName =
           (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
-      final branchAddress = (branch?.address.isNotEmpty == true)
-          ? branch!.address
-          : org?.address;
+      final branchAddress =
+          (branch?.address.isNotEmpty == true) ? branch!.address : org?.address;
       final contactNumber = (branch?.contactNumber.isNotEmpty == true)
           ? branch!.contactNumber
           : org?.contactNumber;

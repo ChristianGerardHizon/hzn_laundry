@@ -14,6 +14,7 @@ import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
+import '../../../sales/presentation/controllers/sale_refresh.dart';
 import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
 import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
 import '../../../sales/presentation/widgets/prepare_order_for_ready.dart';
@@ -84,10 +85,7 @@ Future<void> _handleKanbanDrop(
       ref.invalidate(backlogPendingCountProvider);
     },
     (_) {
-      ref.invalidate(kanbanSalesProvider);
-      ref.invalidate(notPickedUpCountProvider);
-      ref.invalidate(todayCountProvider);
-      ref.invalidate(backlogPendingCountProvider);
+      refreshSaleRelatedProviders(ref, saleId: sale.id);
     },
   );
 }
@@ -551,8 +549,7 @@ class _TabletKanbanLayout extends StatelessWidget {
       height: 620,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final equalWidth =
-              (constraints.maxWidth - gapsWidth) / columnCount;
+          final equalWidth = (constraints.maxWidth - gapsWidth) / columnCount;
           final columnWidth = equalWidth < Breakpoints.minKanbanColumnWidth
               ? Breakpoints.minKanbanColumnWidth
               : equalWidth;

@@ -24,6 +24,7 @@ class PaymentDto with PaymentDtoMappable {
   final String? postedDate;
   final String? voidedAt;
   final String? voidReason;
+  final String? voidedBy;
   final String? created;
   final String? updated;
 
@@ -42,6 +43,7 @@ class PaymentDto with PaymentDtoMappable {
     this.postedDate,
     this.voidedAt,
     this.voidReason,
+    this.voidedBy,
     this.created,
     this.updated,
   });
@@ -62,6 +64,7 @@ class PaymentDto with PaymentDtoMappable {
       postedDate: record.get<String>('postedDate'),
       voidedAt: record.get<String>('voidedAt'),
       voidReason: record.getStringValue('voidReason'),
+      voidedBy: record.getStringValue('voidedBy'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -83,6 +86,7 @@ class PaymentDto with PaymentDtoMappable {
       voidedAt: parseToLocal(voidedAt),
       voidReason:
           voidReason != null && voidReason!.isNotEmpty ? voidReason : null,
+      voidedById: voidedBy != null && voidedBy!.isNotEmpty ? voidedBy : null,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

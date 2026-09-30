@@ -32,6 +32,7 @@ import '../../../customers/presentation/controllers/customer_provider.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
+import '../controllers/sale_refresh.dart';
 import '../controllers/sale_service_items_provider.dart';
 import '../widgets/sale_usage_section.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
@@ -47,7 +48,7 @@ import '../widgets/record_payment_sheet.dart';
 import '../widgets/set_packs_dialog.dart';
 import '../widgets/sale_detail_content.dart';
 import '../widgets/sale_highlight_banner.dart';
-import '../widgets/sale_status_chip.dart';
+import '../widgets/voided_by_label.dart';
 
 /// Sale detail page showing sale information and items.
 class SaleDetailPage extends HookConsumerWidget {
@@ -214,6 +215,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                 ),
           title: Text(sale.receiptNumber),
           actions: [
+            if (sale.status.toLowerCase() != 'voided')
+              _SaleStatusOverflowMenu(sale: sale),
             _PrintMenuButton(
               sale: sale,
               saleItemsAsync: saleItemsAsync,
@@ -256,50 +259,23 @@ class _SaleDetailContent extends HookConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        sale.receiptNumber,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                          color: theme
-                                              .colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        sale.postedDate != null
-                                            ? dateFormat
-                                                .format(sale.postedDate!)
-                                            : 'Unknown date',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          color: theme
-                                              .colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      if (sale.readyForPickupAt != null) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                            color: theme
-                                                .colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                SaleStatusChip(status: sale.status),
-                              ],
+                            Text(
+                              sale.postedDate != null
+                                  ? dateFormat.format(sale.postedDate!)
+                                  : 'Unknown date',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
+                            if (sale.readyForPickupAt != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Ready for pickup: ${dateFormat.format(sale.readyForPickupAt!)}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                             if (sale.customerName != null &&
                                 sale.customerName!.isNotEmpty) ...[
                               const SizedBox(height: 8),
@@ -308,13 +284,15 @@ class _SaleDetailContent extends HookConsumerWidget {
                                 customerId: sale.customerId,
                               ),
                             ],
-                            const Divider(height: 24),
-                            if (sale.notes != null && sale.notes!.isNotEmpty)
+                            if (sale.notes != null &&
+                                sale.notes!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
                               SaleInfoRow(
                                 icon: Icons.note,
                                 label: 'Notes',
                                 value: sale.notes!,
                               ),
+                            ],
                           ],
                         ),
                       ),
@@ -325,48 +303,30 @@ class _SaleDetailContent extends HookConsumerWidget {
                     Builder(builder: (_) {
                       final totalPaid =
                           ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
+                      final voidedByName =
+                          sale.voidedById != null && sale.voidedById!.isNotEmpty
+                              ? ref
+                                  .watch(userProvider(sale.voidedById!))
+                                  .value
+                                  ?.name
+                              : null;
                       return SaleHighlightBanner(
                         orderStatus: sale.orderStatus,
                         isPaid: sale.isPaid,
                         saleStatus: sale.status,
                         paymentStatus: sale.paymentStatus,
                         balanceDue: sale.totalAmount - totalPaid,
+                        voidedByName: voidedByName,
+                        voidedAt: sale.voidedAt,
                       );
                     }),
                     const SizedBox(height: 16),
 
-                    // Sale Status Actions (Refund/Unrefund)
-                    _buildSaleStatusActions(context, ref),
-                    const SizedBox(height: 16),
-
-                    // Order Status Card
-                    _buildOrderStatusCard(context, ref),
-                    const SizedBox(height: 16),
-
-                    // Total Card
-                    Card(
-                      color: theme.colorScheme.primaryContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total',
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            Text(
-                              currencyFormat.format(sale.totalAmount),
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    if (sale.status.toLowerCase() != 'voided' &&
+                        sale.status.toLowerCase() != 'refunded') ...[
+                      _buildOrderStatusCard(context, ref),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Payment Status & History Card
                     _buildPaymentCard(context, ref, paymentsAsync,
@@ -527,7 +487,8 @@ class _SaleDetailContent extends HookConsumerWidget {
     required num balanceDue,
     required bool canEditPayments,
   }) {
-    if (sale.status.toLowerCase() == 'voided') {
+    final statusLower = sale.status.toLowerCase();
+    if (statusLower == 'voided' || statusLower == 'refunded') {
       return const SizedBox.shrink();
     }
 
@@ -561,210 +522,6 @@ class _SaleDetailContent extends HookConsumerWidget {
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(48),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSaleStatusActions(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isUpdating = useState(false);
-    final isRefunded = sale.status.toLowerCase() == 'refunded';
-    final isVoided = sale.status.toLowerCase() == 'voided';
-    final isPending = sale.status.toLowerCase() == 'pending';
-
-    // Don't show actions for voided sales
-    if (isVoided) {
-      return const SizedBox.shrink();
-    }
-
-    Future<void> updateSaleStatus(String newStatus) async {
-      final isVoidAction = newStatus == 'voided';
-      final isRefundAction = newStatus == 'refunded';
-
-      String dialogTitle;
-      String dialogContent;
-      String confirmLabel;
-      Color confirmColor;
-      String successMessage;
-
-      if (isVoidAction) {
-        dialogTitle = 'Void Sale?';
-        dialogContent =
-            'Are you sure you want to void this sale? This action cannot be undone.';
-        confirmLabel = 'Void Sale';
-        confirmColor = Colors.red;
-        successMessage = 'Sale has been voided';
-      } else if (isRefundAction) {
-        dialogTitle = 'Refund Sale?';
-        dialogContent =
-            'Are you sure you want to mark this sale as refunded? This will update the sale status.';
-        confirmLabel = 'Refund';
-        confirmColor = Colors.orange;
-        successMessage = 'Sale marked as refunded';
-      } else {
-        dialogTitle = 'Remove Refund?';
-        dialogContent =
-            'Are you sure you want to remove the refund status and mark this sale as $newStatus?';
-        confirmLabel = 'Remove Refund';
-        confirmColor = Colors.green;
-        successMessage = 'Refund status removed';
-      }
-
-      // Show confirmation dialog
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(dialogTitle),
-          content: Text(dialogContent),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: confirmColor,
-              ),
-              child: Text(confirmLabel),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed != true || !context.mounted) return;
-
-      addBreadcrumb('Update sale status', category: 'order', data: {
-        'saleId': sale.id,
-        'from': sale.status,
-        'to': newStatus,
-      });
-
-      isUpdating.value = true;
-      final repo = ref.read(salesRepositoryProvider);
-      final result = await repo.updateSaleStatus(sale.id, newStatus);
-      isUpdating.value = false;
-
-      if (!context.mounted) return;
-
-      result.fold(
-        (failure) {
-          addBreadcrumb('Sale status update failed', category: 'order', data: {
-            'saleId': sale.id,
-            'error': failure.messageString,
-          });
-          showErrorSnackBar(context, message: failure.messageString);
-        },
-        (_) {
-          showSuccessSnackBar(context, message: successMessage);
-          ref.invalidate(saleProvider(sale.id));
-        },
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.receipt_long,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Sale Status',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // Current status chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: isRefunded
-                    ? Colors.orange.withValues(alpha: 0.1)
-                    : isPending
-                        ? Colors.amber.withValues(alpha: 0.1)
-                        : Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                isRefunded
-                    ? 'Refunded'
-                    : isPending
-                        ? 'Pending'
-                        : 'Completed',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isRefunded
-                      ? Colors.orange
-                      : isPending
-                          ? Colors.amber.shade700
-                          : Colors.green,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Popup menu for actions
-            PopupMenuButton<String>(
-              icon: isUpdating.value
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.more_vert),
-              enabled: !isUpdating.value,
-              onSelected: (value) {
-                if (value == 'refund') {
-                  updateSaleStatus('refunded');
-                } else if (value == 'unrefund') {
-                  final revertStatus = sale.orderStatus == OrderStatus.pickedUp
-                      ? 'completed'
-                      : 'pending';
-                  updateSaleStatus(revertStatus);
-                } else if (value == 'void') {
-                  updateSaleStatus('voided');
-                }
-              },
-              itemBuilder: (context) => [
-                if (isRefunded)
-                  const PopupMenuItem<String>(
-                    value: 'unrefund',
-                    child: ListTile(
-                      leading: Icon(Icons.undo, color: Colors.green),
-                      title: Text('Remove Refund'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  )
-                else
-                  const PopupMenuItem<String>(
-                    value: 'refund',
-                    child: ListTile(
-                      leading: Icon(Icons.replay, color: Colors.orange),
-                      title: Text('Mark as Refunded'),
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                const PopupMenuItem<String>(
-                  value: 'void',
-                  child: ListTile(
-                    leading: Icon(Icons.block, color: Colors.red),
-                    title: Text('Void Sale'),
-                    contentPadding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );
@@ -890,8 +647,7 @@ class _SaleDetailContent extends HookConsumerWidget {
           showErrorSnackBar(context, message: failure.messageString);
         },
         (_) {
-          ref.invalidate(saleProvider(sale.id));
-          ref.invalidate(saleServiceItemsProvider(sale.id));
+          refreshSaleRelatedProviders(ref, saleId: sale.id);
         },
       );
     }
@@ -1240,9 +996,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                                   ),
                                 ),
                                 title: Text(
-                                  payment.isVoided
-                                      ? '${payment.type.displayName} - ${payment.paymentMethod.displayName}'
-                                      : '${payment.type.displayName} - ${payment.paymentMethod.displayName}',
+                                  '${payment.type.displayName} - ${payment.paymentMethod.displayName}',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: payment.isVoided
                                         ? theme.colorScheme.onSurfaceVariant
@@ -1255,57 +1009,37 @@ class _SaleDetailContent extends HookConsumerWidget {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (payment.isVoided)
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 4),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
+                                    if (payment.isVoided) ...[
+                                      Row(
+                                        children: [
+                                          VoidedByLabel(
+                                            voidedById: payment.voidedById,
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red
-                                                .withValues(alpha: 0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(999),
-                                          ),
-                                          child: Text(
-                                            'Voided',
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                              color: Colors.red,
-                                              fontWeight: FontWeight.w700,
+                                          if (payment.voidedAt != null)
+                                            Text(
+                                              ' · ${DateFormat('MMM dd, yyyy hh:mm a').format(payment.voidedAt!)}',
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: Colors.red,
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                             ),
+                                        ],
+                                      ),
+                                      if (payment.voidReason != null &&
+                                          payment.voidReason!.isNotEmpty)
+                                        Text(
+                                          payment.voidReason!,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
                                           ),
                                         ),
-                                      ),
-                                    Text(
-                                      payment.postedDate != null
-                                          ? DateFormat('MMM dd, yyyy hh:mm a')
-                                              .format(payment.postedDate!)
-                                          : '',
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                    if (payment.isVoided &&
-                                        payment.voidedAt != null)
+                                    ] else if (payment.postedDate != null)
                                       Text(
-                                        'Voided on ${DateFormat('MMM dd, yyyy hh:mm a').format(payment.voidedAt!)}',
-                                        style:
-                                            theme.textTheme.bodySmall?.copyWith(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    if (payment.isVoided &&
-                                        payment.voidReason != null &&
-                                        payment.voidReason!.isNotEmpty)
-                                      Text(
-                                        payment.voidReason!,
+                                        DateFormat('MMM dd, yyyy hh:mm a')
+                                            .format(payment.postedDate!),
                                         style:
                                             theme.textTheme.bodySmall?.copyWith(
                                           color: theme
@@ -1449,8 +1183,6 @@ class _SaleDetailContent extends HookConsumerWidget {
                                           if (!context.mounted) return;
 
                                           if (success) {
-                                            ref.invalidate(
-                                                saleProvider(sale.id));
                                             showSuccessSnackBar(
                                               context,
                                               message:
@@ -1584,6 +1316,153 @@ class _SaleDetailContent extends HookConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// App bar overflow: refund / void sale actions.
+class _SaleStatusOverflowMenu extends HookConsumerWidget {
+  const _SaleStatusOverflowMenu({required this.sale});
+
+  final Sale sale;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isUpdating = useState(false);
+    final isRefunded = sale.status.toLowerCase() == 'refunded';
+
+    Future<void> updateSaleStatus(String newStatus) async {
+      final isVoidAction = newStatus == 'voided';
+      final isRefundAction = newStatus == 'refunded';
+
+      late final String dialogTitle;
+      late final String dialogContent;
+      late final String confirmLabel;
+      late final Color confirmColor;
+      late final String successMessage;
+
+      if (isVoidAction) {
+        dialogTitle = 'Void Sale?';
+        dialogContent =
+            'Are you sure you want to void this sale? This action cannot be undone.';
+        confirmLabel = 'Void Sale';
+        confirmColor = Colors.red;
+        successMessage = 'Sale has been voided';
+      } else if (isRefundAction) {
+        dialogTitle = 'Refund Sale?';
+        dialogContent =
+            'Are you sure you want to mark this sale as refunded? This will update the sale status.';
+        confirmLabel = 'Refund';
+        confirmColor = Colors.orange;
+        successMessage = 'Sale marked as refunded';
+      } else {
+        dialogTitle = 'Remove Refund?';
+        dialogContent =
+            'Are you sure you want to remove the refund status and mark this sale as $newStatus?';
+        confirmLabel = 'Remove Refund';
+        confirmColor = Colors.green;
+        successMessage = 'Refund status removed';
+      }
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(dialogTitle),
+          content: Text(dialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: confirmColor),
+              child: Text(confirmLabel),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !context.mounted) return;
+
+      addBreadcrumb('Update sale status', category: 'order', data: {
+        'saleId': sale.id,
+        'from': sale.status,
+        'to': newStatus,
+      });
+
+      isUpdating.value = true;
+      final result = await ref
+          .read(salesRepositoryProvider)
+          .updateSaleStatus(sale.id, newStatus);
+      isUpdating.value = false;
+
+      if (!context.mounted) return;
+
+      result.fold(
+        (failure) {
+          showErrorSnackBar(context, message: failure.messageString);
+        },
+        (_) {
+          showSuccessSnackBar(context, message: successMessage);
+          refreshSaleRelatedProviders(ref, saleId: sale.id);
+        },
+      );
+    }
+
+    return PopupMenuButton<String>(
+      tooltip: 'Sale actions',
+      icon: isUpdating.value
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.more_vert),
+      enabled: !isUpdating.value,
+      onSelected: (value) {
+        if (value == 'refund') {
+          updateSaleStatus('refunded');
+        } else if (value == 'unrefund') {
+          final revertStatus = sale.orderStatus == OrderStatus.pickedUp
+              ? 'completed'
+              : 'pending';
+          updateSaleStatus(revertStatus);
+        } else if (value == 'void') {
+          updateSaleStatus('voided');
+        }
+      },
+      itemBuilder: (context) => [
+        if (isRefunded)
+          const PopupMenuItem<String>(
+            value: 'unrefund',
+            child: ListTile(
+              leading: Icon(Icons.undo, color: Colors.green),
+              title: Text('Remove Refund'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          )
+        else
+          const PopupMenuItem<String>(
+            value: 'refund',
+            child: ListTile(
+              leading: Icon(Icons.replay, color: Colors.orange),
+              title: Text('Mark as Refunded'),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        const PopupMenuItem<String>(
+          value: 'void',
+          child: ListTile(
+            leading: Icon(Icons.block, color: Colors.red),
+            title: Text('Void Sale'),
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }

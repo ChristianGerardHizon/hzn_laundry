@@ -2,10 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/packages/sentry/sentry_breadcrumbs.dart';
-import '../../dashboard/presentation/controllers/kanban_sales_controller.dart';
-import '../../dashboard/presentation/controllers/sales_summary_controller.dart';
-import '../../sales/presentation/controllers/paginated_sales_controller.dart';
-import '../../sales/presentation/controllers/sale_provider.dart';
+import '../../sales/presentation/controllers/sale_refresh.dart';
 import '../data/repositories/payment_repository.dart';
 import '../domain/payment.dart';
 import '../domain/payment_method.dart';
@@ -52,12 +49,7 @@ class PaymentsController extends _$PaymentsController {
   /// payment change updates [Sale.isPaid] / [Sale.paymentStatus].
   void _invalidateAfterPaymentChange(String saleId) {
     ref.invalidate(salePaymentsProvider(saleId));
-    ref.invalidate(saleProvider(saleId));
-    ref.invalidate(kanbanSalesProvider);
-    ref.invalidate(salesSummaryProvider);
-    // Soft-refresh so the orders list Paid/Unpaid badge updates without
-    // flashing the tablet two-pane layout into a loading spinner.
-    ref.read(paginatedSalesControllerProvider.notifier).refreshQuietly();
+    refreshSaleRelatedProvidersFromRef(ref, saleId: saleId);
   }
 
   /// Records a new payment for a sale.

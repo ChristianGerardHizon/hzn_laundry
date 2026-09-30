@@ -14,8 +14,9 @@ import '../../../pos/domain/sale.dart';
 import '../controllers/paginated_sales_controller.dart';
 import '../controllers/sale_search_controller.dart';
 import '../controllers/sale_sort_controller.dart';
-import 'sale_status_chip.dart';
 import 'dialogs/sale_search_fields_dialog.dart';
+import 'sale_list_status_chip.dart';
+import 'voided_by_label.dart';
 
 /// Extracts a short display order number from the full receipt number.
 /// e.g. "S-260401-X7KP" → "#X7KP"
@@ -135,29 +136,50 @@ class SaleListPanel extends HookConsumerWidget {
 
                   final sale = paginatedState.items[index];
                   final isSelected = sale.id == selectedId;
+                  final isVoided = sale.status.toLowerCase() == 'voided';
 
                   final paymentColor = sale.paymentStatus == PaymentStatus.paid
                       ? Colors.green
                       : Colors.amber;
 
-                  // Amount + payment chip on the right; order status moves into
-                  // the subtitle so the trailing column stays narrow on phones.
                   return AppListRow(
                     isSelected: isSelected,
                     title: Text(
-                      sale.customerDisplay ?? _shortOrderNumber(sale.receiptNumber),
+                      sale.customerDisplay ??
+                          _shortOrderNumber(sale.receiptNumber),
+                      style: isVoided
+                          ? theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            )
+                          : null,
                     ),
-                    subtitle: Row(
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (!isVoided) ...[
+                              const SizedBox(width: 8),
+                              SaleListStatusChip(sale: sale),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        SaleStatusChip(status: sale.status),
+                        if (isVoided &&
+                            sale.voidedById != null &&
+                            sale.voidedById!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          VoidedByLabel(
+                            voidedById: sale.voidedById,
+                            compact: true,
+                          ),
+                        ],
                       ],
                     ),
                     trailing: Column(
@@ -168,13 +190,21 @@ class SaleListPanel extends HookConsumerWidget {
                           currencyFormat.format(sale.totalAmount),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
+                            decoration:
+                                isVoided ? TextDecoration.lineThrough : null,
+                            color: isVoided
+                                ? theme.colorScheme.onSurfaceVariant
+                                : null,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        RowChip(
-                          label: sale.paymentStatus.displayName,
-                          color: paymentColor,
-                        ),
+                        if (isVoided)
+                          SaleListStatusChip(sale: sale)
+                        else
+                          RowChip(
+                            label: sale.paymentStatus.displayName,
+                            color: paymentColor,
+                          ),
                       ],
                     ),
                     onTap: () => onSaleTap(sale),
@@ -187,7 +217,6 @@ class SaleListPanel extends HookConsumerWidget {
       ),
     );
   }
-
 }
 
 void _showSortDialog(BuildContext context, WidgetRef ref) {
