@@ -249,6 +249,28 @@ class _CreateOrderDialog extends HookConsumerWidget {
       return result;
     }
 
+    // Inline validation banner shown at the top of the dialog.
+    final validationErrors = useState<List<String>>([]);
+
+    List<String> missingFields() => [
+          if (selectedCustomer.value == null) 'Customer',
+          if (selectedService.value == null) 'Service',
+          if (showUsage && selectedService.value != null)
+            for (final d in usageDrafts.value)
+              if (d.isMissing) 'Usage for ${d.product.name}',
+        ];
+
+    // Update / clear the banner as the user fills in missing fields.
+    useEffect(() {
+      if (validationErrors.value.isEmpty) return null;
+      final missing = missingFields();
+      if (missing.length != validationErrors.value.length ||
+          !missing.every(validationErrors.value.contains)) {
+        validationErrors.value = missing;
+      }
+      return null;
+    }, [selectedCustomer.value, selectedService.value, usageDrafts.value]);
+
     Future<void> handleClose() async {
       if (await confirmDiscard()) {
         if (context.mounted) Navigator.of(context).pop();
@@ -318,23 +340,35 @@ class _CreateOrderDialog extends HookConsumerWidget {
     }
 
     Future<void> handleCreateOrder() async {
-      if (selectedCustomer.value == null) {
-        showErrorSnackBar(
-          context,
-          message: 'Please select a customer',
-          useRootMessenger: false,
-        );
-        return;
+      // Make sure the recipe usage drafts are loaded so missing usage entries
+      // can be reported together with the other missing fields.
+      if (showUsage && selectedService.value != null) {
+        final serviceId = selectedService.value!.id;
+        if (lastRecipeServiceId.value != serviceId) {
+          try {
+            final recipes = await ref.read(
+              serviceConsumableRecipesProvider(serviceId).future,
+            );
+            usageDrafts.value = draftsFromRecipes(recipes);
+            lastRecipeServiceId.value = serviceId;
+          } catch (_) {
+            if (!context.mounted) return;
+            showErrorSnackBar(
+              context,
+              message: 'Could not load consumable recipe',
+              useRootMessenger: false,
+            );
+            return;
+          }
+        }
       }
 
-      if (selectedService.value == null) {
-        showErrorSnackBar(
-          context,
-          message: 'Please select a service',
-          useRootMessenger: false,
-        );
+      final missing = missingFields();
+      if (missing.isNotEmpty) {
+        validationErrors.value = missing;
         return;
       }
+      if (validationErrors.value.isNotEmpty) validationErrors.value = [];
 
       if (!formKey.currentState!.saveAndValidate()) return;
 
@@ -350,36 +384,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
         showErrorSnackBar(context,
             message: 'No branch selected', useRootMessenger: false);
         return;
-      }
-
-      if (showUsage) {
-        final serviceId = selectedService.value!.id;
-        if (lastRecipeServiceId.value != serviceId) {
-          try {
-            final recipes = await ref.read(
-              serviceConsumableRecipesProvider(serviceId).future,
-            );
-            usageDrafts.value = draftsFromRecipes(recipes);
-            lastRecipeServiceId.value = serviceId;
-          } catch (_) {
-            showErrorSnackBar(
-              context,
-              message: 'Could not load consumable recipe',
-              useRootMessenger: false,
-            );
-            return;
-          }
-        }
-        final missing = usageDrafts.value.where((d) => d.isMissing).toList();
-        if (missing.isNotEmpty) {
-          showErrorSnackBar(
-            context,
-            message:
-                'Enter usage for ${missing.map((d) => d.product.name).join(', ')}',
-            useRootMessenger: false,
-          );
-          return;
-        }
       }
 
       isSaving.value = true;
@@ -597,6 +601,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
             onClose: handleClose,
           ),
 
+          // ── Validation banner ────────────────────────────────────────────
+          if (validationErrors.value.isNotEmpty)
+            _ValidationBanner(
+              missing: validationErrors.value,
+              onDismiss: () => validationErrors.value = [],
+            ),
+
           // ── Scrollable body ──────────────────────────────────────────────
           Flexible(
             child: FormBuilder(
@@ -748,8 +759,6 @@ class _CreateOrderDialog extends HookConsumerWidget {
             subtotal: subtotalDisplay,
             loyaltyDiscount: displayLoyaltyDiscount,
             isSaving: isSaving.value,
-            canCreate:
-                selectedCustomer.value != null && selectedService.value != null,
             onCreateOrder: handleCreateOrder,
           ),
         ],
@@ -804,6 +813,65 @@ class _DialogHeader extends StatelessWidget {
   }
 }
 
+// ── Validation banner ────────────────────────────────────────────────────────
+
+class _ValidationBanner extends StatelessWidget {
+  const _ValidationBanner({required this.missing, required this.onDismiss});
+
+  final List<String> missing;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fg = theme.colorScheme.onErrorContainer;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.error_outline, size: 18, color: fg),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Please complete the following:',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                for (final item in missing)
+                  Text(
+                    '• $item is missing',
+                    style: theme.textTheme.bodySmall?.copyWith(color: fg),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, size: 16, color: fg),
+            visualDensity: VisualDensity.compact,
+            onPressed: onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Footer ───────────────────────────────────────────────────────────────────
 
 class _DialogFooter extends StatelessWidget {
@@ -812,7 +880,6 @@ class _DialogFooter extends StatelessWidget {
     this.subtotal = 0,
     this.loyaltyDiscount = 0,
     required this.isSaving,
-    required this.canCreate,
     required this.onCreateOrder,
   });
 
@@ -820,7 +887,6 @@ class _DialogFooter extends StatelessWidget {
   final double subtotal;
   final double loyaltyDiscount;
   final bool isSaving;
-  final bool canCreate;
   final VoidCallback onCreateOrder;
 
   @override
@@ -828,7 +894,7 @@ class _DialogFooter extends StatelessWidget {
     final theme = Theme.of(context);
     final hasDiscount = loyaltyDiscount > 0;
 
-    final showEmptyTotal = !canCreate && estimatedTotal == 0 && !hasDiscount;
+    final showEmptyTotal = estimatedTotal == 0 && !hasDiscount;
 
     return Container(
       decoration: BoxDecoration(
@@ -895,13 +961,6 @@ class _DialogFooter extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (showEmptyTotal)
-                  Text(
-                    'Select customer and service',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
               ],
             ),
           ),
@@ -910,7 +969,7 @@ class _DialogFooter extends StatelessWidget {
               minimumSize: const Size(148, 48),
               padding: const EdgeInsets.symmetric(horizontal: 24),
             ),
-            onPressed: isSaving || !canCreate ? null : onCreateOrder,
+            onPressed: isSaving ? null : onCreateOrder,
             child: isSaving
                 ? const SizedBox(
                     width: 18,
