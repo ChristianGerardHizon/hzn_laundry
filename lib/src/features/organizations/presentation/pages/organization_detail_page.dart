@@ -10,9 +10,11 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/organization_letter_mark.dart';
 import '../../data/repositories/organization_repository.dart';
 import '../../domain/organization.dart';
+import '../../../subscriptions/presentation/controllers/billing_access.dart';
 import '../controllers/current_organization_controller.dart';
 import '../widgets/tabs/organization_features_tab.dart';
 import '../widgets/tabs/organization_overview_tab.dart';
+import '../widgets/tabs/organization_subscription_tab.dart';
 
 class OrganizationDetailPage extends HookConsumerWidget {
   const OrganizationDetailPage({super.key, required this.organizationId});
@@ -24,7 +26,13 @@ class OrganizationDetailPage extends HookConsumerWidget {
     final t = Translations.of(context);
     final theme = Theme.of(context);
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
-    final tabController = useTabController(initialLength: 2);
+    // Subscription tab (package, Pay button, payment history) is billing-admin
+    // only; the server enforces the same rule.
+    final showSubscriptionTab = canManageOrgBilling(ref, organizationId);
+    final tabController = useTabController(
+      initialLength: showSubscriptionTab ? 3 : 2,
+      keys: [showSubscriptionTab],
+    );
     final orgAsync = useState<AsyncValue<Organization>>(const AsyncLoading());
     final isRefreshing = useState(false);
 
@@ -124,6 +132,8 @@ class OrganizationDetailPage extends HookConsumerWidget {
               tabs: [
                 Tab(text: t.organizations.overviewTab),
                 Tab(text: t.organizations.featuresTab),
+                if (showSubscriptionTab)
+                  Tab(text: t.subscriptions.subscriptionTab),
               ],
             ),
           ),
@@ -135,6 +145,8 @@ class OrganizationDetailPage extends HookConsumerWidget {
                 onSaved: load,
               ),
               OrganizationFeaturesTab(organizationId: org.id),
+              if (showSubscriptionTab)
+                OrganizationSubscriptionTab(organizationId: org.id),
             ],
           ),
         );

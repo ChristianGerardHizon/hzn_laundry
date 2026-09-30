@@ -95,6 +95,20 @@ function requireOrgMember(e, orgId) {
   }
 }
 
+/**
+ * Billing (pay screen / payment history) is limited to organization admins:
+ * members with members.manage in this org, or platform system.admin users.
+ */
+function requireOrgBillingAdmin(e, orgId) {
+  requireAuthUser(e);
+  if (orgHelpers.hasPermission(e.app, e.auth.getString("role"), "system.admin")) {
+    return;
+  }
+  if (!orgHelpers.canManageOrgMembers(e, orgId)) {
+    throw new ForbiddenError("organization billing admin required");
+  }
+}
+
 function trimStr(value) {
   return String(value || "").trim();
 }
@@ -562,7 +576,7 @@ function getOrgSubscription(e) {
 
 function getPayInfo(e) {
   var orgId = e.request.pathValue("id");
-  requireOrgMember(e, orgId);
+  requireOrgBillingAdmin(e, orgId);
   var org;
   try {
     org = e.app.findRecordById("organizations", orgId);
@@ -585,7 +599,7 @@ function getPayInfo(e) {
 
 function submitPayment(e) {
   var orgId = e.request.pathValue("id");
-  requireOrgMember(e, orgId);
+  requireOrgBillingAdmin(e, orgId);
 
   var sub = findActiveSubscription(e.app, orgId);
   if (!sub) {
@@ -638,6 +652,33 @@ function submitPayment(e) {
   e.app.save(record);
 
   return e.json(200, exportPayment(e.app, record, getAppBaseUrl()));
+}
+
+/** Payment history (newest first) for an organization's billing admins. */
+function listOrgPayments(e) {
+  var orgId = e.request.pathValue("id");
+  requireOrgBillingAdmin(e, orgId);
+
+  var records = [];
+  try {
+    records = e.app.findRecordsByFilter(
+      "subscriptionPayments",
+      "organization = {:org}",
+      "-created",
+      200,
+      0,
+      { org: orgId }
+    );
+  } catch (_) {
+    records = [];
+  }
+  var baseUrl = getAppBaseUrl();
+  var out = [];
+  var i;
+  for (i = 0; i < records.length; i++) {
+    out.push(exportPayment(e.app, records[i], baseUrl));
+  }
+  return e.json(200, { items: out });
 }
 
 function listPendingPayments(e) {
@@ -1353,6 +1394,7 @@ module.exports = {
   getOrgSubscription: getOrgSubscription,
   getPayInfo: getPayInfo,
   submitPayment: submitPayment,
+  listOrgPayments: listOrgPayments,
   listPendingPayments: listPendingPayments,
   reviewPayment: reviewPayment,
   unlockOrganization: unlockOrganization,
@@ -1363,6 +1405,7 @@ module.exports = {
   listOrganizationPlatformStatsEnriched: listOrganizationPlatformStatsEnriched,
   requireSystemAdmin: requireSystemAdmin,
   requireOrgMember: requireOrgMember,
+  requireOrgBillingAdmin: requireOrgBillingAdmin,
   findActiveSubscription: findActiveSubscription,
   hasPermission: orgHelpers.hasPermission
 };

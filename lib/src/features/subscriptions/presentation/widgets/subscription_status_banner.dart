@@ -11,6 +11,7 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../domain/organization_subscription.dart';
 import '../../domain/subscription_due.dart';
+import '../controllers/billing_access.dart';
 import '../controllers/billing_settings_controller.dart';
 import '../controllers/organization_subscription_provider.dart';
 
@@ -28,8 +29,7 @@ class SubscriptionStatusBanner extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
-    final settings =
-        ref.watch(billingSettingsControllerProvider).asData?.value;
+    final settings = ref.watch(billingSettingsControllerProvider).asData?.value;
     final enforceWarnings = settings?.enforceWarnings ?? true;
     if (!enforceWarnings) return const SizedBox.shrink();
 
@@ -52,9 +52,12 @@ class SubscriptionStatusBanner extends HookConsumerWidget {
     );
     if (!sub.isInGrace && !dueSoon) return const SizedBox.shrink();
 
-    final message = sub.isInGrace
+    final canPay = canManageOrgBilling(ref, org.id);
+    final baseMessage = sub.isInGrace
         ? t.subscriptions.graceBanner
         : t.subscriptions.dueSoonBanner;
+    final message =
+        canPay ? baseMessage : '$baseMessage ${t.subscriptions.askAdminToPay}';
 
     return MaterialBanner(
       backgroundColor: sub.isInGrace
@@ -65,17 +68,20 @@ class SubscriptionStatusBanner extends HookConsumerWidget {
         style: const TextStyle(color: Colors.white),
       ),
       actions: [
-        TextButton(
-          onPressed: () =>
-              SubscriptionPayRoute(organizationId: org.id).go(context),
-          child: Text(
-            t.subscriptions.goToPayment,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
+        if (canPay)
+          TextButton(
+            onPressed: () =>
+                SubscriptionPayRoute(organizationId: org.id).go(context),
+            child: Text(
+              t.subscriptions.goToPayment,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ),
+          )
+        else
+          const SizedBox.shrink(),
       ],
     );
   }
@@ -98,8 +104,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
     // Must read inherited widgets in build — useEffect runs during initHook.
     final path = GoRouterState.of(context).uri.path;
 
-    final settings =
-        ref.watch(billingSettingsControllerProvider).asData?.value;
+    final settings = ref.watch(billingSettingsControllerProvider).asData?.value;
     final enforceWarnings = settings?.enforceWarnings ?? true;
     final warningDays =
         settings?.warningDaysBeforeDue ?? kSubscriptionExpiringSoonDays;
@@ -108,6 +113,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
         ? ref.watch(organizationSubscriptionProvider(org.id))
         : null;
     final sub = subAsync?.asData?.value;
+    final canPay = org != null && canManageOrgBilling(ref, org.id);
 
     useEffect(() {
       if (!enforceWarnings) return null;
@@ -130,6 +136,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
           organizationId: org.id,
           subscription: sub,
           warningDaysBeforeDue: warningDays,
+          canPay: canPay,
         );
       });
       return null;
@@ -157,6 +164,7 @@ class SubscriptionLockGate extends HookConsumerWidget {
             title: t.subscriptions.lockedTitle,
             message: t.subscriptions.lockedMessage,
             cta: t.subscriptions.goToPayment,
+            canPay: canPay,
           );
         }
 
@@ -187,6 +195,7 @@ Future<void> _showSubscriptionDueDialog({
   required String organizationId,
   required OrganizationSubscription subscription,
   required int warningDaysBeforeDue,
+  required bool canPay,
 }) {
   final t = Translations.of(context);
   final isGrace = subscription.isInGrace;
@@ -212,19 +221,22 @@ Future<void> _showSubscriptionDueDialog({
         size: 36,
       ),
       title: Text(title),
-      content: Text(message),
+      content: Text(
+        canPay ? message : '$message ${t.subscriptions.askAdminToPay}',
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text(t.subscriptions.remindLater),
         ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(dialogContext).pop();
-            SubscriptionPayRoute(organizationId: organizationId).go(context);
-          },
-          child: Text(t.subscriptions.goToPayment),
-        ),
+        if (canPay)
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              SubscriptionPayRoute(organizationId: organizationId).go(context);
+            },
+            child: Text(t.subscriptions.goToPayment),
+          ),
       ],
     ),
   );
@@ -236,12 +248,14 @@ class _LockedScreen extends ConsumerWidget {
     required this.title,
     required this.message,
     required this.cta,
+    required this.canPay,
   });
 
   final String organizationId;
   final String title;
   final String message;
   final String cta;
+  final bool canPay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -271,7 +285,7 @@ class _LockedScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                message,
+                canPay ? message : t.subscriptions.askAdminToPay,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white70,
@@ -279,17 +293,18 @@ class _LockedScreen extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 32),
-              FilledButton(
-                onPressed: () => SubscriptionPayRoute(
-                  organizationId: organizationId,
-                ).go(context),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _kBrandTeal,
-                  foregroundColor: _kInk,
-                  minimumSize: const Size(220, 48),
+              if (canPay)
+                FilledButton(
+                  onPressed: () => SubscriptionPayRoute(
+                    organizationId: organizationId,
+                  ).go(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _kBrandTeal,
+                    foregroundColor: _kInk,
+                    minimumSize: const Size(220, 48),
+                  ),
+                  child: Text(cta),
                 ),
-                child: Text(cta),
-              ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () => const SelectOrganizationRoute().go(context),

@@ -78,6 +78,11 @@ abstract class SubscriptionRepository {
     required http.MultipartFile proofImage,
   });
 
+  /// Payment history (newest first) for one organization. Org billing admins.
+  FutureEither<List<SubscriptionPayment>> listOrgPayments(
+    String organizationId,
+  );
+
   FutureEither<List<SubscriptionPayment>> listPendingPayments();
 
   FutureEither<SubscriptionPayment> reviewPayment(
@@ -433,6 +438,46 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         }
         return SubscriptionPaymentDto.fromJson(response)
             .toEntity(baseUrl: _pb.baseURL);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<SubscriptionPayment>> listOrgPayments(
+    String organizationId,
+  ) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (organizationId.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/organizations/$organizationId/subscription/payments',
+          method: 'GET',
+        );
+        final nested =
+            response is Map<String, dynamic> ? response['items'] : response;
+        if (nested is! List) {
+          throw const DataFailure(
+            'Invalid organization payments response',
+            null,
+            'invalid_organization_payments_response',
+          );
+        }
+
+        return nested
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (json) => SubscriptionPaymentDto.fromJson(json)
+                  .toEntity(baseUrl: _pb.baseURL),
+            )
+            .toList();
       },
       Failure.handle,
     ).run();

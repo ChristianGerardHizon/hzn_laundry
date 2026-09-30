@@ -27,7 +27,7 @@ final class OrganizationPayInfoProvider extends $FunctionalProvider<
       {required OrganizationPayInfoFamily super.from,
       required String super.argument})
       : super(
-          retry: null,
+          retry: retryUnlessForbidden,
           name: r'organizationPayInfoProvider',
           isAutoDispose: true,
           dependencies: null,
@@ -71,7 +71,7 @@ final class OrganizationPayInfoProvider extends $FunctionalProvider<
 }
 
 String _$organizationPayInfoHash() =>
-    r'e358ba5c7dc5348e073f1cd2722ee1f914dc2505';
+    r'3a89156e52834013bd724187564b7261fc926815';
 
 /// Pay-screen payload for an organization (subscription + QRPH settings).
 
@@ -79,7 +79,7 @@ final class OrganizationPayInfoFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<OrganizationPayInfo>, String> {
   OrganizationPayInfoFamily._()
       : super(
-          retry: null,
+          retry: retryUnlessForbidden,
           name: r'organizationPayInfoProvider',
           dependencies: null,
           $allTransitiveDependencies: null,

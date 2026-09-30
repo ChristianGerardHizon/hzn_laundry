@@ -1310,6 +1310,72 @@ class TranslationsSubscriptionsEn {
 
 	/// en: 'days'
 	String get days => 'days';
+
+	/// en: 'Subscription'
+	String get subscriptionTab => 'Subscription';
+
+	/// en: 'Current package'
+	String get currentPackage => 'Current package';
+
+	/// en: 'Billing cycle'
+	String get billingCycle => 'Billing cycle';
+
+	/// en: 'Daily'
+	String get cycleDaily => 'Daily';
+
+	/// en: 'Monthly'
+	String get cycleMonthly => 'Monthly';
+
+	/// en: 'Yearly'
+	String get cycleYearly => 'Yearly';
+
+	/// en: 'Every $count $unit'
+	String cycleEvery({required Object count, required Object unit}) => 'Every ${count} ${unit}';
+
+	/// en: 'days'
+	String get unitDays => 'days';
+
+	/// en: 'months'
+	String get unitMonths => 'months';
+
+	/// en: 'years'
+	String get unitYears => 'years';
+
+	/// en: 'Next payment due'
+	String get nextPaymentDue => 'Next payment due';
+
+	/// en: 'Pay $amount'
+	String payAmount({required Object amount}) => 'Pay ${amount}';
+
+	/// en: 'Payment under review'
+	String get paymentUnderReview => 'Payment under review';
+
+	/// en: 'Payment history'
+	String get paymentHistory => 'Payment history';
+
+	/// en: 'No payments submitted yet.'
+	String get noPayments => 'No payments submitted yet.';
+
+	/// en: 'View proof'
+	String get viewProof => 'View proof';
+
+	/// en: 'Could not load payment history'
+	String get paymentsLoadFailed => 'Could not load payment history';
+
+	/// en: 'Billing access required'
+	String get noBillingAccessTitle => 'Billing access required';
+
+	/// en: 'You don't have access to this organization's billing. Ask an organization admin to pay the subscription.'
+	String get noBillingAccess => 'You don\'t have access to this organization\'s billing. Ask an organization admin to pay the subscription.';
+
+	/// en: 'Ask your organization admin to pay the subscription.'
+	String get askAdminToPay => 'Ask your organization admin to pay the subscription.';
+
+	/// en: 'Back to app'
+	String get backToApp => 'Back to app';
+
+	/// en: 'Note'
+	String get noteLabel => 'Note';
 }
 
 // Path: validation
@@ -1753,6 +1819,28 @@ extension on Translations {
 			'subscriptions.goToPayment' => 'Go to payment',
 			'subscriptions.orgDetails' => 'Organization details',
 			'subscriptions.days' => 'days',
+			'subscriptions.subscriptionTab' => 'Subscription',
+			'subscriptions.currentPackage' => 'Current package',
+			'subscriptions.billingCycle' => 'Billing cycle',
+			'subscriptions.cycleDaily' => 'Daily',
+			'subscriptions.cycleMonthly' => 'Monthly',
+			'subscriptions.cycleYearly' => 'Yearly',
+			'subscriptions.cycleEvery' => ({required Object count, required Object unit}) => 'Every ${count} ${unit}',
+			'subscriptions.unitDays' => 'days',
+			'subscriptions.unitMonths' => 'months',
+			'subscriptions.unitYears' => 'years',
+			'subscriptions.nextPaymentDue' => 'Next payment due',
+			'subscriptions.payAmount' => ({required Object amount}) => 'Pay ${amount}',
+			'subscriptions.paymentUnderReview' => 'Payment under review',
+			'subscriptions.paymentHistory' => 'Payment history',
+			'subscriptions.noPayments' => 'No payments submitted yet.',
+			'subscriptions.viewProof' => 'View proof',
+			'subscriptions.paymentsLoadFailed' => 'Could not load payment history',
+			'subscriptions.noBillingAccessTitle' => 'Billing access required',
+			'subscriptions.noBillingAccess' => 'You don\'t have access to this organization\'s billing. Ask an organization admin to pay the subscription.',
+			'subscriptions.askAdminToPay' => 'Ask your organization admin to pay the subscription.',
+			'subscriptions.backToApp' => 'Back to app',
+			'subscriptions.noteLabel' => 'Note',
 			'validation.required' => 'This field is required',
 			'validation.invalidEmail' => 'Please enter a valid email address',
 			'validation.invalidPhone' => 'Please enter a valid phone number',

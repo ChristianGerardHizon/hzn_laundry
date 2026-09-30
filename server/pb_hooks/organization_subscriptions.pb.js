@@ -82,6 +82,15 @@ routerAdd(
 
 routerAdd(
   "GET",
+  "/api/organizations/{id}/subscription/payments",
+  function(e) {
+    return require(__hooks + "/lib/organization_subscriptions_helpers.js").listOrgPayments(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "GET",
   "/api/super-admin/subscription-payments",
   function(e) {
     return require(__hooks + "/lib/organization_subscriptions_helpers.js").listPendingPayments(e);

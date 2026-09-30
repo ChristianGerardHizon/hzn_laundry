@@ -538,6 +538,28 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	@override String get goToPayment => 'Pumunta sa bayad';
 	@override String get orgDetails => 'Detalye ng organization';
 	@override String get days => 'araw';
+	@override String get subscriptionTab => 'Subscription';
+	@override String get currentPackage => 'Kasalukuyang package';
+	@override String get billingCycle => 'Billing cycle';
+	@override String get cycleDaily => 'Araw-araw';
+	@override String get cycleMonthly => 'Buwan-buwan';
+	@override String get cycleYearly => 'Taon-taon';
+	@override String cycleEvery({required Object count, required Object unit}) => 'Kada ${count} ${unit}';
+	@override String get unitDays => 'araw';
+	@override String get unitMonths => 'buwan';
+	@override String get unitYears => 'taon';
+	@override String get nextPaymentDue => 'Susunod na due ng bayad';
+	@override String payAmount({required Object amount}) => 'Magbayad ng ${amount}';
+	@override String get paymentUnderReview => 'Nire-review ang bayad';
+	@override String get paymentHistory => 'Kasaysayan ng bayad';
+	@override String get noPayments => 'Wala pang naisubmit na bayad.';
+	@override String get viewProof => 'Tingnan ang proof';
+	@override String get paymentsLoadFailed => 'Hindi ma-load ang kasaysayan ng bayad';
+	@override String get noBillingAccessTitle => 'Kailangan ng billing access';
+	@override String get noBillingAccess => 'Wala kang access sa billing ng organization na ito. Magpasabi sa admin ng organization na bayaran ang subscription.';
+	@override String get askAdminToPay => 'Magpasabi sa admin ng organization na bayaran ang subscription.';
+	@override String get backToApp => 'Bumalik sa app';
+	@override String get noteLabel => 'Tala';
 }
 
 // Path: validation
@@ -957,6 +979,28 @@ extension on TranslationsTl {
 			'subscriptions.goToPayment' => 'Pumunta sa bayad',
 			'subscriptions.orgDetails' => 'Detalye ng organization',
 			'subscriptions.days' => 'araw',
+			'subscriptions.subscriptionTab' => 'Subscription',
+			'subscriptions.currentPackage' => 'Kasalukuyang package',
+			'subscriptions.billingCycle' => 'Billing cycle',
+			'subscriptions.cycleDaily' => 'Araw-araw',
+			'subscriptions.cycleMonthly' => 'Buwan-buwan',
+			'subscriptions.cycleYearly' => 'Taon-taon',
+			'subscriptions.cycleEvery' => ({required Object count, required Object unit}) => 'Kada ${count} ${unit}',
+			'subscriptions.unitDays' => 'araw',
+			'subscriptions.unitMonths' => 'buwan',
+			'subscriptions.unitYears' => 'taon',
+			'subscriptions.nextPaymentDue' => 'Susunod na due ng bayad',
+			'subscriptions.payAmount' => ({required Object amount}) => 'Magbayad ng ${amount}',
+			'subscriptions.paymentUnderReview' => 'Nire-review ang bayad',
+			'subscriptions.paymentHistory' => 'Kasaysayan ng bayad',
+			'subscriptions.noPayments' => 'Wala pang naisubmit na bayad.',
+			'subscriptions.viewProof' => 'Tingnan ang proof',
+			'subscriptions.paymentsLoadFailed' => 'Hindi ma-load ang kasaysayan ng bayad',
+			'subscriptions.noBillingAccessTitle' => 'Kailangan ng billing access',
+			'subscriptions.noBillingAccess' => 'Wala kang access sa billing ng organization na ito. Magpasabi sa admin ng organization na bayaran ang subscription.',
+			'subscriptions.askAdminToPay' => 'Magpasabi sa admin ng organization na bayaran ang subscription.',
+			'subscriptions.backToApp' => 'Bumalik sa app',
+			'subscriptions.noteLabel' => 'Tala',
 			'validation.required' => 'Kinakailangan ang field na ito',
 			'validation.invalidEmail' => 'Maglagay ng valid na email address',
 			'validation.invalidPhone' => 'Maglagay ng valid na numero ng telepono',
