@@ -16,6 +16,7 @@ import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../activities/presentation/controllers/activities_controller.dart';
+import '../../../activities/presentation/widgets/activity_log_summary_dialog.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/payment_method.dart';
 import '../../../pos/domain/payment_type.dart';
@@ -89,7 +90,8 @@ class SaleDetailPage extends HookConsumerWidget {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => const SalesHistoryRoute().goScoped(context),
+                      onPressed: () =>
+                          const SalesHistoryRoute().goScoped(context),
                     ),
             ),
             body: const Center(
@@ -2105,9 +2107,8 @@ class _PrintMenuButton extends HookConsumerWidget {
       final orgName = org?.name;
       final businessName =
           (orgName != null && orgName.isNotEmpty) ? orgName : branch?.name;
-      final branchAddress = (branch?.address.isNotEmpty == true)
-          ? branch!.address
-          : org?.address;
+      final branchAddress =
+          (branch?.address.isNotEmpty == true) ? branch!.address : org?.address;
       final contactNumber = (branch?.contactNumber.isNotEmpty == true)
           ? branch!.contactNumber
           : org?.contactNumber;
@@ -2404,65 +2405,76 @@ class _SaleActivityTab extends ConsumerWidget {
               final entry = logs[index];
               final isPayment = entry.collection == 'payments';
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor:
-                          entry.action.color.withValues(alpha: 0.1),
-                      child: Icon(
-                        isPayment ? Icons.payment : entry.action.icon,
-                        size: 16,
-                        color: entry.action.color,
+              return InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => ActivityLogSummaryDialog.show(context, entry),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor:
+                            entry.action.color.withValues(alpha: 0.1),
+                        child: Icon(
+                          isPayment ? Icons.payment : entry.action.icon,
+                          size: 16,
+                          color: entry.action.color,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entry.description ?? '',
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              if (isPayment) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'Payment',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.description ?? '',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                if (isPayment) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.green.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Payment',
+                                      style:
+                                          theme.textTheme.labelSmall?.copyWith(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  entry.created != null
+                                      ? dateFormat.format(entry.created!)
+                                      : '',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
                               ],
-                              Text(
-                                entry.created != null
-                                    ? dateFormat.format(entry.created!)
-                                    : '',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
