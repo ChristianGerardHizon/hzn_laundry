@@ -885,10 +885,42 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
-function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
+var MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+// "2026-09-20 10:00:07.663Z" -> "September 20, 2026" (Manila time, UTC+8).
+function formatManilaDate(raw) {
+  if (!raw) return "";
+  var d = new Date(raw);
+  if (isNaN(d.getTime())) return String(raw);
+  var manila = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  return (
+    MONTH_NAMES[manila.getUTCMonth()] +
+    " " +
+    manila.getUTCDate() +
+    ", " +
+    manila.getUTCFullYear()
+  );
+}
+
+// 1234.5 -> "₱1,234.50"
+function formatPeso(amount) {
+  var n = Number(amount);
+  if (isNaN(n)) return "";
+  var parts = n.toFixed(2).split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return "\u20B1" + parts.join(".");
+}
+
+/**
+ * details (optional): { packageName, price }
+ */
+function buildSubscriptionReminderEmail(orgName, link, periodEnd, status, details) {
+  var emailLayout = require(__hooks + "/lib/email_layout.js");
+  details = details || {};
   var brand = historyConfig.getAppDisplayName();
-  var safeName = escapeHtml(orgName);
-  var safeLink = escapeHtml(link);
   var subject =
     status === "locked"
       ? brand + " subscription locked — pay to restore access"
@@ -896,38 +928,65 @@ function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
         ? brand + " subscription overdue — grace period active"
         : brand + " subscription payment reminder";
 
-  var html =
-    "<!DOCTYPE html><html><body style=\"font-family:sans-serif;color:#0f172a\">" +
-    "<p>Hello,</p>" +
-    "<p>This is a billing reminder for <strong>" +
-    safeName +
-    "</strong>.</p>" +
-    "<p>Current period ends: <strong>" +
-    String(periodEnd || "") +
-    "</strong></p>" +
-    "<p>Status: <strong>" +
-    String(status || "") +
-    "</strong></p>" +
-    "<p><a href=\"" +
-    safeLink +
-    "\" style=\"display:inline-block;padding:12px 20px;background:#45A9AB;color:#fff;text-decoration:none;border-radius:8px\">Pay subscription</a></p>" +
-    "<p>Or open: " +
-    safeLink +
-    "</p>" +
-    "<p>— " +
-    escapeHtml(brand) +
-    "</p></body></html>";
+  var title = "Subscription payment reminder";
+  var intro =
+    "This is a friendly reminder that your " +
+    brand +
+    " subscription payment is coming due.";
+  var statusLabel = "Active";
+  var tone = "ok";
+  if (status === "grace") {
+    title = "Subscription overdue";
+    intro =
+      "Your subscription payment is overdue. Your account is in a grace period — pay now to avoid losing access.";
+    statusLabel = "Overdue (grace period)";
+    tone = "warn";
+  } else if (status === "locked") {
+    title = "Subscription locked";
+    intro =
+      "Your subscription is locked because payment has not been received. Pay now to restore access to your account.";
+    statusLabel = "Locked";
+    tone = "danger";
+  }
+
+  var dueDate = formatManilaDate(periodEnd);
+  var rows = [{ label: "Organization", value: orgName }];
+  if (details.packageName) {
+    rows.push({ label: "Plan", value: details.packageName });
+  }
+  if (details.price !== undefined && details.price !== null && Number(details.price) > 0) {
+    rows.push({ label: "Amount due", value: formatPeso(details.price) });
+  }
+  if (dueDate) {
+    rows.push({ label: "Period ends", value: dueDate });
+  }
+  rows.push({
+    label: "Status",
+    valueHtml: emailLayout.pill(statusLabel, tone)
+  });
+
+  var html = emailLayout.renderEmail({
+    brand: brand,
+    preheader: title + " for " + orgName + ".",
+    title: title,
+    intro: intro,
+    panelLabel: "Billing details",
+    rows: rows,
+    button: { label: "Pay subscription", url: link },
+    note: "Already paid? Submit your proof of payment through the link above and we will confirm it shortly."
+  });
 
   var text =
-    "Billing reminder for " +
-    orgName +
-    "\nPeriod ends: " +
-    periodEnd +
-    "\nStatus: " +
-    status +
-    "\nPay here: " +
-    link +
-    "\n";
+    title + "\n\n" + intro + "\n\n" +
+    "Organization: " + orgName + "\n" +
+    (details.packageName ? "Plan: " + details.packageName + "\n" : "") +
+    (details.price !== undefined && details.price !== null && Number(details.price) > 0
+      ? "Amount due: " + formatPeso(details.price) + "\n"
+      : "") +
+    (dueDate ? "Period ends: " + dueDate + "\n" : "") +
+    "Status: " + statusLabel + "\n\n" +
+    "Pay here: " + link + "\n\n" +
+    "Kind regards,\nThe " + brand + " team\n";
 
   return { subject: subject, html: html, text: text };
 }
@@ -1013,7 +1072,11 @@ function sendReminderForSubscription(app, sub) {
     org.getString("name"),
     link,
     sub.getString("periodEnd"),
-    sub.getString("status")
+    sub.getString("status"),
+    {
+      packageName: sub.getString("packageName"),
+      price: sub.getFloat("price")
+    }
   );
   var emails = collectAdminEmails(app, orgId);
   var i;

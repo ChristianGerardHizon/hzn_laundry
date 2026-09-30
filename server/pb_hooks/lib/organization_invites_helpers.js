@@ -536,70 +536,26 @@ function resolveInviteRoleName(app, roleId) {
 function buildInviteEmail(orgName, roleName, loginUrl) {
   var historyConfig = require(__hooks + "/send_history_link_config.js");
   var brand = historyConfig.getAppDisplayName();
-  var safeBrand = escapeInviteHtml(brand);
-  var safeOrg = escapeInviteHtml(orgName);
-  var safeRole = escapeInviteHtml(roleName);
-  var safeLink = escapeInviteHtml(loginUrl);
   var ttlLabel = String(INVITE_TTL_DAYS);
 
   var subject = "You're invited to join " + orgName + " on " + brand;
   var preheader = "Accept your invitation to join " + orgName + " as " + roleName + ".";
 
-  var html =
-    "<!DOCTYPE html>" +
-    "<html lang=\"en\">" +
-    "<head>" +
-      "<meta charset=\"UTF-8\">" +
-      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
-      "<meta name=\"x-apple-disable-message-reformatting\">" +
-      "<title>" + safeBrand + "</title>" +
-    "</head>" +
-    "<body style=\"margin:0; padding:0; background-color:#f4f6f8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#1f2937;\">" +
-      "<div style=\"display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;\">" + escapeInviteHtml(preheader) + "</div>" +
-      "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:#f4f6f8;\">" +
-        "<tr>" +
-          "<td align=\"center\" style=\"padding:32px 12px;\">" +
-            "<table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(16,24,40,0.08);\">" +
-              "<tr>" +
-                "<td style=\"background:#45A9AB; padding:28px 32px;\">" +
-                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">" +
-                    "<tr>" +
-                      "<td style=\"color:#ffffff; font-size:20px; font-weight:700; letter-spacing:0.3px;\">" + safeBrand + "</td>" +
-                      "<td align=\"right\" style=\"color:#e6f5f5; font-size:13px;\">Invitation</td>" +
-                    "</tr>" +
-                  "</table>" +
-                "</td>" +
-              "</tr>" +
-              "<tr>" +
-                "<td style=\"padding:32px;\">" +
-                  "<h1 style=\"margin:0 0 16px; font-size:22px; line-height:1.3; color:#0f172a;\">You're invited</h1>" +
-                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">You've been invited to join <strong>" + safeOrg + "</strong> as <strong>" + safeRole + "</strong>.</p>" +
-                  "<p style=\"margin:0 0 16px; font-size:15px; line-height:1.6; color:#334155;\">Click the button below to accept. You'll set your name and a password (so you can sign in even if email codes fail), then your email is confirmed.</p>" +
-                  "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:24px 0;\">" +
-                    "<tr>" +
-                      "<td align=\"center\">" +
-                        "<a href=\"" + safeLink + "\" style=\"display:inline-block; background-color:#45A9AB; color:#ffffff; font-size:15px; font-weight:600; text-decoration:none; padding:14px 28px; border-radius:8px;\">Accept invitation</a>" +
-                      "</td>" +
-                    "</tr>" +
-                  "</table>" +
-                  "<p style=\"margin:0 0 8px; font-size:13px; line-height:1.5; color:#64748b;\">Button not working? Paste this link into your browser:</p>" +
-                  "<p style=\"margin:0 0 24px; font-size:13px; line-height:1.5; word-break:break-all;\">" +
-                    "<a href=\"" + safeLink + "\" style=\"color:#2F7A7C; text-decoration:underline;\">" + safeLink + "</a>" +
-                  "</p>" +
-                  "<p style=\"margin:0; font-size:13px; line-height:1.6; color:#64748b;\">This invite expires in " + ttlLabel + " days. If you weren't expecting it, you can ignore this email.</p>" +
-                "</td>" +
-              "</tr>" +
-              "<tr>" +
-                "<td style=\"background-color:#f8fafc; padding:20px 32px; border-top:1px solid #e2e8f0;\">" +
-                  "<p style=\"margin:0; font-size:12px; line-height:1.5; color:#94a3b8;\">&copy; " + safeBrand + ". All rights reserved.</p>" +
-                "</td>" +
-              "</tr>" +
-            "</table>" +
-          "</td>" +
-        "</tr>" +
-      "</table>" +
-    "</body>" +
-    "</html>";
+  var emailLayout = require(__hooks + "/lib/email_layout.js");
+  var html = emailLayout.renderEmail({
+    brand: brand,
+    preheader: preheader,
+    title: "You're invited",
+    intro: "You've been invited to join " + orgName + " as " + roleName + ". Accept below to set your name and a password (so you can sign in even if email codes fail). Your email is confirmed as part of this step.",
+    panelLabel: "Invitation details",
+    rows: [
+      { label: "Organization", value: orgName },
+      { label: "Role", value: roleName },
+      { label: "Expires in", value: ttlLabel + " days" }
+    ],
+    button: { label: "Accept invitation", url: loginUrl },
+    note: "If you weren't expecting this invitation, you can safely ignore this email."
+  });
 
   var text =
     "You're invited to join " + orgName + " as " + roleName + " on " + brand + ".\n\n" +
