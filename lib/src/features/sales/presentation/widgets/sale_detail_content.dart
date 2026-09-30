@@ -75,8 +75,6 @@ class SaleDetailContent extends ConsumerWidget {
             compact: compact,
           ),
 
-          _QuickMoveStatusButton(sale: sale, compact: compact),
-
           // Packs Section
           if (sale.orderStatus != OrderStatus.pending)
             _PacksSection(
@@ -275,12 +273,34 @@ class _ServiceItemsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final showMoveButton = _QuickMoveStatusButton.isAvailable(sale);
+
+    // Without a services card (loading / error / no items) the status button
+    // still needs to be reachable, so it renders on its own.
+    final standaloneMoveButton = showMoveButton
+        ? Padding(
+            padding: EdgeInsets.only(bottom: compact ? 12 : 16),
+            child: _QuickMoveStatusButton(sale: sale),
+          )
+        : const SizedBox.shrink();
 
     return serviceItemsAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => standaloneMoveButton,
+      error: (_, __) => standaloneMoveButton,
       data: (serviceItems) {
-        if (serviceItems.isEmpty) return const SizedBox.shrink();
+        if (serviceItems.isEmpty) return standaloneMoveButton;
+
+        // When the only unfinished service can be marked done, that button
+        // already finishes the order (moves it to Ready), so "Move to Ready"
+        // would be a duplicate action.
+        final pendingItems = serviceItems
+            .where((i) => i.status != ServiceItemStatus.completed)
+            .toList();
+        final markDoneCompletesOrder =
+            sale.orderStatus == OrderStatus.processing &&
+                pendingItems.length == 1 &&
+                (pendingItems.first.machineName?.isNotEmpty ?? false);
+        final showMoveInCard = showMoveButton && !markDoneCompletesOrder;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,20 +311,31 @@ class _ServiceItemsSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Card(
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: serviceItems.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final item = serviceItems[index];
-                  return _ServiceItemTile(
-                    sale: sale,
-                    item: item,
-                    currencyFormat: currencyFormat,
-                    compact: compact,
-                  );
-                },
+              child: Column(
+                children: [
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: serviceItems.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final item = serviceItems[index];
+                      return _ServiceItemTile(
+                        sale: sale,
+                        item: item,
+                        currencyFormat: currencyFormat,
+                        compact: compact,
+                      );
+                    },
+                  ),
+                  if (showMoveInCard) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: EdgeInsets.all(compact ? 12 : 16),
+                      child: _QuickMoveStatusButton(sale: sale),
+                    ),
+                  ],
+                ],
               ),
             ),
             SizedBox(height: compact ? 12 : 16),
@@ -1040,21 +1071,25 @@ Future<bool> advanceSaleOrderStatus({
 
 /// One-tap control to advance [Sale.orderStatus] to the next workflow step.
 class _QuickMoveStatusButton extends HookConsumerWidget {
-  const _QuickMoveStatusButton({
-    required this.sale,
-    required this.compact,
-  });
+  const _QuickMoveStatusButton({required this.sale});
 
   final Sale sale;
-  final bool compact;
 
-  /// Matches order-status chip colors; picked-up uses a darker grey so
-  /// white label text stays readable (light greys read as disabled).
+  /// Whether [sale] has a next status it can be advanced to.
+  static bool isAvailable(Sale sale) {
+    final status = sale.status.toLowerCase();
+    return sale.orderStatus.next != null &&
+        status != 'refunded' &&
+        status != 'voided';
+  }
+
+  /// Matches order-status chip colors; used as outline + label color, so
+  /// picked-up uses a lighter blue-grey to keep contrast on dark surfaces.
   static Color _statusColor(OrderStatus status) => switch (status) {
         OrderStatus.pending => Colors.amber.shade700,
         OrderStatus.processing => Colors.blue,
         OrderStatus.ready => Colors.green,
-        OrderStatus.pickedUp => Colors.blueGrey.shade700,
+        OrderStatus.pickedUp => Colors.blueGrey.shade300,
       };
 
   static IconData _statusIcon(OrderStatus status) => switch (status) {
@@ -1066,87 +1101,47 @@ class _QuickMoveStatusButton extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final isUpdating = useState(false);
     final next = sale.orderStatus.next;
-    final statusLower = sale.status.toLowerCase();
-    final canChangeStatus =
-        statusLower != 'refunded' && statusLower != 'voided';
 
-    if (next == null || !canChangeStatus) {
+    if (next == null || !isAvailable(sale)) {
       return const SizedBox.shrink();
     }
 
     final busy = isUpdating.value;
     final label = 'Move to ${next.displayName}';
     final accent = _statusColor(next);
-    final onAccent =
-        ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
-            ? Colors.white
-            : Colors.black;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: compact ? 12 : 16),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: busy
-              ? null
-              : () async {
-                  isUpdating.value = true;
-                  await advanceSaleOrderStatus(
-                    context: context,
-                    ref: ref,
-                    sale: sale,
-                    status: next,
-                  );
-                  if (context.mounted) isUpdating.value = false;
-                },
-          style: FilledButton.styleFrom(
-            backgroundColor: accent,
-            foregroundColor: onAccent,
-            disabledBackgroundColor: accent.withValues(alpha: 0.55),
-            disabledForegroundColor: onAccent,
-            minimumSize: const Size.fromHeight(48),
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 12 : 16,
-              vertical: 12,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: busy
-                    ? CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: onAccent,
-                      )
-                    : Icon(_statusIcon(next), size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: onAccent,
-                    fontWeight: FontWeight.w500,
-                  ),
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: busy
+            ? null
+            : () async {
+                isUpdating.value = true;
+                await advanceSaleOrderStatus(
+                  context: context,
+                  ref: ref,
+                  sale: sale,
+                  status: next,
+                );
+                if (context.mounted) isUpdating.value = false;
+              },
+        icon: busy
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accent,
                 ),
-              ),
-              ExcludeSemantics(
-                child: Icon(
-                  Icons.arrow_forward,
-                  size: 20,
-                  color: onAccent,
-                ),
-              ),
-            ],
-          ),
+              )
+            : Icon(_statusIcon(next), size: 18),
+        label: Text(busy ? 'Moving...' : label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accent,
+          side: BorderSide(color: accent),
+          minimumSize: const Size.fromHeight(48),
         ),
       ),
     );
