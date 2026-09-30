@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -48,42 +49,28 @@ class ServiceDetailPage extends HookConsumerWidget {
         final theme = Theme.of(context);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(service.name),
+          appBar: DetailAppBar(
+            title: service.name,
             automaticallyImplyLeading: !isTablet,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(serviceProvider(serviceId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showEditSheet(context, ref),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, service.id),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('Delete'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+            onRefresh: () {
+              ref.invalidate(serviceProvider(serviceId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => _showEditSheet(context, ref),
+            menuItems: const [
+              DetailMenuItem(
+                value: 'delete',
+                label: 'Delete',
+                icon: Icons.delete,
+                destructive: true,
               ),
             ],
+            onMenuSelected: (value) =>
+                _handleMenuAction(context, ref, value, service.id),
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),

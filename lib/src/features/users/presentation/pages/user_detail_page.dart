@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/dashboard.routes.dart';
 import '../../../../core/routing/routes/management.routes.dart';
@@ -88,7 +89,7 @@ class UserDetailPage extends HookConsumerWidget {
         }
 
         return Scaffold(
-          appBar: AppBar(
+          appBar: DetailAppBar(
             automaticallyImplyLeading: !isTablet,
             leading: isTablet
                 ? null
@@ -96,38 +97,51 @@ class UserDetailPage extends HookConsumerWidget {
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => _goBack(context),
                   ),
-            title: Text('${user.name} - ${user.displayRole}'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(userProvider(userId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
+            title: user.name,
+            subtitle: user.displayRole,
+            editTooltip: t.common.edit,
+            onRefresh: () {
+              ref.invalidate(userProvider(userId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => _showEditUserDialog(context, user),
+            menuItems: [
+              const DetailMenuItem(
+                value: 'reset',
+                label: 'Reset Password',
+                icon: Icons.lock_reset,
               ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showEditUserDialog(context, user),
-                tooltip: t.common.edit,
+              DetailMenuItem(
+                value: 'verify',
+                label: user.verified ? 'Mark as Unverified' : 'Mark as Verified',
+                icon: user.verified ? Icons.verified : Icons.verified_outlined,
               ),
-              IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () => _showMoreOptions(context, ref, user),
+              DetailMenuItem(
+                value: 'delete',
+                label: t.common.delete,
+                icon: Icons.delete,
+                destructive: true,
               ),
             ],
-            bottom: TabBar(
-              controller: tabController,
-              isScrollable: true,
-              tabs: const [
-                Tab(text: 'Overview'),
-                Tab(text: 'Details'),
-              ],
-            ),
+            onMenuSelected: (value) {
+              switch (value) {
+                case 'reset':
+                  _showResetPasswordDialog(context, ref, user);
+                case 'verify':
+                  _showToggleVerificationDialog(context, ref, user);
+                case 'delete':
+                  _showDeleteConfirmation(context, ref, user);
+              }
+            },
+            tabController: tabController,
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Details'),
+            ],
           ),
           body: TabBarView(
             controller: tabController,
@@ -143,55 +157,6 @@ class UserDetailPage extends HookConsumerWidget {
 
   void _showEditUserDialog(BuildContext context, User user) {
     showEditUserDialog(context, user);
-  }
-
-  void _showMoreOptions(BuildContext context, WidgetRef ref, User user) {
-    final t = Translations.of(context);
-
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.lock_reset),
-              title: const Text('Reset Password'),
-              onTap: () {
-                Navigator.pop(context);
-                _showResetPasswordDialog(context, ref, user);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                user.verified ? Icons.verified : Icons.verified_outlined,
-                color: user.verified ? Colors.green : null,
-              ),
-              title: Text(user.verified ? 'Mark as Unverified' : 'Mark as Verified'),
-              subtitle: Text(user.verified
-                  ? 'Remove verification status'
-                  : 'Manually verify this user'),
-              onTap: () {
-                Navigator.pop(context);
-                _showToggleVerificationDialog(context, ref, user);
-              },
-            ),
-            ListTile(
-              leading:
-                  Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-              title: Text(t.common.delete,
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.error)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, ref, user);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showResetPasswordDialog(

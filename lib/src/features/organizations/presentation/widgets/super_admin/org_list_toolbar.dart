@@ -1,0 +1,230 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import '../../../../../core/i18n/strings.g.dart';
+import '../../../domain/organization_list_filter.dart';
+import '../super_admin_theme.dart';
+
+/// Search, status filter chips and sort menu for the organization list.
+///
+/// State is owned by the caller so other widgets (e.g. the health strip) can
+/// drive the same filters; the form fields mirror the notifiers.
+class OrgListToolbar extends HookConsumerWidget {
+  const OrgListToolbar({
+    super.key,
+    required this.query,
+    required this.status,
+    required this.sort,
+    required this.counts,
+  });
+
+  final ValueNotifier<String> query;
+  final ValueNotifier<OrgStatusFilter> status;
+  final ValueNotifier<OrgSortKey> sort;
+  final Map<OrgStatusFilter, int> counts;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = Translations.of(context);
+    final formKey = useMemoized(GlobalKey<FormBuilderState>.new);
+    final queryText = useValueListenable(query);
+
+    // Keep form fields in sync when filters change from outside the toolbar
+    // (health strip taps, "Clear filters").
+    useEffect(() {
+      void sync() {
+        final fields = formKey.currentState?.fields;
+        final search = fields?['search'];
+        if (search != null && search.value != query.value) {
+          search.didChange(query.value);
+        }
+        final chips = fields?['status'];
+        if (chips != null && chips.value != status.value) {
+          chips.didChange(status.value);
+        }
+      }
+
+      query.addListener(sync);
+      status.addListener(sync);
+      return () {
+        query.removeListener(sync);
+        status.removeListener(sync);
+      };
+    }, [query, status]);
+
+    OutlineInputBorder border(Color color) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color),
+        );
+
+    final searchField = FormBuilderTextField(
+      name: 'search',
+      initialValue: query.value,
+      onChanged: (v) => query.value = v ?? '',
+      style: const TextStyle(color: Colors.white),
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: t.organizations.searchOrganizations,
+        hintStyle: TextStyle(color: kSuperAdminMuted.withValues(alpha: 0.85)),
+        prefixIcon: const Icon(Icons.search, color: kSuperAdminMuted),
+        suffixIcon: queryText.isEmpty
+            ? null
+            : IconButton(
+                tooltip: t.organizations.clearFilters,
+                icon: const Icon(Icons.close, color: kSuperAdminMuted),
+                onPressed: () => query.value = '',
+              ),
+        filled: true,
+        fillColor: kSuperAdminSurface,
+        constraints: const BoxConstraints(minHeight: 48),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: border(kSuperAdminSurfaceBorder),
+        enabledBorder: border(kSuperAdminSurfaceBorder),
+        focusedBorder: border(kSuperAdminBrandTeal),
+      ),
+    );
+
+    return FormBuilder(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: 8),
+              _SortMenu(sort: sort, t: t),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Semantics(
+            label: t.organizations.filterByStatus,
+            container: true,
+            child: FormBuilderChoiceChips<OrgStatusFilter>(
+              name: 'status',
+              initialValue: status.value,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              spacing: 8,
+              runSpacing: 4,
+              showCheckmark: true,
+              checkmarkColor: kSuperAdminBrandTeal,
+              selectedColor: kSuperAdminBrandTeal.withValues(alpha: 0.2),
+              backgroundColor: kSuperAdminSurface,
+              side: const BorderSide(color: kSuperAdminSurfaceBorder),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              labelStyle: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              // Tapping the selected chip deselects it; treat that as "All".
+              onChanged: (v) => status.value = v ?? OrgStatusFilter.all,
+              options: [
+                for (final f in OrgStatusFilter.values)
+                  FormBuilderChipOption<OrgStatusFilter>(
+                    value: f,
+                    child: Text('${_filterLabel(t, f)}  ${counts[f] ?? 0}'),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _filterLabel(Translations t, OrgStatusFilter f) => switch (f) {
+        OrgStatusFilter.all => t.organizations.filterAll,
+        OrgStatusFilter.active => t.subscriptions.statusActive,
+        OrgStatusFilter.grace => t.subscriptions.statusGrace,
+        OrgStatusFilter.locked => t.subscriptions.statusLocked,
+        OrgStatusFilter.other => t.organizations.filterOther,
+      };
+}
+
+class _SortMenu extends StatelessWidget {
+  const _SortMenu({required this.sort, required this.t});
+
+  final ValueNotifier<OrgSortKey> sort;
+  final Translations t;
+
+  String _label(OrgSortKey k) => switch (k) {
+        OrgSortKey.revenue => t.organizations.sortRevenue,
+        OrgSortKey.orders => t.organizations.sortOrders,
+        OrgSortKey.customers => t.organizations.sortCustomers,
+        OrgSortKey.name => t.organizations.sortName,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<OrgSortKey>(
+      valueListenable: sort,
+      builder: (context, current, _) {
+        return PopupMenuButton<OrgSortKey>(
+          tooltip: '${t.organizations.sortBy}: ${_label(current)}',
+          initialValue: current,
+          onSelected: (k) => sort.value = k,
+          color: kSuperAdminSurfaceRaised,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: kSuperAdminSurfaceBorder),
+          ),
+          itemBuilder: (_) => [
+            for (final k in OrgSortKey.values)
+              PopupMenuItem<OrgSortKey>(
+                value: k,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      child: k == current
+                          ? const Icon(
+                              Icons.check,
+                              size: 18,
+                              color: kSuperAdminBrandTeal,
+                            )
+                          : null,
+                    ),
+                    Text(_label(k)),
+                  ],
+                ),
+              ),
+          ],
+          child: Container(
+            height: 48,
+            constraints: const BoxConstraints(minWidth: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: kSuperAdminSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kSuperAdminSurfaceBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.sort, color: kSuperAdminBrandTeal),
+                if (MediaQuery.sizeOf(context).width >= 560) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    _label(current),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

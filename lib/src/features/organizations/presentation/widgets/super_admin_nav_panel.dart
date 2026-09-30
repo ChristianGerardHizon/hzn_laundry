@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/assets/assets.gen.dart';
 import '../../../../core/i18n/strings.g.dart';
+import 'super_admin_theme.dart';
+
+export 'super_admin_theme.dart';
 
 /// Super Admin sections shown in the side nav.
 enum SuperAdminSection {
@@ -9,11 +13,6 @@ enum SuperAdminSection {
   payments,
   billing,
 }
-
-const kSuperAdminBrandTeal = Color(0xFF45A9AB);
-const kSuperAdminMuted = Color(0xFF9CA3AF);
-const kSuperAdminSurface = Color(0xFF141414);
-const kSuperAdminSurfaceBorder = Color(0xFF2A2A2A);
 
 /// Vertical navigation panel for Super Admin sections.
 class SuperAdminNavPanel extends StatelessWidget {
@@ -65,31 +64,38 @@ class SuperAdminNavPanel extends StatelessWidget {
       return ColoredBox(
         color: kSuperAdminSurface,
         child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           children: [
             for (final item in items)
-              ListTile(
-                leading: Icon(
-                  currentSection == item.$1 ? item.$3 : item.$2,
-                  color: currentSection == item.$1
-                      ? kSuperAdminBrandTeal
-                      : kSuperAdminMuted,
-                ),
-                title: Text(
-                  item.$4,
-                  style: TextStyle(
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: ListTile(
+                  minTileHeight: 52,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: Icon(
+                    currentSection == item.$1 ? item.$3 : item.$2,
                     color: currentSection == item.$1
                         ? kSuperAdminBrandTeal
-                        : Colors.white,
-                    fontWeight: currentSection == item.$1
-                        ? FontWeight.w600
-                        : FontWeight.w500,
+                        : kSuperAdminMuted,
                   ),
+                  title: Text(
+                    item.$4,
+                    style: TextStyle(
+                      color: currentSection == item.$1
+                          ? kSuperAdminBrandTeal
+                          : Colors.white,
+                      fontWeight: currentSection == item.$1
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
+                  ),
+                  selected: currentSection == item.$1,
+                  selectedTileColor:
+                      kSuperAdminBrandTeal.withValues(alpha: 0.16),
+                  onTap: () => onSectionChanged(item.$1),
                 ),
-                selected: currentSection == item.$1,
-                selectedTileColor:
-                    kSuperAdminBrandTeal.withValues(alpha: 0.14),
-                onTap: () => onSectionChanged(item.$1),
               ),
           ],
         ),
@@ -102,22 +108,16 @@ class SuperAdminNavPanel extends StatelessWidget {
         color: kSuperAdminSurface,
         child: Column(
           children: [
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: Icon(
-                Icons.admin_panel_settings_outlined,
-                size: 28,
-                color: kSuperAdminBrandTeal,
-              ),
-            ),
+            const SizedBox(height: 16),
+            Assets.icons.appIconTransparent.image(width: 36, height: 36),
+            const SizedBox(height: 16),
             const Divider(color: kSuperAdminSurfaceBorder, height: 1),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
                 children: [
                   for (var i = 0; i < items.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 4),
+                    if (i > 0) const SizedBox(height: 6),
                     _NavButton(
                       icon: items[i].$2,
                       selectedIcon: items[i].$3,
@@ -153,39 +153,51 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 72,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? kSuperAdminBrandTeal.withValues(alpha: 0.18)
-              : null,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? selectedIcon : icon,
-              size: 24,
-              color: isSelected ? kSuperAdminBrandTeal : kSuperAdminMuted,
+    final color = isSelected ? kSuperAdminBrandTeal : kSuperAdminMuted;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: Center(
+          child: Material(
+            color: isSelected
+                ? kSuperAdminBrandTeal.withValues(alpha: 0.16)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                width: 72,
+                height: 60,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(isSelected ? selectedIcon : icon,
+                        size: 24, color: color),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: isSelected ? FontWeight.w600 : null,
+                            ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isSelected ? kSuperAdminBrandTeal : kSuperAdminMuted,
-                    fontWeight: isSelected ? FontWeight.w600 : null,
-                  ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );

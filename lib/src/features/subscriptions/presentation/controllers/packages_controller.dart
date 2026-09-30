@@ -24,8 +24,7 @@ class PackagesController extends _$PackagesController {
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final result =
-          await _repository.listPackages(premadeOnly: premadeOnly);
+      final result = await _repository.listPackages(premadeOnly: premadeOnly);
       return result.fold(
         (failure) => throw failure,
         (packages) => packages,
@@ -41,6 +40,9 @@ class PackagesController extends _$PackagesController {
     required BillingIntervalUnit intervalUnit,
     required bool isPremade,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     final result = await _repository.createPackage(
       name: name,
@@ -50,6 +52,9 @@ class PackagesController extends _$PackagesController {
       intervalUnit: intervalUnit,
       isPremade: isPremade,
       organizationId: organizationId,
+      features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
     return result.fold(
       (failure) => null,
@@ -70,6 +75,9 @@ class PackagesController extends _$PackagesController {
     bool? isPremade,
     bool? isActive,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     final result = await _repository.updatePackage(
       id,
@@ -81,6 +89,9 @@ class PackagesController extends _$PackagesController {
       isPremade: isPremade,
       isActive: isActive,
       organizationId: organizationId,
+      features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
     return result.fold(
       (failure) => false,

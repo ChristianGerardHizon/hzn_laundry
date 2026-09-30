@@ -23,6 +23,7 @@ class Payment with PaymentMappable {
     this.postedDate,
     this.voidedAt,
     this.voidReason,
+    this.voidedById,
     this.created,
     this.updated,
   });
@@ -62,6 +63,9 @@ class Payment with PaymentMappable {
 
   /// Optional admin note for the void action.
   final String? voidReason;
+
+  /// User who voided this payment.
+  final String? voidedById;
 
   /// Creation timestamp.
   final DateTime? created;

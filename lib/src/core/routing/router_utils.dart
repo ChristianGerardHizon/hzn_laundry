@@ -8,6 +8,7 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/controllers/splash_gate_provider.dart';
+import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
@@ -46,6 +47,32 @@ abstract class RouterUtils {
 
   static bool isSubscriptionPayPath(String path) =>
       path.startsWith('/subscription/pay/');
+
+  /// Organization id from `/subscription/pay/:organizationId`, or null.
+  static String? subscriptionPayOrgId(String path) {
+    final segments = Uri.tryParse(path)?.pathSegments ?? const <String>[];
+    if (segments.length >= 3 &&
+        segments[0] == 'subscription' &&
+        segments[1] == 'pay' &&
+        segments[2].isNotEmpty) {
+      return segments[2];
+    }
+    return null;
+  }
+
+  /// Whether the signed-in user may open the pay screen for [path]'s org.
+  ///
+  /// Mirrors the server (`requireOrgBillingAdmin`): system admins, or members
+  /// who can manage the organization. Call only once scope is loaded.
+  static bool canAccessSubscriptionPay(Ref ref, String path) {
+    final orgId = subscriptionPayOrgId(path);
+    if (orgId == null) return false;
+    if (ref.read(currentUserRoleProvider).value?.isAdmin == true) return true;
+    final membership = ref
+        .read(currentOrganizationControllerProvider.notifier)
+        .membershipFor(orgId);
+    return membership?.canManageMembers == true;
+  }
 
   static bool isOrgSelectionPath(String path) =>
       orgSelectionRoutes.any((r) => path == r || path.startsWith('$r/')) ||
@@ -234,8 +261,7 @@ abstract class RouterUtils {
     }
 
     final isIgnored = ignoredRoutes.any(
-      (route) =>
-          currentPath.startsWith(route) || uriPath.startsWith(route),
+      (route) => currentPath.startsWith(route) || uriPath.startsWith(route),
     );
 
     final authAsync = ref.read(authControllerProvider);
@@ -288,7 +314,13 @@ abstract class RouterUtils {
       if (pendingOnSplash != null &&
           isSubscriptionPayPath(Uri.tryParse(pendingOnSplash)?.path ?? '')) {
         ref.read(pendingRedirectProvider.notifier).clear();
-        return pendingOnSplash;
+        // A stale link from another account must not be honored.
+        if (canAccessSubscriptionPay(
+          ref,
+          Uri.tryParse(pendingOnSplash)?.path ?? '',
+        )) {
+          return pendingOnSplash;
+        }
       }
 
       final destination = postAuthDestination(ref);
@@ -348,8 +380,11 @@ abstract class RouterUtils {
       }
 
       if (isOnSubscriptionPay) {
-        // Membership checks happen on the pay page / API.
-        return null;
+        if (canAccessSubscriptionPay(ref, currentPath)) return null;
+        // Not a billing admin of this org (e.g. stale link after switching
+        // accounts): drop any stashed deep link and go home.
+        ref.read(pendingRedirectProvider.notifier).clear();
+        return postAuthDestination(ref) ?? ScopeRecoveryRoute.path;
       }
 
       // Leave picker only when memberships ≤ 1. Multi-org users stay here
@@ -462,6 +497,18 @@ abstract class RouterUtils {
       if (!canAccessPath(unscoped, role)) {
         final prefix = uriPath.substring(0, scopePrefixLength);
         return '$prefix${fallbackPathFor(role)}';
+      }
+
+      // 7. Feature entitlement guards (subscription + Super Admin overrides).
+      // Skipped while entitlements are still loading; server guards apply.
+      final entitlements =
+          ref.read(currentOrganizationEntitlementsProvider).value;
+      final feature = featureForPath(unscoped);
+      if (entitlements != null &&
+          feature != null &&
+          !entitlements.isEnabled(feature)) {
+        final prefix = uriPath.substring(0, scopePrefixLength);
+        return '$prefix${DashboardRoute.path}';
       }
     }
 

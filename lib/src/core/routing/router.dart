@@ -6,6 +6,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/controllers/splash_gate_provider.dart';
+import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/organizations/presentation/controllers/organization_selection_gate.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
@@ -135,6 +136,10 @@ GoRouter router(Ref ref) {
   });
 
   ref.listen(currentOrganizationControllerProvider, (previous, next) {
+    router.refresh();
+  });
+
+  ref.listen(currentOrganizationEntitlementsProvider, (previous, next) {
     router.refresh();
   });
 

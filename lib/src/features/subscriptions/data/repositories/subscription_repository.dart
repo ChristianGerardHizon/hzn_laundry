@@ -34,8 +34,13 @@ abstract class SubscriptionRepository {
     required BillingIntervalUnit intervalUnit,
     required bool isPremade,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
 
+  /// [maxBranches] / [maxEmployees]: `0` means unlimited; `null` leaves the
+  /// value unchanged.
   FutureEither<SubscriptionPackage> updatePackage(
     String id, {
     String? name,
@@ -46,6 +51,9 @@ abstract class SubscriptionRepository {
     bool? isPremade,
     bool? isActive,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   });
 
   FutureEither<void> softDeletePackage(String id);
@@ -69,6 +77,11 @@ abstract class SubscriptionRepository {
     String? note,
     required http.MultipartFile proofImage,
   });
+
+  /// Payment history (newest first) for one organization. Org billing admins.
+  FutureEither<List<SubscriptionPayment>> listOrgPayments(
+    String organizationId,
+  );
 
   FutureEither<List<SubscriptionPayment>> listPendingPayments();
 
@@ -149,6 +162,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     required BillingIntervalUnit intervalUnit,
     required bool isPremade,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -164,6 +180,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
             'isPremade': isPremade,
             if (organizationId != null && organizationId.isNotEmpty)
               'organizationId': organizationId,
+            if (features != null) 'features': features,
+            if (maxBranches != null) 'maxBranches': maxBranches,
+            if (maxEmployees != null) 'maxEmployees': maxEmployees,
           },
         );
         if (response is! Map<String, dynamic>) {
@@ -190,6 +209,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
     bool? isPremade,
     bool? isActive,
     String? organizationId,
+    List<String>? features,
+    int? maxBranches,
+    int? maxEmployees,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -210,6 +232,9 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         if (isPremade != null) body['isPremade'] = isPremade;
         if (isActive != null) body['isActive'] = isActive;
         if (organizationId != null) body['organizationId'] = organizationId;
+        if (features != null) body['features'] = features;
+        if (maxBranches != null) body['maxBranches'] = maxBranches;
+        if (maxEmployees != null) body['maxEmployees'] = maxEmployees;
 
         final response = await _pb.send(
           '/api/super-admin/subscription-packages/$id',
@@ -413,6 +438,46 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
         }
         return SubscriptionPaymentDto.fromJson(response)
             .toEntity(baseUrl: _pb.baseURL);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<List<SubscriptionPayment>> listOrgPayments(
+    String organizationId,
+  ) async {
+    return TaskEither.tryCatch(
+      () async {
+        if (organizationId.isEmpty) {
+          throw const DataFailure(
+            'Organization ID cannot be empty',
+            null,
+            'invalid_organization_id',
+          );
+        }
+
+        final response = await _pb.send(
+          '/api/organizations/$organizationId/subscription/payments',
+          method: 'GET',
+        );
+        final nested =
+            response is Map<String, dynamic> ? response['items'] : response;
+        if (nested is! List) {
+          throw const DataFailure(
+            'Invalid organization payments response',
+            null,
+            'invalid_organization_payments_response',
+          );
+        }
+
+        return nested
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (json) => SubscriptionPaymentDto.fromJson(json)
+                  .toEntity(baseUrl: _pb.baseURL),
+            )
+            .toList();
       },
       Failure.handle,
     ).run();

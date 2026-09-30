@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/packages/pocketbase/pocketbase_collections.dart';
 import '../../../../core/packages/pocketbase/pocketbase_provider.dart';
 import '../../../../core/utils/breakpoints.dart';
@@ -24,6 +25,8 @@ import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../promos/domain/customer_promo.dart';
 import '../../../promos/presentation/controllers/customer_promos_provider.dart';
 import '../../../settings/domain/branch.dart';
@@ -67,51 +70,34 @@ class CustomerDetailPage extends HookConsumerWidget {
         final branchName = _branchName(branches, customer.branchId);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(customer.name),
+          appBar: DetailAppBar(
+            title: customer.name,
+            subtitle: customer.phone,
             automaticallyImplyLeading: !isTablet,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(customerProvider(customerId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
+            onRefresh: () {
+              ref.invalidate(customerProvider(customerId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => _showEditSheet(context, ref),
+            menuItems: const [
+              DetailMenuItem(
+                value: 'transfer',
+                label: 'Transfer Branch',
+                icon: Icons.swap_horiz,
               ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showEditSheet(context, ref),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, customer),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'transfer',
-                    child: ListTile(
-                      leading: Icon(Icons.swap_horiz),
-                      title: Text('Transfer Branch'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('Delete'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+              DetailMenuItem(
+                value: 'delete',
+                label: 'Delete',
+                icon: Icons.delete,
+                destructive: true,
               ),
             ],
+            onMenuSelected: (value) =>
+                _handleMenuAction(context, ref, value, customer),
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),
@@ -144,8 +130,10 @@ class CustomerDetailPage extends HookConsumerWidget {
               const SizedBox(height: 16),
 
               // Loyalty programs section
-              _CustomerLoyaltySection(customerId: customerId),
-              const SizedBox(height: 16),
+              if (ref.watch(featureEnabledProvider(FeatureKey.promos))) ...[
+                _CustomerLoyaltySection(customerId: customerId),
+                const SizedBox(height: 16),
+              ],
 
               // Sales history section
               Card(

@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/routing/routes/products.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
@@ -53,50 +54,35 @@ class ProductDetailPage extends HookConsumerWidget {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(product.name),
+          appBar: DetailAppBar(
+            title: product.name,
             automaticallyImplyLeading: !isTablet,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(productProvider(productId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showEditSheet(context, ref),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, product.id),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete_outline),
-                      title: Text('Delete'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+            onRefresh: () {
+              ref.invalidate(productProvider(productId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => _showEditSheet(context, ref),
+            menuItems: const [
+              DetailMenuItem(
+                value: 'delete',
+                label: 'Delete',
+                icon: Icons.delete_outline,
+                destructive: true,
               ),
             ],
-            bottom: TabBar(
-              controller: tabController,
-              tabs: const [
-                Tab(text: 'Overview'),
-                Tab(text: 'Details'),
-                Tab(text: 'Stock'),
-                Tab(text: 'Adjustments'),
-              ],
-            ),
+            onMenuSelected: (value) =>
+                _handleMenuAction(context, ref, value, product.id),
+            tabController: tabController,
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Details'),
+              Tab(text: 'Stock'),
+              Tab(text: 'Adjustments'),
+            ],
           ),
           body: TabBarView(
             controller: tabController,

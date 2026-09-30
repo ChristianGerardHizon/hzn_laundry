@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hzn_laundry/src/core/widgets/list/list.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/services.routes.dart';
@@ -54,23 +55,12 @@ class ServiceListPanel extends HookConsumerWidget {
       body: Column(
         children: [
           // Search bar
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search services...',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: searchQuery.value.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => searchController.clear(),
-                      )
-                    : null,
-              ),
-            ),
+          ListToolbar(
+            controller: searchController,
+            hintText: 'Search services...',
+            // Filtering is live via the controller listener; nothing to submit.
+            onSearch: () {},
+            onTextChanged: (_) {},
           ),
 
           // Services list
@@ -135,55 +125,35 @@ class _ServiceListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    return ListTile(
+    // Price is the number people scan for, so it sits on the right; the
+    // subtitle carries category / duration / weight-based hint.
+    final details = [
+      if (service.categoryName != null) service.categoryName!,
+      if (service.durationDisplay != null) service.durationDisplay!,
+      if (service.weightBased) 'Per weight',
+    ];
+
+    return AppListRow(
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
+        radius: 22,
+        backgroundColor: scheme.primaryContainer,
         child: Icon(
           Icons.miscellaneous_services,
-          color: theme.colorScheme.onPrimaryContainer,
+          color: scheme.onPrimaryContainer,
         ),
       ),
       title: Text(service.name),
-      subtitle: Row(
-        children: [
-          Text(
-            service.hasVariablePrice ? 'Variable' : service.price.toCurrency(),
-            style: TextStyle(
-              color: service.hasVariablePrice
-                  ? theme.colorScheme.tertiary
-                  : theme.colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (service.categoryName != null) ...[
-            const SizedBox(width: 8),
-            Text(
-              service.categoryName!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      subtitle: details.isEmpty ? null : Text(details.join(' · ')),
+      trailing: service.hasVariablePrice
+          ? const RowChip(label: 'Variable')
+          : Text(
+              service.price.toCurrency(),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ],
-          if (service.weightBased) ...[
-            const SizedBox(width: 8),
-            Icon(
-              Icons.scale,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-          if (service.durationDisplay != null) ...[
-            const SizedBox(width: 8),
-            Text(
-              service.durationDisplay!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ],
-      ),
       onTap: () => ServiceDetailRoute(id: service.id).goScoped(context),
     );
   }

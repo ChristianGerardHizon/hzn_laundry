@@ -8,15 +8,20 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/foundation/provider_retry.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/routing/routes/org_selection.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../data/repositories/subscription_repository.dart';
 import '../../domain/subscription_payment_status.dart';
 import '../../domain/subscription_status.dart';
+import '../controllers/billing_access.dart';
 import '../controllers/organization_pay_info_provider.dart';
+import '../controllers/organization_payments_controller.dart';
 import '../controllers/organization_subscription_provider.dart';
+import '../widgets/no_billing_access_state.dart';
 
 const _kBrandTeal = Color(0xFF45A9AB);
 
@@ -29,7 +34,13 @@ class SubscriptionPayPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
-    final payAsync = ref.watch(organizationPayInfoProvider(organizationId));
+    // Billing is limited to org admins (mirrors the server guard); avoid the
+    // request entirely for anyone else, e.g. a stale link after switching
+    // accounts.
+    final orgAsync = ref.watch(currentOrganizationControllerProvider);
+    final canPay = canManageOrgBilling(ref, organizationId);
+    final payAsync =
+        canPay ? ref.watch(organizationPayInfoProvider(organizationId)) : null;
     final isSubmitting = useState(false);
     final noteController = useTextEditingController();
     final proofBytes = useState<Uint8List?>(null);
@@ -92,6 +103,8 @@ class SubscriptionPayPage extends HookConsumerWidget {
             noteController.clear();
             ref.invalidate(organizationPayInfoProvider(organizationId));
             ref.invalidate(organizationSubscriptionProvider(organizationId));
+            ref.invalidate(
+                organizationPaymentsControllerProvider(organizationId));
           },
         );
       } finally {
@@ -116,207 +129,226 @@ class SubscriptionPayPage extends HookConsumerWidget {
                 },
               ),
             ),
-            body: payAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: ErrorState.fromError(
-                  e,
-                  onRetry: () => ref
-                      .invalidate(organizationPayInfoProvider(organizationId)),
-                ),
-              ),
-              data: (info) {
-                final sub = info.subscription;
-                final latest = info.latestPayment;
-                final locked = sub?.isEffectivelyLocked == true;
-                final settings = info.settings;
+            body: (orgAsync.isLoading && !canPay)
+                ? const Center(child: CircularProgressIndicator())
+                : payAsync == null
+                    ? const NoBillingAccessState()
+                    : payAsync.when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => isNonRetryableError(e)
+                            ? const NoBillingAccessState()
+                            : Center(
+                                child: ErrorState.fromError(
+                                  e,
+                                  onRetry: () => ref.invalidate(
+                                    organizationPayInfoProvider(organizationId),
+                                  ),
+                                ),
+                              ),
+                        data: (info) {
+                          final sub = info.subscription;
+                          final latest = info.latestPayment;
+                          final locked = sub?.isEffectivelyLocked == true;
+                          final settings = info.settings;
 
-                return ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    if (locked) ...[
-                      Card(
-                        color: Colors.red.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          return ListView(
+                            padding: const EdgeInsets.all(24),
                             children: [
+                              if (locked) ...[
+                                Card(
+                                  color: Colors.red.shade50,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          t.subscriptions.lockedTitle,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                color: Colors.red.shade800,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(t.subscriptions.lockedMessage),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                               Text(
-                                t.subscriptions.lockedTitle,
+                                info.organizationName,
                                 style: Theme.of(context)
                                     .textTheme
-                                    .titleMedium
+                                    .headlineSmall
                                     ?.copyWith(
-                                      color: Colors.red.shade800,
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
                               const SizedBox(height: 8),
-                              Text(t.subscriptions.lockedMessage),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    Text(
-                      info.organizationName,
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(t.subscriptions.paySubtitle),
-                    const SizedBox(height: 20),
-                    if (sub == null)
-                      Text(t.subscriptions.noActiveSubscription)
-                    else ...[
-                      _InfoRow(
-                        label: t.subscriptions.packageName,
-                        value: sub.packageName,
-                      ),
-                      _InfoRow(
-                        label: t.subscriptions.amount,
-                        value: currency.format(sub.price),
-                      ),
-                      _InfoRow(
-                        label: t.subscriptions.periodEnds,
-                        value: DateFormat.yMMMd().format(sub.periodEnd),
-                      ),
-                      _InfoRow(
-                        label: t.subscriptions.subscription,
-                        value: _statusLabel(t, sub.status),
-                      ),
-                      const SizedBox(height: 16),
-                      if (settings.payeeName.isNotEmpty)
-                        _InfoRow(
-                          label: t.subscriptions.payeeName,
-                          value: settings.payeeName,
-                        ),
-                      if (settings.instructions.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          settings.instructions,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      if (settings.qrphImageUrl != null &&
-                          settings.qrphImageUrl!.isNotEmpty)
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 280),
-                            child: Image.network(
-                              settings.qrphImageUrl!,
-                              key: ValueKey(settings.qrphImageUrl),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 24,
+                              Text(t.subscriptions.paySubtitle),
+                              const SizedBox(height: 20),
+                              if (sub == null)
+                                Text(t.subscriptions.noActiveSubscription)
+                              else ...[
+                                _InfoRow(
+                                  label: t.subscriptions.packageName,
+                                  value: sub.packageName,
                                 ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 48,
-                                      color: Colors.grey.shade600,
+                                _InfoRow(
+                                  label: t.subscriptions.amount,
+                                  value: currency.format(sub.price),
+                                ),
+                                _InfoRow(
+                                  label: t.subscriptions.periodEnds,
+                                  value:
+                                      DateFormat.yMMMd().format(sub.periodEnd),
+                                ),
+                                _InfoRow(
+                                  label: t.subscriptions.subscription,
+                                  value: _statusLabel(t, sub.status),
+                                ),
+                                const SizedBox(height: 16),
+                                if (settings.payeeName.isNotEmpty)
+                                  _InfoRow(
+                                    label: t.subscriptions.payeeName,
+                                    value: settings.payeeName,
+                                  ),
+                                if (settings.instructions.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    settings.instructions,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                                const SizedBox(height: 16),
+                                if (settings.qrphImageUrl != null &&
+                                    settings.qrphImageUrl!.isNotEmpty)
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 280),
+                                      child: Image.network(
+                                        settings.qrphImageUrl!,
+                                        key: ValueKey(settings.qrphImageUrl),
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 24,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                Icons.broken_image_outlined,
+                                                size: 48,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                t.subscriptions.qrphImage,
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      t.subscriptions.qrphImage,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
+                                  )
+                                else
+                                  Text(
+                                    t.subscriptions.qrphImage,
+                                    style:
+                                        TextStyle(color: Colors.grey.shade600),
+                                  ),
+                                const SizedBox(height: 24),
+                                if (latest?.status ==
+                                    SubscriptionPaymentStatus.pending)
+                                  Card(
+                                    color: Colors.amber.shade50,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Text(t.subscriptions.proofPending),
+                                    ),
+                                  )
+                                else ...[
+                                  if (latest?.status ==
+                                      SubscriptionPaymentStatus.rejected) ...[
+                                    Card(
+                                      color: Colors.orange.shade50,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Text(
+                                          latest?.adminNote?.isNotEmpty == true
+                                              ? '${t.subscriptions.proofRejected} ${latest!.adminNote}'
+                                              : t.subscriptions.proofRejected,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                  TextField(
+                                    controller: noteController,
+                                    decoration: InputDecoration(
+                                      labelText: t.subscriptions.noteLabel,
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                    maxLines: 2,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        isSubmitting.value ? null : pickProof,
+                                    icon: const Icon(Icons.image_outlined),
+                                    label: Text(
+                                      proofName.value ??
+                                          t.subscriptions.uploadProof,
+                                    ),
+                                  ),
+                                  if (proofBytes.value != null) ...[
+                                    const SizedBox(height: 12),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.memory(
+                                        proofBytes.value!,
+                                        height: 160,
+                                        fit: BoxFit.cover,
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        Text(
-                          t.subscriptions.qrphImage,
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      const SizedBox(height: 24),
-                      if (latest?.status == SubscriptionPaymentStatus.pending)
-                        Card(
-                          color: Colors.amber.shade50,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(t.subscriptions.proofPending),
-                          ),
-                        )
-                      else ...[
-                        if (latest?.status ==
-                            SubscriptionPaymentStatus.rejected) ...[
-                          Card(
-                            color: Colors.orange.shade50,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Text(
-                                latest?.adminNote?.isNotEmpty == true
-                                    ? '${t.subscriptions.proofRejected} ${latest!.adminNote}'
-                                    : t.subscriptions.proofRejected,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        TextField(
-                          controller: noteController,
-                          decoration: InputDecoration(
-                            labelText: 'Note',
-                            border: const OutlineInputBorder(),
-                          ),
-                          maxLines: 2,
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: isSubmitting.value ? null : pickProof,
-                          icon: const Icon(Icons.image_outlined),
-                          label: Text(
-                            proofName.value ?? t.subscriptions.uploadProof,
-                          ),
-                        ),
-                        if (proofBytes.value != null) ...[
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.memory(
-                              proofBytes.value!,
-                              height: 160,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: isSubmitting.value ? null : submit,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _kBrandTeal,
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                          child: isSubmitting.value
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                                  const SizedBox(height: 16),
+                                  FilledButton(
+                                    onPressed:
+                                        isSubmitting.value ? null : submit,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: _kBrandTeal,
+                                      minimumSize: const Size.fromHeight(48),
+                                    ),
+                                    child: isSubmitting.value
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Text(t.subscriptions.submitProof),
                                   ),
-                                )
-                              : Text(t.subscriptions.submitProof),
-                        ),
-                      ],
-                    ],
-                  ],
-                );
-              },
-            ),
+                                ],
+                              ],
+                            ],
+                          );
+                        },
+                      ),
           );
         },
       ),

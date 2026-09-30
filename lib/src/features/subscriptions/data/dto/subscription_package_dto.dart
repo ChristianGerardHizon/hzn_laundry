@@ -1,6 +1,7 @@
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:pocketbase/pocketbase.dart';
 
+import '../../../entitlements/domain/feature_key.dart';
 import '../../domain/billing_interval_unit.dart';
 import '../../domain/subscription_package.dart';
 
@@ -19,6 +20,9 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
     this.organizationId,
     this.isActive = true,
     this.isDeleted = false,
+    this.features = const [],
+    this.maxBranches,
+    this.maxEmployees,
   });
 
   final String id;
@@ -31,6 +35,9 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
   final String? organizationId;
   final bool isActive;
   final bool isDeleted;
+  final List<String> features;
+  final int? maxBranches;
+  final int? maxEmployees;
 
   factory SubscriptionPackageDto.fromJson(Map<String, dynamic> json) {
     return SubscriptionPackageDto(
@@ -44,6 +51,9 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
       organizationId: _relationId(json['organizationId']),
       isActive: json['isActive'] as bool? ?? true,
       isDeleted: json['isDeleted'] as bool? ?? false,
+      features: _asFeatureKeys(json['features']),
+      maxBranches: _asLimit(json['maxBranches']),
+      maxEmployees: _asLimit(json['maxEmployees']),
     );
   }
 
@@ -65,8 +75,24 @@ class SubscriptionPackageDto with SubscriptionPackageDtoMappable {
           : null,
       isActive: isActive,
       isDeleted: isDeleted,
+      features: features,
+      maxBranches: maxBranches,
+      maxEmployees: maxEmployees,
     );
   }
+}
+
+/// A limit of 0 / missing means unlimited.
+int? _asLimit(dynamic value) {
+  final v = _asInt(value);
+  return v > 0 ? v : null;
+}
+
+/// Missing/legacy `features` means the package predates entitlements and
+/// includes everything.
+List<String> _asFeatureKeys(dynamic value) {
+  if (value is List) return value.whereType<String>().toList();
+  return [for (final f in FeatureKey.values) f.key];
 }
 
 String? _relationId(dynamic value) {

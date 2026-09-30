@@ -225,14 +225,17 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	final TranslationsTl _root; // ignore: unused_field
 
 	// Translations
-	@override String get shortcuts => 'Mga Shortcut';
-	@override String get categories => 'Mga Kategorya';
-	@override String get showMore => 'Magpakita pa';
-	@override String get showLess => 'Magpakita ng mas kaunti';
 	@override String get operations => 'Operasyon';
 	@override String get people => 'Mga Tao';
 	@override String get insights => 'Mga Insight';
 	@override String get administration => 'Administrasyon';
+	@override String get setup => 'Setup';
+	@override String get account => 'Account';
+	@override String get pinned => 'Naka-pin';
+	@override String get pinToTop => 'I-pin sa itaas';
+	@override String get unpin => 'I-unpin';
+	@override String get expandGroup => 'Buksan ang seksyon';
+	@override String get collapseGroup => 'Isara ang seksyon';
 	@override String get collapseNav => 'I-collapse ang navigation';
 	@override String get expandNav => 'I-expand ang navigation';
 	@override String get dashboard => 'Dashboard';
@@ -258,7 +261,6 @@ class _TranslationsNavigationTl implements TranslationsNavigationEn {
 	@override String get customers => 'Mga Customer';
 	@override String get employees => 'Mga Empleyado';
 	@override String get system => 'Sistema';
-	@override String get account => 'Account';
 	@override String get noBranch => 'Walang Sangay';
 	@override String get allBranches => 'Lahat ng Sangay';
 	@override String get switchingBranch => 'Pinapalitan ang sangay…';
@@ -390,6 +392,29 @@ class _TranslationsOrganizationsTl implements TranslationsOrganizationsEn {
 	@override String get onboarded => 'Naka-onboard';
 	@override String get notOnboarded => 'Hindi pa naka-onboard';
 	@override String get statsLoadError => 'Hindi ma-load ang stats ng organisasyon.';
+	@override String get filterAll => 'Lahat';
+	@override String get filterOther => 'Iba pa';
+	@override String get filterByStatus => 'I-filter ayon sa status';
+	@override String get sortBy => 'I-sort ayon sa';
+	@override String get sortRevenue => 'Kita';
+	@override String get sortOrders => 'Mga Order';
+	@override String get sortCustomers => 'Mga Customer';
+	@override String get sortName => 'Pangalan (A-Z)';
+	@override String get subscriptionHealth => 'Kalagayan ng subscription';
+	@override String get clearFilters => 'I-clear ang mga filter';
+	@override String get noOrganizationsMatchFilters => 'Walang organisasyong tumugma sa mga filter na ito.';
+	@override String graceEndsInDays({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: 'Matatapos ang grace sa 1 araw',
+		other: 'Matatapos ang grace sa ${n} araw',
+	);
+	@override String pendingPayments({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: '1 nakabinbing bayad',
+		other: '${n} nakabinbing bayad',
+	);
+	@override String organizationsCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n,
+		one: '1 organisasyon',
+		other: '${n} organisasyon',
+	);
 }
 
 // Path: sort
@@ -513,6 +538,28 @@ class _TranslationsSubscriptionsTl implements TranslationsSubscriptionsEn {
 	@override String get goToPayment => 'Pumunta sa bayad';
 	@override String get orgDetails => 'Detalye ng organization';
 	@override String get days => 'araw';
+	@override String get subscriptionTab => 'Subscription';
+	@override String get currentPackage => 'Kasalukuyang package';
+	@override String get billingCycle => 'Billing cycle';
+	@override String get cycleDaily => 'Araw-araw';
+	@override String get cycleMonthly => 'Buwan-buwan';
+	@override String get cycleYearly => 'Taon-taon';
+	@override String cycleEvery({required Object count, required Object unit}) => 'Kada ${count} ${unit}';
+	@override String get unitDays => 'araw';
+	@override String get unitMonths => 'buwan';
+	@override String get unitYears => 'taon';
+	@override String get nextPaymentDue => 'Susunod na due ng bayad';
+	@override String payAmount({required Object amount}) => 'Magbayad ng ${amount}';
+	@override String get paymentUnderReview => 'Nire-review ang bayad';
+	@override String get paymentHistory => 'Kasaysayan ng bayad';
+	@override String get noPayments => 'Wala pang naisubmit na bayad.';
+	@override String get viewProof => 'Tingnan ang proof';
+	@override String get paymentsLoadFailed => 'Hindi ma-load ang kasaysayan ng bayad';
+	@override String get noBillingAccessTitle => 'Kailangan ng billing access';
+	@override String get noBillingAccess => 'Wala kang access sa billing ng organization na ito. Magpasabi sa admin ng organization na bayaran ang subscription.';
+	@override String get askAdminToPay => 'Magpasabi sa admin ng organization na bayaran ang subscription.';
+	@override String get backToApp => 'Bumalik sa app';
+	@override String get noteLabel => 'Tala';
 }
 
 // Path: validation
@@ -664,14 +711,17 @@ extension on TranslationsTl {
 			'management.invitesSubtitle' => 'Mga pending na imbitasyong naghihintay tanggapin.',
 			'management.noPendingInvites' => 'Walang pending na imbitasyon',
 			'management.noPendingInvitesHint' => 'Mag-imbita gamit ang + button. Makakatanggap sila ng email para mag-sign in at tumanggap.',
-			'navigation.shortcuts' => 'Mga Shortcut',
-			'navigation.categories' => 'Mga Kategorya',
-			'navigation.showMore' => 'Magpakita pa',
-			'navigation.showLess' => 'Magpakita ng mas kaunti',
 			'navigation.operations' => 'Operasyon',
 			'navigation.people' => 'Mga Tao',
 			'navigation.insights' => 'Mga Insight',
 			'navigation.administration' => 'Administrasyon',
+			'navigation.setup' => 'Setup',
+			'navigation.account' => 'Account',
+			'navigation.pinned' => 'Naka-pin',
+			'navigation.pinToTop' => 'I-pin sa itaas',
+			'navigation.unpin' => 'I-unpin',
+			'navigation.expandGroup' => 'Buksan ang seksyon',
+			'navigation.collapseGroup' => 'Isara ang seksyon',
 			'navigation.collapseNav' => 'I-collapse ang navigation',
 			'navigation.expandNav' => 'I-expand ang navigation',
 			'navigation.dashboard' => 'Dashboard',
@@ -697,7 +747,6 @@ extension on TranslationsTl {
 			'navigation.customers' => 'Mga Customer',
 			'navigation.employees' => 'Mga Empleyado',
 			'navigation.system' => 'Sistema',
-			'navigation.account' => 'Account',
 			'navigation.noBranch' => 'Walang Sangay',
 			'navigation.allBranches' => 'Lahat ng Sangay',
 			'navigation.switchingBranch' => 'Pinapalitan ang sangay…',
@@ -814,6 +863,20 @@ extension on TranslationsTl {
 			'organizations.onboarded' => 'Naka-onboard',
 			'organizations.notOnboarded' => 'Hindi pa naka-onboard',
 			'organizations.statsLoadError' => 'Hindi ma-load ang stats ng organisasyon.',
+			'organizations.filterAll' => 'Lahat',
+			'organizations.filterOther' => 'Iba pa',
+			'organizations.filterByStatus' => 'I-filter ayon sa status',
+			'organizations.sortBy' => 'I-sort ayon sa',
+			'organizations.sortRevenue' => 'Kita',
+			'organizations.sortOrders' => 'Mga Order',
+			'organizations.sortCustomers' => 'Mga Customer',
+			'organizations.sortName' => 'Pangalan (A-Z)',
+			'organizations.subscriptionHealth' => 'Kalagayan ng subscription',
+			'organizations.clearFilters' => 'I-clear ang mga filter',
+			'organizations.noOrganizationsMatchFilters' => 'Walang organisasyong tumugma sa mga filter na ito.',
+			'organizations.graceEndsInDays' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: 'Matatapos ang grace sa 1 araw', other: 'Matatapos ang grace sa ${n} araw', ), 
+			'organizations.pendingPayments' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 nakabinbing bayad', other: '${n} nakabinbing bayad', ), 
+			'organizations.organizationsCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('tl'))(n, one: '1 organisasyon', other: '${n} organisasyon', ), 
 			'sort.sortBy' => 'Ayusin Ayon Sa',
 			'sort.direction' => 'Direksyon',
 			'sort.ascending' => 'Pataas',
@@ -916,6 +979,28 @@ extension on TranslationsTl {
 			'subscriptions.goToPayment' => 'Pumunta sa bayad',
 			'subscriptions.orgDetails' => 'Detalye ng organization',
 			'subscriptions.days' => 'araw',
+			'subscriptions.subscriptionTab' => 'Subscription',
+			'subscriptions.currentPackage' => 'Kasalukuyang package',
+			'subscriptions.billingCycle' => 'Billing cycle',
+			'subscriptions.cycleDaily' => 'Araw-araw',
+			'subscriptions.cycleMonthly' => 'Buwan-buwan',
+			'subscriptions.cycleYearly' => 'Taon-taon',
+			'subscriptions.cycleEvery' => ({required Object count, required Object unit}) => 'Kada ${count} ${unit}',
+			'subscriptions.unitDays' => 'araw',
+			'subscriptions.unitMonths' => 'buwan',
+			'subscriptions.unitYears' => 'taon',
+			'subscriptions.nextPaymentDue' => 'Susunod na due ng bayad',
+			'subscriptions.payAmount' => ({required Object amount}) => 'Magbayad ng ${amount}',
+			'subscriptions.paymentUnderReview' => 'Nire-review ang bayad',
+			'subscriptions.paymentHistory' => 'Kasaysayan ng bayad',
+			'subscriptions.noPayments' => 'Wala pang naisubmit na bayad.',
+			'subscriptions.viewProof' => 'Tingnan ang proof',
+			'subscriptions.paymentsLoadFailed' => 'Hindi ma-load ang kasaysayan ng bayad',
+			'subscriptions.noBillingAccessTitle' => 'Kailangan ng billing access',
+			'subscriptions.noBillingAccess' => 'Wala kang access sa billing ng organization na ito. Magpasabi sa admin ng organization na bayaran ang subscription.',
+			'subscriptions.askAdminToPay' => 'Magpasabi sa admin ng organization na bayaran ang subscription.',
+			'subscriptions.backToApp' => 'Bumalik sa app',
+			'subscriptions.noteLabel' => 'Tala',
 			'validation.required' => 'Kinakailangan ang field na ito',
 			'validation.invalidEmail' => 'Maglagay ng valid na email address',
 			'validation.invalidPhone' => 'Maglagay ng valid na numero ng telepono',

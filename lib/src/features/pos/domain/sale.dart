@@ -27,6 +27,8 @@ class Sale with SaleMappable {
     this.notes,
     this.postedDate,
     this.readyForPickupAt,
+    this.voidedById,
+    this.voidedAt,
     this.created,
     this.updated,
   });
@@ -78,6 +80,12 @@ class Sale with SaleMappable {
 
   /// Optional promised ready-for-pickup date/time.
   final DateTime? readyForPickupAt;
+
+  /// User who voided this sale.
+  final String? voidedById;
+
+  /// Timestamp when the sale was voided.
+  final DateTime? voidedAt;
 
   /// Creation timestamp.
   final DateTime? created;

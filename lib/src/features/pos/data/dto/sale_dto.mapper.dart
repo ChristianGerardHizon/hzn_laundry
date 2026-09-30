@@ -113,6 +113,18 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     _$readyForPickupAt,
     opt: true,
   );
+  static String? _$voidedBy(SaleDto v) => v.voidedBy;
+  static const Field<SaleDto, String> _f$voidedBy = Field(
+    'voidedBy',
+    _$voidedBy,
+    opt: true,
+  );
+  static String? _$voidedAt(SaleDto v) => v.voidedAt;
+  static const Field<SaleDto, String> _f$voidedAt = Field(
+    'voidedAt',
+    _$voidedAt,
+    opt: true,
+  );
   static String? _$created(SaleDto v) => v.created;
   static const Field<SaleDto, String> _f$created = Field(
     'created',
@@ -146,6 +158,8 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     #notes: _f$notes,
     #postedDate: _f$postedDate,
     #readyForPickupAt: _f$readyForPickupAt,
+    #voidedBy: _f$voidedBy,
+    #voidedAt: _f$voidedAt,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -170,6 +184,8 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
       readyForPickupAt: data.dec(_f$readyForPickupAt),
+      voidedBy: data.dec(_f$voidedBy),
+      voidedAt: data.dec(_f$voidedAt),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -251,6 +267,8 @@ abstract class SaleDtoCopyWith<$R, $In extends SaleDto, $Out>
     String? notes,
     String? postedDate,
     String? readyForPickupAt,
+    String? voidedBy,
+    String? voidedAt,
     String? created,
     String? updated,
   });
@@ -285,58 +303,65 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     Object? notes = $none,
     Object? postedDate = $none,
     Object? readyForPickupAt = $none,
+    Object? voidedBy = $none,
+    Object? voidedAt = $none,
     Object? created = $none,
     Object? updated = $none,
-  }) => $apply(
-    FieldCopyWithData({
-      if (id != null) #id: id,
-      if (collectionId != null) #collectionId: collectionId,
-      if (collectionName != null) #collectionName: collectionName,
-      if (receiptNumber != null) #receiptNumber: receiptNumber,
-      if (branch != null) #branch: branch,
-      if (cashier != null) #cashier: cashier,
-      if (totalAmount != null) #totalAmount: totalAmount,
-      if (status != null) #status: status,
-      if (orderStatus != null) #orderStatus: orderStatus,
-      if (isPaid != null) #isPaid: isPaid,
-      if (paymentStatus != null) #paymentStatus: paymentStatus,
-      if (packs != null) #packs: packs,
-      if (pickedUpAt != $none) #pickedUpAt: pickedUpAt,
-      if (customer != $none) #customer: customer,
-      if (customerName != $none) #customerName: customerName,
-      if (notes != $none) #notes: notes,
-      if (postedDate != $none) #postedDate: postedDate,
-      if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
-      if (created != $none) #created: created,
-      if (updated != $none) #updated: updated,
-    }),
-  );
+  }) =>
+      $apply(
+        FieldCopyWithData({
+          if (id != null) #id: id,
+          if (collectionId != null) #collectionId: collectionId,
+          if (collectionName != null) #collectionName: collectionName,
+          if (receiptNumber != null) #receiptNumber: receiptNumber,
+          if (branch != null) #branch: branch,
+          if (cashier != null) #cashier: cashier,
+          if (totalAmount != null) #totalAmount: totalAmount,
+          if (status != null) #status: status,
+          if (orderStatus != null) #orderStatus: orderStatus,
+          if (isPaid != null) #isPaid: isPaid,
+          if (paymentStatus != null) #paymentStatus: paymentStatus,
+          if (packs != null) #packs: packs,
+          if (pickedUpAt != $none) #pickedUpAt: pickedUpAt,
+          if (customer != $none) #customer: customer,
+          if (customerName != $none) #customerName: customerName,
+          if (notes != $none) #notes: notes,
+          if (postedDate != $none) #postedDate: postedDate,
+          if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
+          if (voidedBy != $none) #voidedBy: voidedBy,
+          if (voidedAt != $none) #voidedAt: voidedAt,
+          if (created != $none) #created: created,
+          if (updated != $none) #updated: updated,
+        }),
+      );
   @override
   SaleDto $make(CopyWithData data) => SaleDto(
-    id: data.get(#id, or: $value.id),
-    collectionId: data.get(#collectionId, or: $value.collectionId),
-    collectionName: data.get(#collectionName, or: $value.collectionName),
-    receiptNumber: data.get(#receiptNumber, or: $value.receiptNumber),
-    branch: data.get(#branch, or: $value.branch),
-    cashier: data.get(#cashier, or: $value.cashier),
-    totalAmount: data.get(#totalAmount, or: $value.totalAmount),
-    status: data.get(#status, or: $value.status),
-    orderStatus: data.get(#orderStatus, or: $value.orderStatus),
-    isPaid: data.get(#isPaid, or: $value.isPaid),
-    paymentStatus: data.get(#paymentStatus, or: $value.paymentStatus),
-    packs: data.get(#packs, or: $value.packs),
-    pickedUpAt: data.get(#pickedUpAt, or: $value.pickedUpAt),
-    customer: data.get(#customer, or: $value.customer),
-    customerName: data.get(#customerName, or: $value.customerName),
-    notes: data.get(#notes, or: $value.notes),
-    postedDate: data.get(#postedDate, or: $value.postedDate),
-    readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
-    created: data.get(#created, or: $value.created),
-    updated: data.get(#updated, or: $value.updated),
-  );
+        id: data.get(#id, or: $value.id),
+        collectionId: data.get(#collectionId, or: $value.collectionId),
+        collectionName: data.get(#collectionName, or: $value.collectionName),
+        receiptNumber: data.get(#receiptNumber, or: $value.receiptNumber),
+        branch: data.get(#branch, or: $value.branch),
+        cashier: data.get(#cashier, or: $value.cashier),
+        totalAmount: data.get(#totalAmount, or: $value.totalAmount),
+        status: data.get(#status, or: $value.status),
+        orderStatus: data.get(#orderStatus, or: $value.orderStatus),
+        isPaid: data.get(#isPaid, or: $value.isPaid),
+        paymentStatus: data.get(#paymentStatus, or: $value.paymentStatus),
+        packs: data.get(#packs, or: $value.packs),
+        pickedUpAt: data.get(#pickedUpAt, or: $value.pickedUpAt),
+        customer: data.get(#customer, or: $value.customer),
+        customerName: data.get(#customerName, or: $value.customerName),
+        notes: data.get(#notes, or: $value.notes),
+        postedDate: data.get(#postedDate, or: $value.postedDate),
+        readyForPickupAt:
+            data.get(#readyForPickupAt, or: $value.readyForPickupAt),
+        voidedBy: data.get(#voidedBy, or: $value.voidedBy),
+        voidedAt: data.get(#voidedAt, or: $value.voidedAt),
+        created: data.get(#created, or: $value.created),
+        updated: data.get(#updated, or: $value.updated),
+      );
 
   @override
   SaleDtoCopyWith<$R2, SaleDto, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
       _SaleDtoCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
-

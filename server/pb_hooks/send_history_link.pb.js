@@ -34,6 +34,17 @@ onRecordAfterCreateSuccess(function(e) {
     return; // no email on file — nothing to send
   }
 
+  // Skip when the organization does not have the customer history link.
+  try {
+    var entitlements = require(__hooks + "/lib/feature_entitlements_helpers.js");
+    if (!entitlements.isCustomerHistoryEntitled($app, customer)) {
+      console.log("[HISTORY_LINK] customerHistoryLink not enabled, skipping");
+      return;
+    }
+  } catch (err) {
+    console.error("[HISTORY_LINK] entitlement check failed:", err);
+  }
+
   var token = customer.getString("historyToken");
   var expiresAt = customer.getString("historyTokenExpiresAt");
 

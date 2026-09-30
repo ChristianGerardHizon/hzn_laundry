@@ -34,6 +34,11 @@ routerAdd("GET", "/api/customer-history/{token}", function(e) {
     return e.json(404, { success: false, error: "Link not found or expired" });
   }
 
+  // Feature gate: organization must have the customer history link.
+  if (!require(__hooks + "/lib/feature_entitlements_helpers.js").isCustomerHistoryEntitled($app, customer)) {
+    return e.json(404, { success: false, error: "Link not found or expired" });
+  }
+
   // Expiry check
   var expiresAt = customer.getString("historyTokenExpiresAt");
   if (expiresAt) {
@@ -110,6 +115,10 @@ routerAdd("GET", "/api/customer-history/{token}/sales/{saleId}", function(e) {
     return e.json(404, { success: false, error: "Link not found or expired" });
   }
   if (!customer) {
+    return e.json(404, { success: false, error: "Link not found or expired" });
+  }
+
+  if (!require(__hooks + "/lib/feature_entitlements_helpers.js").isCustomerHistoryEntitled($app, customer)) {
     return e.json(404, { success: false, error: "Link not found or expired" });
   }
 

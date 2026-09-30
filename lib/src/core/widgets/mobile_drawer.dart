@@ -10,6 +10,9 @@ import 'nav_permissions.dart';
 import 'organization_nav_brand.dart';
 
 /// Mobile drawer with permission-filtered navigation menu.
+///
+/// Destinations are grouped with the same categories as the desktop sidebar
+/// (Operations / People / Insights / Administration) so both shells feel alike.
 class MobileDrawer extends ConsumerWidget {
   const MobileDrawer({
     super.key,
@@ -31,54 +34,64 @@ class MobileDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final theme = Theme.of(context);
-    final isAdmin =
-        ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
-
-    // Split visible items into primary (index <= 5) and secondary (index > 5).
-    // Profile is rendered in its own Account section above logout.
-    final primaryItems = visibleItems
-        .where((item) => item.index <= 5 && item.id != NavId.profile)
-        .toList();
-    final secondaryItems = visibleItems
-        .where((item) => item.index > 5 && item.id != NavId.profile)
-        .toList();
-    final profileItem = navItemFor(NavId.profile, visibleItems);
+    final isAdmin = ref.watch(currentUserRoleProvider).value?.isAdmin ?? false;
 
     Widget mapItem(NavItem item) {
       final visibleIndex = visibleItems.indexOf(item);
       return _DrawerItem(
-        icon: item.icon,
+        icon: selectedIndex == visibleIndex ? item.selectedIcon : item.icon,
         label: item.label,
         selected: selectedIndex == visibleIndex,
         onTap: () => _selectAndClose(context, visibleIndex),
       );
     }
 
-    List<Widget> withSuperAdminAfterOrganizations(List<NavItem> items) {
-      final widgets = <Widget>[];
+    Widget superAdminItem() => _DrawerItem(
+          icon: Icons.admin_panel_settings_outlined,
+          label: t.organizations.superAdmin,
+          selected: false,
+          onTap: () {
+            Navigator.of(context).pop();
+            const SuperAdminRoute().go(context);
+          },
+        );
+
+    final dashboard = navItemFor(NavId.dashboard, visibleItems);
+    final profileItem = navItemFor(NavId.profile, visibleItems);
+
+    // Items with no category (e.g. System) sit with the Account section.
+    final accountExtras = visibleItems
+        .where((item) =>
+            item.id != NavId.dashboard &&
+            item.id != NavId.profile &&
+            appNavCategoryFor(item.id) == null)
+        .toList();
+
+    final orgsVisible = navItemFor(NavId.organizations, visibleItems) != null;
+
+    final sections = <Widget>[];
+    for (final category in [
+      AppNavCategory.operations,
+      AppNavCategory.people,
+      AppNavCategory.insights,
+      AppNavCategory.administration,
+    ]) {
+      final items = visibleItems
+          .where((item) => appNavCategoryFor(item.id) == category)
+          .toList();
+      final showSuperAdmin = category == AppNavCategory.administration &&
+          isAdmin &&
+          orgsVisible;
+      if (items.isEmpty) continue;
+
+      sections.add(_SectionLabel(appNavCategoryLabel(category, t)));
       for (final item in items) {
-        widgets.add(mapItem(item));
-        if (isAdmin && item.id == NavId.organizations) {
-          widgets.add(
-            _DrawerItem(
-              icon: Icons.admin_panel_settings_outlined,
-              label: t.organizations.superAdmin,
-              selected: false,
-              onTap: () {
-                Navigator.of(context).pop();
-                const SuperAdminRoute().go(context);
-              },
-            ),
-          );
+        sections.add(mapItem(item));
+        if (showSuperAdmin && item.id == NavId.organizations) {
+          sections.add(superAdminItem());
         }
       }
-      return widgets;
     }
-
-    final orgsInPrimary =
-        primaryItems.any((item) => item.id == NavId.organizations);
-    final orgsInSecondary =
-        secondaryItems.any((item) => item.id == NavId.organizations);
 
     return Drawer(
       // Edge-to-edge mobile drawer (M3 defaults round the trailing edge and
@@ -87,11 +100,11 @@ class MobileDrawer extends ConsumerWidget {
       backgroundColor: theme.colorScheme.surface,
       child: SafeArea(
         child: ListView(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.only(bottom: 16),
           children: [
             // Compact header — avoid DrawerHeader's fixed 160px + bottom align.
             const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: OrganizationNavBrand(
                 logoSize: 40,
                 compact: true,
@@ -99,51 +112,39 @@ class MobileDrawer extends ConsumerWidget {
               ),
             ),
 
-            // Branch switcher
-            const BranchSwitcher(),
+            // Same compact chip as the shell scope bar.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: BranchSwitcher(compact: true),
+            ),
+            const SizedBox(height: 8),
 
-            // Primary navigation items
-            ...withSuperAdminAfterOrganizations(primaryItems),
+            if (dashboard != null) mapItem(dashboard),
 
-            if (secondaryItems.isNotEmpty) const Divider(),
-
-            // Secondary navigation items
-            ...withSuperAdminAfterOrganizations(secondaryItems),
+            ...sections,
 
             // Super Admin fallback when Organizations is not in the drawer list
-            if (isAdmin && !orgsInPrimary && !orgsInSecondary)
-              _DrawerItem(
-                icon: Icons.admin_panel_settings_outlined,
-                label: t.organizations.superAdmin,
-                selected: false,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  const SuperAdminRoute().go(context);
-                },
-              ),
-
-            if (profileItem != null) ...[
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Text(
-                  t.navigation.account,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              mapItem(profileItem),
+            if (isAdmin && !orgsVisible) ...[
+              _SectionLabel(t.navigation.administration),
+              superAdminItem(),
             ],
 
-            const Divider(),
+            if (profileItem != null || accountExtras.isNotEmpty) ...[
+              _SectionLabel(t.navigation.account),
+              if (profileItem != null) mapItem(profileItem),
+              ...accountExtras.map(mapItem),
+            ],
 
-            // Logout
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(indent: 16, endIndent: 16),
+            ),
+
             _DrawerItem(
               icon: Icons.logout,
               label: t.auth.logoutButton,
               selected: false,
-              color: Colors.red,
+              color: theme.colorScheme.error,
               onTap: () => _confirmLogout(context, ref, t),
             ),
           ],
@@ -182,6 +183,29 @@ class MobileDrawer extends ConsumerWidget {
   }
 }
 
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 16, 16, 4),
+      child: Text(
+        label.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+/// 56dp pill row (Material 3 navigation-drawer destination style).
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.icon,
@@ -199,11 +223,28 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(label, style: color != null ? TextStyle(color: color) : null),
-      selected: selected,
-      onTap: onTap,
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = color ??
+        (selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListTile(
+        shape: const StadiumBorder(),
+        minTileHeight: 56,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        selected: selected,
+        selectedTileColor: scheme.secondaryContainer,
+        leading: Icon(icon, color: foreground),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: color ?? (selected ? scheme.onSecondaryContainer : null),
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }

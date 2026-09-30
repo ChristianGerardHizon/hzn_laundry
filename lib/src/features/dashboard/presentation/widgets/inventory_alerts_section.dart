@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/products.routes.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../domain/inventory_alert.dart';
 import '../controllers/inventory_alerts_controller.dart';
 
@@ -20,6 +22,9 @@ class InventoryAlertsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(featureEnabledProvider(FeatureKey.products))) {
+      return const SizedBox.shrink();
+    }
     final alertsSummaryAsync = ref.watch(inventoryAlertsSummaryProvider);
 
     return alertsSummaryAsync.when(

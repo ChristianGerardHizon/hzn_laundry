@@ -258,19 +258,28 @@ final class RequireStorageEnabledProvider
 }
 
 String _$requireStorageEnabledHash() =>
-    r'7ed56d4cf4017e5c6abd2e7acffb2b789ec2769e';
+    r'9c420e269106d0b6ba63ecd188ee15d208dc1dab';
 
-/// Shows consumable usage on orders. Defaults to false (fail closed).
+/// Shows consumable usage on orders.
+///
+/// Now an entitlement (subscription package + Super Admin override) rather
+/// than an org-managed flag; see [FeatureKey.consumableUsage].
 
 @ProviderFor(consumableUsageEnabled)
 final consumableUsageEnabledProvider = ConsumableUsageEnabledProvider._();
 
-/// Shows consumable usage on orders. Defaults to false (fail closed).
+/// Shows consumable usage on orders.
+///
+/// Now an entitlement (subscription package + Super Admin override) rather
+/// than an org-managed flag; see [FeatureKey.consumableUsage].
 
 final class ConsumableUsageEnabledProvider
     extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
     with $FutureModifier<bool>, $FutureProvider<bool> {
-  /// Shows consumable usage on orders. Defaults to false (fail closed).
+  /// Shows consumable usage on orders.
+  ///
+  /// Now an entitlement (subscription package + Super Admin override) rather
+  /// than an org-managed flag; see [FeatureKey.consumableUsage].
   ConsumableUsageEnabledProvider._()
       : super(
           from: null,
@@ -297,4 +306,4 @@ final class ConsumableUsageEnabledProvider
 }
 
 String _$consumableUsageEnabledHash() =>
-    r'27e1c01fe8b3781d6ee8fb18928956a13a04f0e0';
+    r'f16225ee2fa9ff5f36e9678afcdaec3aada77c35';

@@ -82,6 +82,15 @@ routerAdd(
 
 routerAdd(
   "GET",
+  "/api/organizations/{id}/subscription/payments",
+  function(e) {
+    return require(__hooks + "/lib/organization_subscriptions_helpers.js").listOrgPayments(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "GET",
   "/api/super-admin/subscription-payments",
   function(e) {
     return require(__hooks + "/lib/organization_subscriptions_helpers.js").listPendingPayments(e);
@@ -112,6 +121,34 @@ routerAdd(
   "/api/super-admin/organizations/{id}/lock",
   function(e) {
     return require(__hooks + "/lib/organization_subscriptions_helpers.js").lockOrganization(e);
+  },
+  $apis.requireAuth("users")
+);
+
+// Feature entitlements (package base + Super Admin overrides)
+routerAdd(
+  "GET",
+  "/api/organizations/{id}/entitlements",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").getEntitlements(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "PUT",
+  "/api/super-admin/organizations/{id}/feature-overrides/{key}",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").setFeatureOverride(e);
+  },
+  $apis.requireAuth("users")
+);
+
+routerAdd(
+  "PUT",
+  "/api/super-admin/organizations/{id}/limit-overrides/{key}",
+  function(e) {
+    return require(__hooks + "/lib/feature_entitlements_helpers.js").setLimitOverride(e);
   },
   $apis.requireAuth("users")
 );

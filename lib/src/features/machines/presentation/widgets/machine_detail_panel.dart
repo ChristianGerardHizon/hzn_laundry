@@ -5,6 +5,8 @@ import 'package:hzn_laundry/src/core/foundation/failure.dart';
 
 import '../../../../core/routing/routes/system.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../data/repositories/load_rule_repository.dart';
 import '../../domain/load_rule.dart';
 import '../../domain/machine.dart';
@@ -73,8 +75,10 @@ class MachineDetailPanel extends HookConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _MachineInfoCard(machine: machine),
-          const SizedBox(height: 24),
-          _LoadRulesSection(machine: machine),
+          if (ref.watch(featureEnabledProvider(FeatureKey.machineLoadRules))) ...[
+            const SizedBox(height: 24),
+            _LoadRulesSection(machine: machine),
+          ],
         ],
       ),
     );

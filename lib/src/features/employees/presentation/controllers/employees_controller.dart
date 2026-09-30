@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/packages/pocketbase/pb_filter.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
+import '../../../entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../data/repositories/employee_repository.dart';
 import '../../domain/employee.dart';
 
@@ -64,6 +65,8 @@ class EmployeesController extends _$EmployeesController {
       (failure) => null,
       (created) {
         refresh();
+        // Employee count changed: refresh limits/usage.
+        ref.invalidate(currentOrganizationEntitlementsProvider);
         return created;
       },
     );
@@ -88,6 +91,7 @@ class EmployeesController extends _$EmployeesController {
       (failure) => false,
       (_) {
         refresh();
+        ref.invalidate(currentOrganizationEntitlementsProvider);
         return true;
       },
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
+import '../../features/entitlements/presentation/controllers/organization_entitlements_provider.dart';
 import '../../features/organizations/presentation/controllers/current_organization_controller.dart';
 import '../../features/pos/presentation/cart_controller.dart';
 import '../../features/subscriptions/presentation/widgets/subscription_status_banner.dart';
@@ -214,7 +215,13 @@ class _AppRootState extends ConsumerState<AppRoot> {
         });
     final roleAsync = ref.watch(currentUserRoleProvider);
     final role = roleAsync.value;
-    final visibleItems = filterNavItems(allNavItems, role);
+    final entitlements =
+        ref.watch(currentOrganizationEntitlementsProvider).value;
+    final visibleItems = filterNavItems(
+      allNavItems,
+      role,
+      isFeatureEnabled: entitlements == null ? null : entitlements.isEnabled,
+    );
     final selectedIndex = _getSelectedIndex(context, visibleItems);
 
     final switchingOrg = ref.watch(organizationSwitchOverlayProvider).active;
@@ -227,13 +234,18 @@ class _AppRootState extends ConsumerState<AppRoot> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                OrganizationSwitcher(compact: true),
-                Expanded(child: BranchSwitcher(compact: true)),
-                FullscreenToggleButton(),
-              ],
+            // Scope bar: where am I working (org / branch). Kept light and
+            // left-aligned so it reads as context, not as page chrome.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  OrganizationSwitcher(compact: true),
+                  Expanded(child: BranchSwitcher(compact: true)),
+                  FullscreenToggleButton(),
+                ],
+              ),
             ),
             Expanded(
               child: SubscriptionLockGate(child: widget.child),

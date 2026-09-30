@@ -10,6 +10,7 @@ import '../routing/router_utils.dart';
 import '../routing/routes/dashboard.routes.dart';
 import '../routing/routes/org_selection.routes.dart';
 import 'nav_permissions.dart';
+import 'scope_chip.dart';
 
 /// Sentinel dropdown value for the Super Admin footer action.
 const kSuperAdminSentinel = '__SUPER_ADMIN__';
@@ -120,10 +121,7 @@ class _OrgDropdown extends StatelessWidget {
           vertical: compact ? 0 : 4,
         ),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-        ),
+        decoration: scopeChipDecoration(theme, compact: compact),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: effectiveValue,

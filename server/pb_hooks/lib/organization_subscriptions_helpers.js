@@ -5,6 +5,36 @@
 
 var orgHelpers = require(__hooks + "/lib/organization_invites_helpers.js");
 var historyConfig = require(__hooks + "/send_history_link_config.js");
+var featureHelpers = require(__hooks + "/lib/feature_entitlements_helpers.js");
+
+/** Feature list for a new package: sanitized body value, or the full catalog. */
+function featuresFromBody(value) {
+  if (value === undefined || value === null) {
+    return featureHelpers.catalogKeys();
+  }
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch (_) {
+      value = [];
+    }
+  }
+  return featureHelpers.sanitizeFeatureList(value);
+}
+
+/**
+ * Package limit (max branches / employees) from a request value.
+ * null / "" / 0 mean unlimited (stored as 0). Anything else must be a
+ * positive integer.
+ */
+function limitFromBody(value, label) {
+  if (value === undefined || value === null || value === "") return 0;
+  var n = Number(value);
+  if (isNaN(n) || n < 0 || Math.floor(n) !== n) {
+    throw new BadRequestError(label + " must be a non-negative whole number");
+  }
+  return n;
+}
 
 function exportRecord(record) {
   if (record && typeof record.publicExport === "function") {
@@ -62,6 +92,20 @@ function requireOrgMember(e, orgId) {
     if (!orgHelpers.hasPermission(e.app, e.auth.getString("role"), "system.admin")) {
       throw new ForbiddenError("organization membership required");
     }
+  }
+}
+
+/**
+ * Billing (pay screen / payment history) is limited to organization admins:
+ * members with members.manage in this org, or platform system.admin users.
+ */
+function requireOrgBillingAdmin(e, orgId) {
+  requireAuthUser(e);
+  if (orgHelpers.hasPermission(e.app, e.auth.getString("role"), "system.admin")) {
+    return;
+  }
+  if (!orgHelpers.canManageOrgMembers(e, orgId)) {
+    throw new ForbiddenError("organization billing admin required");
   }
 }
 
@@ -288,6 +332,9 @@ function createPackage(e) {
   record.set("isPremade", body.isPremade !== false && body.isPremade !== "false");
   record.set("isActive", body.isActive !== false && body.isActive !== "false");
   record.set("isDeleted", false);
+  record.set("features", featuresFromBody(body.features));
+  record.set("maxBranches", limitFromBody(body.maxBranches, "maxBranches"));
+  record.set("maxEmployees", limitFromBody(body.maxEmployees, "maxEmployees"));
   if (body.organizationId) {
     record.set("organizationId", body.organizationId);
     record.set("isPremade", false);
@@ -331,6 +378,15 @@ function updatePackage(e) {
   }
   if (body.isDeleted !== undefined) {
     record.set("isDeleted", body.isDeleted === true || body.isDeleted === "true");
+  }
+  if (body.features !== undefined) {
+    record.set("features", featuresFromBody(body.features));
+  }
+  if (body.maxBranches !== undefined) {
+    record.set("maxBranches", limitFromBody(body.maxBranches, "maxBranches"));
+  }
+  if (body.maxEmployees !== undefined) {
+    record.set("maxEmployees", limitFromBody(body.maxEmployees, "maxEmployees"));
   }
   e.app.save(record);
   return e.json(200, exportRecord(record));
@@ -400,6 +456,9 @@ function assignSubscriptionInApp(app, orgId, opts) {
       throw new BadRequestError("intervalUnit must be day, month, or year");
     }
     pkg.set("intervalUnit", unit);
+    pkg.set("features", featuresFromBody(cp.features));
+    pkg.set("maxBranches", limitFromBody(cp.maxBranches, "maxBranches"));
+    pkg.set("maxEmployees", limitFromBody(cp.maxEmployees, "maxEmployees"));
     pkg.set("isPremade", false);
     pkg.set("organizationId", orgId);
     pkg.set("isActive", true);
@@ -517,7 +576,7 @@ function getOrgSubscription(e) {
 
 function getPayInfo(e) {
   var orgId = e.request.pathValue("id");
-  requireOrgMember(e, orgId);
+  requireOrgBillingAdmin(e, orgId);
   var org;
   try {
     org = e.app.findRecordById("organizations", orgId);
@@ -540,7 +599,7 @@ function getPayInfo(e) {
 
 function submitPayment(e) {
   var orgId = e.request.pathValue("id");
-  requireOrgMember(e, orgId);
+  requireOrgBillingAdmin(e, orgId);
 
   var sub = findActiveSubscription(e.app, orgId);
   if (!sub) {
@@ -593,6 +652,33 @@ function submitPayment(e) {
   e.app.save(record);
 
   return e.json(200, exportPayment(e.app, record, getAppBaseUrl()));
+}
+
+/** Payment history (newest first) for an organization's billing admins. */
+function listOrgPayments(e) {
+  var orgId = e.request.pathValue("id");
+  requireOrgBillingAdmin(e, orgId);
+
+  var records = [];
+  try {
+    records = e.app.findRecordsByFilter(
+      "subscriptionPayments",
+      "organization = {:org}",
+      "-created",
+      200,
+      0,
+      { org: orgId }
+    );
+  } catch (_) {
+    records = [];
+  }
+  var baseUrl = getAppBaseUrl();
+  var out = [];
+  var i;
+  for (i = 0; i < records.length; i++) {
+    out.push(exportPayment(e.app, records[i], baseUrl));
+  }
+  return e.json(200, { items: out });
 }
 
 function listPendingPayments(e) {
@@ -840,10 +926,42 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
-function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
+var MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+// "2026-09-20 10:00:07.663Z" -> "September 20, 2026" (Manila time, UTC+8).
+function formatManilaDate(raw) {
+  if (!raw) return "";
+  var d = new Date(raw);
+  if (isNaN(d.getTime())) return String(raw);
+  var manila = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  return (
+    MONTH_NAMES[manila.getUTCMonth()] +
+    " " +
+    manila.getUTCDate() +
+    ", " +
+    manila.getUTCFullYear()
+  );
+}
+
+// 1234.5 -> "₱1,234.50"
+function formatPeso(amount) {
+  var n = Number(amount);
+  if (isNaN(n)) return "";
+  var parts = n.toFixed(2).split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return "\u20B1" + parts.join(".");
+}
+
+/**
+ * details (optional): { packageName, price }
+ */
+function buildSubscriptionReminderEmail(orgName, link, periodEnd, status, details) {
+  var emailLayout = require(__hooks + "/lib/email_layout.js");
+  details = details || {};
   var brand = historyConfig.getAppDisplayName();
-  var safeName = escapeHtml(orgName);
-  var safeLink = escapeHtml(link);
   var subject =
     status === "locked"
       ? brand + " subscription locked — pay to restore access"
@@ -851,38 +969,65 @@ function buildSubscriptionReminderEmail(orgName, link, periodEnd, status) {
         ? brand + " subscription overdue — grace period active"
         : brand + " subscription payment reminder";
 
-  var html =
-    "<!DOCTYPE html><html><body style=\"font-family:sans-serif;color:#0f172a\">" +
-    "<p>Hello,</p>" +
-    "<p>This is a billing reminder for <strong>" +
-    safeName +
-    "</strong>.</p>" +
-    "<p>Current period ends: <strong>" +
-    String(periodEnd || "") +
-    "</strong></p>" +
-    "<p>Status: <strong>" +
-    String(status || "") +
-    "</strong></p>" +
-    "<p><a href=\"" +
-    safeLink +
-    "\" style=\"display:inline-block;padding:12px 20px;background:#45A9AB;color:#fff;text-decoration:none;border-radius:8px\">Pay subscription</a></p>" +
-    "<p>Or open: " +
-    safeLink +
-    "</p>" +
-    "<p>— " +
-    escapeHtml(brand) +
-    "</p></body></html>";
+  var title = "Subscription payment reminder";
+  var intro =
+    "This is a friendly reminder that your " +
+    brand +
+    " subscription payment is coming due.";
+  var statusLabel = "Active";
+  var tone = "ok";
+  if (status === "grace") {
+    title = "Subscription overdue";
+    intro =
+      "Your subscription payment is overdue. Your account is in a grace period — pay now to avoid losing access.";
+    statusLabel = "Overdue (grace period)";
+    tone = "warn";
+  } else if (status === "locked") {
+    title = "Subscription locked";
+    intro =
+      "Your subscription is locked because payment has not been received. Pay now to restore access to your account.";
+    statusLabel = "Locked";
+    tone = "danger";
+  }
+
+  var dueDate = formatManilaDate(periodEnd);
+  var rows = [{ label: "Organization", value: orgName }];
+  if (details.packageName) {
+    rows.push({ label: "Plan", value: details.packageName });
+  }
+  if (details.price !== undefined && details.price !== null && Number(details.price) > 0) {
+    rows.push({ label: "Amount due", value: formatPeso(details.price) });
+  }
+  if (dueDate) {
+    rows.push({ label: "Period ends", value: dueDate });
+  }
+  rows.push({
+    label: "Status",
+    valueHtml: emailLayout.pill(statusLabel, tone)
+  });
+
+  var html = emailLayout.renderEmail({
+    brand: brand,
+    preheader: title + " for " + orgName + ".",
+    title: title,
+    intro: intro,
+    panelLabel: "Billing details",
+    rows: rows,
+    button: { label: "Pay subscription", url: link },
+    note: "Already paid? Submit your proof of payment through the link above and we will confirm it shortly."
+  });
 
   var text =
-    "Billing reminder for " +
-    orgName +
-    "\nPeriod ends: " +
-    periodEnd +
-    "\nStatus: " +
-    status +
-    "\nPay here: " +
-    link +
-    "\n";
+    title + "\n\n" + intro + "\n\n" +
+    "Organization: " + orgName + "\n" +
+    (details.packageName ? "Plan: " + details.packageName + "\n" : "") +
+    (details.price !== undefined && details.price !== null && Number(details.price) > 0
+      ? "Amount due: " + formatPeso(details.price) + "\n"
+      : "") +
+    (dueDate ? "Period ends: " + dueDate + "\n" : "") +
+    "Status: " + statusLabel + "\n\n" +
+    "Pay here: " + link + "\n\n" +
+    "Kind regards,\nThe " + brand + " team\n";
 
   return { subject: subject, html: html, text: text };
 }
@@ -968,7 +1113,11 @@ function sendReminderForSubscription(app, sub) {
     org.getString("name"),
     link,
     sub.getString("periodEnd"),
-    sub.getString("status")
+    sub.getString("status"),
+    {
+      packageName: sub.getString("packageName"),
+      price: sub.getFloat("price")
+    }
   );
   var emails = collectAdminEmails(app, orgId);
   var i;
@@ -1245,6 +1394,7 @@ module.exports = {
   getOrgSubscription: getOrgSubscription,
   getPayInfo: getPayInfo,
   submitPayment: submitPayment,
+  listOrgPayments: listOrgPayments,
   listPendingPayments: listPendingPayments,
   reviewPayment: reviewPayment,
   unlockOrganization: unlockOrganization,
@@ -1254,5 +1404,8 @@ module.exports = {
   runDailyBillingJob: runDailyBillingJob,
   listOrganizationPlatformStatsEnriched: listOrganizationPlatformStatsEnriched,
   requireSystemAdmin: requireSystemAdmin,
+  requireOrgMember: requireOrgMember,
+  requireOrgBillingAdmin: requireOrgBillingAdmin,
+  findActiveSubscription: findActiveSubscription,
   hasPermission: orgHelpers.hasPermission
 };

@@ -4,18 +4,19 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/foundation/paginated_state.dart';
-import '../../../../core/foundation/sort_config.dart';
 import '../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/end_of_list_indicator.dart';
+import '../../../../core/widgets/list/list.dart';
 import '../../../../core/widgets/sort/sort_dialog.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../controllers/paginated_sales_controller.dart';
 import '../controllers/sale_search_controller.dart';
 import '../controllers/sale_sort_controller.dart';
-import 'sale_status_chip.dart';
 import 'dialogs/sale_search_fields_dialog.dart';
+import 'sale_list_status_chip.dart';
+import 'voided_by_label.dart';
 
 /// Extracts a short display order number from the full receipt number.
 /// e.g. "S-260401-X7KP" → "#X7KP"
@@ -96,43 +97,23 @@ class SaleListPanel extends HookConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: Row(
-              children: [
-                Text(t.navigation.salesHistory,
-                    style: theme.textTheme.titleLarge),
-                const Spacer(),
-                Text(
-                  '${paginatedState.totalItems} total',
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
+          ListPanelHeader(
+            title: t.navigation.salesHistory,
+            count: paginatedState.totalItems,
           ),
 
-          // Search
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: isSearchActive
-                ? _ActiveSearchChip(
-                    query: paginatedController.currentSearchQuery ?? '',
-                    fieldCount: activeFieldCount,
-                    sortConfig: sortConfig,
-                    onClear: clearSearch,
-                    onSortPressed: () => _showSortDialog(context, ref),
-                  )
-                : _SearchInput(
-                    controller: searchController,
-                    fieldCount: activeFieldCount,
-                    sortConfig: sortConfig,
-                    onSearch: performSearch,
-                    onTextChanged: (text) => searchText.value = text,
-                    searchText: searchText.value,
-                    onSortPressed: () => _showSortDialog(context, ref),
-                  ),
+          ListToolbar(
+            controller: searchController,
+            onSearch: performSearch,
+            onTextChanged: (text) => searchText.value = text,
+            activeQuery: isSearchActive
+                ? paginatedController.currentSearchQuery ?? ''
+                : null,
+            onClear: clearSearch,
+            filterCount: activeFieldCount > 1 ? activeFieldCount : 0,
+            onFilterPressed: () => showSaleSearchFieldsDialog(context),
+            sortDescending: sortConfig.descending,
+            onSortPressed: () => _showSortDialog(context, ref),
           ),
 
           // Sales list
@@ -155,50 +136,77 @@ class SaleListPanel extends HookConsumerWidget {
 
                   final sale = paginatedState.items[index];
                   final isSelected = sale.id == selectedId;
+                  final isVoided = sale.status.toLowerCase() == 'voided';
 
                   final paymentColor = sale.paymentStatus == PaymentStatus.paid
                       ? Colors.green
                       : Colors.amber;
 
-                  return ListTile(
+                  return AppListRow(
+                    isSelected: isSelected,
                     title: Text(
-                      sale.customerDisplay ?? _shortOrderNumber(sale.receiptNumber),
-                      style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w600,
-                      ),
+                      sale.customerDisplay ??
+                          _shortOrderNumber(sale.receiptNumber),
+                      style: isVoided
+                          ? theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            )
+                          : null,
                     ),
-                    subtitle: Text(
-                      '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"}',
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        Row(
                           children: [
-                            Text(
-                              currencyFormat.format(sale.totalAmount),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                '${_shortOrderNumber(sale.receiptNumber)} • ${sale.postedDate != null ? dateFormat.format(sale.postedDate!) : "Unknown"}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Text(
-                              sale.paymentStatus.displayName,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: paymentColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            if (!isVoided) ...[
+                              const SizedBox(width: 8),
+                              SaleListStatusChip(sale: sale),
+                            ],
                           ],
                         ),
-                        const SizedBox(width: 8),
-                        SaleStatusChip(status: sale.status),
+                        if (isVoided &&
+                            sale.voidedById != null &&
+                            sale.voidedById!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          VoidedByLabel(
+                            voidedById: sale.voidedById,
+                            compact: true,
+                          ),
+                        ],
                       ],
                     ),
-                    selected: isSelected,
-                    selectedTileColor: theme.colorScheme.primaryContainer,
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          currencyFormat.format(sale.totalAmount),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            decoration:
+                                isVoided ? TextDecoration.lineThrough : null,
+                            color: isVoided
+                                ? theme.colorScheme.onSurfaceVariant
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (isVoided)
+                          SaleListStatusChip(sale: sale)
+                        else
+                          RowChip(
+                            label: sale.paymentStatus.displayName,
+                            color: paymentColor,
+                          ),
+                      ],
+                    ),
                     onTap: () => onSaleTap(sale),
                   );
                 },
@@ -209,7 +217,6 @@ class SaleListPanel extends HookConsumerWidget {
       ),
     );
   }
-
 }
 
 void _showSortDialog(BuildContext context, WidgetRef ref) {
@@ -238,177 +245,4 @@ void _showSortDialog(BuildContext context, WidgetRef ref) {
       ref.read(saleSortControllerProvider.notifier).setSort(config);
     },
   );
-}
-
-class _ActiveSearchChip extends StatelessWidget {
-  const _ActiveSearchChip({
-    required this.query,
-    required this.fieldCount,
-    required this.sortConfig,
-    required this.onClear,
-    required this.onSortPressed,
-  });
-
-  final String query;
-  final int fieldCount;
-  final SortConfig sortConfig;
-  final VoidCallback onClear;
-  final VoidCallback onSortPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = Translations.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: InputDecorator(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              isDense: true,
-              filled: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '"$query"',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (fieldCount > 1) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '$fieldCount fields',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: onClear,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          icon: Icon(
-            sortConfig.descending ? Icons.arrow_downward : Icons.arrow_upward,
-          ),
-          onPressed: onSortPressed,
-          tooltip: t.common.sort,
-        ),
-      ],
-    );
-  }
-}
-
-class _SearchInput extends StatelessWidget {
-  const _SearchInput({
-    required this.controller,
-    required this.fieldCount,
-    required this.sortConfig,
-    required this.onSearch,
-    required this.onTextChanged,
-    required this.searchText,
-    required this.onSortPressed,
-  });
-
-  final TextEditingController controller;
-  final int fieldCount;
-  final SortConfig sortConfig;
-  final VoidCallback onSearch;
-  final ValueChanged<String> onTextChanged;
-  final String searchText;
-  final VoidCallback onSortPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Translations.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: controller,
-            onChanged: onTextChanged,
-            onSubmitted: (_) => onSearch(),
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: '${t.common.search}...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchText.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        controller.clear();
-                        onTextChanged('');
-                      },
-                      tooltip: t.common.cancel,
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              isDense: true,
-              filled: true,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          icon: Icon(
-            sortConfig.descending ? Icons.arrow_downward : Icons.arrow_upward,
-          ),
-          onPressed: onSortPressed,
-          tooltip: t.common.sort,
-        ),
-        const SizedBox(width: 8),
-        Badge(
-          isLabelVisible: fieldCount > 1,
-          label: Text('$fieldCount'),
-          child: IconButton.filledTonal(
-            icon: const Icon(Icons.tune),
-            onPressed: () => showSaleSearchFieldsDialog(context),
-            tooltip: t.common.filter,
-          ),
-        ),
-      ],
-    );
-  }
 }

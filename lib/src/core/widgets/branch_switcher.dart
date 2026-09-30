@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../features/entitlements/domain/feature_key.dart';
+import '../../features/entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../features/settings/domain/branch.dart';
 import '../../features/settings/presentation/controllers/branches_controller.dart';
 import '../../features/settings/presentation/controllers/current_branch_controller.dart';
 import '../i18n/strings.g.dart';
 import '../routing/routes/dashboard.routes.dart';
 import 'nav_permissions.dart';
+import 'scope_chip.dart';
 
 /// Branch switcher widget for the sidebar/drawer and app branch bar.
 ///
@@ -30,7 +33,11 @@ class BranchSwitcher extends ConsumerWidget {
     final branchesAsync = ref.watch(branchesControllerProvider);
     final roleAsync = ref.watch(currentUserRoleProvider);
     final isAllBranches = ref.watch(isAllBranchesProvider);
-    final canSwitch = roleAsync.value?.isAdmin ?? false;
+    final multiBranch = ref.watch(featureEnabledProvider(FeatureKey.multiBranch));
+    // Without multiBranch the switcher (and All Branches) is hidden, unless
+    // the admin is already in All Branches mode and needs a way out.
+    final canSwitch =
+        (roleAsync.value?.isAdmin ?? false) && (multiBranch || isAllBranches);
 
     return currentBranchAsync.when(
       data: (currentBranch) {
@@ -152,10 +159,7 @@ class _AdminBranchDropdown extends StatelessWidget {
         vertical: compact ? 0 : 4,
       ),
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: scopeChipDecoration(theme, compact: compact),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: selectedValue,
@@ -241,10 +245,12 @@ class _BranchDisplay extends StatelessWidget {
         horizontal: compact ? 12 : 12,
         vertical: compact ? 0 : 12,
       ),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+      alignment: compact ? Alignment.centerLeft : Alignment.center,
+      // Display-only: a plain label in compact mode so it doesn't look tappable.
+      decoration: scopeChipDecoration(
+        theme,
+        compact: compact,
+        interactive: false,
       ),
       child: Row(
         children: [
@@ -302,10 +308,11 @@ class _NoBranchDisplay extends StatelessWidget {
         horizontal: compact ? 12 : 12,
         vertical: compact ? 0 : 12,
       ),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+      alignment: compact ? Alignment.centerLeft : Alignment.center,
+      decoration: scopeChipDecoration(
+        theme,
+        compact: compact,
+        interactive: false,
       ),
       child: Row(
         children: [

@@ -5,8 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/widgets/state/error_state.dart';
 
+import '../../../../core/widgets/detail_app_bar.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../settings/presentation/controllers/branches_controller.dart';
 import '../controllers/employee_provider.dart';
 import '../controllers/employees_controller.dart';
@@ -28,9 +31,13 @@ class EmployeeDetailPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final employeeAsync = ref.watch(employeeProvider(employeeId));
     final isTablet = Breakpoints.isMultiColumnOrLarger(context);
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
-    final tabController = useTabController(initialLength: 3);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final showAttendance =
+        ref.watch(featureEnabledProvider(FeatureKey.attendance));
+    final tabController = useTabController(
+      initialLength: showAttendance ? 3 : 2,
+      keys: [showAttendance],
+    );
 
     return employeeAsync.when(
       data: (employee) {
@@ -49,51 +56,34 @@ class EmployeeDetailPage extends HookConsumerWidget {
         final theme = Theme.of(context);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(employee.name),
+          appBar: DetailAppBar(
+            title: employee.name,
             automaticallyImplyLeading: !isTablet,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  ref.invalidate(employeeProvider(employeeId));
-                  showInfoSnackBar(
-                    context,
-                    message: 'Refreshing...',
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                tooltip: 'Refresh',
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () =>
-                    showEmployeeFormDialog(context, employee: employee),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) =>
-                    _handleMenuAction(context, ref, value, employee.id),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('Delete'),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
+            onRefresh: () {
+              ref.invalidate(employeeProvider(employeeId));
+              showInfoSnackBar(
+                context,
+                message: 'Refreshing...',
+                duration: const Duration(seconds: 1),
+              );
+            },
+            onEdit: () => showEmployeeFormDialog(context, employee: employee),
+            menuItems: const [
+              DetailMenuItem(
+                value: 'delete',
+                label: 'Delete',
+                icon: Icons.delete,
+                destructive: true,
               ),
             ],
-            bottom: TabBar(
-              controller: tabController,
-              tabs: const [
-                Tab(text: 'Info'),
-                Tab(text: 'Attendance'),
-                Tab(text: 'Deductions'),
-              ],
-            ),
+            onMenuSelected: (value) =>
+                _handleMenuAction(context, ref, value, employee.id),
+            tabController: tabController,
+            tabs: [
+              const Tab(text: 'Info'),
+              if (showAttendance) const Tab(text: 'Attendance'),
+              const Tab(text: 'Deductions'),
+            ],
           ),
           body: TabBarView(
             controller: tabController,
@@ -127,7 +117,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
                   ),
                 ],
               ),
-              EmployeeAttendanceTab(employeeId: employeeId),
+              if (showAttendance) EmployeeAttendanceTab(employeeId: employeeId),
               EmployeeDeductionsTab(employeeId: employeeId),
             ],
           ),
@@ -155,8 +145,7 @@ class EmployeeDetailPage extends HookConsumerWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Delete Employee'),
-          content:
-              const Text('Are you sure you want to delete this employee?'),
+          content: const Text('Are you sure you want to delete this employee?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -192,10 +181,8 @@ class EmployeeDetailPage extends HookConsumerWidget {
     final branches =
         ref.watch(branchesControllerProvider).asData?.value ?? const [];
     final byId = {for (final b in branches) b.id: b.name};
-    final names = employee.branchIds
-        .map((id) => byId[id])
-        .whereType<String>()
-        .toList();
+    final names =
+        employee.branchIds.map((id) => byId[id]).whereType<String>().toList();
     if (names.isEmpty) return employee.branchIds.join(', ');
     return names.join(', ');
   }

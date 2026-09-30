@@ -8,6 +8,8 @@ import '../../../../core/hooks/use_infinite_scroll.dart';
 import '../../../../core/i18n/strings.g.dart';
 import '../../../../core/widgets/end_of_list_indicator.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../../core/widgets/list/list.dart';
+import '../../../../core/widgets/state/empty_state.dart';
 import '../../../organizations/domain/organization_invite.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../domain/user.dart';
@@ -19,10 +21,13 @@ import 'user_avatar.dart';
 
 enum _UsersPanelSection { members, invites }
 
-/// User list panel with search header and infinite scroll.
+/// User list panel with search toolbar and infinite scroll.
 ///
 /// Used in both mobile list page and tablet two-pane layout.
 /// Managers also get a separate Invites section (Members | Invites).
+///
+/// Set [showHeader] to false when the host already renders the title (e.g. the
+/// mobile page's AppBar) so the title is not repeated.
 class UserListPanel extends HookConsumerWidget {
   const UserListPanel({
     super.key,
@@ -31,6 +36,7 @@ class UserListPanel extends HookConsumerWidget {
     required this.onUserTap,
     required this.onRefresh,
     required this.onLoadMore,
+    this.showHeader = true,
   });
 
   final PaginatedState<User> paginatedState;
@@ -38,10 +44,10 @@ class UserListPanel extends HookConsumerWidget {
   final ValueChanged<User> onUserTap;
   final Future<void> Function() onRefresh;
   final VoidCallback onLoadMore;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final t = Translations.of(context);
 
     final searchController = useTextEditingController();
@@ -62,7 +68,7 @@ class UserListPanel extends HookConsumerWidget {
                 ?.canManageMembers ??
             false);
 
-    // Keep invites loaded so the segment badge stays accurate.
+    // Keep invites loaded so the tab badge stays accurate.
     final invitesAsync = canManage
         ? ref.watch(orgPendingInvitesControllerProvider)
         : const AsyncValue.data(<OrganizationInvite>[]);
@@ -97,76 +103,42 @@ class UserListPanel extends HookConsumerWidget {
       isLoading: paginatedState.isLoadingMore,
     );
 
-    final showingInvites = canManage && section.value == _UsersPanelSection.invites;
+    final showingInvites =
+        canManage && section.value == _UsersPanelSection.invites;
+    final items = paginatedState.items;
+    final isEmpty = items.isEmpty && !paginatedState.isLoadingMore;
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      showingInvites
-                          ? t.management.invitesSection
-                          : t.navigation.users,
-                      style: theme.textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      showingInvites
-                          ? t.management.invitesSubtitle
-                          : t.management.usersSubtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+        if (showHeader)
+          ListPanelHeader(
+            title: showingInvites
+                ? t.management.invitesSection
+                : t.navigation.users,
+            count: showingInvites ? inviteCount : paginatedState.totalItems,
+            subtitle: showingInvites
+                ? t.management.invitesSubtitle
+                : t.management.usersSubtitle,
+          ),
+
+        // Counts live inside the tabs, so no separate "N total" row is needed.
+        if (canManage)
+          ListSectionTabs<_UsersPanelSection>(
+            selected: section.value,
+            onChanged: (next) => section.value = next,
+            tabs: [
+              ListSectionTab(
+                value: _UsersPanelSection.members,
+                label: t.management.membersSection,
+                count: paginatedState.totalItems,
               ),
-              Text(
-                showingInvites
-                    ? '$inviteCount total'
-                    : '${paginatedState.totalItems} total',
-                style: theme.textTheme.bodySmall,
+              ListSectionTab(
+                value: _UsersPanelSection.invites,
+                label: t.management.invitesSection,
+                count: inviteCount,
+                highlightCount: true,
               ),
             ],
-          ),
-        ),
-
-        if (canManage)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<_UsersPanelSection>(
-                segments: [
-                  ButtonSegment(
-                    value: _UsersPanelSection.members,
-                    label: Text(t.management.membersSection),
-                    icon: const Icon(Icons.people_outline, size: 18),
-                  ),
-                  ButtonSegment(
-                    value: _UsersPanelSection.invites,
-                    label: Text(
-                      inviteCount > 0
-                          ? '${t.management.invitesSection} ($inviteCount)'
-                          : t.management.invitesSection,
-                    ),
-                    icon: const Icon(Icons.mail_outline, size: 18),
-                  ),
-                ],
-                selected: {section.value},
-                onSelectionChanged: (next) {
-                  section.value = next.first;
-                },
-              ),
-            ),
           ),
 
         if (showingInvites)
@@ -174,58 +146,53 @@ class UserListPanel extends HookConsumerWidget {
             child: _InvitesPanel(onRefresh: onRefresh),
           )
         else ...[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: isSearchActive
-                ? _ActiveSearchChip(
-                    query: paginatedController.currentSearchQuery ?? '',
-                    fieldCount: activeFieldCount,
-                    onClear: clearSearch,
-                  )
-                : _SearchInput(
-                    controller: searchController,
-                    fieldCount: activeFieldCount,
-                    onSearch: performSearch,
-                    onTextChanged: (text) => searchText.value = text,
-                    searchText: searchText.value,
-                  ),
+          ListToolbar(
+            controller: searchController,
+            onSearch: performSearch,
+            onTextChanged: (text) => searchText.value = text,
+            activeQuery:
+                isSearchActive ? paginatedController.currentSearchQuery ?? '' : null,
+            onClear: clearSearch,
+            filterCount: activeFieldCount > 1 ? activeFieldCount : 0,
+            onFilterPressed: () => showUserSearchFieldsDialog(context),
           ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: onRefresh,
-              child: ListView.builder(
-                controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: paginatedState.items.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == paginatedState.items.length) {
-                    return EndOfListIndicator(
-                      isLoadingMore: paginatedState.isLoadingMore,
-                      hasReachedEnd: paginatedState.hasReachedEnd,
-                    );
-                  }
+              child: isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.4,
+                          child: EmptyState(
+                            icon: Icons.person_search_outlined,
+                            iconSize: 56,
+                            title: t.common.noResults,
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: items.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == items.length) {
+                          return EndOfListIndicator(
+                            isLoadingMore: paginatedState.isLoadingMore,
+                            hasReachedEnd: paginatedState.hasReachedEnd,
+                          );
+                        }
 
-                  final user = paginatedState.items[index];
-                  final isSelected = user.id == selectedId;
-
-                  return ListTile(
-                    leading: UserAvatar(user: user),
-                    title: Text(
-                      user.name,
-                      style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
+                        final user = items[index];
+                        return _UserTile(
+                          user: user,
+                          isSelected: user.id == selectedId,
+                          onTap: () => onUserTap(user),
+                        );
+                      },
                     ),
-                    subtitle: Text(user.displayRole),
-                    selected: isSelected,
-                    selectedTileColor: theme.colorScheme.primaryContainer,
-                    trailing:
-                        isSelected ? const Icon(Icons.chevron_right) : null,
-                    onTap: () => onUserTap(user),
-                  );
-                },
-              ),
             ),
           ),
         ],
@@ -234,6 +201,30 @@ class UserListPanel extends HookConsumerWidget {
   }
 }
 
+/// Two-line member row: name + email, with the role as a tonal chip.
+class _UserTile extends StatelessWidget {
+  const _UserTile({
+    required this.user,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final User user;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppListRow(
+      leading: UserAvatar(user: user, radius: 22),
+      title: Text(user.name),
+      subtitle: user.email.isEmpty ? null : Text(user.email),
+      trailing: RowChip(label: user.displayRole),
+      isSelected: isSelected,
+      onTap: onTap,
+    );
+  }
+}
 class _InvitesPanel extends HookConsumerWidget {
   const _InvitesPanel({required this.onRefresh});
 
@@ -242,7 +233,6 @@ class _InvitesPanel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
-    final theme = Theme.of(context);
     final invitesAsync = ref.watch(orgPendingInvitesControllerProvider);
 
     return invitesAsync.when(
@@ -262,35 +252,12 @@ class _InvitesPanel extends HookConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.35,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.mail_outline,
-                            size: 48,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            t.management.noPendingInvites,
-                            style: theme.textTheme.titleMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            t.management.noPendingInvitesHint,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                  height: MediaQuery.sizeOf(context).height * 0.4,
+                  child: EmptyState(
+                    icon: Icons.mail_outline,
+                    iconSize: 56,
+                    title: t.management.noPendingInvites,
+                    subtitle: t.management.noPendingInvitesHint,
                   ),
                 ),
               ],
@@ -394,6 +361,7 @@ class _PendingInviteTile extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
+            radius: 22,
             backgroundColor: theme.colorScheme.secondaryContainer,
             foregroundColor: theme.colorScheme.onSecondaryContainer,
             child: const Icon(Icons.mail_outline, size: 20),
@@ -405,7 +373,9 @@ class _PendingInviteTile extends HookConsumerWidget {
               children: [
                 Text(
                   invite.email,
-                  style: theme.textTheme.bodyLarge,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   softWrap: true,
                 ),
                 const SizedBox(height: 2),
@@ -414,7 +384,7 @@ class _PendingInviteTile extends HookConsumerWidget {
                     if (invite.roleName.isNotEmpty) invite.roleName,
                     'Expires $expiresLabel',
                   ].join(' · '),
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -447,6 +417,7 @@ class _PendingInviteTile extends HookConsumerWidget {
                       style: TextButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
+                        foregroundColor: theme.colorScheme.error,
                       ),
                       child: Text(t.organizations.revoke),
                     ),
@@ -457,154 +428,6 @@ class _PendingInviteTile extends HookConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ActiveSearchChip extends StatelessWidget {
-  const _ActiveSearchChip({
-    required this.query,
-    required this.fieldCount,
-    required this.onClear,
-  });
-
-  final String query;
-  final int fieldCount;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: InputDecorator(
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              isDense: true,
-              filled: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '"$query"',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (fieldCount > 1) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '$fieldCount fields',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: onClear,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SearchInput extends StatelessWidget {
-  const _SearchInput({
-    required this.controller,
-    required this.fieldCount,
-    required this.onSearch,
-    required this.onTextChanged,
-    required this.searchText,
-  });
-
-  final TextEditingController controller;
-  final int fieldCount;
-  final VoidCallback onSearch;
-  final ValueChanged<String> onTextChanged;
-  final String searchText;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Translations.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: controller,
-            onChanged: onTextChanged,
-            onSubmitted: (_) => onSearch(),
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: '${t.common.search}...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchText.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        controller.clear();
-                        onTextChanged('');
-                      },
-                      tooltip: t.common.cancel,
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              isDense: true,
-              filled: true,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Badge(
-          isLabelVisible: fieldCount > 1,
-          label: Text('$fieldCount'),
-          child: IconButton.filledTonal(
-            icon: const Icon(Icons.tune),
-            onPressed: () => showUserSearchFieldsDialog(context),
-            tooltip: t.common.filter,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -21,6 +21,8 @@ class SaleHighlightBanner extends StatelessWidget {
     required this.saleStatus,
     this.paymentStatus = PaymentStatus.unpaid,
     this.balanceDue,
+    this.voidedByName,
+    this.voidedAt,
     this.onTap,
   });
 
@@ -29,6 +31,8 @@ class SaleHighlightBanner extends StatelessWidget {
   final String saleStatus;
   final PaymentStatus paymentStatus;
   final num? balanceDue;
+  final String? voidedByName;
+  final DateTime? voidedAt;
 
   /// When set, the banner is tappable (e.g. to change order status).
   final VoidCallback? onTap;
@@ -140,8 +144,7 @@ class SaleHighlightBanner extends StatelessWidget {
   }
 
   String _paymentSecondaryText() {
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
     return switch (paymentStatus) {
       PaymentStatus.paid => 'Fully paid',
       PaymentStatus.partial => balanceDue != null
@@ -180,11 +183,21 @@ class SaleHighlightBanner extends StatelessWidget {
 
     // Priority 2: Voided sale
     if (saleStatus.toLowerCase() == 'voided') {
+      String? voidedSecondary;
+      if (voidedByName != null && voidedByName!.isNotEmpty) {
+        final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+        final when =
+            voidedAt != null ? ' on ${dateFormat.format(voidedAt!)}' : '';
+        voidedSecondary = 'Voided by $voidedByName$when';
+      }
       return _HighlightInfo(
         color: Colors.red,
         icon: Icons.cancel,
         title: 'Voided',
-        description: 'This sale has been voided and cancelled.',
+        description: 'This sale was voided and cancelled.',
+        secondaryInfo: voidedSecondary,
+        secondaryIcon: Icons.person_outline,
+        secondaryColor: Colors.red.shade700,
       );
     }
 
@@ -220,7 +233,8 @@ class SaleHighlightBanner extends StatelessWidget {
         color: Colors.green,
         icon: Icons.check_circle,
         title: 'Ready for Pickup',
-        description: 'Order is complete and paid. Ready to release to customer.',
+        description:
+            'Order is complete and paid. Ready to release to customer.',
         secondaryInfo: _paymentSecondaryText(),
         secondaryIcon: _paymentSecondaryIcon(),
         secondaryColor: _paymentSecondaryColor(),

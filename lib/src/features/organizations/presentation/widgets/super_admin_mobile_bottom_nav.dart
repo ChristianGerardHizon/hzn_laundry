@@ -56,9 +56,10 @@ class SuperAdminMobileBottomNav extends StatelessWidget {
     return NavigationBar(
       selectedIndex: selectedIndex,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      height: 60,
+      height: 64,
       backgroundColor: kSuperAdminSurface,
-      indicatorColor: kSuperAdminBrandTeal.withValues(alpha: 0.18),
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: kSuperAdminBrandTeal.withValues(alpha: 0.16),
       onDestinationSelected: (index) {
         if (index == destinations.length) {
           onMoreTap?.call();
