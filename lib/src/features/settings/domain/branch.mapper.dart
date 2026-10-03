@@ -66,6 +66,24 @@ class BranchMapper extends ClassMapperBase<Branch> {
     opt: true,
     def: false,
   );
+  static num? _$deliveryBaseFee(Branch v) => v.deliveryBaseFee;
+  static const Field<Branch, num> _f$deliveryBaseFee = Field(
+    'deliveryBaseFee',
+    _$deliveryBaseFee,
+    opt: true,
+  );
+  static num? _$deliveryIncludedKm(Branch v) => v.deliveryIncludedKm;
+  static const Field<Branch, num> _f$deliveryIncludedKm = Field(
+    'deliveryIncludedKm',
+    _$deliveryIncludedKm,
+    opt: true,
+  );
+  static num? _$deliveryRatePerKm(Branch v) => v.deliveryRatePerKm;
+  static const Field<Branch, num> _f$deliveryRatePerKm = Field(
+    'deliveryRatePerKm',
+    _$deliveryRatePerKm,
+    opt: true,
+  );
   static DateTime? _$created(Branch v) => v.created;
   static const Field<Branch, DateTime> _f$created = Field(
     'created',
@@ -91,6 +109,9 @@ class BranchMapper extends ClassMapperBase<Branch> {
     #cutOffTime: _f$cutOffTime,
     #isDefault: _f$isDefault,
     #isDeleted: _f$isDeleted,
+    #deliveryBaseFee: _f$deliveryBaseFee,
+    #deliveryIncludedKm: _f$deliveryIncludedKm,
+    #deliveryRatePerKm: _f$deliveryRatePerKm,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -107,6 +128,9 @@ class BranchMapper extends ClassMapperBase<Branch> {
       cutOffTime: data.dec(_f$cutOffTime),
       isDefault: data.dec(_f$isDefault),
       isDeleted: data.dec(_f$isDeleted),
+      deliveryBaseFee: data.dec(_f$deliveryBaseFee),
+      deliveryIncludedKm: data.dec(_f$deliveryIncludedKm),
+      deliveryRatePerKm: data.dec(_f$deliveryRatePerKm),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -169,6 +193,9 @@ abstract class BranchCopyWith<$R, $In extends Branch, $Out>
     String? cutOffTime,
     bool? isDefault,
     bool? isDeleted,
+    num? deliveryBaseFee,
+    num? deliveryIncludedKm,
+    num? deliveryRatePerKm,
     DateTime? created,
     DateTime? updated,
   });
@@ -193,6 +220,9 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     Object? cutOffTime = $none,
     bool? isDefault,
     bool? isDeleted,
+    Object? deliveryBaseFee = $none,
+    Object? deliveryIncludedKm = $none,
+    Object? deliveryRatePerKm = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -207,6 +237,9 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
       if (isDefault != null) #isDefault: isDefault,
       if (isDeleted != null) #isDeleted: isDeleted,
+      if (deliveryBaseFee != $none) #deliveryBaseFee: deliveryBaseFee,
+      if (deliveryIncludedKm != $none) #deliveryIncludedKm: deliveryIncludedKm,
+      if (deliveryRatePerKm != $none) #deliveryRatePerKm: deliveryRatePerKm,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -223,6 +256,15 @@ class _BranchCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Branch, $Out>
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
     isDefault: data.get(#isDefault, or: $value.isDefault),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
+    deliveryBaseFee: data.get(#deliveryBaseFee, or: $value.deliveryBaseFee),
+    deliveryIncludedKm: data.get(
+      #deliveryIncludedKm,
+      or: $value.deliveryIncludedKm,
+    ),
+    deliveryRatePerKm: data.get(
+      #deliveryRatePerKm,
+      or: $value.deliveryRatePerKm,
+    ),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

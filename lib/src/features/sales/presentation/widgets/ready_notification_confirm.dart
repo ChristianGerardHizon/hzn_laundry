@@ -39,9 +39,11 @@ Future<OrderNotificationConfirmResult> confirmReadyNotification({
     customer: customer,
     alreadySent: sale.hasReadyNotificationBeenSent,
     firstTitle: 'Send ready notification?',
-    firstBody:
-        'An email will be sent to {email} stating this order is ready '
-        'for pickup. This cannot be revoked.',
+    firstBody: sale.isDelivery
+        ? 'An email will be sent to {email} stating this order is ready '
+            'for delivery. This cannot be revoked.'
+        : 'An email will be sent to {email} stating this order is ready '
+            'for pickup. This cannot be revoked.',
     firstConfirmLabel: 'Send & mark Ready',
     againTitle: 'Mark as Ready?',
     againBody: 'A ready notification was already sent to {email}.',
@@ -60,14 +62,24 @@ Future<OrderNotificationConfirmResult> confirmPickedUpNotification({
     sale: sale,
     customer: customer,
     alreadySent: sale.hasPickedUpNotificationBeenSent,
-    firstTitle: 'Send picked-up notification?',
-    firstBody:
-        'An email will be sent to {email} stating this order has been '
-        'picked up. This cannot be revoked.',
-    firstConfirmLabel: 'Send & mark Picked Up',
-    againTitle: 'Mark as Picked Up?',
-    againBody: 'A picked-up notification was already sent to {email}.',
-    againConfirmLabel: 'Mark Picked Up',
+    firstTitle: sale.isDelivery
+        ? 'Send delivered notification?'
+        : 'Send picked-up notification?',
+    firstBody: sale.isDelivery
+        ? 'An email will be sent to {email} stating this order has been '
+            'delivered. This cannot be revoked.'
+        : 'An email will be sent to {email} stating this order has been '
+            'picked up. This cannot be revoked.',
+    firstConfirmLabel: sale.isDelivery
+        ? 'Send & mark Fulfilled'
+        : 'Send & mark Picked Up',
+    againTitle:
+        sale.isDelivery ? 'Mark as Fulfilled?' : 'Mark as Picked Up?',
+    againBody: sale.isDelivery
+        ? 'A delivered notification was already sent to {email}.'
+        : 'A picked-up notification was already sent to {email}.',
+    againConfirmLabel:
+        sale.isDelivery ? 'Mark Fulfilled' : 'Mark Picked Up',
   );
 }
 

@@ -11,6 +11,8 @@ import '../../../../../core/utils/slugify.dart';
 import '../../../../../core/widgets/dialog/dialog_constraints.dart';
 import '../../../../../core/widgets/dialog_close_handler.dart';
 import '../../../../../core/widgets/form_feedback.dart';
+import '../../../../entitlements/domain/feature_key.dart';
+import '../../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../domain/branch.dart';
 import '../../controllers/branches_controller.dart';
 import '../../../../organizations/presentation/controllers/current_organization_controller.dart';
@@ -34,6 +36,8 @@ class BranchFormDialog extends HookConsumerWidget {
     final theme = Theme.of(context);
     final t = Translations.of(context);
 
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final dirtyGuard = useFormDirtyGuard(
       formKey: formKey,
@@ -46,6 +50,9 @@ class BranchFormDialog extends HookConsumerWidget {
               'operatingHours': branch!.operatingHours ?? '',
               'cutOffTime': branch!.cutOffTime ?? '',
               'isDefault': branch!.isDefault,
+              'deliveryBaseFee': branch!.deliveryBaseFee?.toString() ?? '',
+              'deliveryIncludedKm': branch!.deliveryIncludedKm?.toString() ?? '',
+              'deliveryRatePerKm': branch!.deliveryRatePerKm?.toString() ?? '',
             }
           : {
               'isDefault': false,
@@ -93,6 +100,16 @@ class BranchFormDialog extends HookConsumerWidget {
         operatingHours: _nullIfEmpty(values['operatingHours'] as String?),
         cutOffTime: _nullIfEmpty(values['cutOffTime'] as String?),
         isDefault: values['isDefault'] as bool? ?? false,
+        // Delivery defaults are only editable (and kept) with the feature on.
+        deliveryBaseFee: deliveryEnabled
+            ? num.tryParse(values['deliveryBaseFee']?.toString() ?? '')
+            : branch?.deliveryBaseFee,
+        deliveryIncludedKm: deliveryEnabled
+            ? num.tryParse(values['deliveryIncludedKm']?.toString() ?? '')
+            : branch?.deliveryIncludedKm,
+        deliveryRatePerKm: deliveryEnabled
+            ? num.tryParse(values['deliveryRatePerKm']?.toString() ?? '')
+            : branch?.deliveryRatePerKm,
       );
 
       final success = isEditing
@@ -316,6 +333,70 @@ class BranchFormDialog extends HookConsumerWidget {
                           ),
                           enabled: !isSaving.value,
                         ),
+                        if (deliveryEnabled) ...[
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Delivery fee defaults',
+                              style: theme.textTheme.titleSmall,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Fee = base fee + per-km rate beyond the included '
+                            'distance. Staff can change these per order.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          FormBuilderTextField(
+                            name: 'deliveryBaseFee',
+                            decoration: const InputDecoration(
+                              labelText: 'Base fee (₱)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.local_shipping_outlined),
+                            ),
+                            enabled: !isSaving.value,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            validator: FormBuilderValidators.numeric(
+                              checkNullOrEmpty: false,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          FormBuilderTextField(
+                            name: 'deliveryIncludedKm',
+                            decoration: const InputDecoration(
+                              labelText: 'Included distance (km)',
+                              helperText: 'Covered by the base fee',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.route),
+                            ),
+                            enabled: !isSaving.value,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            validator: FormBuilderValidators.numeric(
+                              checkNullOrEmpty: false,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          FormBuilderTextField(
+                            name: 'deliveryRatePerKm',
+                            decoration: const InputDecoration(
+                              labelText: 'Rate per km (₱)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.attach_money),
+                            ),
+                            enabled: !isSaving.value,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            validator: FormBuilderValidators.numeric(
+                              checkNullOrEmpty: false,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -337,6 +418,9 @@ class BranchFormDialog extends HookConsumerWidget {
     'operatingHours': 'Operating Hours',
     'cutOffTime': 'Cut-off Time',
     'isDefault': 'Default branch',
+    'deliveryBaseFee': 'Base fee',
+    'deliveryIncludedKm': 'Included distance',
+    'deliveryRatePerKm': 'Rate per km',
   };
 
   String? _nullIfEmpty(String? value) {

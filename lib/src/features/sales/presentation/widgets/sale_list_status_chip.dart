@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/widgets/list/app_list_row.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
 
 /// Labeled status chip for a sale in list rows (order stage or sale outcome).
-class SaleListStatusChip extends StatelessWidget {
+class SaleListStatusChip extends ConsumerWidget {
   const SaleListStatusChip({super.key, required this.sale});
 
   final Sale sale;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Organizations with delivery see "Fulfilled"; others keep "Picked up".
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
     final statusLower = sale.status.toLowerCase();
     if (statusLower == 'voided') {
       return const RowChip(label: 'Voided', color: Colors.red);
@@ -24,7 +30,11 @@ class SaleListStatusChip extends StatelessWidget {
       OrderStatus.pending => (Colors.amber.shade700, 'Pending'),
       OrderStatus.processing => (Colors.blue, 'Processing'),
       OrderStatus.ready => (Colors.green, 'Ready'),
-      OrderStatus.pickedUp => (Colors.blueGrey, 'Picked up'),
+      OrderStatus.forDelivery => (Colors.cyan, 'Out for delivery'),
+      OrderStatus.pickedUp => (
+        Colors.blueGrey,
+        deliveryEnabled ? 'Fulfilled' : 'Picked up',
+      ),
     };
 
     return RowChip(label: label, color: color);

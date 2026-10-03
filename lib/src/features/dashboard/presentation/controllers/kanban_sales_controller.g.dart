@@ -336,4 +336,4 @@ final class KanbanSalesProvider extends $FunctionalProvider<
   }
 }
 
-String _$kanbanSalesHash() => r'51ea53682da408da6c9e6c007714e5a5010ba1c2';
+String _$kanbanSalesHash() => r'84471dcd169bc946cd1ba9a6aab6d6fb2746e16c';

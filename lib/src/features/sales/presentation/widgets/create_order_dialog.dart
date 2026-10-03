@@ -24,6 +24,7 @@ import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
+import '../../../pos/domain/fulfillment_type.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_consumable_usage.dart';
@@ -56,6 +57,7 @@ import '../../../../core/widgets/nav_permissions.dart';
 import '../../../users/domain/user_role.dart';
 import '../../presentation/controllers/paginated_sales_controller.dart';
 import '../../../pos/data/repositories/sale_consumable_usage_repository.dart';
+import 'delivery_order_section.dart';
 import 'order_usage_section.dart';
 
 /// Generates a receipt number in format: S-YYMMDD-XXXX
@@ -204,6 +206,17 @@ class _CreateOrderDialog extends HookConsumerWidget {
     final isCopyingLast = useState(false);
 
     final promosEnabled = ref.watch(featureEnabledProvider(FeatureKey.promos));
+
+    // Delivery (feature-flagged; always pickup when the flag is off)
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
+    final deliveryDraft = useState(const DeliveryDraft());
+    final currentBranchIdForFee = ref.watch(currentBranchIdProvider);
+    final feeBranch = currentBranchIdForFee == null
+        ? null
+        : ref.watch(branchProvider(currentBranchIdForFee)).value;
+    final isDeliveryOrder = deliveryEnabled && deliveryDraft.value.isDelivery;
+    final deliveryFee = isDeliveryOrder ? deliveryDraft.value.fee(feeBranch) : 0;
     final usageEnabled =
         ref.watch(consumableUsageEnabledProvider).value ?? false;
     final role = ref.watch(currentUserRoleProvider).value;
@@ -255,6 +268,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
     List<String> missingFields() => [
           if (selectedCustomer.value == null) 'Customer',
           if (selectedService.value == null) 'Service',
+          if (isDeliveryOrder && deliveryDraft.value.address.trim().isEmpty)
+            'Delivery address',
           if (showUsage && selectedService.value != null)
             for (final d in usageDrafts.value)
               if (d.isMissing) 'Usage for ${d.product.name}',
@@ -269,7 +284,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
         validationErrors.value = missing;
       }
       return null;
-    }, [selectedCustomer.value, selectedService.value, usageDrafts.value]);
+    }, [
+      selectedCustomer.value,
+      selectedService.value,
+      usageDrafts.value,
+      deliveryDraft.value.address,
+      deliveryDraft.value.type,
+    ]);
 
     Future<void> handleClose() async {
       if (await confirmDiscard()) {
@@ -420,7 +441,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
             (freeWeight * effectiveUnitPrice).clamp(0.0, serviceTotal);
       }
 
-      final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity);
+      final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity) +
+          deliveryFee;
       final userNotes =
           formKey.currentState?.fields['specialInstructions']?.value as String?;
       final readyForPickupAt = formKey
@@ -456,6 +478,21 @@ class _CreateOrderDialog extends HookConsumerWidget {
         notes: notes,
         readyForPickupAt: readyForPickupAt,
         sendNotification: sendNotification,
+        fulfillmentType: isDeliveryOrder
+            ? FulfillmentType.delivery
+            : FulfillmentType.pickup,
+        deliveryAddress:
+            isDeliveryOrder ? deliveryDraft.value.address.trim() : null,
+        deliveryNotes: isDeliveryOrder &&
+                deliveryDraft.value.notes.trim().isNotEmpty
+            ? deliveryDraft.value.notes.trim()
+            : null,
+        distanceKm: isDeliveryOrder ? deliveryDraft.value.distanceKm : null,
+        deliveryRatePerKm:
+            isDeliveryOrder ? deliveryDraft.value.effectiveRate(feeBranch) : null,
+        deliveryFee: deliveryFee,
+        deliveryFeeOverridden:
+            isDeliveryOrder && deliveryDraft.value.feeOverride != null,
       );
 
       final serviceItem = SaleServiceItem(
@@ -574,7 +611,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
     }
 
     final estimatedTotal =
-        (subtotalDisplay - displayLoyaltyDiscount).clamp(0.0, double.infinity);
+        (subtotalDisplay - displayLoyaltyDiscount).clamp(0.0, double.infinity) +
+            deliveryFee;
 
     // ── Success page after order creation ──────────────────────────────
     if (orderCreated.value) {
@@ -735,6 +773,19 @@ class _CreateOrderDialog extends HookConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
+
+                    // Pickup / delivery (only with the delivery feature)
+                    if (deliveryEnabled) ...[
+                      DeliveryOrderSection(
+                        draft: deliveryDraft.value,
+                        enabled: !isSaving.value,
+                        onChanged: (draft) {
+                          deliveryDraft.value = draft;
+                          isDirty.value = true;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Ready for pickup (optional)
                     _ReadyForPickupField(

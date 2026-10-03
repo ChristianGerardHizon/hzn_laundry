@@ -86,6 +86,17 @@ class BranchRepositoryImpl implements BranchRepository {
     ).run();
   }
 
+  /// Delivery defaults are only sent when set, so orgs without delivery (and
+  /// older clients) never touch these fields.
+  Map<String, dynamic> _deliveryBody(Branch branch) => {
+        if (branch.deliveryBaseFee != null)
+          'deliveryBaseFee': branch.deliveryBaseFee,
+        if (branch.deliveryIncludedKm != null)
+          'deliveryIncludedKm': branch.deliveryIncludedKm,
+        if (branch.deliveryRatePerKm != null)
+          'deliveryRatePerKm': branch.deliveryRatePerKm,
+      };
+
   @override
   FutureEither<Branch> create(Branch branch) async {
     return TaskEither.tryCatch(
@@ -100,6 +111,7 @@ class BranchRepositoryImpl implements BranchRepository {
           'cutOffTime': branch.cutOffTime,
           'isDefault': branch.isDefault,
           'isDeleted': false,
+          ..._deliveryBody(branch),
         };
 
         final record = await _collection.create(body: body);
@@ -129,6 +141,7 @@ class BranchRepositoryImpl implements BranchRepository {
           'operatingHours': branch.operatingHours,
           'cutOffTime': branch.cutOffTime,
           'isDefault': branch.isDefault,
+          ..._deliveryBody(branch),
         };
 
         final record = await _collection.update(branch.id, body: body);

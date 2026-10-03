@@ -802,6 +802,7 @@ class _SaleCard extends StatelessWidget {
       OrderStatus.pending => Colors.orange,
       OrderStatus.processing => Colors.blue,
       OrderStatus.ready => Colors.teal,
+      OrderStatus.forDelivery => Colors.cyan,
       OrderStatus.pickedUp => Colors.green,
     };
   }

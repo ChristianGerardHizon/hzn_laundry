@@ -181,6 +181,8 @@ class CustomerHistoryRepositoryImpl implements CustomerHistoryRepository {
         return OrderStatus.processing;
       case 'ready':
         return OrderStatus.ready;
+      case 'forDelivery':
+        return OrderStatus.forDelivery;
       case 'pickedUp':
         return OrderStatus.pickedUp;
       case 'pending':

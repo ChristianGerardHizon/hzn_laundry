@@ -2,6 +2,7 @@ import 'package:dart_mappable/dart_mappable.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 import '../../../../core/utils/date_utils.dart';
+import '../../domain/fulfillment_type.dart';
 import '../../domain/order_status.dart';
 import '../../domain/payment_status.dart';
 import '../../domain/sale.dart';
@@ -33,6 +34,16 @@ class SaleDto with SaleDtoMappable {
   final String? pickedUpNotificationSentAt;
   final String? voidedBy;
   final String? voidedAt;
+  final String? fulfillmentType;
+  final String? deliveryAddress;
+  final String? deliveryNotes;
+  final num? distanceKm;
+  final num? deliveryRatePerKm;
+  final num deliveryFee;
+  final bool deliveryFeeOverridden;
+  final String? forDeliveryAt;
+  final String? forDeliveryNotificationSentAt;
+  final String? deliveryPhoto;
   final String? created;
   final String? updated;
 
@@ -60,6 +71,16 @@ class SaleDto with SaleDtoMappable {
     this.pickedUpNotificationSentAt,
     this.voidedBy,
     this.voidedAt,
+    this.fulfillmentType,
+    this.deliveryAddress,
+    this.deliveryNotes,
+    this.distanceKm,
+    this.deliveryRatePerKm,
+    this.deliveryFee = 0,
+    this.deliveryFeeOverridden = false,
+    this.forDeliveryAt,
+    this.forDeliveryNotificationSentAt,
+    this.deliveryPhoto,
     this.created,
     this.updated,
   });
@@ -93,6 +114,21 @@ class SaleDto with SaleDtoMappable {
           record.get<String>('pickedUpNotificationSentAt'),
       voidedBy: record.getStringValue('voidedBy'),
       voidedAt: record.get<String>('voidedAt'),
+      fulfillmentType: record.getStringValue('fulfillmentType'),
+      deliveryAddress: record.getStringValue('deliveryAddress'),
+      deliveryNotes: record.getStringValue('deliveryNotes'),
+      distanceKm: record.data['distanceKm'] is num
+          ? record.data['distanceKm'] as num
+          : null,
+      deliveryRatePerKm: record.data['deliveryRatePerKm'] is num
+          ? record.data['deliveryRatePerKm'] as num
+          : null,
+      deliveryFee: record.getDoubleValue('deliveryFee'),
+      deliveryFeeOverridden: record.getBoolValue('deliveryFeeOverridden'),
+      forDeliveryAt: record.get<String>('forDeliveryAt'),
+      forDeliveryNotificationSentAt:
+          record.get<String>('forDeliveryNotificationSentAt'),
+      deliveryPhoto: record.getStringValue('deliveryPhoto'),
       created: record.get<String>('created'),
       updated: record.get<String>('updated'),
     );
@@ -123,6 +159,23 @@ class SaleDto with SaleDtoMappable {
       pickedUpNotificationSentAt: parseToLocal(pickedUpNotificationSentAt),
       voidedById: voidedBy != null && voidedBy!.isNotEmpty ? voidedBy : null,
       voidedAt: parseToLocal(voidedAt),
+      fulfillmentType: FulfillmentType.parse(fulfillmentType),
+      deliveryAddress: deliveryAddress != null && deliveryAddress!.isNotEmpty
+          ? deliveryAddress
+          : null,
+      deliveryNotes: deliveryNotes != null && deliveryNotes!.isNotEmpty
+          ? deliveryNotes
+          : null,
+      distanceKm: distanceKm,
+      deliveryRatePerKm: deliveryRatePerKm,
+      deliveryFee: deliveryFee,
+      deliveryFeeOverridden: deliveryFeeOverridden,
+      forDeliveryAt: parseToLocal(forDeliveryAt),
+      forDeliveryNotificationSentAt:
+          parseToLocal(forDeliveryNotificationSentAt),
+      deliveryPhoto: deliveryPhoto != null && deliveryPhoto!.isNotEmpty
+          ? deliveryPhoto
+          : null,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );
@@ -147,6 +200,8 @@ class SaleDto with SaleDtoMappable {
         return OrderStatus.processing;
       case 'ready':
         return OrderStatus.ready;
+      case 'fordelivery':
+        return OrderStatus.forDelivery;
       case 'pickedup':
         return OrderStatus.pickedUp;
       default:

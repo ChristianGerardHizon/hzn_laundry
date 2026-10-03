@@ -32,6 +32,7 @@ class KanbanSalesData {
     required this.processing,
     required this.ready,
     required this.pickedUp,
+    this.forDelivery = const [],
     this.serviceItemsBySale = const {},
     this.saleItemsBySale = const {},
   });
@@ -40,6 +41,9 @@ class KanbanSalesData {
   final List<Sale> processing;
   final List<Sale> ready;
   final List<Sale> pickedUp;
+
+  /// Delivery orders out for delivery (always empty unless delivery is used).
+  final List<Sale> forDelivery;
 
   /// Map of sale ID to its service items (for displaying machine/storage info).
   final Map<String, List<SaleServiceItem>> serviceItemsBySale;
@@ -52,6 +56,7 @@ class KanbanSalesData {
         OrderStatus.pending => pending,
         OrderStatus.processing => processing,
         OrderStatus.ready => ready,
+        OrderStatus.forDelivery => forDelivery,
         OrderStatus.pickedUp => pickedUp,
       };
 
@@ -65,7 +70,11 @@ class KanbanSalesData {
 
   /// Total count of all sales.
   int get totalCount =>
-      pending.length + processing.length + ready.length + pickedUp.length;
+      pending.length +
+      processing.length +
+      ready.length +
+      forDelivery.length +
+      pickedUp.length;
 
   /// Returns a new [KanbanSalesData] with sales filtered by search query.
   /// Matches against customer name and receipt number (case-insensitive).
@@ -83,6 +92,7 @@ class KanbanSalesData {
       processing: processing.where(matches).toList(),
       ready: ready.where(matches).toList(),
       pickedUp: pickedUp.where(matches).toList(),
+      forDelivery: forDelivery.where(matches).toList(),
       serviceItemsBySale: serviceItemsBySale,
       saleItemsBySale: saleItemsBySale,
     );
@@ -268,6 +278,8 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
   final processing =
       sales.where((s) => s.orderStatus == OrderStatus.processing).toList();
   final ready = sales.where((s) => s.orderStatus == OrderStatus.ready).toList();
+  final forDelivery =
+      sales.where((s) => s.orderStatus == OrderStatus.forDelivery).toList();
   final pickedUp =
       sales.where((s) => s.orderStatus == OrderStatus.pickedUp).toList();
 
@@ -312,6 +324,7 @@ Future<KanbanSalesData> kanbanSales(Ref ref) async {
     processing: processing,
     ready: ready,
     pickedUp: pickedUp,
+    forDelivery: forDelivery,
     serviceItemsBySale: serviceItemsBySale,
     saleItemsBySale: saleItemsBySale,
   );

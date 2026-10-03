@@ -371,7 +371,10 @@ class _PackageFormDialog extends HookConsumerWidget {
                     package?.intervalUnit ?? BillingIntervalUnit.month,
                 'isPremade': package?.isPremade ?? true,
                 'features': package?.features ??
-                    [for (final f in FeatureKey.values) f.key],
+                    [
+                      for (final f in FeatureKey.values)
+                        if (!f.defaultOff) f.key,
+                    ],
                 'maxBranches': package?.maxBranches?.toString() ?? '',
                 'maxEmployees': package?.maxEmployees?.toString() ?? '',
               },

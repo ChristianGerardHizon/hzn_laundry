@@ -12,6 +12,8 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
@@ -44,6 +46,7 @@ import '../../../users/presentation/controllers/user_role_provider.dart';
 import '../widgets/edit_item_dialog.dart';
 import '../widgets/record_payment_sheet.dart';
 import '../widgets/set_packs_dialog.dart';
+import '../widgets/sale_delivery_section.dart';
 import '../widgets/sale_detail_content.dart';
 import '../widgets/sale_highlight_banner.dart';
 import '../widgets/voided_by_label.dart';
@@ -316,6 +319,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                         balanceDue: sale.totalAmount - totalPaid,
                         voidedByName: voidedByName,
                         voidedAt: sale.voidedAt,
+                        isDelivery: sale.isDelivery,
                       );
                     }),
                     const SizedBox(height: 16),
@@ -466,6 +470,8 @@ class _SaleDetailContent extends HookConsumerWidget {
                     const SizedBox(height: 16),
 
                     SaleUsageSection(saleId: sale.id),
+                    const SizedBox(height: 16),
+                    SaleDeliverySection(sale: sale),
                   ],
                 ),
               ),
@@ -528,6 +534,9 @@ class _SaleDetailContent extends HookConsumerWidget {
   Widget _buildOrderStatusCard(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isUpdating = useState(false);
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
+    final statuses = OrderStatus.valuesFor(sale.fulfillmentType);
 
     Future<void> updateOrderStatus(OrderStatus status) async {
       addBreadcrumb('Update order status', category: 'order', data: {
@@ -588,12 +597,14 @@ class _SaleDetailContent extends HookConsumerWidget {
                   return Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: OrderStatus.values.map((status) {
+                    children: statuses.map((status) {
                       final isSelected = sale.orderStatus == status;
                       return SizedBox(
                         width: (constraints.maxWidth - 8) / 2,
                         child: _OrderStatusButton(
                           status: status,
+                          label: status.labelFor(
+                              deliveryEnabled: deliveryEnabled),
                           isSelected: isSelected,
                           isUpdating: isUpdating.value,
                           icon: _getOrderStatusIcon(status),
@@ -605,15 +616,17 @@ class _SaleDetailContent extends HookConsumerWidget {
                 } else {
                   // Single row for tablet/wider screens
                   return Row(
-                    children: OrderStatus.values.map((status) {
+                    children: statuses.map((status) {
                       final isSelected = sale.orderStatus == status;
                       return Expanded(
                         child: Padding(
                           padding: EdgeInsets.only(
-                            right: status != OrderStatus.values.last ? 8 : 0,
+                            right: status != statuses.last ? 8 : 0,
                           ),
                           child: _OrderStatusButton(
                             status: status,
+                            label: status.labelFor(
+                                deliveryEnabled: deliveryEnabled),
                             isSelected: isSelected,
                             isUpdating: isUpdating.value,
                             icon: _getOrderStatusIcon(status),
@@ -641,7 +654,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Picked up on ${DateFormat('MMM dd, yyyy hh:mm a').format(sale.pickedUpAt!)}',
+                      '${deliveryEnabled ? 'Fulfilled' : 'Picked up'} on ${DateFormat('MMM dd, yyyy hh:mm a').format(sale.pickedUpAt!)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -664,6 +677,8 @@ class _SaleDetailContent extends HookConsumerWidget {
         return Icons.autorenew;
       case OrderStatus.ready:
         return Icons.check_circle_outline;
+      case OrderStatus.forDelivery:
+        return Icons.delivery_dining;
       case OrderStatus.pickedUp:
         return Icons.local_shipping;
     }
@@ -1372,6 +1387,7 @@ class _SaleStatusOverflowMenu extends HookConsumerWidget {
 class _OrderStatusButton extends StatelessWidget {
   const _OrderStatusButton({
     required this.status,
+    required this.label,
     required this.isSelected,
     required this.isUpdating,
     required this.icon,
@@ -1379,6 +1395,7 @@ class _OrderStatusButton extends StatelessWidget {
   });
 
   final OrderStatus status;
+  final String label;
   final bool isSelected;
   final bool isUpdating;
   final IconData icon;
@@ -1396,6 +1413,8 @@ class _OrderStatusButton extends StatelessWidget {
         statusColor = Colors.blue;
       case OrderStatus.ready:
         statusColor = Colors.green;
+      case OrderStatus.forDelivery:
+        statusColor = Colors.cyan;
       case OrderStatus.pickedUp:
         statusColor = Colors.grey;
     }
@@ -1431,7 +1450,7 @@ class _OrderStatusButton extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                status.displayName,
+                label,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: isSelected
                       ? statusColor

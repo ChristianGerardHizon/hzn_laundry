@@ -81,7 +81,7 @@ final class FeatureEnabledProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$featureEnabledHash() => r'faafeec948f19edce0fae4d7e8372eb206947bb8';
+String _$featureEnabledHash() => r'f6896ffca04e65d871be325f331240dd6b41a6cf';
 
 /// Whether [feature] is enabled for the current organization.
 ///

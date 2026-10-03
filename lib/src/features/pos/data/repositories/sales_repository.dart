@@ -1,4 +1,5 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:http/http.dart' as http;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -45,6 +46,7 @@ abstract class SalesRepository {
     String id,
     OrderStatus status, {
     bool resendNotification = false,
+    http.MultipartFile? deliveryPhoto,
   });
 
   /// Updates whether order status notifications should be sent.
@@ -211,6 +213,17 @@ class SalesRepositoryImpl implements SalesRepository {
             'readyForPickupAt':
                 sale.readyForPickupAt!.toUtc().toIso8601String(),
           'sendNotification': sale.sendNotification,
+          // Delivery fields are only sent for delivery orders so pickup
+          // writes are identical to before delivery support.
+          if (sale.isDelivery) ...{
+            'fulfillmentType': sale.fulfillmentType.name,
+            'deliveryAddress': sale.deliveryAddress,
+            'deliveryNotes': sale.deliveryNotes,
+            'distanceKm': sale.distanceKm,
+            'deliveryRatePerKm': sale.deliveryRatePerKm,
+            'deliveryFee': sale.deliveryFee,
+            'deliveryFeeOverridden': sale.deliveryFeeOverridden,
+          },
         };
         final saleRecord = await _sales.create(body: saleBody);
 
@@ -291,6 +304,7 @@ class SalesRepositoryImpl implements SalesRepository {
     String id,
     OrderStatus status, {
     bool resendNotification = false,
+    http.MultipartFile? deliveryPhoto,
   }) async {
     return TaskEither.tryCatch(
       () async {
@@ -304,6 +318,10 @@ class SalesRepositoryImpl implements SalesRepository {
             'resendReadyNotification': true,
           if (resendNotification && status == OrderStatus.pickedUp)
             'resendPickedUpNotification': true,
+          if (resendNotification && status == OrderStatus.forDelivery)
+            'resendForDeliveryNotification': true,
+          if (status == OrderStatus.forDelivery)
+            'forDeliveryAt': DateTime.now().toUtc().toIso8601String(),
         };
         if (status == OrderStatus.pickedUp) {
           data['pickedUpAt'] = DateTime.now().toUtc().toIso8601String();
@@ -315,7 +333,11 @@ class SalesRepositoryImpl implements SalesRepository {
             data['status'] = 'pending';
           }
         }
-        final record = await _sales.update(id, body: data);
+        final record = await _sales.update(
+          id,
+          body: data,
+          files: [if (deliveryPhoto != null) deliveryPhoto],
+        );
         return _toSaleEntity(record);
       },
       Failure.handle,

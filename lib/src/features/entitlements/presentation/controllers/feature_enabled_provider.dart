@@ -12,5 +12,6 @@ part 'feature_enabled_provider.g.dart';
 @Riverpod(keepAlive: true)
 bool featureEnabled(Ref ref, FeatureKey feature) {
   final entitlements = ref.watch(currentOrganizationEntitlementsProvider);
-  return entitlements.value?.isEnabled(feature) ?? true;
+  // Default-off features stay hidden until entitlements actually resolve.
+  return entitlements.value?.isEnabled(feature) ?? !feature.defaultOff;
 }

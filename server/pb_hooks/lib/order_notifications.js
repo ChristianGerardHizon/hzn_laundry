@@ -3,7 +3,7 @@
 // ES5 only — no const, let, arrow functions, or async/await.
 //
 // Channels today: email. Future: sms (see TODO below).
-// Events: ready | pickedUp
+// Events: ready | pickedUp | forDelivery (delivery orders only; see delivery_email.js)
 
 function isDateSet(value) {
   if (!value) return false;
@@ -27,34 +27,6 @@ function resolveChannels(customer) {
   return channels;
 }
 
-function ensureHistoryLink(app, customer) {
-  var historyConfig = require(__hooks + "/send_history_link_config.js");
-  var token = customer.getString("historyToken");
-  var expiresAt = customer.getString("historyTokenExpiresAt");
-  var tokenChanged = false;
-
-  if (!token || historyConfig.isExpired(expiresAt)) {
-    token = historyConfig.generateToken();
-    customer.set("historyToken", token);
-    customer.set("historyTokenExpiresAt", historyConfig.getExpiryDateString());
-    tokenChanged = true;
-  } else {
-    customer.set("historyTokenExpiresAt", historyConfig.getExpiryDateString());
-    tokenChanged = true;
-  }
-
-  if (tokenChanged) {
-    try {
-      app.save(customer);
-    } catch (err) {
-      console.error("[ORDER_NOTIFY] Failed to save customer token:", err);
-      return "";
-    }
-  }
-
-  return historyConfig.getAppBaseUrl() + "/history/" + token;
-}
-
 function resolveBranchName(app, sale) {
   var branchId = sale.getString("branch");
   if (!branchId) return "";
@@ -66,25 +38,40 @@ function resolveBranchName(app, sale) {
   }
 }
 
-function resolveHistoryLink(app, customer) {
-  try {
-    var entitlements = require(__hooks + "/lib/feature_entitlements_helpers.js");
-    if (entitlements.isCustomerHistoryEntitled(app, customer)) {
-      return ensureHistoryLink(app, customer);
-    }
-  } catch (err) {
-    console.error("[ORDER_NOTIFY] history link entitlement check failed:", err);
-  }
-  return "";
-}
-
 function emailPayload(app, sale, customer) {
   return {
     customerName: customer.getString("name") || "Customer",
     receiptNumber: sale.getString("receiptNumber") || "",
-    historyLink: resolveHistoryLink(app, customer),
     branchName: resolveBranchName(app, sale)
   };
+}
+
+function isDeliveryOrder(sale) {
+  return sale.getString("fulfillmentType") === "delivery";
+}
+
+// Delivery orders: ready | forDelivery | pickedUp (sent as "delivered").
+function sendDeliveryEmailChannel(app, sale, customer, event) {
+  var deliveryEmail = require(__hooks + "/lib/delivery_email.js");
+  var historyConfig = require(__hooks + "/send_history_link_config.js");
+  var email = customer.getString("email");
+  if (!email) return false;
+
+  var payload = emailPayload(app, sale, customer);
+  payload.deliveryAddress = sale.getString("deliveryAddress") || "";
+
+  var mapped = event === "pickedUp" ? "delivered" : event;
+  if (mapped === "delivered") {
+    var photo = sale.getString("deliveryPhoto");
+    if (photo) {
+      payload.photoFilename = photo;
+      payload.photoUrl =
+        historyConfig.getAppBaseUrl() +
+        "/api/files/sales/" + sale.id + "/" + encodeURIComponent(photo);
+    }
+  }
+  deliveryEmail.sendDeliveryEmail(mapped, email, payload);
+  return true;
 }
 
 function sendReadyEmailChannel(app, sale, customer) {
@@ -127,10 +114,14 @@ function dispatchChannels(app, sale, customer, event) {
     var channel = channels[i];
     try {
       if (channel === "email") {
-        var emailOk =
-          event === "pickedUp"
-            ? sendPickedUpEmailChannel(app, sale, customer)
-            : sendReadyEmailChannel(app, sale, customer);
+        var emailOk;
+        if (isDeliveryOrder(sale)) {
+          emailOk = sendDeliveryEmailChannel(app, sale, customer, event);
+        } else if (event === "pickedUp") {
+          emailOk = sendPickedUpEmailChannel(app, sale, customer);
+        } else {
+          emailOk = sendReadyEmailChannel(app, sale, customer);
+        }
         if (emailOk) anySent = true;
       } else if (channel === "sms") {
         if (sendSmsChannel(app, sale, customer, event)) {
@@ -161,6 +152,17 @@ function notifyOrderPickedUp(app, sale, customer) {
   return dispatchChannels(app, sale, customer, "pickedUp");
 }
 
+// Delivery orders only (hook never fires this for pickup orders).
+function notifyOrderForDelivery(app, sale, customer) {
+  return dispatchChannels(app, sale, customer, "forDelivery");
+}
+
+function stampForDeliveryNotificationSent(app, sale) {
+  sale.set("forDeliveryNotificationSentAt", nowIsoUtc());
+  sale.set("resendForDeliveryNotification", false);
+  app.save(sale);
+}
+
 function stampReadyNotificationSent(app, sale) {
   sale.set("readyNotificationSentAt", nowIsoUtc());
   sale.set("resendReadyNotification", false);
@@ -183,6 +185,8 @@ module.exports = {
   resolveChannels: resolveChannels,
   notifyOrderReady: notifyOrderReady,
   notifyOrderPickedUp: notifyOrderPickedUp,
+  notifyOrderForDelivery: notifyOrderForDelivery,
+  stampForDeliveryNotificationSent: stampForDeliveryNotificationSent,
   stampReadyNotificationSent: stampReadyNotificationSent,
   stampPickedUpNotificationSent: stampPickedUpNotificationSent,
   stampNotificationSent: stampNotificationSent

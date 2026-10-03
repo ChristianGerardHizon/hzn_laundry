@@ -22,6 +22,9 @@ class BranchDto with BranchDtoMappable {
   final String? cutOffTime;
   final bool isDefault;
   final bool isDeleted;
+  final num? deliveryBaseFee;
+  final num? deliveryIncludedKm;
+  final num? deliveryRatePerKm;
   final String? created;
   final String? updated;
 
@@ -38,6 +41,9 @@ class BranchDto with BranchDtoMappable {
     this.cutOffTime,
     this.isDefault = false,
     this.isDeleted = false,
+    this.deliveryBaseFee,
+    this.deliveryIncludedKm,
+    this.deliveryRatePerKm,
     this.created,
     this.updated,
   });
@@ -59,6 +65,9 @@ class BranchDto with BranchDtoMappable {
       cutOffTime: json['cutOffTime'] as String?,
       isDefault: json['isDefault'] as bool? ?? false,
       isDeleted: json['isDeleted'] as bool? ?? false,
+      deliveryBaseFee: json['deliveryBaseFee'] as num?,
+      deliveryIncludedKm: json['deliveryIncludedKm'] as num?,
+      deliveryRatePerKm: json['deliveryRatePerKm'] as num?,
       created: json['created'] as String?,
       updated: json['updated'] as String?,
     );
@@ -77,6 +86,9 @@ class BranchDto with BranchDtoMappable {
       cutOffTime: cutOffTime,
       isDefault: isDefault,
       isDeleted: isDeleted,
+      deliveryBaseFee: deliveryBaseFee,
+      deliveryIncludedKm: deliveryIncludedKm,
+      deliveryRatePerKm: deliveryRatePerKm,
       created: created != null ? DateTime.tryParse(created!) : null,
       updated: updated != null ? DateTime.tryParse(updated!) : null,
     );

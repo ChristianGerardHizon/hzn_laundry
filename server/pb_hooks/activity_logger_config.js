@@ -52,6 +52,7 @@ module.exports = {
     "pending": "Pending",
     "processing": "Processing",
     "ready": "Ready",
+    "forDelivery": "Out for Delivery",
     "pickedUp": "Picked Up"
   },
 
