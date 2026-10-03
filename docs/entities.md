@@ -1016,6 +1016,8 @@ A single audit-trail entry recording a create/update/delete on any tracked colle
 | `changes` | Map\<String, dynamic> | No | Change payload/diff |
 | `userId` | String (FK) | No | User who made the change (`activityLogs.user` relation) |
 | `userName` | String | No | Display name resolved client-side via `expand.user` or an on-demand users fetch (not a stored snapshot field) |
+| `organizationId` | String (FK) | No | Organization scope (`activityLogs.organization` relation); stamped by hooks from the source record |
+| `branchId` | String (FK) | No | Branch scope (`activityLogs.branch` relation); empty for org-level events (users, roles, entitlement overrides) |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
 
@@ -1024,6 +1026,10 @@ A single audit-trail entry recording a create/update/delete on any tracked colle
 **Enum:** `ActivityAction { create, update, delete }`
 
 Actor attribution is written by PocketBase `onRecord*Request` hooks (where `e.auth` is available). Logs created by programmatic `$app.save()` with no request auth leave `user` empty and show as **System** in the UI.
+
+List/view rules require membership in the log’s organization. The Activities page filters by the current branch switcher: a specific branch shows only that branch’s logs; **All Branches** shows all logs for the current organization (including org-level rows with no branch).
+
+**Retention:** Logs older than **30 days** are deleted automatically by the daily `activityLogsRetention` PocketBase cron (`0 2 * * *` UTC).
 
 ---
 

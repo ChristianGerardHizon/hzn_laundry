@@ -1,6 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/packages/pocketbase/pb_filter.dart';
+import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../../pos/presentation/payments_controller.dart';
+import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../users/data/repositories/user_repository.dart';
 import '../../data/repositories/activity_log_repository.dart';
 import '../../domain/activity_log.dart';
@@ -44,8 +47,16 @@ class ActivitiesState {
 class ActivitiesController extends _$ActivitiesController {
   @override
   Future<ActivitiesState> build(String collectionFilter) async {
+    // Rebuild when org/branch switcher changes (specific branch vs All Branches).
+    ref.watch(currentBranchIdProvider);
+    ref.watch(currentOrganizationIdProvider);
     return _fetchPage(1);
   }
+
+  String? get _scopeFilter => PBFilters.forBranchOrDirectOrganization(
+        branchId: ref.read(currentBranchIdProvider),
+        organizationId: ref.read(currentOrganizationIdProvider),
+      );
 
   Future<List<ActivityLog>> _withActorNames(List<ActivityLog> logs) {
     return resolveActivityActorNames(
@@ -66,6 +77,7 @@ class ActivitiesController extends _$ActivitiesController {
       page: page,
       collection: collection,
       action: action,
+      scopeFilter: _scopeFilter,
     );
 
     return await result.fold(

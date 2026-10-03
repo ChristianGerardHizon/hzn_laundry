@@ -16,6 +16,8 @@ class ActivityLog with ActivityLogMappable {
     this.changes,
     this.userId,
     this.userName,
+    this.organizationId,
+    this.branchId,
     this.created,
     this.updated,
   });
@@ -28,6 +30,8 @@ class ActivityLog with ActivityLogMappable {
   final Map<String, dynamic>? changes;
   final String? userId;
   final String? userName;
+  final String? organizationId;
+  final String? branchId;
   final DateTime? created;
   final DateTime? updated;
 

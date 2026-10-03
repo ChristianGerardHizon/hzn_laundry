@@ -14,6 +14,7 @@ import '../../../../core/widgets/state/error_state.dart';
 import '../../domain/user.dart';
 import '../../domain/user_tab.dart';
 import '../controllers/paginated_users_controller.dart';
+import '../controllers/user_org_assignment_provider.dart';
 import '../controllers/user_provider.dart';
 import '../widgets/dialogs/edit_user_dialog.dart';
 import '../widgets/tabs/user_details_tab.dart';
@@ -88,6 +89,13 @@ class UserDetailPage extends HookConsumerWidget {
           );
         }
 
+        final assignmentAsync = ref.watch(userOrgAssignmentProvider(userId));
+        final roleSubtitle = assignmentAsync.when(
+          data: (a) => a.displayRole,
+          loading: () => '…',
+          error: (_, __) => user.displayRole,
+        );
+
         return Scaffold(
           appBar: DetailAppBar(
             automaticallyImplyLeading: !isTablet,
@@ -98,7 +106,7 @@ class UserDetailPage extends HookConsumerWidget {
                     onPressed: () => _goBack(context),
                   ),
             title: user.name,
-            subtitle: user.displayRole,
+            subtitle: roleSubtitle,
             editTooltip: t.common.edit,
             onRefresh: () {
               ref.invalidate(userProvider(userId));

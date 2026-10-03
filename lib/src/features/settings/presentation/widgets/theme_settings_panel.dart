@@ -7,7 +7,13 @@ import '../controllers/theme_controller.dart';
 
 /// Panel for configuring app theme/appearance settings.
 class ThemeSettingsPanel extends HookConsumerWidget {
-  const ThemeSettingsPanel({super.key});
+  const ThemeSettingsPanel({
+    super.key,
+    this.showAppBar = true,
+  });
+
+  /// When false, omit the inner AppBar (e.g. Super Admin shell already has a top bar).
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -15,36 +21,40 @@ class ThemeSettingsPanel extends HookConsumerWidget {
     final themeModeAsync = ref.watch(themeControllerProvider);
     final controller = ref.read(themeControllerProvider.notifier);
 
+    final body = themeModeAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => ErrorState.fromError(error),
+      data: (currentMode) => ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Theme',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ...AppThemeMode.values.map((mode) => _ThemeModeCard(
+                mode: mode,
+                isSelected: mode == currentMode,
+                onTap: () => controller.setThemeMode(mode),
+              )),
+        ],
+      ),
+    );
+
+    if (!showAppBar) {
+      return body;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appearance'),
         automaticallyImplyLeading: false,
       ),
-      body: themeModeAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => ErrorState.fromError(error),
-        data: (currentMode) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Theme',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // Theme mode options
-            ...AppThemeMode.values.map((mode) => _ThemeModeCard(
-                  mode: mode,
-                  isSelected: mode == currentMode,
-                  onTap: () => controller.setThemeMode(mode),
-                )),
-          ],
-        ),
-      ),
+      body: body,
     );
   }
 }

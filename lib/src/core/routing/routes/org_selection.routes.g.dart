@@ -58,6 +58,10 @@ RouteBase get $superAdminShellRoute => ShellRouteData.$route(
               path: 'billing',
               factory: $SuperAdminBillingRoute._fromState,
             ),
+            GoRouteData.$route(
+              path: 'appearance',
+              factory: $SuperAdminAppearanceRoute._fromState,
+            ),
           ],
         ),
       ],
@@ -144,6 +148,29 @@ mixin $SuperAdminBillingRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
         '/super-admin/billing',
+      );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $SuperAdminAppearanceRoute on GoRouteData {
+  static SuperAdminAppearanceRoute _fromState(GoRouterState state) =>
+      const SuperAdminAppearanceRoute();
+
+  @override
+  String get location => GoRouteData.$location(
+        '/super-admin/appearance',
       );
 
   @override

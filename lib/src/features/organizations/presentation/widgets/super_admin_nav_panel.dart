@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/assets/assets.gen.dart';
 import '../../../../core/i18n/strings.g.dart';
-import 'super_admin_theme.dart';
 
 export 'super_admin_theme.dart';
 
@@ -12,6 +11,7 @@ enum SuperAdminSection {
   packages,
   payments,
   billing,
+  appearance,
 }
 
 /// Vertical navigation panel for Super Admin sections.
@@ -32,6 +32,7 @@ class SuperAdminNavPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Translations.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     final items = [
       (
@@ -58,11 +59,17 @@ class SuperAdminNavPanel extends StatelessWidget {
         Icons.receipt_long,
         t.subscriptions.tabBilling,
       ),
+      (
+        SuperAdminSection.appearance,
+        Icons.palette_outlined,
+        Icons.palette,
+        'Appearance',
+      ),
     ];
 
     if (expanded) {
       return ColoredBox(
-        color: kSuperAdminSurface,
+        color: scheme.surfaceContainerLow,
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           children: [
@@ -77,23 +84,22 @@ class SuperAdminNavPanel extends StatelessWidget {
                   leading: Icon(
                     currentSection == item.$1 ? item.$3 : item.$2,
                     color: currentSection == item.$1
-                        ? kSuperAdminBrandTeal
-                        : kSuperAdminMuted,
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
                   ),
                   title: Text(
                     item.$4,
                     style: TextStyle(
                       color: currentSection == item.$1
-                          ? kSuperAdminBrandTeal
-                          : Colors.white,
+                          ? scheme.primary
+                          : scheme.onSurface,
                       fontWeight: currentSection == item.$1
                           ? FontWeight.w600
                           : FontWeight.w500,
                     ),
                   ),
                   selected: currentSection == item.$1,
-                  selectedTileColor:
-                      kSuperAdminBrandTeal.withValues(alpha: 0.16),
+                  selectedTileColor: scheme.primary.withValues(alpha: 0.16),
                   onTap: () => onSectionChanged(item.$1),
                 ),
               ),
@@ -105,13 +111,13 @@ class SuperAdminNavPanel extends StatelessWidget {
     return SizedBox(
       width: 88,
       child: ColoredBox(
-        color: kSuperAdminSurface,
+        color: scheme.surfaceContainerLow,
         child: Column(
           children: [
             const SizedBox(height: 16),
             Assets.icons.appIconTransparent.image(width: 36, height: 36),
             const SizedBox(height: 16),
-            const Divider(color: kSuperAdminSurfaceBorder, height: 1),
+            Divider(color: scheme.outlineVariant, height: 1),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
@@ -153,7 +159,8 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? kSuperAdminBrandTeal : kSuperAdminMuted;
+    final scheme = Theme.of(context).colorScheme;
+    final color = isSelected ? scheme.primary : scheme.onSurfaceVariant;
 
     return Semantics(
       button: true,
@@ -165,7 +172,7 @@ class _NavButton extends StatelessWidget {
         child: Center(
           child: Material(
             color: isSelected
-                ? kSuperAdminBrandTeal.withValues(alpha: 0.16)
+                ? scheme.primary.withValues(alpha: 0.16)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             child: InkWell(

@@ -37,7 +37,7 @@ final class PaginatedSalesControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$paginatedSalesControllerHash() =>
-    r'be09ae3d5fdf998afce92479bc3cf3e3a6341dc2';
+    r'1146876a01dc3d678de0893f83a770d5ae8b9ffb';
 
 /// Controller for managing paginated sales list.
 

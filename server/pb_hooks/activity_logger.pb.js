@@ -49,3 +49,13 @@ onRecordDeleteRequest(function(e) {
     console.error("[ACTIVITY_LOGGER] delete error:", err);
   }
 }, "sales", "products", "services", "customers", "employees", "users", "userRoles", "branches", "machines", "storages", "promos", "payments", "employeeAttendances", "employeeDeductions", "saleItems", "saleServiceItems");
+
+// Daily retention: delete activityLogs older than 30 days (02:00 UTC).
+cronAdd("activityLogsRetention", "0 2 * * *", function() {
+  try {
+    var c = require(__hooks + "/activity_logger_config.js");
+    c.purgeExpired();
+  } catch (err) {
+    console.error("[ACTIVITY_LOGGER] retention cron error:", err);
+  }
+});

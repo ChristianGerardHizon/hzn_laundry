@@ -43,7 +43,7 @@ final class BranchesControllerProvider
 }
 
 String _$branchesControllerHash() =>
-    r'7172cbf64a5c78d65a01fe93c746bed5479495f0';
+    r'53a0062ee6ef8f713ee09730aa64acc9876b6b4d';
 
 /// Controller for managing branch list state.
 ///

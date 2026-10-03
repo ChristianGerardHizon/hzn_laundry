@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../organizations/presentation/controllers/current_organization_controller.dart';
 import '../../data/repositories/entitlement_repository.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
-
 import '../../domain/entitlement_limit.dart';
 import '../../domain/feature_entitlement.dart';
 import '../../domain/feature_key.dart';
 import '../controllers/organization_entitlements_provider.dart';
-
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kSurface = Color(0xFF141414);
-const _kMuted = Color(0xFF9CA3AF);
 
 /// Opens the Super Admin feature access dialog for one organization.
 Future<void> showOrgFeatureAccessDialog(
@@ -52,6 +47,7 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
     final savingLimit = useState<LimitKey?>(null);
     final entitlements =
         ref.watch(organizationEntitlementsProvider(organizationId)).value;
+    final scheme = Theme.of(context).colorScheme;
 
     Future<void> apply(
       BuildContext scopedContext,
@@ -118,7 +114,7 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          backgroundColor: _kSurface,
+          backgroundColor: scheme.surfaceContainerHigh,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -131,8 +127,8 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 organizationName,
-                style: const TextStyle(
-                  color: _kMuted,
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
@@ -142,10 +138,10 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
           content: SizedBox(
             width: 520,
             child: entitlements == null
-                ? const Padding(
-                    padding: EdgeInsets.all(24),
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
                     child: Center(
-                      child: CircularProgressIndicator(color: _kBrandTeal),
+                      child: CircularProgressIndicator(color: scheme.primary),
                     ),
                   )
                 : SingleChildScrollView(
@@ -156,7 +152,10 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
                           'Force a feature on or off regardless of the '
                           'subscription package. Org admins will see it '
                           'labeled as set by a Super Admin.',
-                          style: const TextStyle(color: _kMuted, fontSize: 13),
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         FormBuilder(
@@ -185,11 +184,14 @@ class OrgFeatureAccessDialog extends HookConsumerWidget {
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Override the package limit for this organization. '
                           '0 means unlimited. Existing data is never removed; '
                           'only adding more is blocked.',
-                          style: TextStyle(color: _kMuted, fontSize: 13),
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         for (final limit in entitlements.orderedLimits)
@@ -234,6 +236,7 @@ class _LimitOverrideRow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
     final planText =
         item.planLimit == null ? 'plan: unlimited' : 'plan: ${item.planLimit}';
@@ -270,7 +273,10 @@ class _LimitOverrideRow extends HookWidget {
                   Text(
                     '$planText · now ${item.usageLabel}'
                     '${item.hasOverride && item.note.isNotEmpty ? ' · ${item.note}' : ''}',
-                    style: const TextStyle(color: _kMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -338,6 +344,7 @@ class _FeatureOverrideRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     // SegmentedButton selection: 'plan' | 'on' | 'off'.
     final selected = switch (item.overrideEnabled) {
       true => 'on',
@@ -365,7 +372,10 @@ class _FeatureOverrideRow extends StatelessWidget {
                 Text(
                   '$planText · now $resolved$extra'
                   '${item.hasOverride && item.note.isNotEmpty ? ' · ${item.note}' : ''}',
-                  style: const TextStyle(color: _kMuted, fontSize: 12),
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),

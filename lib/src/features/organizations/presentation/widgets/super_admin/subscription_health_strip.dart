@@ -30,26 +30,29 @@ class SubscriptionHealthStrip extends StatelessWidget {
     OrgStatusFilter.other,
   ];
 
-  OrgStatusStyle _style(OrgStatusFilter bucket) => switch (bucket) {
-        OrgStatusFilter.active => OrgStatusStyle.from(t, 'active'),
-        OrgStatusFilter.grace => OrgStatusStyle.from(t, 'grace'),
-        OrgStatusFilter.locked => OrgStatusStyle.from(t, 'locked'),
+  OrgStatusStyle _style(BuildContext context, OrgStatusFilter bucket) =>
+      switch (bucket) {
+        OrgStatusFilter.active => OrgStatusStyle.from(context, t, 'active'),
+        OrgStatusFilter.grace => OrgStatusStyle.from(context, t, 'grace'),
+        OrgStatusFilter.locked => OrgStatusStyle.from(context, t, 'locked'),
         _ => OrgStatusStyle(
             label: t.organizations.filterOther,
-            color: kSuperAdminMuted,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             icon: Icons.remove_circle_outline,
           ),
       };
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           t.organizations.subscriptionHealth,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: kSuperAdminMuted,
+                color: scheme.onSurfaceVariant,
               ),
         ),
         const SizedBox(height: 8),
@@ -61,7 +64,7 @@ class SubscriptionHealthStrip extends StatelessWidget {
                 if (i > 0) const SizedBox(width: 8),
                 Expanded(
                   child: _HealthItem(
-                    style: _style(_buckets[i]),
+                    style: _style(context, _buckets[i]),
                     count: counts[_buckets[i]] ?? 0,
                     isSelected: selected == _buckets[i],
                     onTap: () => onSelected(
@@ -96,6 +99,7 @@ class _HealthItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
       button: true,
@@ -105,7 +109,7 @@ class _HealthItem extends StatelessWidget {
       child: Material(
         color: isSelected
             ? style.color.withValues(alpha: 0.14)
-            : kSuperAdminSurface,
+            : scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
@@ -114,7 +118,7 @@ class _HealthItem extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected ? style.color : kSuperAdminSurfaceBorder,
+                color: isSelected ? style.color : scheme.outlineVariant,
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -133,7 +137,7 @@ class _HealthItem extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.labelMedium?.copyWith(
-                          color: kSuperAdminMuted,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -144,7 +148,7 @@ class _HealthItem extends StatelessWidget {
                   '$count',
                   style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? style.color : Colors.white,
+                    color: isSelected ? style.color : scheme.onSurface,
                   ),
                 ),
               ],

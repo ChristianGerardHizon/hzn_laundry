@@ -2959,7 +2959,7 @@ class _OrderSuccessPage extends HookConsumerWidget {
       final header = receiptHeader();
 
       // Single job: customer claim sheet (auto-cut), optionally + store tag
-      // (feed only, no cut / no barcode).
+      // (no barcode; auto-cut at end when enabled).
       final result = await printService.printOrderReceipt(
         printer: printer,
         customerName: customer.name,
