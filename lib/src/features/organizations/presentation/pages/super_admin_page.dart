@@ -82,9 +82,11 @@ class _DashboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return statsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: kSuperAdminBrandTeal),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: scheme.primary),
       ),
       error: (e, _) => Center(
         child: Padding(
@@ -106,8 +108,8 @@ class _DashboardBody extends StatelessWidget {
         );
 
         return RefreshIndicator(
-          color: kSuperAdminBrandTeal,
-          backgroundColor: kSuperAdminSurface,
+          color: scheme.primary,
+          backgroundColor: scheme.surfaceContainerLow,
           onRefresh: onRefresh,
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -147,7 +149,7 @@ class _DashboardBody extends StatelessWidget {
                           Text(
                             t.organizations.organizationsCount(n: orgs.length),
                             style: textTheme.bodySmall?.copyWith(
-                              color: kSuperAdminMuted,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -216,29 +218,31 @@ class _EmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.search_off_outlined,
               size: 36,
-              color: kSuperAdminMuted,
+              color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: kSuperAdminMuted),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 8),
               TextButton(
                 onPressed: onAction,
                 style: TextButton.styleFrom(
-                  foregroundColor: kSuperAdminBrandTeal,
+                  foregroundColor: scheme.primary,
                   minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
                 ),
                 child: Text(actionLabel!),

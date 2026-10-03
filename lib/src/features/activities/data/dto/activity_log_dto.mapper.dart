@@ -68,6 +68,20 @@ class ActivityLogDtoMapper extends ClassMapperBase<ActivityLogDto> {
     _$userName,
     opt: true,
   );
+  static String _$organization(ActivityLogDto v) => v.organization;
+  static const Field<ActivityLogDto, String> _f$organization = Field(
+    'organization',
+    _$organization,
+    opt: true,
+    def: '',
+  );
+  static String _$branch(ActivityLogDto v) => v.branch;
+  static const Field<ActivityLogDto, String> _f$branch = Field(
+    'branch',
+    _$branch,
+    opt: true,
+    def: '',
+  );
   static String? _$created(ActivityLogDto v) => v.created;
   static const Field<ActivityLogDto, String> _f$created = Field(
     'created',
@@ -93,6 +107,8 @@ class ActivityLogDtoMapper extends ClassMapperBase<ActivityLogDto> {
     #changes: _f$changes,
     #user: _f$user,
     #userName: _f$userName,
+    #organization: _f$organization,
+    #branch: _f$branch,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -109,6 +125,8 @@ class ActivityLogDtoMapper extends ClassMapperBase<ActivityLogDto> {
       changes: data.dec(_f$changes),
       user: data.dec(_f$user),
       userName: data.dec(_f$userName),
+      organization: data.dec(_f$organization),
+      branch: data.dec(_f$branch),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -187,6 +205,8 @@ abstract class ActivityLogDtoCopyWith<$R, $In extends ActivityLogDto, $Out>
     dynamic changes,
     String? user,
     String? userName,
+    String? organization,
+    String? branch,
     String? created,
     String? updated,
   });
@@ -215,6 +235,8 @@ class _ActivityLogDtoCopyWithImpl<$R, $Out>
     Object? changes = $none,
     String? user,
     Object? userName = $none,
+    String? organization,
+    String? branch,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -229,6 +251,8 @@ class _ActivityLogDtoCopyWithImpl<$R, $Out>
       if (changes != $none) #changes: changes,
       if (user != null) #user: user,
       if (userName != $none) #userName: userName,
+      if (organization != null) #organization: organization,
+      if (branch != null) #branch: branch,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -245,6 +269,8 @@ class _ActivityLogDtoCopyWithImpl<$R, $Out>
     changes: data.get(#changes, or: $value.changes),
     user: data.get(#user, or: $value.user),
     userName: data.get(#userName, or: $value.userName),
+    organization: data.get(#organization, or: $value.organization),
+    branch: data.get(#branch, or: $value.branch),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

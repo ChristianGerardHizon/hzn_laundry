@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
+import '../../../../../core/packages/theme/feedback_colors.dart';
 import '../../../domain/organization_platform_stats.dart';
-import '../super_admin_theme.dart';
 import 'subscription_status_badge.dart';
 
 /// One organization in the Super Admin list: identity, status and metrics.
@@ -26,9 +26,10 @@ class OrgStatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
     final letter = org.name.isNotEmpty ? org.name[0].toUpperCase() : '?';
-    final status = OrgStatusStyle.from(t, org.subscriptionStatus);
-    final hints = _footerHints(status);
+    final status = OrgStatusStyle.from(context, t, org.subscriptionStatus);
+    final hints = _footerHints(context);
 
     final metrics = [
       _Metric(t.organizations.metricOrders, compact.format(org.orderCount)),
@@ -49,7 +50,7 @@ class OrgStatsCard extends StatelessWidget {
     ];
 
     return Material(
-      color: kSuperAdminSurface,
+      color: scheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -57,7 +58,7 @@ class OrgStatsCard extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: kSuperAdminSurfaceBorder),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: Stack(
             children: [
@@ -73,13 +74,13 @@ class OrgStatsCard extends StatelessWidget {
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: kSuperAdminBrandTeal.withValues(alpha: 0.14),
+                            color: scheme.primary.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             letter,
-                            style: const TextStyle(
-                              color: kSuperAdminBrandTeal,
+                            style: TextStyle(
+                              color: scheme.primary,
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
                             ),
@@ -104,7 +105,7 @@ class OrgStatsCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: kSuperAdminMuted,
+                                    color: scheme.onSurfaceVariant,
                                   ),
                                 ),
                               if (org.packageName?.isNotEmpty == true)
@@ -113,7 +114,7 @@ class OrgStatsCard extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: kSuperAdminBrandTeal,
+                                    color: scheme.primary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -125,7 +126,7 @@ class OrgStatsCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _MetricsPanel(metrics: metrics),
+                    _MetricsRow(metrics: metrics),
                     if (hints.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Wrap(
@@ -153,7 +154,9 @@ class OrgStatsCard extends StatelessWidget {
   }
 
   /// Contextual footer items; empty when nothing needs attention.
-  List<Widget> _footerHints(OrgStatusStyle status) {
+  List<Widget> _footerHints(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final warning = FeedbackColors.warning(Theme.of(context)).icon;
     final hints = <Widget>[];
     final now = DateTime.now();
 
@@ -166,7 +169,7 @@ class OrgStatsCard extends StatelessWidget {
       hints.add(
         _Hint(
           icon: Icons.pending_actions_outlined,
-          color: kSuperAdminWarning,
+          color: warning,
           text: t.organizations.pendingPayments(n: org.pendingPaymentCount),
         ),
       );
@@ -177,7 +180,7 @@ class OrgStatsCard extends StatelessWidget {
       hints.add(
         _Hint(
           icon: Icons.schedule,
-          color: kSuperAdminWarning,
+          color: warning,
           text: t.organizations.graceEndsInDays(n: daysUntil(org.graceEndsAt!)),
         ),
       );
@@ -187,7 +190,7 @@ class OrgStatsCard extends StatelessWidget {
         hints.add(
           _Hint(
             icon: Icons.event_outlined,
-            color: kSuperAdminMuted,
+            color: scheme.onSurfaceVariant,
             text: t.organizations.expiringInDays(n: days),
           ),
         );
@@ -234,18 +237,20 @@ class _Metric {
 }
 
 /// Five equal cells with dividers on wide cards; 3 + 2 grid when narrow.
-class _MetricsPanel extends StatelessWidget {
-  const _MetricsPanel({required this.metrics});
+class _MetricsRow extends StatelessWidget {
+  const _MetricsRow({required this.metrics});
 
   final List<_Metric> metrics;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: kSuperAdminInk.withValues(alpha: 0.6),
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kSuperAdminSurfaceBorder),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -257,10 +262,10 @@ class _MetricsPanel extends StatelessWidget {
                   children: [
                     for (var i = 0; i < metrics.length; i++) ...[
                       if (i > 0)
-                        const VerticalDivider(
+                        VerticalDivider(
                           width: 1,
                           thickness: 1,
-                          color: kSuperAdminSurfaceBorder,
+                          color: scheme.outlineVariant,
                         ),
                       Expanded(child: _MetricCell(metric: metrics[i])),
                     ],
@@ -303,6 +308,7 @@ class _MetricCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -314,9 +320,9 @@ class _MetricCell extends StatelessWidget {
             metric.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: kSuperAdminMuted,
+              color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -329,7 +335,7 @@ class _MetricCell extends StatelessWidget {
               maxLines: 1,
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: metric.emphasised ? kSuperAdminBrandTeal : Colors.white,
+                color: metric.emphasised ? scheme.primary : scheme.onSurface,
               ),
             ),
           ),

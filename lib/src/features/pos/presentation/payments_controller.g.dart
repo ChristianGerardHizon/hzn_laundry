@@ -202,7 +202,7 @@ final class PaymentsControllerProvider
 }
 
 String _$paymentsControllerHash() =>
-    r'8e5aca7ecf8551312f1246975a04883a2ae44881';
+    r'bfbb2aba5034d366b2c330ada8e5a810d5158b42';
 
 /// Controller for managing payments for a sale.
 

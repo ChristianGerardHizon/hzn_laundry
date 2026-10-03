@@ -173,7 +173,7 @@ class _PackageCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 SubscriptionStatusBadge(
-                  style: OrgStatusStyle.from(t, sub.status.name),
+                  style: OrgStatusStyle.from(context, t, sub.status.name),
                 ),
               ],
             ),

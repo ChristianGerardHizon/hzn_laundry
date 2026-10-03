@@ -124,12 +124,13 @@ View and manage completed transactions.
 - Create-order add-ons picker shows only products for the current branch
 
 #### Activities (`/activities`)
-Audit log of changes made across the system (Admin-only, `system.admin` permission).
+Audit log of changes made across the system (Admin-only, `system.admin` permission). Scoped to the current organization; the branch switcher limits the feed to one branch or **All Branches**.
 
 - Chronological feed of create/update/delete actions, summarized as what was done and who did it
 - Tap a row to open activity details (`/activities/:id`): full description, actor, affected record, and field-level changes
 - From details, open the related sale, product, service, customer, or employee when the record still exists
 - Backed by the `activityLogs` collection, written by the `activity_logger_config.js` PocketBase hook
+- Retained for **30 days**; older rows are purged daily by the `activityLogsRetention` cron
 
 #### Promos (`/promos`)
 Loyalty/promo campaign management (Admin-only, `system.admin` permission).
@@ -145,7 +146,7 @@ Public, tokenized read-only page a customer can open (e.g. from an SMS/receipt l
 ### Organization/Admin Features
 
 #### Super Admin & Subscriptions
-- `/super-admin` — Dashboard (org KPIs + subscription badges; tap an org for subscription details dialog) with sidenav (tablet+) or bottom nav + More drawer (mobile) for Packages, Payments queue, and Billing settings (QRPH); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`
+- `/super-admin` — Dashboard (org KPIs + subscription badges; tap an org for subscription details dialog) with sidenav (tablet+) or bottom nav + More drawer (mobile) for Packages, Payments queue, Billing settings (QRPH), and Appearance (Light/Dark/System); nested paths `/super-admin/packages`, `/super-admin/payments`, `/super-admin/billing`, `/super-admin/appearance`. Hub chrome uses the app ColorScheme so it follows the selected theme
 - Package form includes a **feature checklist**; the org details dialog has **Feature access** (per feature: Plan / On / Off override with optional note). Entitlements resolve as: Super Admin override → package `features` → dependency (e.g. Attendance needs Employees). The package form also has **Max branches / Max employees** (blank = unlimited); the dialog's **Limits** section overrides them per org
 - `/subscription/pay/:organizationId` — Org admin pay screen (email deep link); optional grace banners and lock gate (platform billing toggles) in the authenticated shell. Billing is **org admins only** (`members.manage` / Admin role, or `system.admin`): the router redirects other users home (stale links after switching accounts are dropped), the page shows a "Billing access required" state instead of retrying a 403, and non-admin members see "Ask your organization admin to pay" on banners / due dialog / lock screen
 - Organization page (`/organizations/:id`) **Subscription tab** (billing admins only): current package (price, billing cycle, status, period start / next payment due, grace end), a **Pay ₱X** button that opens the pay screen (disabled as "Payment under review" while a proof is pending), and the payment history (amount, date, status, rejection note, tap to view proof); backed by `GET /api/organizations/{id}/subscription/payments`
@@ -202,7 +203,7 @@ Device-specific settings only (this tablet/phone/desktop).
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web (custom redirect page) and Android (Custom Tabs)
 - Organization selection (`/select-organization`) — after login when the user has 1+ memberships; each card shows package name plus Expiring / Expired / Locked when applicable; Super Admin entry for `system.admin`
 - Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
-- Super Admin hub (`/super-admin`) — adaptive shell (tablet sidenav / mobile bottom nav + More drawer) with Dashboard (org metrics), Packages, Payments, and Billing; compact top bar (back, title, create organization); dashboard shows a revenue-led KPI section, a tappable subscription health strip (Active / Grace / Locked / Other), and an organization list with search (name or slug), status filter chips, and sorting (revenue, orders, customers, name); each org card has a status accent, aligned metrics row, and pending-payment / grace / expiry hints; tapping a card opens the subscription details dialog
+- Super Admin hub (`/super-admin`) — adaptive shell (tablet sidenav / mobile bottom nav + More drawer) with Dashboard (org metrics), Packages, Payments, Billing, and Appearance; compact top bar (back, title, create organization); dashboard shows a revenue-led KPI section, a tappable subscription health strip (Active / Grace / Locked / Other), and an organization list with search (name or slug), status filter chips, and sorting (revenue, orders, customers, name); each org card has a status accent, aligned metrics row, and pending-payment / grace / expiry hints; tapping a card opens the subscription details dialog; Appearance reuses the same Light/Dark/System preference as System → Appearance
 - Subscription payment (`/subscription/pay/:organizationId`) — QRPH scan instructions + transaction screenshot upload for org admins (email deep link); optional due-soon/grace alert when warnings are enforced
 - Forgot password (`/forgot-password`) — sends a PocketBase reset email; users finish at `{APP_URL}/reset-password.html?token=...`
 - Auth loading (`/auth-loading`)
@@ -324,7 +325,7 @@ Printers are stored on the device (secure storage) only — there is no PocketBa
 | `promos` | Loyalty/promo campaigns |
 | `customerPromos` | Customer promo redemptions |
 | `quantityUnits` | Units of measure (e.g. kg, pc) |
-| `activityLogs` | Audit log of create/update/delete actions |
+| `activityLogs` | Audit log of create/update/delete actions (org + optional branch scope) |
 
 #### Workflow settings (1 collection)
 | Collection | Description |
@@ -449,7 +450,8 @@ App Root (Shell)
 │   ├── /super-admin
 │   │   ├── /packages
 │   │   ├── /payments
-│   │   └── /billing
+│   │   ├── /billing
+│   │   └── /appearance
 │   └── /subscription/pay/:organizationId
 │
 ├── Public (non-shell, tokenized)
@@ -643,6 +645,9 @@ lib/src/
 
 ---
 
+| Oct 03 | Profile org assignment | Profile / User Detail Overview and Details show Role from the current org’s `organizationMemberships` and Branch from the users record (not the legacy global `users.role`) |
+| Oct 03 | Activity log org/branch + 30-day retention | `activityLogs` stores `organization` + `branch`; hooks stamp them from the source record; list/view requires org membership. Activities feed follows the branch switcher. Daily cron deletes logs older than 30 days |
+| Oct 03 | Clear activity logs script | `server/scripts/clear_activity_logs.py` clears historical `activityLogs` via API (dry-run default; `--env staging|prod|local` or `--all`) |
 | Sep 30 | Create Order missing-fields banner | The Create Order button is always clickable. Tapping it with the customer, service, or required consumable usage missing shows an error banner at the top of the dialog ("Customer is missing", ...) that updates and clears as the user fills them in |
 | Sep 30 | Sale activity details dialog | Rows in the order detail Activity tab are tappable and open a summary dialog (who, when, what changed) with a "View full details" button that opens the full Activity details page |
 | Sep 30 | Pay subscription fix + org Subscription tab | Fixed "Organization membership required" on the pay screen (a stale deep link opened by a non-admin user of another org): router only opens `/subscription/pay/:orgId` for that org's billing admins, the page shows a no-access state and providers no longer auto-retry 403/404. `pay-info` and payment submit now require org admin (`members.manage`) or `system.admin`; new `GET /api/organizations/{id}/subscription/payments`. Organization page gains a **Subscription** tab (package, Pay button, payment history) for billing admins; non-admin members see "Ask your organization admin" on due/lock UI |
@@ -662,6 +667,9 @@ lib/src/
 | Sep 28 | Splash min hold + shell fix | Splash stays ≥3s (longer if auth/org/branch still loading); post-login always goes through splash; AppRoot uses one stable `SubscriptionLockGate` content slot to stop blank dashboard GlobalKey clash |
 | Sep 28 | Customer pending payments | Customer detail shows an all-time Balance due banner and a Pending sales-history filter for unpaid/partial orders with remaining amounts |
 | Sep 28 | Organization logo | Orgs can upload a single brand logo (Overview); logo shows in nav brand, org list, select-org tiles, splash, and switch overlay; falls back to letter initials |
+| Oct 3 | Super Admin theme | Super Admin gains Appearance (Light/Dark/System) at `/super-admin/appearance`; shell, nav, dashboard, and subscription tabs use app ColorScheme instead of hardcoded dark teal |
+| Oct 3 | Soybean Laundry store | Seeded Soybean Laundry on local/staging/prod: semi-annual Basic (₱12,000 / 6 mo), Wash and Dry ₱22/kg, typical products, 4 machines, POS, org logo; Christian Admin only (no employees/promos) |
+| Oct 3 | Soybean consumable usage | Super Admin override enables `consumableUsage` for Soybean Laundry on local/staging/prod (Basic package includes products but not this sub-feature) |
 | Sep 28 | Machine busy warnings scoped | Assign-Machines warnings ignore voided/refunded sales and only count processing orders in the current branch/org; blank-branch machines/storages no longer leak across orgs (client filter + PB rule) |
 | Sep 28 | Quick move status | Order Details shows a "Move to {next status}" button under Services to advance Pending → Processing → Ready → Picked Up in one tap |
 | Sep 26 | Flatten Administration nav | Desktop Administration flyout deep-links Users/Roles/Branches/Machines/Storages/Categories/Units/Cashier + Organizations (no Management hub hop); `/management` redirects to Users on mobile too |

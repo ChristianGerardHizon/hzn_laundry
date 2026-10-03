@@ -13,11 +13,6 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
 import '../controllers/billing_settings_controller.dart';
 
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kInk = Color(0xFF0B0B0B);
-const _kSurface = Color(0xFF141414);
-const _kSurfaceBorder = Color(0xFF2A2A2A);
-const _kMuted = Color(0xFF9CA3AF);
 
 /// Super Admin tab: platform billing settings (QRPH, grace, warnings, lockout).
 class BillingSettingsTab extends HookConsumerWidget {
@@ -33,8 +28,8 @@ class BillingSettingsTab extends HookConsumerWidget {
     final qrphName = useState<String?>(null);
 
     return settingsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: _kBrandTeal),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
       ),
       error: (e, _) => Center(
         child: Padding(
@@ -109,7 +104,7 @@ class BillingSettingsTab extends HookConsumerWidget {
         }
 
         return RefreshIndicator(
-          color: _kBrandTeal,
+          color: Theme.of(context).colorScheme.primary,
           onRefresh: () =>
               ref.read(billingSettingsControllerProvider.notifier).refresh(),
           child: ListView(
@@ -132,8 +127,9 @@ class BillingSettingsTab extends HookConsumerWidget {
                   children: [
                     FormBuilderTextField(
                       name: 'payeeName',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: _fieldDecoration(
+                        context: context,
                         label: t.subscriptions.payeeName,
                       ),
                       validator: FormBuilderValidators.required(),
@@ -141,8 +137,9 @@ class BillingSettingsTab extends HookConsumerWidget {
                     const SizedBox(height: 14),
                     FormBuilderTextField(
                       name: 'instructions',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: _fieldDecoration(
+                        context: context,
                         label: t.subscriptions.instructions,
                       ),
                       maxLines: 4,
@@ -150,8 +147,9 @@ class BillingSettingsTab extends HookConsumerWidget {
                     const SizedBox(height: 14),
                     FormBuilderTextField(
                       name: 'defaultGraceDays',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: _fieldDecoration(
+                        context: context,
                         label: t.subscriptions.defaultGraceDays,
                       ),
                       keyboardType: TextInputType.number,
@@ -164,8 +162,9 @@ class BillingSettingsTab extends HookConsumerWidget {
                     const SizedBox(height: 14),
                     FormBuilderTextField(
                       name: 'warningDaysBeforeDue',
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: _fieldDecoration(
+                        context: context,
                         label: t.subscriptions.warningDaysBeforeDue,
                       ),
                       keyboardType: TextInputType.number,
@@ -178,8 +177,8 @@ class BillingSettingsTab extends HookConsumerWidget {
                     const SizedBox(height: 8),
                     Text(
                       t.subscriptions.enforcementHint,
-                      style: const TextStyle(
-                        color: _kMuted,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 13,
                         height: 1.35,
                       ),
@@ -189,7 +188,7 @@ class BillingSettingsTab extends HookConsumerWidget {
                       name: 'enforceWarnings',
                       title: Text(
                         t.subscriptions.enforceWarnings,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -200,7 +199,7 @@ class BillingSettingsTab extends HookConsumerWidget {
                       name: 'enforceLockout',
                       title: Text(
                         t.subscriptions.enforceLockout,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -233,12 +232,14 @@ class BillingSettingsTab extends HookConsumerWidget {
                           key: ValueKey(settings.qrphImageUrl),
                           height: 200,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const SizedBox(
+                          errorBuilder: (_, __, ___) => SizedBox(
                             height: 120,
                             child: Center(
                               child: Icon(
                                 Icons.broken_image_outlined,
-                                color: _kMuted,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -249,21 +250,21 @@ class BillingSettingsTab extends HookConsumerWidget {
                         height: 120,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: _kSurface,
+                          color: Theme.of(context).colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _kSurfaceBorder),
+                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Text(
                           t.subscriptions.qrphImage,
-                          style: const TextStyle(color: _kMuted),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       onPressed: isSaving.value ? null : pickQrph,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: _kBrandTeal,
-                        side: const BorderSide(color: _kBrandTeal),
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
                         minimumSize: const Size.fromHeight(44),
                       ),
                       icon: const Icon(Icons.qr_code_2),
@@ -275,17 +276,17 @@ class BillingSettingsTab extends HookConsumerWidget {
                     FilledButton(
                       onPressed: isSaving.value ? null : save,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _kBrandTeal,
-                        foregroundColor: _kInk,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         minimumSize: const Size.fromHeight(48),
                       ),
                       child: isSaving.value
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: _kInk,
+                                color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             )
                           : Text(t.common.save),
@@ -300,23 +301,27 @@ class BillingSettingsTab extends HookConsumerWidget {
     );
   }
 
-  InputDecoration _fieldDecoration({required String label}) {
+  InputDecoration _fieldDecoration({
+    required BuildContext context,
+    required String label,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: _kMuted),
+      labelStyle: TextStyle(color: scheme.onSurfaceVariant),
       filled: true,
-      fillColor: _kSurface,
+      fillColor: scheme.surfaceContainerLow,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kSurfaceBorder),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kSurfaceBorder),
+        borderSide: BorderSide(color: scheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kBrandTeal),
+        borderSide: BorderSide(color: scheme.primary),
       ),
     );
   }

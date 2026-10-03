@@ -283,6 +283,25 @@ abstract class PBFilters {
     return null;
   }
 
+  /// Selected branch, or all rows with denormalized [organizationId] when branch is null.
+  ///
+  /// Use for collections that store both `branch` and `organization` (e.g. activityLogs).
+  /// Org-level rows with an empty branch appear only in All Branches mode.
+  static String? forBranchOrDirectOrganization({
+    required String? branchId,
+    required String? organizationId,
+    String branchField = 'branch',
+    String organizationField = 'organization',
+  }) {
+    if (branchId != null && branchId.isNotEmpty) {
+      return '$branchField = "$branchId"';
+    }
+    if (organizationId != null && organizationId.isNotEmpty) {
+      return '$organizationField = "$organizationId"';
+    }
+    return null;
+  }
+
   /// AND-combines filter fragments, skipping null/empty parts.
   static String? combine(String? a, [String? b, String? c]) {
     final parts = <String>[];

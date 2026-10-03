@@ -5,7 +5,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../domain/organization_list_filter.dart';
-import '../super_admin_theme.dart';
 
 /// Search, status filter chips and sort menu for the organization list.
 ///
@@ -28,6 +27,7 @@ class OrgListToolbar extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final formKey = useMemoized(GlobalKey<FormBuilderState>.new);
     final queryText = useValueListenable(query);
 
@@ -63,27 +63,27 @@ class OrgListToolbar extends HookConsumerWidget {
       name: 'search',
       initialValue: query.value,
       onChanged: (v) => query.value = v ?? '',
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: scheme.onSurface),
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: t.organizations.searchOrganizations,
-        hintStyle: TextStyle(color: kSuperAdminMuted.withValues(alpha: 0.85)),
-        prefixIcon: const Icon(Icons.search, color: kSuperAdminMuted),
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant),
+        prefixIcon: Icon(Icons.search, color: scheme.onSurfaceVariant),
         suffixIcon: queryText.isEmpty
             ? null
             : IconButton(
                 tooltip: t.organizations.clearFilters,
-                icon: const Icon(Icons.close, color: kSuperAdminMuted),
+                icon: Icon(Icons.close, color: scheme.onSurfaceVariant),
                 onPressed: () => query.value = '',
               ),
         filled: true,
-        fillColor: kSuperAdminSurface,
+        fillColor: scheme.surfaceContainerLow,
         constraints: const BoxConstraints(minHeight: 48),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: border(kSuperAdminSurfaceBorder),
-        enabledBorder: border(kSuperAdminSurfaceBorder),
-        focusedBorder: border(kSuperAdminBrandTeal),
+        border: border(scheme.outlineVariant),
+        enabledBorder: border(scheme.outlineVariant),
+        focusedBorder: border(scheme.primary),
       ),
     );
 
@@ -115,15 +115,15 @@ class OrgListToolbar extends HookConsumerWidget {
               spacing: 8,
               runSpacing: 4,
               showCheckmark: true,
-              checkmarkColor: kSuperAdminBrandTeal,
-              selectedColor: kSuperAdminBrandTeal.withValues(alpha: 0.2),
-              backgroundColor: kSuperAdminSurface,
-              side: const BorderSide(color: kSuperAdminSurfaceBorder),
+              checkmarkColor: scheme.primary,
+              selectedColor: scheme.primary.withValues(alpha: 0.2),
+              backgroundColor: scheme.surfaceContainerLow,
+              side: BorderSide(color: scheme.outlineVariant),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              labelStyle: const TextStyle(
-                color: Colors.white,
+              labelStyle: TextStyle(
+                color: scheme.onSurface,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -167,6 +167,8 @@ class _SortMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return ValueListenableBuilder<OrgSortKey>(
       valueListenable: sort,
       builder: (context, current, _) {
@@ -174,10 +176,10 @@ class _SortMenu extends StatelessWidget {
           tooltip: '${t.organizations.sortBy}: ${_label(current)}',
           initialValue: current,
           onSelected: (k) => sort.value = k,
-          color: kSuperAdminSurfaceRaised,
+          color: scheme.surfaceContainerHigh,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: kSuperAdminSurfaceBorder),
+            side: BorderSide(color: scheme.outlineVariant),
           ),
           itemBuilder: (_) => [
             for (final k in OrgSortKey.values)
@@ -188,10 +190,10 @@ class _SortMenu extends StatelessWidget {
                     SizedBox(
                       width: 24,
                       child: k == current
-                          ? const Icon(
+                          ? Icon(
                               Icons.check,
                               size: 18,
-                              color: kSuperAdminBrandTeal,
+                              color: scheme.primary,
                             )
                           : null,
                     ),
@@ -205,14 +207,14 @@ class _SortMenu extends StatelessWidget {
             constraints: const BoxConstraints(minWidth: 48),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: kSuperAdminSurface,
+              color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: kSuperAdminSurfaceBorder),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.sort, color: kSuperAdminBrandTeal),
+                Icon(Icons.sort, color: scheme.primary),
                 if (MediaQuery.sizeOf(context).width >= 560) ...[
                   const SizedBox(width: 8),
                   Text(

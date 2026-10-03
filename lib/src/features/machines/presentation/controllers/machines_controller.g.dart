@@ -10,22 +10,25 @@ part of 'machines_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Controller for managing machine list state.
 ///
-/// Machines are scoped to the current working branch. Unassigned machines
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Machines are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch machines are
+/// excluded so they cannot leak across orgs.
 
 @ProviderFor(MachinesController)
 final machinesControllerProvider = MachinesControllerProvider._();
 
 /// Controller for managing machine list state.
 ///
-/// Machines are scoped to the current working branch. Unassigned machines
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Machines are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch machines are
+/// excluded so they cannot leak across orgs.
 final class MachinesControllerProvider
     extends $AsyncNotifierProvider<MachinesController, List<Machine>> {
   /// Controller for managing machine list state.
   ///
-  /// Machines are scoped to the current working branch. Unassigned machines
-  /// (no branch set) remain visible so existing org-wide records are not hidden.
+  /// Machines are scoped to the selected branch, or all branches of the current
+  /// organization when All Branches is selected. Blank-branch machines are
+  /// excluded so they cannot leak across orgs.
   MachinesControllerProvider._()
       : super(
           from: null,
@@ -46,12 +49,13 @@ final class MachinesControllerProvider
 }
 
 String _$machinesControllerHash() =>
-    r'fb94e7777a9457de7cce0b5265b4d629b234c61c';
+    r'14bae0b6a018637e2636c9a7cd393d053b7f7c86';
 
 /// Controller for managing machine list state.
 ///
-/// Machines are scoped to the current working branch. Unassigned machines
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Machines are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch machines are
+/// excluded so they cannot leak across orgs.
 
 abstract class _$MachinesController extends $AsyncNotifier<List<Machine>> {
   FutureOr<List<Machine>> build();

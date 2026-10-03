@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
 import '../../../domain/organization_platform_stats.dart';
-import '../super_admin_theme.dart';
 
 /// Platform KPIs: revenue as the hero figure plus three secondary tiles.
 class PlatformKpiSection extends StatelessWidget {
@@ -95,6 +94,7 @@ class _RevenueHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
       container: true,
@@ -105,13 +105,13 @@ class _RevenueHero extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              kSuperAdminBrandTeal.withValues(alpha: 0.22),
-              kSuperAdminSurface,
+              scheme.primary.withValues(alpha: 0.22),
+              scheme.surfaceContainerLow,
             ],
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: kSuperAdminBrandTeal.withValues(alpha: 0.4),
+            color: scheme.primary.withValues(alpha: 0.4),
           ),
         ),
         child: Padding(
@@ -122,16 +122,16 @@ class _RevenueHero extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.payments_outlined,
                     size: 18,
-                    color: kSuperAdminBrandTeal,
+                    color: scheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     label,
                     style: textTheme.labelLarge?.copyWith(
-                      color: kSuperAdminMuted,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -146,7 +146,7 @@ class _RevenueHero extends StatelessWidget {
                   style: textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
-                    color: Colors.white,
+                    color: scheme.onSurface,
                   ),
                 ),
               ),
@@ -172,6 +172,7 @@ class _KpiTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
       container: true,
@@ -179,9 +180,9 @@ class _KpiTile extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: kSuperAdminSurface,
+          color: scheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kSuperAdminSurfaceBorder),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -189,7 +190,7 @@ class _KpiTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: kSuperAdminBrandTeal),
+              Icon(icon, size: 18, color: scheme.primary),
               const SizedBox(height: 10),
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -209,7 +210,7 @@ class _KpiTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: textTheme.labelMedium?.copyWith(
-                  color: kSuperAdminMuted,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],

@@ -502,6 +502,7 @@ function logOverrideActivity(e, action, recordId, key, orgId, detail) {
     log.set("recordId", recordId);
     log.set("action", action);
     log.set("description", label + " for " + orgName + ": " + detail);
+    log.set("organization", orgId);
     if (e.auth) log.set("user", e.auth.id);
     e.app.save(log);
   } catch (err) {
@@ -586,6 +587,7 @@ function logLimitActivity(e, action, recordId, key, orgId, detail) {
     log.set("recordId", recordId);
     log.set("action", action);
     log.set("description", label + " for " + orgName + ": " + detail);
+    log.set("organization", orgId);
     if (e.auth) log.set("user", e.auth.id);
     e.app.save(log);
   } catch (err) {

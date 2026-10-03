@@ -20,6 +20,8 @@ class ActivityLogDto with ActivityLogDtoMappable {
   final dynamic changes;
   final String user;
   final String? userName;
+  final String organization;
+  final String branch;
   final String? created;
   final String? updated;
 
@@ -34,6 +36,8 @@ class ActivityLogDto with ActivityLogDtoMappable {
     this.changes,
     required this.user,
     this.userName,
+    this.organization = '',
+    this.branch = '',
     this.created,
     this.updated,
   });
@@ -58,6 +62,8 @@ class ActivityLogDto with ActivityLogDtoMappable {
       changes: json['changes'],
       user: json['user'] as String? ?? '',
       userName: userName,
+      organization: json['organization'] as String? ?? '',
+      branch: json['branch'] as String? ?? '',
       created: json['created'] as String?,
       updated: json['updated'] as String?,
     );
@@ -74,6 +80,8 @@ class ActivityLogDto with ActivityLogDtoMappable {
       changes: changes is Map ? Map<String, dynamic>.from(changes as Map) : null,
       userId: user.isNotEmpty ? user : null,
       userName: userName,
+      organizationId: organization.isNotEmpty ? organization : null,
+      branchId: branch.isNotEmpty ? branch : null,
       created: parseToLocal(created),
       updated: parseToLocal(updated),
     );

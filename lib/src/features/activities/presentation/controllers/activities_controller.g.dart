@@ -60,7 +60,7 @@ final class ActivitiesControllerProvider
 }
 
 String _$activitiesControllerHash() =>
-    r'7fdb86e16f0dd32d31ecd3ece36253a8876a2723';
+    r'0b7a13cb45e49473aff5c48d4ab9c67c46ce2fd5';
 
 /// Controller for a single activity tab with pagination and action filtering.
 ///

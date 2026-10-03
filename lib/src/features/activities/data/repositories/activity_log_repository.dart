@@ -21,6 +21,7 @@ abstract class ActivityLogRepository {
     String? collection,
     String? action,
     String? search,
+    String? scopeFilter,
   });
 
   /// Fetches a single activity log by ID.
@@ -59,11 +60,16 @@ class ActivityLogRepositoryImpl implements ActivityLogRepository {
     String? collection,
     String? action,
     String? search,
+    String? scopeFilter,
   }) async {
     return TaskEither.tryCatch(
       () async {
         final filters = <String>[];
 
+        final scope = scopeFilter?.trim();
+        if (scope != null && scope.isNotEmpty) {
+          filters.add(scope);
+        }
         if (collection != null && collection.isNotEmpty) {
           filters.add('collection = "$collection"');
         }

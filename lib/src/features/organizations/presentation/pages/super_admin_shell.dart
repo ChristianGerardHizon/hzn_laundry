@@ -30,6 +30,7 @@ class SuperAdminShell extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final isCreating = useState(false);
     final scaffoldKey = useMemoized(GlobalKey<ScaffoldState>.new);
     final location = GoRouterState.of(context).uri.path;
@@ -68,18 +69,20 @@ class SuperAdminShell extends HookConsumerWidget {
           const SuperAdminPaymentsRoute().go(context);
         case SuperAdminSection.billing:
           const SuperAdminBillingRoute().go(context);
+        case SuperAdminSection.appearance:
+          const SuperAdminAppearanceRoute().go(context);
       }
       if (!isTablet) {
         scaffoldKey.currentState?.closeDrawer();
       }
     }
 
-    const spinner = SizedBox(
+    final spinner = SizedBox(
       width: 18,
       height: 18,
       child: CircularProgressIndicator(
         strokeWidth: 2,
-        color: kSuperAdminInk,
+        color: scheme.onPrimary,
       ),
     );
 
@@ -93,7 +96,7 @@ class SuperAdminShell extends HookConsumerWidget {
                 ? null
                 : () => const SelectOrganizationRoute().go(context),
             style: IconButton.styleFrom(
-              foregroundColor: kSuperAdminBrandTeal,
+              foregroundColor: scheme.primary,
               minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
             ),
             icon: const Icon(Icons.arrow_back),
@@ -122,7 +125,7 @@ class SuperAdminShell extends HookConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: kSuperAdminMuted,
+                          color: scheme.onSurfaceVariant,
                         ),
                   ),
               ],
@@ -133,8 +136,8 @@ class SuperAdminShell extends HookConsumerWidget {
             FilledButton.icon(
               onPressed: isCreating.value ? null : openCreate,
               style: FilledButton.styleFrom(
-                backgroundColor: kSuperAdminBrandTeal,
-                foregroundColor: kSuperAdminInk,
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
                 minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
               ),
               icon: isCreating.value
@@ -147,8 +150,8 @@ class SuperAdminShell extends HookConsumerWidget {
               tooltip: t.organizations.create,
               onPressed: isCreating.value ? null : openCreate,
               style: IconButton.styleFrom(
-                backgroundColor: kSuperAdminBrandTeal,
-                foregroundColor: kSuperAdminInk,
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
                 minimumSize: const Size(kSuperAdminMinTap, kSuperAdminMinTap),
               ),
               icon: isCreating.value
@@ -174,11 +177,11 @@ class SuperAdminShell extends HookConsumerWidget {
         builder: (context) {
           return Scaffold(
             key: scaffoldKey,
-            backgroundColor: kSuperAdminInk,
+            backgroundColor: scheme.surface,
             drawer: isTablet
                 ? null
                 : Drawer(
-                    backgroundColor: kSuperAdminSurface,
+                    backgroundColor: scheme.surfaceContainerLow,
                     child: SafeArea(child: drawerNav),
                   ),
             body: SafeArea(
@@ -187,9 +190,9 @@ class SuperAdminShell extends HookConsumerWidget {
                 children: [
                   if (isTablet) ...[
                     navPanel,
-                    const VerticalDivider(
+                    VerticalDivider(
                       width: 1,
-                      color: kSuperAdminSurfaceBorder,
+                      color: scheme.outlineVariant,
                     ),
                   ],
                   Expanded(
@@ -226,6 +229,9 @@ class SuperAdminShell extends HookConsumerWidget {
     }
     if (path.endsWith('/billing') || path.contains('/billing/')) {
       return SuperAdminSection.billing;
+    }
+    if (path.endsWith('/appearance') || path.contains('/appearance/')) {
+      return SuperAdminSection.appearance;
     }
     return SuperAdminSection.dashboard;
   }

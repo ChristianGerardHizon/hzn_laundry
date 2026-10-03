@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/i18n/strings.g.dart';
+import '../../../../core/packages/theme/feedback_colors.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../entitlements/presentation/widgets/org_feature_access_dialog.dart';
 import '../../../organizations/domain/organization_platform_stats.dart';
@@ -17,10 +18,6 @@ import '../../domain/subscription_package.dart';
 import '../../domain/subscription_status.dart';
 import '../controllers/packages_controller.dart';
 
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kInk = Color(0xFF0B0B0B);
-const _kSurface = Color(0xFF141414);
-const _kMuted = Color(0xFF9CA3AF);
 
 /// Opens the org subscription management dialog.
 Future<void> showOrgSubscriptionDialog(
@@ -50,8 +47,10 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) {
+          final scheme = Theme.of(context).colorScheme;
+          final warning = FeedbackColors.warning(Theme.of(context));
           return AlertDialog(
-            backgroundColor: _kSurface,
+            backgroundColor: scheme.surfaceContainerLow,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -64,8 +63,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   t.subscriptions.orgDetails,
-                  style: const TextStyle(
-                    color: _kMuted,
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                   ),
@@ -110,16 +109,16 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.12),
+                          color: warning.background,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: Colors.amber.withValues(alpha: 0.35),
+                            color: warning.foreground.withValues(alpha: 0.35),
                           ),
                         ),
                         child: Text(
                           t.subscriptions.pendingPayments,
                           style: TextStyle(
-                            color: Colors.amber.shade200,
+                            color: warning.foreground,
                             fontSize: 13,
                           ),
                         ),
@@ -133,8 +132,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                         organizationName: org.name,
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: _kBrandTeal,
-                        side: const BorderSide(color: _kBrandTeal),
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
                         minimumSize: const Size.fromHeight(44),
                       ),
                       icon: const Icon(Icons.tune),
@@ -144,8 +143,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                     FilledButton.icon(
                       onPressed: () => _showAssignDialog(context, ref),
                       style: FilledButton.styleFrom(
-                        backgroundColor: _kBrandTeal,
-                        foregroundColor: _kInk,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         minimumSize: const Size.fromHeight(44),
                       ),
                       icon: const Icon(Icons.card_membership_outlined),
@@ -161,8 +160,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                       OutlinedButton.icon(
                         onPressed: () => _showLockDialog(context, ref),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                          side: BorderSide(color: Theme.of(context).colorScheme.error),
                           minimumSize: const Size.fromHeight(44),
                         ),
                         icon: const Icon(Icons.lock_outline),
@@ -174,8 +173,8 @@ class OrgSubscriptionDialog extends HookConsumerWidget {
                       OutlinedButton.icon(
                         onPressed: () => _showUnlockDialog(context, ref),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: _kBrandTeal,
-                          side: const BorderSide(color: _kBrandTeal),
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary),
                           minimumSize: const Size.fromHeight(44),
                         ),
                         icon: const Icon(Icons.lock_open_outlined),
@@ -288,7 +287,7 @@ class _LockDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          backgroundColor: _kSurface,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
           title: Text(t.subscriptions.manualLock),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -296,7 +295,7 @@ class _LockDialog extends HookConsumerWidget {
             children: [
               Text(
                 t.subscriptions.lockConfirmMessage,
-                style: const TextStyle(color: _kMuted, height: 1.35),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.35),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -316,16 +315,16 @@ class _LockDialog extends HookConsumerWidget {
             FilledButton(
               onPressed: isSaving.value ? null : lock,
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
               ),
               child: isSaving.value
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onError,
                       ),
                     )
                   : Text(t.subscriptions.manualLock),
@@ -383,7 +382,7 @@ class _UnlockDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          backgroundColor: _kSurface,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
           title: Text(t.subscriptions.manualUnlock),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -394,7 +393,7 @@ class _UnlockDialog extends HookConsumerWidget {
                 subtitle: Text(
                   DateFormat.yMMMd().add_jm().format(until.value),
                 ),
-                trailing: const Icon(Icons.calendar_today, color: _kBrandTeal),
+                trailing: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary),
                 onTap: () async {
                   final date = await showDatePicker(
                     context: context,
@@ -443,8 +442,8 @@ class _UnlockDialog extends HookConsumerWidget {
             FilledButton(
               onPressed: isSaving.value ? null : unlock,
               style: FilledButton.styleFrom(
-                backgroundColor: _kBrandTeal,
-                foregroundColor: _kInk,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: isSaving.value
                   ? const SizedBox(
@@ -537,7 +536,7 @@ class _AssignPackageDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          backgroundColor: _kSurface,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
           title: Text(t.subscriptions.assignPackage),
           content: SizedBox(
             width: 440,
@@ -551,15 +550,15 @@ class _AssignPackageDialog extends HookConsumerWidget {
                       contentPadding: EdgeInsets.zero,
                       title: Text(t.subscriptions.customPackage),
                       value: useCustom.value,
-                      activeThumbColor: _kBrandTeal,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
                       onChanged: (v) => useCustom.value = v,
                     ),
                     const SizedBox(height: 8),
                     if (!useCustom.value)
                       packagesAsync.when(
-                        loading: () => const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(color: _kBrandTeal),
+                        loading: () => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                         ),
                         error: (e, _) => Text('$e'),
                         data: (packages) {
@@ -700,7 +699,7 @@ class _AssignPackageDialog extends HookConsumerWidget {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         t.subscriptions.periodDatesHint,
-                        style: const TextStyle(color: _kMuted, fontSize: 12),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -745,8 +744,8 @@ class _AssignPackageDialog extends HookConsumerWidget {
             FilledButton(
               onPressed: isSaving.value ? null : assign,
               style: FilledButton.styleFrom(
-                backgroundColor: _kBrandTeal,
-                foregroundColor: _kInk,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: isSaving.value
                   ? const SizedBox(
@@ -780,13 +779,13 @@ class _DetailRow extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(color: _kMuted, fontSize: 13),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/widgets/form_feedback.dart';
 import '../../../data/repositories/user_repository.dart';
 import '../../../domain/user.dart';
+import '../../controllers/user_org_assignment_provider.dart';
 import '../../controllers/user_provider.dart';
 import '../dialogs/edit_user_dialog.dart';
 import '../user_avatar.dart';
@@ -21,6 +22,14 @@ class UserDetailsTab extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isUploading = useState(false);
+    final assignmentAsync = ref.watch(userOrgAssignmentProvider(user.id));
+    final roleLabel = assignmentAsync.when(
+      data: (a) => a.displayRole,
+      loading: () => '…',
+      error: (_, __) => 'No Role',
+    );
+    final branchLabel =
+        assignmentAsync.asData?.value.displayBranch ?? user.displayBranch;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -28,11 +37,11 @@ class UserDetailsTab extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Main user card with avatar and key info
-          _buildUserCard(context, theme, ref, isUploading),
+          _buildUserCard(context, theme, ref, isUploading, roleLabel),
           const SizedBox(height: 16),
 
           // User details section
-          _buildUserDetailsSection(theme),
+          _buildUserDetailsSection(theme, roleLabel, branchLabel),
           const SizedBox(height: 24),
 
           // Quick actions
@@ -47,6 +56,7 @@ class UserDetailsTab extends HookConsumerWidget {
     ThemeData theme,
     WidgetRef ref,
     ValueNotifier<bool> isUploading,
+    String roleLabel,
   ) {
     return Card(
       child: Padding(
@@ -76,7 +86,7 @@ class UserDetailsTab extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.displayRole,
+                    roleLabel,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -194,7 +204,11 @@ class UserDetailsTab extends HookConsumerWidget {
     }
   }
 
-  Widget _buildUserDetailsSection(ThemeData theme) {
+  Widget _buildUserDetailsSection(
+    ThemeData theme,
+    String roleLabel,
+    String branchLabel,
+  ) {
     final items = <_DetailItem>[
       _DetailItem(
         icon: Icons.person,
@@ -209,12 +223,12 @@ class UserDetailsTab extends HookConsumerWidget {
       _DetailItem(
         icon: Icons.admin_panel_settings,
         label: 'Role',
-        value: user.displayRole,
+        value: roleLabel,
       ),
       _DetailItem(
         icon: Icons.business,
         label: 'Branch',
-        value: user.displayBranch,
+        value: branchLabel,
       ),
       _DetailItem(
         icon: Icons.verified_user,

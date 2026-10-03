@@ -15,6 +15,10 @@ part 'organization_membership_repository.g.dart';
 abstract class OrganizationMembershipRepository {
   FutureEither<List<OrganizationMembership>> listMine(String userId);
   FutureEither<List<OrganizationMembership>> listForOrganization(String orgId);
+  FutureEither<OrganizationMembership?> findForUserInOrganization(
+    String userId,
+    String orgId,
+  );
 }
 
 @Riverpod(keepAlive: true)
@@ -74,6 +78,32 @@ class OrganizationMembershipRepositoryImpl
             .map(OrganizationMembershipDto.fromRecord)
             .map((dto) => dto.toEntity(baseUrl: _pb.baseURL))
             .toList();
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<OrganizationMembership?> findForUserInOrganization(
+    String userId,
+    String orgId,
+  ) async {
+    return TaskEither.tryCatch(
+      () async {
+        final filter = PBFilter()
+            .relation('user', userId)
+            .relation('organization', orgId)
+            .equals('status', 'active')
+            .build();
+        final result = await _collection.getList(
+          page: 1,
+          perPage: 1,
+          filter: filter,
+          expand: _expand,
+        );
+        if (result.items.isEmpty) return null;
+        return OrganizationMembershipDto.fromRecord(result.items.first)
+            .toEntity(baseUrl: _pb.baseURL);
       },
       Failure.handle,
     ).run();

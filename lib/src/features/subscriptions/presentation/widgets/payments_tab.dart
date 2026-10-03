@@ -11,11 +11,6 @@ import '../../../../core/widgets/state/error_state.dart';
 import '../../domain/subscription_payment.dart';
 import '../controllers/pending_subscription_payments_controller.dart';
 
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kInk = Color(0xFF0B0B0B);
-const _kSurface = Color(0xFF141414);
-const _kSurfaceBorder = Color(0xFF2A2A2A);
-const _kMuted = Color(0xFF9CA3AF);
 
 /// Super Admin tab: pending subscription payment proofs.
 class PaymentsTab extends HookConsumerWidget {
@@ -31,8 +26,8 @@ class PaymentsTab extends HookConsumerWidget {
     );
 
     return paymentsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: _kBrandTeal),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
       ),
       error: (e, _) => Center(
         child: Padding(
@@ -47,7 +42,7 @@ class PaymentsTab extends HookConsumerWidget {
       ),
       data: (payments) {
         return RefreshIndicator(
-          color: _kBrandTeal,
+          color: Theme.of(context).colorScheme.primary,
           onRefresh: () => ref
               .read(pendingSubscriptionPaymentsControllerProvider.notifier)
               .refresh(),
@@ -71,7 +66,7 @@ class PaymentsTab extends HookConsumerWidget {
                   child: Center(
                     child: Text(
                       t.subscriptions.noPendingPayments,
-                      style: const TextStyle(color: _kMuted),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ),
                 )
@@ -152,9 +147,9 @@ class _PaymentCard extends HookConsumerWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _kSurface.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kSurfaceBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -177,8 +172,8 @@ class _PaymentCard extends HookConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${t.subscriptions.amount}: ${currency.format(payment.amount)}',
-                        style: const TextStyle(
-                          color: _kBrandTeal,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -187,14 +182,14 @@ class _PaymentCard extends HookConsumerWidget {
                         Text(
                           '${t.subscriptions.submitted}: '
                           '${dateFmt.format(payment.created!.toLocal())}',
-                          style: const TextStyle(color: _kMuted, fontSize: 12),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                         ),
                       ],
                       if (payment.note?.isNotEmpty == true) ...[
                         const SizedBox(height: 6),
                         Text(
                           payment.note!,
-                          style: const TextStyle(color: _kMuted, fontSize: 13),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                         ),
                       ],
                     ],
@@ -217,11 +212,15 @@ class _PaymentCard extends HookConsumerWidget {
                         errorBuilder: (_, __, ___) => Container(
                           width: 72,
                           height: 72,
-                          color: _kInk,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerLow,
                           alignment: Alignment.center,
-                          child: const Icon(
+                          child: Icon(
                             Icons.broken_image_outlined,
-                            color: _kMuted,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -236,8 +235,8 @@ class _PaymentCard extends HookConsumerWidget {
                   child: OutlinedButton(
                     onPressed: isBusy.value ? null : () => review(approved: false),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.redAccent),
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(color: Theme.of(context).colorScheme.error),
                     ),
                     child: Text(t.subscriptions.reject),
                   ),
@@ -247,8 +246,8 @@ class _PaymentCard extends HookConsumerWidget {
                   child: FilledButton(
                     onPressed: isBusy.value ? null : () => review(approved: true),
                     style: FilledButton.styleFrom(
-                      backgroundColor: _kBrandTeal,
-                      foregroundColor: _kInk,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     ),
                     child: isBusy.value
                         ? const SizedBox(
@@ -280,7 +279,7 @@ class _PaymentCard extends HookConsumerWidget {
         return ScaffoldMessenger(
           child: Builder(
             builder: (ctx) => AlertDialog(
-              backgroundColor: _kSurface,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
               title: Text(
                 approved
                     ? t.subscriptions.approve
@@ -311,8 +310,8 @@ class _PaymentCard extends HookConsumerWidget {
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor:
-                        approved ? _kBrandTeal : Colors.redAccent,
-                    foregroundColor: approved ? _kInk : Colors.white,
+                        approved ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+                    foregroundColor: approved ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onError,
                   ),
                   child: Text(
                     approved
@@ -332,19 +331,19 @@ class _PaymentCard extends HookConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: _kInk,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480, maxHeight: 640),
           child: InteractiveViewer(
             child: Image.network(
               url,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const SizedBox(
+              errorBuilder: (_, __, ___) => SizedBox(
                 height: 160,
                 child: Center(
                   child: Icon(
                     Icons.broken_image_outlined,
-                    color: _kMuted,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 48,
                   ),
                 ),

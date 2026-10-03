@@ -37,7 +37,7 @@ final class EmployeesControllerProvider
 }
 
 String _$employeesControllerHash() =>
-    r'ca031ed42f25e51a8586d33d3c85257c77ff0fbd';
+    r'8062f53e32592d09c38a3d0a4f2ca7742f333b00';
 
 /// Controller for managing the list of employees.
 
