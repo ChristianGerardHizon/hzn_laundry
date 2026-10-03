@@ -25,6 +25,7 @@ import '../../../pos/domain/sale_item.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/data/dto/sale_service_item_dto.dart';
 import '../../../services/domain/sale_service_item.dart';
+import '../../../delivery/presentation/widgets/customer_addresses_tab.dart';
 import '../../../entitlements/domain/feature_key.dart';
 import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../promos/domain/customer_promo.dart';
@@ -69,7 +70,66 @@ class CustomerDetailPage extends HookConsumerWidget {
         final branches = ref.watch(branchesControllerProvider).value;
         final branchName = _branchName(branches, customer.branchId);
 
-        return Scaffold(
+        final deliveryEnabled =
+            ref.watch(featureEnabledProvider(FeatureKey.delivery));
+
+        final detailList = ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Customer info card
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Customer Information',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    _InfoRow(label: 'Name', value: customer.name),
+                    _InfoRow(label: 'Branch', value: branchName),
+                    if (customer.phone != null && customer.phone!.isNotEmpty)
+                      _InfoRow(label: 'Phone', value: customer.phone!),
+                    if (customer.address != null &&
+                        customer.address!.isNotEmpty)
+                      _InfoRow(label: 'Address', value: customer.address!),
+                    if (customer.notes != null && customer.notes!.isNotEmpty)
+                      _InfoRow(label: 'Notes', value: customer.notes!),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Loyalty programs section
+            if (ref.watch(featureEnabledProvider(FeatureKey.promos))) ...[
+              _CustomerLoyaltySection(customerId: customerId),
+              const SizedBox(height: 16),
+            ],
+
+            // Sales history section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sales History',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    _CustomerSalesHistory(customerId: customerId),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final scaffold = Scaffold(
           appBar: DetailAppBar(
             title: customer.name,
             subtitle: customer.phone,
@@ -99,62 +159,32 @@ class CustomerDetailPage extends HookConsumerWidget {
             onMenuSelected: (value) =>
                 _handleMenuAction(context, ref, value, customer),
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Customer info card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Customer Information',
-                        style: theme.textTheme.titleMedium,
+          body: deliveryEnabled
+              ? Column(
+                  children: [
+                    const TabBar(
+                      tabs: [Tab(text: 'Details'), Tab(text: 'Addresses')],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          detailList,
+                          CustomerAddressesTab(
+                            customerId: customerId,
+                            branchId: customer.branchId,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      _InfoRow(label: 'Name', value: customer.name),
-                      _InfoRow(label: 'Branch', value: branchName),
-                      if (customer.phone != null && customer.phone!.isNotEmpty)
-                        _InfoRow(label: 'Phone', value: customer.phone!),
-                      if (customer.address != null &&
-                          customer.address!.isNotEmpty)
-                        _InfoRow(label: 'Address', value: customer.address!),
-                      if (customer.notes != null && customer.notes!.isNotEmpty)
-                        _InfoRow(label: 'Notes', value: customer.notes!),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Loyalty programs section
-              if (ref.watch(featureEnabledProvider(FeatureKey.promos))) ...[
-                _CustomerLoyaltySection(customerId: customerId),
-                const SizedBox(height: 16),
-              ],
-
-              // Sales history section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Sales History',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      _CustomerSalesHistory(customerId: customerId),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+                    ),
+                  ],
+                )
+              : detailList,
         );
+
+        // Addresses tab (only for organizations with the delivery feature).
+        return deliveryEnabled
+            ? DefaultTabController(length: 2, child: scaffold)
+            : scaffold;
       },
       loading: () => Scaffold(
         appBar: AppBar(automaticallyImplyLeading: !isTablet),
@@ -322,6 +352,7 @@ class _CustomerSalesData {
   final Map<String, num> outstandingBySaleId;
   final num totalOutstanding;
 }
+
 /// Widget that fetches and displays sales history for a customer.
 ///
 /// Uses card-style layout matching the dashboard kanban board cards.
@@ -338,8 +369,7 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     final pb = ref.watch(pocketbaseProvider);
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM d, yyyy');
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₱', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: '₱', decimalDigits: 2);
 
     final future = useMemoized(
       () => _fetchCustomerSalesData(
@@ -615,8 +645,8 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     }
 
     final outstandingBySaleId = await _fetchOutstandingBySaleId(pb, sales);
-    final totalOutstanding = outstandingBySaleId.values
-        .fold<num>(0, (sum, amount) => sum + amount);
+    final totalOutstanding =
+        outstandingBySaleId.values.fold<num>(0, (sum, amount) => sum + amount);
 
     final orderCount =
         outstandingBySaleId.values.where((amount) => amount > 0).length;
@@ -694,8 +724,8 @@ class _CustomerSalesHistory extends HookConsumerWidget {
       saleItemsBySale.putIfAbsent(item.saleId, () => []).add(item);
     }
 
-    final totalOutstanding = outstandingBySaleId.values
-        .fold<num>(0, (sum, amount) => sum + amount);
+    final totalOutstanding =
+        outstandingBySaleId.values.fold<num>(0, (sum, amount) => sum + amount);
 
     return _CustomerSalesData(
       sales: sales,
@@ -706,6 +736,7 @@ class _CustomerSalesHistory extends HookConsumerWidget {
     );
   }
 }
+
 /// Batch-fetches payments for [sales] and returns remaining balance per sale.
 Future<Map<String, num>> _fetchOutstandingBySaleId(
   PocketBase pb,
@@ -716,8 +747,7 @@ Future<Map<String, num>> _fetchOutstandingBySaleId(
     return {for (final sale in sales) sale.id: 0};
   }
 
-  final saleIdFilter =
-      unpaidSales.map((s) => 'sale = "${s.id}"').join(' || ');
+  final saleIdFilter = unpaidSales.map((s) => 'sale = "${s.id}"').join(' || ');
   final paymentRecords =
       await pb.collection(PocketBaseCollections.payments).getFullList(
             filter: '($saleIdFilter) && isVoided = false',

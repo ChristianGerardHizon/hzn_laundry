@@ -57,7 +57,10 @@ import '../../../../core/widgets/nav_permissions.dart';
 import '../../../users/domain/user_role.dart';
 import '../../presentation/controllers/paginated_sales_controller.dart';
 import '../../../pos/data/repositories/sale_consumable_usage_repository.dart';
+import '../../../delivery/domain/customer_address.dart';
+import '../../../delivery/presentation/controllers/customer_addresses_controller.dart';
 import 'delivery_order_section.dart';
+import 'save_delivery_address_prompt.dart';
 import 'order_usage_section.dart';
 
 /// Generates a receipt number in format: S-YYMMDD-XXXX
@@ -211,12 +214,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
     final deliveryEnabled =
         ref.watch(featureEnabledProvider(FeatureKey.delivery));
     final deliveryDraft = useState(const DeliveryDraft());
-    final currentBranchIdForFee = ref.watch(currentBranchIdProvider);
-    final feeBranch = currentBranchIdForFee == null
-        ? null
-        : ref.watch(branchProvider(currentBranchIdForFee)).value;
     final isDeliveryOrder = deliveryEnabled && deliveryDraft.value.isDelivery;
-    final deliveryFee = isDeliveryOrder ? deliveryDraft.value.fee(feeBranch) : 0;
+    final deliveryFee = isDeliveryOrder ? deliveryDraft.value.fee() : 0;
     final usageEnabled =
         ref.watch(consumableUsageEnabledProvider).value ?? false;
     final role = ref.watch(currentUserRoleProvider).value;
@@ -407,6 +406,57 @@ class _CreateOrderDialog extends HookConsumerWidget {
         return;
       }
 
+      // A typed address that isn't saved yet: offer to save it (optionally as
+      // the customer's default delivery address) before creating the order.
+      if (isDeliveryOrder) {
+        final typed = deliveryDraft.value.address.trim();
+        final saved = await ref.read(
+          customerAddressesControllerProvider(selectedCustomer.value!.id).future,
+        );
+        final isKnown = saved.any(
+          (a) => a.address.trim().toLowerCase() == typed.toLowerCase(),
+        );
+        if (!isKnown && context.mounted) {
+          final choice = await showSaveDeliveryAddressPrompt(
+            context,
+            customerName: selectedCustomer.value!.name,
+            address: typed,
+            hasSavedAddresses: saved.isNotEmpty,
+          );
+          if (choice == SaveAddressChoice.cancel || !context.mounted) return;
+          if (choice != SaveAddressChoice.skip) {
+            final draft = deliveryDraft.value;
+            final error = await ref
+                .read(
+                  customerAddressesControllerProvider(
+                    selectedCustomer.value!.id,
+                  ).notifier,
+                )
+                .save(
+                  CustomerAddress(
+                    id: '',
+                    customerId: selectedCustomer.value!.id,
+                    address: typed,
+                    notes: draft.notes.trim().isEmpty
+                        ? null
+                        : draft.notes.trim(),
+                    distanceKm: draft.distanceKm,
+                    deliveryRateId: draft.rate?.id,
+                    isDefault: choice == SaveAddressChoice.saveAsDefault,
+                  ),
+                );
+            if (error != null && context.mounted) {
+              // The order is still created; only saving the address failed.
+              showErrorSnackBar(
+                context,
+                message: 'Address not saved: $error',
+                useRootMessenger: false,
+              );
+            }
+          }
+        }
+      }
+
       isSaving.value = true;
 
       final qty = quantity.value;
@@ -489,7 +539,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
             : null,
         distanceKm: isDeliveryOrder ? deliveryDraft.value.distanceKm : null,
         deliveryRatePerKm:
-            isDeliveryOrder ? deliveryDraft.value.effectiveRate(feeBranch) : null,
+            isDeliveryOrder ? deliveryDraft.value.effectiveRate() : null,
         deliveryFee: deliveryFee,
         deliveryFeeOverridden:
             isDeliveryOrder && deliveryDraft.value.feeOverride != null,
@@ -781,6 +831,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
                     // Pickup / delivery (only with the delivery feature)
                     if (deliveryEnabled) ...[
                       DeliveryOrderSection(
+                        customerId: selectedCustomer.value?.id,
                         draft: deliveryDraft.value,
                         enabled: !isSaving.value,
                         onChanged: (draft) {

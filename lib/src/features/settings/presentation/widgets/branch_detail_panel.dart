@@ -5,6 +5,9 @@ import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 
 import '../../../../core/routing/routes/management.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
+import '../../../delivery/presentation/widgets/delivery_rates_tab.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../domain/branch.dart';
 import '../controllers/branches_controller.dart';
 import 'dialogs/branch_form_dialog.dart';
@@ -56,28 +59,54 @@ class BranchDetailPanel extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(branch.name),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => const ManagementBranchesRoute().goScoped(context),
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
+
+    AppBar buildAppBar({PreferredSizeWidget? bottom}) => AppBar(
+          title: Text(branch.name),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => const ManagementBranchesRoute().goScoped(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: () => showBranchFormDialog(context, branch: branch),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete',
+              onPressed: () => _handleDelete(context, ref, branch),
+            ),
+            const SizedBox(width: 8),
+          ],
+          bottom: bottom,
+        );
+
+    if (!deliveryEnabled) {
+      return Scaffold(
+        appBar: buildAppBar(),
+        body: _BranchDetailsBody(branch: branch),
+      );
+    }
+
+    // Delivery rates tab (only for organizations with the delivery feature).
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: buildAppBar(
+          bottom: const TabBar(
+            tabs: [Tab(text: 'Details'), Tab(text: 'Delivery rates')],
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
-            onPressed: () => showBranchFormDialog(context, branch: branch),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete',
-            onPressed: () => _handleDelete(context, ref, branch),
-          ),
-          const SizedBox(width: 8),
-        ],
+        body: TabBarView(
+          children: [
+            _BranchDetailsBody(branch: branch),
+            DeliveryRatesTab(branchId: branch.id),
+          ],
+        ),
       ),
-      body: _BranchDetailsBody(branch: branch),
     );
   }
 

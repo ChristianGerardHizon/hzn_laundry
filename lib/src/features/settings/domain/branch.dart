@@ -18,9 +18,6 @@ class Branch with BranchMappable {
     this.cutOffTime,
     this.isDefault = false,
     this.isDeleted = false,
-    this.deliveryBaseFee,
-    this.deliveryIncludedKm,
-    this.deliveryRatePerKm,
     this.created,
     this.updated,
   });
@@ -54,15 +51,6 @@ class Branch with BranchMappable {
 
   /// Soft delete flag.
   final bool isDeleted;
-
-  /// Default delivery base fee in PHP (delivery feature only).
-  final num? deliveryBaseFee;
-
-  /// Kilometres covered by the base fee before the per-km rate applies.
-  final num? deliveryIncludedKm;
-
-  /// Default per-km rate in PHP for distance beyond [deliveryIncludedKm].
-  final num? deliveryRatePerKm;
 
   /// Creation timestamp.
   final DateTime? created;
