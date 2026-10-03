@@ -507,6 +507,54 @@ Source: [`web/privacy-policy.html`](web/privacy-policy.html), [`web/reset-passwo
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 
+### Cloudflare Pages — Order View
+
+A static page hosted on Cloudflare Pages allows customers to view individual order details via a link (e.g. from email notifications). It is protected by Cloudflare Turnstile (bot verification) before the PocketBase public-order API is called.
+
+| Environment | Pages Project | URL |
+|-------------|---------------|-----|
+| Production | `hzn-order-view` | `https://hzn-order-view.pages.dev` |
+| Staging | `hzn-order-view-staging` | `https://hzn-order-view-staging.pages.dev` |
+
+#### Provisioning
+
+Run the provisioning script to create the Turnstile widget and Pages projects (requires `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` in `.env` with **Account > Turnstile > Edit** and **Account > Cloudflare Pages > Edit** scopes):
+
+```powershell
+pwsh scripts/cloudflare/provision.ps1
+```
+
+This appends `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `ORDER_VIEW_BASE_URL_STAGING`, and `ORDER_VIEW_BASE_URL_PROD` to your local `.env`.
+
+#### Deploying
+
+Deploy the `order_view/` static site to Pages (requires `wrangler` or `npx wrangler`):
+
+```powershell
+pwsh scripts/cloudflare/deploy.ps1 -Target both      # staging + prod
+pwsh scripts/cloudflare/deploy.ps1 -Target staging    # staging only
+```
+
+The deploy script injects `TURNSTILE_SITE_KEY` and `PUBLIC_ORDER_API_BASE` (PocketBase URL) into `index.html` at deploy time.
+
+#### PocketBase systemd env for order view
+
+Add these variables alongside the existing Resend/invite vars in the systemd drop-in:
+
+| Variable | Purpose |
+|----------|---------|
+| `TURNSTILE_SECRET_KEY` | Server-side Turnstile siteverify |
+| `ORDER_VIEW_BASE_URL` | Email link base, e.g. `https://hzn-order-view.pages.dev` |
+| `ORDER_VIEW_ORIGINS` | Comma-separated CORS origins for the Pages site |
+
+#### Source
+
+- Static app: [`order_view/`](../order_view/) (index.html + `_redirects` for SPA routing `/o/:token`)
+- Provision script: [`scripts/cloudflare/provision.ps1`](../scripts/cloudflare/provision.ps1)
+- Deploy script: [`scripts/cloudflare/deploy.ps1`](../scripts/cloudflare/deploy.ps1)
+
+---
+
 ### Google OAuth redirect URIs
 
 Web Google sign-in uses the custom page [`web/oauth2-redirect.html`](web/oauth2-redirect.html) (manual code exchange). Android still uses PocketBase’s `/api/oauth2-redirect` (all-in-one + Custom Tabs).

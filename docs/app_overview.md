@@ -769,3 +769,4 @@ lib/src/
 | Jan 19 | Stock Adjustments | Audit trail for inventory |
 | Jan 18 | Message Templates | Appointment message selector |
 | Jan 16 | Sale Status | Improved display with icons |
+| Oct 03 | CF Order View | Cloudflare Pages + Turnstile scaffolding for public order-detail links (`order_view/`). Provision and deploy scripts under `scripts/cloudflare/`. Two Pages projects: `hzn-order-view` (prod) and `hzn-order-view-staging` |
