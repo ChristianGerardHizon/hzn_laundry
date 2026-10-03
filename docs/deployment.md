@@ -291,7 +291,7 @@ Required variables:
 | `APP_ENV` | `prod` or `staging` (brand tag in From / subject) |
 | `RESEND_FROM_EMAIL` | Use `HZN Laundry <noreply@hznsystems.com>` on local, staging, and prod (verified Resend domain). Display name is rewritten by hooks from `APP_ENV`. Do **not** use `@hznlaundry.hznsystems.com` |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret for `POST /api/hzn/public-order/{token}` |
-| `ORDER_VIEW_BASE_URL` | Staging: `https://hzn-order-view-staging.pages.dev` · Prod: `https://hzn-order-view.pages.dev` |
+| `ORDER_VIEW_BASE_URL` | Staging: `https://staging.hznlaundrysystem.pages.dev` · Prod: `https://hznlaundrysystem.pages.dev` |
 | `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins (comma-separated) |
 
 After editing: `systemctl daemon-reload && systemctl restart pocketbase_hznlaundry.service pocketbase_hznlaundry-staging.service`.
@@ -514,10 +514,12 @@ Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
 
 A static page hosted on Cloudflare Pages allows customers to view individual order details via a link (e.g. from email notifications). It is protected by Cloudflare Turnstile (bot verification) before the PocketBase public-order API is called.
 
-| Environment | Pages Project | URL |
-|-------------|---------------|-----|
-| Production | `hzn-order-view` | `https://hzn-order-view.pages.dev` |
-| Staging | `hzn-order-view-staging` | `https://hzn-order-view-staging.pages.dev` |
+| Environment | Pages Project | Branch | URL |
+|-------------|---------------|--------|-----|
+| Production | `hznlaundrysystem` | `main` | `https://hznlaundrysystem.pages.dev` |
+| Staging | `hznlaundrysystem` | `staging` | `https://staging.hznlaundrysystem.pages.dev` |
+
+SEO/bots: `order_view/robots.txt` disallows all crawlers; `_headers` sets `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`; HTML meta mirrors that. Access is gated by Cloudflare Turnstile (managed mode) before the PocketBase API is called.
 
 #### Provisioning
 
@@ -547,8 +549,8 @@ Add these variables alongside the existing Resend/invite vars in the systemd dro
 | Variable | Purpose |
 |----------|---------|
 | `TURNSTILE_SECRET_KEY` | Server-side Turnstile siteverify |
-| `ORDER_VIEW_BASE_URL` | Email link base for this env (`https://hzn-order-view-staging.pages.dev` on staging, `https://hzn-order-view.pages.dev` on prod) |
-| `ORDER_VIEW_ORIGINS` | Comma-separated CORS origins, e.g. `https://hzn-order-view-staging.pages.dev,https://hzn-order-view.pages.dev` |
+| `ORDER_VIEW_BASE_URL` | Email link base (`https://staging.hznlaundrysystem.pages.dev` / `https://hznlaundrysystem.pages.dev`) |
+| `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins |
 
 Hook files: [`public_order.pb.js`](../server/pb_hooks/public_order.pb.js), helpers in [`order_view_helpers.js`](../server/pb_hooks/lib/order_view_helpers.js). Migration `1793500000_add_view_token_fields_to_sales.js` adds `viewToken*` fields.
 
