@@ -3,8 +3,8 @@
   Deploys the order_view/ static site to Cloudflare Pages via direct upload.
 
 .DESCRIPTION
-  Uses the Cloudflare Pages direct-upload API to deploy order_view/ to one or
-  both Pages projects (hzn-order-view, hzn-order-view-staging).
+  Uses wrangler pages deploy to upload order_view/ to one or both Pages
+  projects (hzn-order-view, hzn-order-view-staging).
 
   Reads CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, TURNSTILE_SITE_KEY,
   STAGING_URL, and PROD_URL from .env.
@@ -16,8 +16,8 @@
   Which project to deploy: "staging", "prod", or "both" (default).
 
 .EXAMPLE
-  pwsh scripts/cloudflare/deploy.ps1 -Target both
-  pwsh scripts/cloudflare/deploy.ps1 -Target staging
+  powershell -File scripts/cloudflare/deploy.ps1 -Target both
+  powershell -File scripts/cloudflare/deploy.ps1 -Target staging
 #>
 
 param(
@@ -28,11 +28,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$RepoRoot    = Resolve-Path (Join-Path $PSScriptRoot "../../")
-$EnvFile     = Join-Path $RepoRoot ".env"
+$RepoRoot     = Resolve-Path (Join-Path $PSScriptRoot "../../")
+$EnvFile      = Join-Path $RepoRoot ".env"
 $OrderViewDir = Join-Path $RepoRoot "order_view"
-
-# ── helpers ──────────────────────────────────────────────────────────────────
 
 function Read-EnvFile {
     param([string]$Path)
@@ -47,8 +45,6 @@ function Read-EnvFile {
     }
     return $vars
 }
-
-# ── load .env ────────────────────────────────────────────────────────────────
 
 if (-not (Test-Path $EnvFile)) {
     Write-Error ".env not found. Run provision.ps1 first."
@@ -68,80 +64,67 @@ if (-not $TurnstileKey) {
     Write-Error ".env missing TURNSTILE_SITE_KEY. Run provision.ps1 first."
 }
 
-# ── build deployable directory ───────────────────────────────────────────────
-
 function Build-DeployDir {
     param(
         [string]$ApiBaseUrl,
         [string]$SiteKey
     )
-    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "hzn-order-view-deploy-$(Get-Random)"
+    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("hzn-order-view-deploy-" + [guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
 
-    # Copy all files from order_view/
-    Get-ChildItem -Path $OrderViewDir -Recurse | ForEach-Object {
-        $dest = Join-Path $tmpDir $_.FullName.Substring($OrderViewDir.Length)
-        if ($_.PSIsContainer) {
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        } else {
-            Copy-Item $_.FullName $dest -Force
-        }
-    }
+    Copy-Item -Path (Join-Path $OrderViewDir "*") -Destination $tmpDir -Recurse -Force
 
-    # Inject env vars into index.html
     $indexPath = Join-Path $tmpDir "index.html"
     if (Test-Path $indexPath) {
-        $html = Get-Content $indexPath -Raw
-        $html = $html -replace '__TURNSTILE_SITE_KEY__', $SiteKey
-        $html = $html -replace '__PUBLIC_ORDER_API_BASE__', $ApiBaseUrl
-        Set-Content -Path $indexPath -Value $html -NoNewline
+        $html = [System.IO.File]::ReadAllText($indexPath, [System.Text.Encoding]::UTF8)
+        $html = $html.Replace("__TURNSTILE_SITE_KEY__", $SiteKey)
+        $html = $html.Replace("__PUBLIC_ORDER_API_BASE__", $ApiBaseUrl)
+        # Cache-bust so wrangler always uploads a new asset hash.
+        $bust = (Get-Date).ToUniversalTime().ToString("o")
+        $html = $html.Replace("</title>", "</title><!-- deploy $bust -->")
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($indexPath, $html, $utf8NoBom)
     }
 
     return $tmpDir
 }
-
-# ── deploy via wrangler ──────────────────────────────────────────────────────
 
 function Deploy-Pages {
     param(
         [string]$ProjectName,
         [string]$DeployDir
     )
-    Write-Host "`nDeploying $ProjectName from $DeployDir ..." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host ("Deploying {0} from {1} ..." -f $ProjectName, $DeployDir) -ForegroundColor Yellow
 
-    $envVars = @{
-        "CLOUDFLARE_ACCOUNT_ID" = $AccountId
-        "CLOUDFLARE_API_TOKEN"  = $ApiToken
-    }
-
-    # Try wrangler first; fall back to npx
     $wrangler = Get-Command wrangler -ErrorAction SilentlyContinue
-    $cmd = if ($wrangler) { "wrangler" } else { "npx wrangler" }
+    $useNpx = -not $wrangler
 
-    $fullCmd = "$cmd pages deploy `"$DeployDir`" --project-name=$ProjectName --branch=main --commit-dirty=true"
-
-    # Set env for the subprocess
-    $originalAcct  = $Env:CLOUDFLARE_ACCOUNT_ID
-    $originalToken = $Env:CLOUDFLARE_API_TOKEN
+    $originalAcct  = $env:CLOUDFLARE_ACCOUNT_ID
+    $originalToken = $env:CLOUDFLARE_API_TOKEN
     try {
-        $Env:CLOUDFLARE_ACCOUNT_ID = $AccountId
-        $Env:CLOUDFLARE_API_TOKEN  = $ApiToken
-        Invoke-Expression $fullCmd
+        $env:CLOUDFLARE_ACCOUNT_ID = $AccountId
+        $env:CLOUDFLARE_API_TOKEN  = $ApiToken
+
+        if ($useNpx) {
+            & npx --yes wrangler pages deploy $DeployDir --project-name=$ProjectName --branch=main --commit-dirty=true
+        } else {
+            & wrangler pages deploy $DeployDir --project-name=$ProjectName --branch=main --commit-dirty=true
+        }
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "wrangler deploy failed for $ProjectName (exit $LASTEXITCODE)"
+            Write-Error ("wrangler deploy failed for {0} (exit {1})" -f $ProjectName, $LASTEXITCODE)
         }
     }
     finally {
-        $Env:CLOUDFLARE_ACCOUNT_ID = $originalAcct
-        $Env:CLOUDFLARE_API_TOKEN  = $originalToken
+        $env:CLOUDFLARE_ACCOUNT_ID = $originalAcct
+        $env:CLOUDFLARE_API_TOKEN  = $originalToken
     }
 
-    Write-Host "  Deployed: https://$ProjectName.pages.dev" -ForegroundColor Green
+    Write-Host ("  Deployed: https://{0}.pages.dev" -f $ProjectName) -ForegroundColor Green
 }
 
-# ── main ─────────────────────────────────────────────────────────────────────
-
-Write-Host "`n=== HZN Laundry — Order View Pages Deploy ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=== HZN Laundry - Order View Pages Deploy ===" -ForegroundColor Cyan
 
 if ($Target -eq "staging" -or $Target -eq "both") {
     $apiBase = if ($StagingUrl) { $StagingUrl } else { "https://staging.hznlaundry.hznsystems.com" }
@@ -157,4 +140,5 @@ if ($Target -eq "prod" -or $Target -eq "both") {
     Remove-Item $dir -Recurse -Force
 }
 
-Write-Host "`n=== Deploy complete ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=== Deploy complete ===" -ForegroundColor Cyan

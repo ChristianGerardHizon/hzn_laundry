@@ -717,6 +717,10 @@ A finalized transaction/receipt.
 | `resendReadyNotification` | bool | No | One-shot server trigger to resend the ready notification |
 | `pickedUpNotificationSentAt` | DateTime | No | When the picked-up notification was last sent successfully |
 | `resendPickedUpNotification` | bool | No | One-shot server trigger to resend the picked-up notification |
+| `viewToken` | String | No | Opaque token for the public Cloudflare order-view link |
+| `viewTokenCreatedAt` | DateTime | No | When the current view token was minted |
+| `viewTokenFirstOpenedAt` | DateTime | No | First successful public open (starts 30-day TTL) |
+| `viewTokenExpiresAt` | DateTime | No | Link expiry (90d unopened, or 30d after first open) |
 | `voidedById` | String (FK) | No | User who voided the sale |
 | `voidedAt` | DateTime | No | Timestamp when the sale was voided |
 | `created` | DateTime | No | Creation timestamp |
@@ -727,6 +731,8 @@ A finalized transaction/receipt.
 **Enums:** `OrderStatus { pending, processing, ready, pickedUp }`, `PaymentStatus { unpaid, partial, paid }`.
 
 **Relationships:** `customerId` -> Customer (optional); `branchId` -> Branch; `cashierId` -> User.
+
+**Public order view:** `POST /api/hzn/public-order/{viewToken}` (Turnstile-gated) serves a safe order DTO to the Cloudflare Pages app at `/o/{token}`. Create-order and Ready/Picked Up emails include a **View order** CTA using `ORDER_VIEW_BASE_URL`.
 
 ### SaleItem
 

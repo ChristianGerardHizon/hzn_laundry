@@ -290,6 +290,9 @@ Required variables:
 | `APP_BASE_URL` | Public site URL used in invite / history / billing links |
 | `APP_ENV` | `prod` or `staging` (brand tag in From / subject) |
 | `RESEND_FROM_EMAIL` | Use `HZN Laundry <noreply@hznsystems.com>` on local, staging, and prod (verified Resend domain). Display name is rewritten by hooks from `APP_ENV`. Do **not** use `@hznlaundry.hznsystems.com` |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret for `POST /api/hzn/public-order/{token}` |
+| `ORDER_VIEW_BASE_URL` | Staging: `https://hzn-order-view-staging.pages.dev` · Prod: `https://hzn-order-view.pages.dev` |
+| `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins (comma-separated) |
 
 After editing: `systemctl daemon-reload && systemctl restart pocketbase_hznlaundry.service pocketbase_hznlaundry-staging.service`.
 
@@ -544,8 +547,10 @@ Add these variables alongside the existing Resend/invite vars in the systemd dro
 | Variable | Purpose |
 |----------|---------|
 | `TURNSTILE_SECRET_KEY` | Server-side Turnstile siteverify |
-| `ORDER_VIEW_BASE_URL` | Email link base, e.g. `https://hzn-order-view.pages.dev` |
-| `ORDER_VIEW_ORIGINS` | Comma-separated CORS origins for the Pages site |
+| `ORDER_VIEW_BASE_URL` | Email link base for this env (`https://hzn-order-view-staging.pages.dev` on staging, `https://hzn-order-view.pages.dev` on prod) |
+| `ORDER_VIEW_ORIGINS` | Comma-separated CORS origins, e.g. `https://hzn-order-view-staging.pages.dev,https://hzn-order-view.pages.dev` |
+
+Hook files: [`public_order.pb.js`](../server/pb_hooks/public_order.pb.js), helpers in [`order_view_helpers.js`](../server/pb_hooks/lib/order_view_helpers.js). Migration `1793500000_add_view_token_fields_to_sales.js` adds `viewToken*` fields.
 
 #### Source
 

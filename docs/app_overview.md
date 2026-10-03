@@ -769,4 +769,4 @@ lib/src/
 | Jan 19 | Stock Adjustments | Audit trail for inventory |
 | Jan 18 | Message Templates | Appointment message selector |
 | Jan 16 | Sale Status | Improved display with icons |
-| Oct 03 | CF Order View | Cloudflare Pages + Turnstile scaffolding for public order-detail links (`order_view/`). Provision and deploy scripts under `scripts/cloudflare/`. Two Pages projects: `hzn-order-view` (prod) and `hzn-order-view-staging` |
+| Oct 03 | CF Order View | Public order-detail links via Cloudflare Pages + Turnstile. Sale `viewToken*` fields; `POST /api/hzn/public-order/{token}`; create-order + Ready/Picked Up emails use org-branded **View order** CTA (`ORDER_VIEW_BASE_URL/o/{token}`). TTL: 90d unopened / 30d after first open. Pages: `hzn-order-view` + `hzn-order-view-staging` |
