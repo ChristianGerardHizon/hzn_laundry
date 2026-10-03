@@ -80,6 +80,13 @@ enum FeatureKey {
     'Multiple branches',
     'Branch switcher, All Branches mode and extra branches',
     FeatureCategory.subFeature,
+  ),
+  delivery(
+    'delivery',
+    'Delivery orders',
+    'Deliver orders to customers with distance-based delivery fees',
+    FeatureCategory.subFeature,
+    defaultOff: true,
   );
 
   const FeatureKey(
@@ -88,6 +95,7 @@ enum FeatureKey {
     this.description,
     this.category, {
     this.requires,
+    this.defaultOff = false,
   });
 
   /// PocketBase / API key.
@@ -98,6 +106,12 @@ enum FeatureKey {
 
   /// Parent feature that must also be enabled.
   final FeatureKey? requires;
+
+  /// Rolled out gradually: NOT granted by "all features" fallbacks (legacy orgs,
+  /// unresolved entitlements, packages without a feature list). Enabled only by
+  /// an explicit package entry or a Super Admin override.
+  /// Keep in sync with `defaultOff` in `feature_entitlements_helpers.js`.
+  final bool defaultOff;
 
   static FeatureKey? fromKey(String key) {
     for (final f in FeatureKey.values) {

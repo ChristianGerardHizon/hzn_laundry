@@ -16,6 +16,7 @@ class SaleMapper extends ClassMapperBase<Sale> {
       MapperContainer.globals.use(_instance = SaleMapper._());
       OrderStatusMapper.ensureInitialized();
       PaymentStatusMapper.ensureInitialized();
+      FulfillmentTypeMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -141,6 +142,70 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$voidedAt,
     opt: true,
   );
+  static FulfillmentType _$fulfillmentType(Sale v) => v.fulfillmentType;
+  static const Field<Sale, FulfillmentType> _f$fulfillmentType = Field(
+    'fulfillmentType',
+    _$fulfillmentType,
+    opt: true,
+    def: FulfillmentType.pickup,
+  );
+  static String? _$deliveryAddress(Sale v) => v.deliveryAddress;
+  static const Field<Sale, String> _f$deliveryAddress = Field(
+    'deliveryAddress',
+    _$deliveryAddress,
+    opt: true,
+  );
+  static String? _$deliveryNotes(Sale v) => v.deliveryNotes;
+  static const Field<Sale, String> _f$deliveryNotes = Field(
+    'deliveryNotes',
+    _$deliveryNotes,
+    opt: true,
+  );
+  static num? _$distanceKm(Sale v) => v.distanceKm;
+  static const Field<Sale, num> _f$distanceKm = Field(
+    'distanceKm',
+    _$distanceKm,
+    opt: true,
+  );
+  static num? _$deliveryRatePerKm(Sale v) => v.deliveryRatePerKm;
+  static const Field<Sale, num> _f$deliveryRatePerKm = Field(
+    'deliveryRatePerKm',
+    _$deliveryRatePerKm,
+    opt: true,
+  );
+  static num _$deliveryFee(Sale v) => v.deliveryFee;
+  static const Field<Sale, num> _f$deliveryFee = Field(
+    'deliveryFee',
+    _$deliveryFee,
+    opt: true,
+    def: 0,
+  );
+  static bool _$deliveryFeeOverridden(Sale v) => v.deliveryFeeOverridden;
+  static const Field<Sale, bool> _f$deliveryFeeOverridden = Field(
+    'deliveryFeeOverridden',
+    _$deliveryFeeOverridden,
+    opt: true,
+    def: false,
+  );
+  static DateTime? _$forDeliveryAt(Sale v) => v.forDeliveryAt;
+  static const Field<Sale, DateTime> _f$forDeliveryAt = Field(
+    'forDeliveryAt',
+    _$forDeliveryAt,
+    opt: true,
+  );
+  static DateTime? _$forDeliveryNotificationSentAt(Sale v) =>
+      v.forDeliveryNotificationSentAt;
+  static const Field<Sale, DateTime> _f$forDeliveryNotificationSentAt = Field(
+    'forDeliveryNotificationSentAt',
+    _$forDeliveryNotificationSentAt,
+    opt: true,
+  );
+  static String? _$deliveryPhoto(Sale v) => v.deliveryPhoto;
+  static const Field<Sale, String> _f$deliveryPhoto = Field(
+    'deliveryPhoto',
+    _$deliveryPhoto,
+    opt: true,
+  );
   static DateTime? _$created(Sale v) => v.created;
   static const Field<Sale, DateTime> _f$created = Field(
     'created',
@@ -177,6 +242,16 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #pickedUpNotificationSentAt: _f$pickedUpNotificationSentAt,
     #voidedById: _f$voidedById,
     #voidedAt: _f$voidedAt,
+    #fulfillmentType: _f$fulfillmentType,
+    #deliveryAddress: _f$deliveryAddress,
+    #deliveryNotes: _f$deliveryNotes,
+    #distanceKm: _f$distanceKm,
+    #deliveryRatePerKm: _f$deliveryRatePerKm,
+    #deliveryFee: _f$deliveryFee,
+    #deliveryFeeOverridden: _f$deliveryFeeOverridden,
+    #forDeliveryAt: _f$forDeliveryAt,
+    #forDeliveryNotificationSentAt: _f$forDeliveryNotificationSentAt,
+    #deliveryPhoto: _f$deliveryPhoto,
     #created: _f$created,
     #updated: _f$updated,
   };
@@ -204,6 +279,16 @@ class SaleMapper extends ClassMapperBase<Sale> {
       pickedUpNotificationSentAt: data.dec(_f$pickedUpNotificationSentAt),
       voidedById: data.dec(_f$voidedById),
       voidedAt: data.dec(_f$voidedAt),
+      fulfillmentType: data.dec(_f$fulfillmentType),
+      deliveryAddress: data.dec(_f$deliveryAddress),
+      deliveryNotes: data.dec(_f$deliveryNotes),
+      distanceKm: data.dec(_f$distanceKm),
+      deliveryRatePerKm: data.dec(_f$deliveryRatePerKm),
+      deliveryFee: data.dec(_f$deliveryFee),
+      deliveryFeeOverridden: data.dec(_f$deliveryFeeOverridden),
+      forDeliveryAt: data.dec(_f$forDeliveryAt),
+      forDeliveryNotificationSentAt: data.dec(_f$forDeliveryNotificationSentAt),
+      deliveryPhoto: data.dec(_f$deliveryPhoto),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
     );
@@ -277,6 +362,16 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     DateTime? pickedUpNotificationSentAt,
     String? voidedById,
     DateTime? voidedAt,
+    FulfillmentType? fulfillmentType,
+    String? deliveryAddress,
+    String? deliveryNotes,
+    num? distanceKm,
+    num? deliveryRatePerKm,
+    num? deliveryFee,
+    bool? deliveryFeeOverridden,
+    DateTime? forDeliveryAt,
+    DateTime? forDeliveryNotificationSentAt,
+    String? deliveryPhoto,
     DateTime? created,
     DateTime? updated,
   });
@@ -312,6 +407,16 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     Object? pickedUpNotificationSentAt = $none,
     Object? voidedById = $none,
     Object? voidedAt = $none,
+    FulfillmentType? fulfillmentType,
+    Object? deliveryAddress = $none,
+    Object? deliveryNotes = $none,
+    Object? distanceKm = $none,
+    Object? deliveryRatePerKm = $none,
+    num? deliveryFee,
+    bool? deliveryFeeOverridden,
+    Object? forDeliveryAt = $none,
+    Object? forDeliveryNotificationSentAt = $none,
+    Object? deliveryPhoto = $none,
     Object? created = $none,
     Object? updated = $none,
   }) => $apply(
@@ -339,6 +444,18 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
         #pickedUpNotificationSentAt: pickedUpNotificationSentAt,
       if (voidedById != $none) #voidedById: voidedById,
       if (voidedAt != $none) #voidedAt: voidedAt,
+      if (fulfillmentType != null) #fulfillmentType: fulfillmentType,
+      if (deliveryAddress != $none) #deliveryAddress: deliveryAddress,
+      if (deliveryNotes != $none) #deliveryNotes: deliveryNotes,
+      if (distanceKm != $none) #distanceKm: distanceKm,
+      if (deliveryRatePerKm != $none) #deliveryRatePerKm: deliveryRatePerKm,
+      if (deliveryFee != null) #deliveryFee: deliveryFee,
+      if (deliveryFeeOverridden != null)
+        #deliveryFeeOverridden: deliveryFeeOverridden,
+      if (forDeliveryAt != $none) #forDeliveryAt: forDeliveryAt,
+      if (forDeliveryNotificationSentAt != $none)
+        #forDeliveryNotificationSentAt: forDeliveryNotificationSentAt,
+      if (deliveryPhoto != $none) #deliveryPhoto: deliveryPhoto,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
     }),
@@ -372,6 +489,25 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     ),
     voidedById: data.get(#voidedById, or: $value.voidedById),
     voidedAt: data.get(#voidedAt, or: $value.voidedAt),
+    fulfillmentType: data.get(#fulfillmentType, or: $value.fulfillmentType),
+    deliveryAddress: data.get(#deliveryAddress, or: $value.deliveryAddress),
+    deliveryNotes: data.get(#deliveryNotes, or: $value.deliveryNotes),
+    distanceKm: data.get(#distanceKm, or: $value.distanceKm),
+    deliveryRatePerKm: data.get(
+      #deliveryRatePerKm,
+      or: $value.deliveryRatePerKm,
+    ),
+    deliveryFee: data.get(#deliveryFee, or: $value.deliveryFee),
+    deliveryFeeOverridden: data.get(
+      #deliveryFeeOverridden,
+      or: $value.deliveryFeeOverridden,
+    ),
+    forDeliveryAt: data.get(#forDeliveryAt, or: $value.forDeliveryAt),
+    forDeliveryNotificationSentAt: data.get(
+      #forDeliveryNotificationSentAt,
+      or: $value.forDeliveryNotificationSentAt,
+    ),
+    deliveryPhoto: data.get(#deliveryPhoto, or: $value.deliveryPhoto),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),
   );

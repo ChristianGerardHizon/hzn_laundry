@@ -8,12 +8,20 @@ import 'package:hzn_laundry/src/features/users/domain/user_role.dart';
 
 void main() {
   group('OrganizationEntitlements', () {
-    test('allEnabled enables every feature', () {
+    test('allEnabled enables every feature except default-off ones', () {
       final all = OrganizationEntitlements.allEnabled();
       for (final f in FeatureKey.values) {
-        expect(all.isEnabled(f), isTrue, reason: f.key);
+        expect(all.isEnabled(f), !f.defaultOff, reason: f.key);
       }
       expect(all.ordered.length, FeatureKey.values.length);
+    });
+
+    test('delivery is default-off and never enabled by fallbacks', () {
+      expect(FeatureKey.delivery.defaultOff, isTrue);
+      expect(OrganizationEntitlements.allEnabled().isEnabled(FeatureKey.delivery),
+          isFalse);
+      const e = OrganizationEntitlements(items: {});
+      expect(e.isEnabled(FeatureKey.delivery), isFalse);
     });
 
     test('of() fails open for features missing from the response', () {

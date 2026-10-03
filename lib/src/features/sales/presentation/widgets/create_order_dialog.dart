@@ -24,6 +24,7 @@ import '../../../customers/presentation/widgets/customer_form_sheet.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
 import '../../../dashboard/presentation/controllers/todays_sales_controller.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
+import '../../../pos/domain/fulfillment_type.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_consumable_usage.dart';
@@ -56,6 +57,10 @@ import '../../../../core/widgets/nav_permissions.dart';
 import '../../../users/domain/user_role.dart';
 import '../../presentation/controllers/paginated_sales_controller.dart';
 import '../../../pos/data/repositories/sale_consumable_usage_repository.dart';
+import '../../../delivery/domain/customer_address.dart';
+import '../../../delivery/presentation/controllers/customer_addresses_controller.dart';
+import 'delivery_order_section.dart';
+import 'save_delivery_address_prompt.dart';
 import 'order_usage_section.dart';
 
 /// Generates a receipt number in format: S-YYMMDD-XXXX
@@ -204,6 +209,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
     final isCopyingLast = useState(false);
 
     final promosEnabled = ref.watch(featureEnabledProvider(FeatureKey.promos));
+
+    // Delivery (feature-flagged; always pickup when the flag is off)
+    final deliveryEnabled =
+        ref.watch(featureEnabledProvider(FeatureKey.delivery));
+    final deliveryDraft = useState(const DeliveryDraft());
+    final isDeliveryOrder = deliveryEnabled && deliveryDraft.value.isDelivery;
+    final deliveryFee = isDeliveryOrder ? deliveryDraft.value.fee() : 0;
     final usageEnabled =
         ref.watch(consumableUsageEnabledProvider).value ?? false;
     final role = ref.watch(currentUserRoleProvider).value;
@@ -255,6 +267,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
     List<String> missingFields() => [
           if (selectedCustomer.value == null) 'Customer',
           if (selectedService.value == null) 'Service',
+          if (isDeliveryOrder && deliveryDraft.value.address.trim().isEmpty)
+            'Delivery address',
           if (showUsage && selectedService.value != null)
             for (final d in usageDrafts.value)
               if (d.isMissing) 'Usage for ${d.product.name}',
@@ -269,7 +283,13 @@ class _CreateOrderDialog extends HookConsumerWidget {
         validationErrors.value = missing;
       }
       return null;
-    }, [selectedCustomer.value, selectedService.value, usageDrafts.value]);
+    }, [
+      selectedCustomer.value,
+      selectedService.value,
+      usageDrafts.value,
+      deliveryDraft.value.address,
+      deliveryDraft.value.type,
+    ]);
 
     Future<void> handleClose() async {
       if (await confirmDiscard()) {
@@ -386,6 +406,57 @@ class _CreateOrderDialog extends HookConsumerWidget {
         return;
       }
 
+      // A typed address that isn't saved yet: offer to save it (optionally as
+      // the customer's default delivery address) before creating the order.
+      if (isDeliveryOrder) {
+        final typed = deliveryDraft.value.address.trim();
+        final saved = await ref.read(
+          customerAddressesControllerProvider(selectedCustomer.value!.id).future,
+        );
+        final isKnown = saved.any(
+          (a) => a.address.trim().toLowerCase() == typed.toLowerCase(),
+        );
+        if (!isKnown && context.mounted) {
+          final choice = await showSaveDeliveryAddressPrompt(
+            context,
+            customerName: selectedCustomer.value!.name,
+            address: typed,
+            hasSavedAddresses: saved.isNotEmpty,
+          );
+          if (choice == SaveAddressChoice.cancel || !context.mounted) return;
+          if (choice != SaveAddressChoice.skip) {
+            final draft = deliveryDraft.value;
+            final error = await ref
+                .read(
+                  customerAddressesControllerProvider(
+                    selectedCustomer.value!.id,
+                  ).notifier,
+                )
+                .save(
+                  CustomerAddress(
+                    id: '',
+                    customerId: selectedCustomer.value!.id,
+                    address: typed,
+                    notes: draft.notes.trim().isEmpty
+                        ? null
+                        : draft.notes.trim(),
+                    distanceKm: draft.distanceKm,
+                    deliveryRateId: draft.rate?.id,
+                    isDefault: choice == SaveAddressChoice.saveAsDefault,
+                  ),
+                );
+            if (error != null && context.mounted) {
+              // The order is still created; only saving the address failed.
+              showErrorSnackBar(
+                context,
+                message: 'Address not saved: $error',
+                useRootMessenger: false,
+              );
+            }
+          }
+        }
+      }
+
       isSaving.value = true;
 
       final qty = quantity.value;
@@ -420,7 +491,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
             (freeWeight * effectiveUnitPrice).clamp(0.0, serviceTotal);
       }
 
-      final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity);
+      final total = (subtotal - loyaltyDiscount).clamp(0.0, double.infinity) +
+          deliveryFee;
       final userNotes =
           formKey.currentState?.fields['specialInstructions']?.value as String?;
       final readyForPickupAt = formKey
@@ -456,6 +528,21 @@ class _CreateOrderDialog extends HookConsumerWidget {
         notes: notes,
         readyForPickupAt: readyForPickupAt,
         sendNotification: sendNotification,
+        fulfillmentType: isDeliveryOrder
+            ? FulfillmentType.delivery
+            : FulfillmentType.pickup,
+        deliveryAddress:
+            isDeliveryOrder ? deliveryDraft.value.address.trim() : null,
+        deliveryNotes: isDeliveryOrder &&
+                deliveryDraft.value.notes.trim().isNotEmpty
+            ? deliveryDraft.value.notes.trim()
+            : null,
+        distanceKm: isDeliveryOrder ? deliveryDraft.value.distanceKm : null,
+        deliveryRatePerKm:
+            isDeliveryOrder ? deliveryDraft.value.effectiveRate() : null,
+        deliveryFee: deliveryFee,
+        deliveryFeeOverridden:
+            isDeliveryOrder && deliveryDraft.value.feeOverride != null,
       );
 
       final serviceItem = SaleServiceItem(
@@ -574,7 +661,8 @@ class _CreateOrderDialog extends HookConsumerWidget {
     }
 
     final estimatedTotal =
-        (subtotalDisplay - displayLoyaltyDiscount).clamp(0.0, double.infinity);
+        (subtotalDisplay - displayLoyaltyDiscount).clamp(0.0, double.infinity) +
+            deliveryFee;
 
     // ── Success page after order creation ──────────────────────────────
     if (orderCreated.value) {
@@ -590,6 +678,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
           productItems: productItems.value,
           claimSheetNumber: createdReceiptNumber.value,
           readyForPickupAt: createdReadyForPickupAt.value,
+          deliveryAddress: isDeliveryOrder
+              ? deliveryDraft.value.address.trim()
+              : null,
+          deliveryFee: deliveryFee.toDouble(),
         ),
       );
     }
@@ -735,6 +827,20 @@ class _CreateOrderDialog extends HookConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
+
+                    // Pickup / delivery (only with the delivery feature)
+                    if (deliveryEnabled) ...[
+                      DeliveryOrderSection(
+                        customerId: selectedCustomer.value?.id,
+                        draft: deliveryDraft.value,
+                        enabled: !isSaving.value,
+                        onChanged: (draft) {
+                          deliveryDraft.value = draft;
+                          isDirty.value = true;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Ready for pickup (optional)
                     _ReadyForPickupField(
@@ -2892,6 +2998,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
     this.productItems = const [],
     this.claimSheetNumber,
     this.readyForPickupAt,
+    this.deliveryAddress,
+    this.deliveryFee = 0,
   });
 
   final Customer customer;
@@ -2903,6 +3011,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final List<_OrderProductItem> productItems;
   final String? claimSheetNumber;
   final DateTime? readyForPickupAt;
+  final String? deliveryAddress;
+  final double deliveryFee;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2973,6 +3083,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
         claimSheetNumber: claimSheetNumber,
         addOnItems: addOnSaleItems,
         readyForPickupAt: readyForPickupAt,
+        deliveryAddress: deliveryAddress,
+        deliveryFee: deliveryFee,
       );
     }
 
@@ -3041,6 +3153,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
         orderDate: orderDate,
         addOnItems: addOnSaleItems,
         readyForPickupAt: readyForPickupAt,
+        deliveryAddress: deliveryAddress,
+        deliveryFee: deliveryFee,
       );
 
       isPrinting.value = false;

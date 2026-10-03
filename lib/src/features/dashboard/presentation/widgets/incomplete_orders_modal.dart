@@ -44,7 +44,8 @@ class _IncompleteOrdersDialog extends StatelessWidget {
         OrderStatus.pending => 'Pending',
         OrderStatus.processing => 'Processing',
         OrderStatus.ready => 'Ready',
-        OrderStatus.pickedUp => 'Picked up',
+        OrderStatus.forDelivery => 'Out for delivery',
+        OrderStatus.pickedUp => 'Fulfilled',
       };
 
   static String _issueLabel(OrderDataIssue issue) => switch (issue) {

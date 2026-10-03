@@ -307,6 +307,8 @@ class _SaleTile extends HookConsumerWidget {
         return Colors.blue;
       case OrderStatus.ready:
         return Colors.green;
+      case OrderStatus.forDelivery:
+        return Colors.teal;
       case OrderStatus.pickedUp:
         return Colors.grey;
     }
@@ -320,6 +322,8 @@ class _SaleTile extends HookConsumerWidget {
         return Icons.autorenew;
       case OrderStatus.ready:
         return Icons.check_circle_outline;
+      case OrderStatus.forDelivery:
+        return Icons.delivery_dining;
       case OrderStatus.pickedUp:
         return Icons.local_shipping;
     }

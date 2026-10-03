@@ -14,6 +14,7 @@ abstract class PocketBaseCollections {
 
   // Management
   static const String branches = 'branches';
+  static const String branchDeliveryRates = 'branchDeliveryRates';
 
   // Products
   static const String products = 'products';
@@ -43,6 +44,7 @@ abstract class PocketBaseCollections {
 
   // Customers
   static const String customers = 'customers';
+  static const String customerAddresses = 'customerAddresses';
 
   // Employees
   static const String employees = 'employees';

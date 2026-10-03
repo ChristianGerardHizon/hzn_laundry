@@ -6,10 +6,11 @@
 // ES5 only — no const, let, arrow functions, or async/await.
 // ============================================================================
 
-function clearResendFlags(record, clearReady, clearPickedUp) {
+function clearResendFlags(record, clearReady, clearPickedUp, clearForDelivery) {
   try {
     if (clearReady) record.set("resendReadyNotification", false);
     if (clearPickedUp) record.set("resendPickedUpNotification", false);
+    if (clearForDelivery) record.set("resendForDeliveryNotification", false);
     $app.save(record);
   } catch (clearErr) {
     console.error("[ORDER_NOTIFY] failed to clear resend flag:", clearErr);
@@ -27,11 +28,17 @@ onRecordAfterUpdateSuccess(function(e) {
 
   var wantsResendReady = e.record.getBool("resendReadyNotification");
   var wantsResendPickedUp = e.record.getBool("resendPickedUpNotification");
+  var wantsResendForDelivery = e.record.getBool("resendForDeliveryNotification");
   var sendNotification = e.record.getBool("sendNotification");
 
   if (!sendNotification) {
-    if (wantsResendReady || wantsResendPickedUp) {
-      clearResendFlags(e.record, wantsResendReady, wantsResendPickedUp);
+    if (wantsResendReady || wantsResendPickedUp || wantsResendForDelivery) {
+      clearResendFlags(
+        e.record,
+        wantsResendReady,
+        wantsResendPickedUp,
+        wantsResendForDelivery
+      );
     }
     return;
   }
@@ -47,6 +54,22 @@ onRecordAfterUpdateSuccess(function(e) {
   var transitionedToReady = oldStatus !== "ready" && newStatus === "ready";
   var transitionedToPickedUp =
     oldStatus !== "pickedUp" && newStatus === "pickedUp";
+
+  // Delivery orders only; pickup orders never reach forDelivery.
+  var transitionedToForDelivery =
+    oldStatus !== "forDelivery" &&
+    newStatus === "forDelivery" &&
+    e.record.getString("fulfillmentType") === "delivery";
+  var alreadyForDeliverySent = notifier.isDateSet(
+    e.record.get("forDeliveryNotificationSentAt")
+  );
+  var shouldSendForDelivery =
+    (transitionedToForDelivery &&
+      (!alreadyForDeliverySent || wantsResendForDelivery)) ||
+    (wantsResendForDelivery &&
+      newStatus === "forDelivery" &&
+      !transitionedToReady &&
+      !transitionedToPickedUp);
 
   var alreadyReadySent = notifier.isDateSet(
     e.record.get("readyNotificationSentAt")
@@ -68,8 +91,12 @@ onRecordAfterUpdateSuccess(function(e) {
   } else if (transitionedToPickedUp) {
     shouldSendReady = false;
   }
+  if (transitionedToForDelivery || shouldSendForDelivery) {
+    shouldSendReady = false;
+    shouldSendPickedUp = false;
+  }
 
-  if (!shouldSendReady && !shouldSendPickedUp) {
+  if (!shouldSendReady && !shouldSendPickedUp && !shouldSendForDelivery) {
     if (transitionedToReady && alreadyReadySent && !wantsResendReady) {
       console.log(
         "[ORDER_NOTIFY] ready already sent for sale " + e.record.id + ", skipping"
@@ -85,9 +112,23 @@ onRecordAfterUpdateSuccess(function(e) {
     return;
   }
 
-  var event = shouldSendPickedUp ? "pickedUp" : "ready";
-  var wantsResend = event === "pickedUp" ? wantsResendPickedUp : wantsResendReady;
-  var logTag = event === "pickedUp" ? "[PICKED_UP_NOTIFY]" : "[READY_NOTIFY]";
+  var event = shouldSendForDelivery
+    ? "forDelivery"
+    : shouldSendPickedUp
+      ? "pickedUp"
+      : "ready";
+  var wantsResend =
+    event === "forDelivery"
+      ? wantsResendForDelivery
+      : event === "pickedUp"
+        ? wantsResendPickedUp
+        : wantsResendReady;
+  var logTag =
+    event === "forDelivery"
+      ? "[FOR_DELIVERY_NOTIFY]"
+      : event === "pickedUp"
+        ? "[PICKED_UP_NOTIFY]"
+        : "[READY_NOTIFY]";
 
   var customerId = e.record.getString("customer");
   if (!customerId) {
@@ -96,7 +137,8 @@ onRecordAfterUpdateSuccess(function(e) {
       clearResendFlags(
         e.record,
         event === "ready",
-        event === "pickedUp"
+        event === "pickedUp",
+        event === "forDelivery"
       );
     }
     return;
@@ -111,7 +153,8 @@ onRecordAfterUpdateSuccess(function(e) {
       clearResendFlags(
         e.record,
         event === "ready",
-        event === "pickedUp"
+        event === "pickedUp",
+        event === "forDelivery"
       );
     }
     return;
@@ -124,7 +167,8 @@ onRecordAfterUpdateSuccess(function(e) {
       clearResendFlags(
         e.record,
         event === "ready",
-        event === "pickedUp"
+        event === "pickedUp",
+        event === "forDelivery"
       );
     }
     return;
@@ -132,12 +176,16 @@ onRecordAfterUpdateSuccess(function(e) {
 
   try {
     var sent =
-      event === "pickedUp"
-        ? notifier.notifyOrderPickedUp($app, e.record, customer)
-        : notifier.notifyOrderReady($app, e.record, customer);
+      event === "forDelivery"
+        ? notifier.notifyOrderForDelivery($app, e.record, customer)
+        : event === "pickedUp"
+          ? notifier.notifyOrderPickedUp($app, e.record, customer)
+          : notifier.notifyOrderReady($app, e.record, customer);
 
     if (sent) {
-      if (event === "pickedUp") {
+      if (event === "forDelivery") {
+        notifier.stampForDeliveryNotificationSent($app, e.record);
+      } else if (event === "pickedUp") {
         notifier.stampPickedUpNotificationSent($app, e.record);
       } else {
         notifier.stampReadyNotificationSent($app, e.record);
@@ -147,7 +195,8 @@ onRecordAfterUpdateSuccess(function(e) {
       clearResendFlags(
         e.record,
         event === "ready",
-        event === "pickedUp"
+        event === "pickedUp",
+        event === "forDelivery"
       );
     }
   } catch (err) {
@@ -156,7 +205,8 @@ onRecordAfterUpdateSuccess(function(e) {
       clearResendFlags(
         e.record,
         event === "ready",
-        event === "pickedUp"
+        event === "pickedUp",
+        event === "forDelivery"
       );
     }
   }

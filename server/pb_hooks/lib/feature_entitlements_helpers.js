@@ -27,7 +27,11 @@ var FEATURE_CATALOG = [
   { key: "storages", label: "Storage locations", category: "subFeature", requires: null },
   { key: "posGroups", label: "Cashier layout groups", category: "subFeature", requires: null },
   { key: "customerHistoryLink", label: "Customer history link", category: "subFeature", requires: null },
-  { key: "multiBranch", label: "Multiple branches", category: "subFeature", requires: null }
+  { key: "multiBranch", label: "Multiple branches", category: "subFeature", requires: null },
+  // defaultOff: NOT granted by "all features" (no subscription / package without
+  // a feature list). Only an explicit package entry or Super Admin override
+  // enables it. Used for features being rolled out gradually.
+  { key: "delivery", label: "Delivery orders", category: "subFeature", requires: null, defaultOff: true }
 ];
 
 // Collections whose writes are blocked when the feature is not entitled.
@@ -59,10 +63,13 @@ function limitEntry(key) {
   return null;
 }
 
+/** Keys granted by default ("all features"); excludes defaultOff features. */
 function catalogKeys() {
   var out = [];
   var i;
-  for (i = 0; i < FEATURE_CATALOG.length; i++) out.push(FEATURE_CATALOG[i].key);
+  for (i = 0; i < FEATURE_CATALOG.length; i++) {
+    if (!FEATURE_CATALOG[i].defaultOff) out.push(FEATURE_CATALOG[i].key);
+  }
   return out;
 }
 
@@ -189,7 +196,9 @@ function resolveEntitlements(app, orgId) {
   var i;
   for (i = 0; i < FEATURE_CATALOG.length; i++) {
     var entry = FEATURE_CATALOG[i];
-    var planIncluded = allIncluded || planKeys.indexOf(entry.key) !== -1;
+    var planIncluded = entry.defaultOff
+      ? planKeys !== null && planKeys.indexOf(entry.key) !== -1
+      : allIncluded || planKeys.indexOf(entry.key) !== -1;
     var override = overrides[entry.key];
     var enabled = planIncluded;
     var source = planIncluded ? "plan" : "notInPlan";
@@ -400,6 +409,33 @@ function guardRecordWrite(e) {
     );
   }
   if (collectionName === "employees") guardEmployeeLimit(e, orgId);
+}
+
+/**
+ * Sales are not guarded wholesale; only delivery writes need the `delivery`
+ * feature. Pickup orders never reach the entitlement check. Existing delivery
+ * orders stay updatable (finishable) even if the feature is later turned off.
+ */
+function guardSaleDelivery(e) {
+  if (!e.auth) return;
+  try {
+    if (orgHelpers.isSuperuser(e.auth)) return;
+  } catch (_) {}
+  var fulfillmentType = e.record.getString("fulfillmentType");
+  var orderStatus = e.record.getString("orderStatus");
+  if (fulfillmentType !== "delivery" && orderStatus !== "forDelivery") return;
+  if (!e.record.isNew()) {
+    try {
+      if (e.record.original().getString("fulfillmentType") === "delivery") return;
+    } catch (_) {}
+  }
+  var orgId = resolveOrgId(e.app, e.record, "branch>organization");
+  if (!orgId) return;
+  if (!isFeatureEntitled(e.app, orgId, "delivery")) {
+    throw new ForbiddenError(
+      "The delivery feature is not enabled for this organization"
+    );
+  }
 }
 
 /**
@@ -673,6 +709,7 @@ module.exports = {
   isFeatureEntitled: isFeatureEntitled,
   guardRecordWrite: guardRecordWrite,
   guardBranchCreate: guardBranchCreate,
+  guardSaleDelivery: guardSaleDelivery,
   isCustomerHistoryEntitled: isCustomerHistoryEntitled,
   guardedCollectionNames: guardedCollectionNames,
   getEntitlements: getEntitlements,

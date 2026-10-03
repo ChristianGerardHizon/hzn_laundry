@@ -52,7 +52,8 @@ module.exports = {
     "pending": "Pending",
     "processing": "Processing",
     "ready": "Ready",
-    "pickedUp": "Picked Up"
+    "forDelivery": "Out for Delivery",
+    "pickedUp": "Fulfilled"
   },
 
   SALE_STATUS_LABELS: {

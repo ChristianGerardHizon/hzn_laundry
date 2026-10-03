@@ -23,6 +23,9 @@ abstract final class ActivityLogDisplay {
 
   static const _fieldLabels = {
     'orderStatus': 'Order status',
+    'fulfillmentType': 'Fulfillment',
+    'deliveryFee': 'Delivery fee',
+    'deliveryAddress': 'Delivery address',
     'status': 'Sale status',
     'totalAmount': 'Total',
     'isPaid': 'Paid',
@@ -46,7 +49,8 @@ abstract final class ActivityLogDisplay {
     'pending': 'Pending',
     'processing': 'Processing',
     'ready': 'Ready',
-    'pickedUp': 'Picked Up',
+    'forDelivery': 'Out for Delivery',
+    'pickedUp': 'Fulfilled',
   };
 
   static const _saleStatusLabels = {

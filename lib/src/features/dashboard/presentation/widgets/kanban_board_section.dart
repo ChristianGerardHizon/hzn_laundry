@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
+import '../../../entitlements/domain/feature_key.dart';
+import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
@@ -461,16 +463,21 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _KanbanBoard extends StatelessWidget {
+class _KanbanBoard extends ConsumerWidget {
   const _KanbanBoard({required this.data, required this.filterMode});
 
   final KanbanSalesData data;
   final KanbanFilterMode filterMode;
 
   @override
-  Widget build(BuildContext context) {
-    // Show all columns in both modes (backlogs includes Picked Up so users can drag orders there)
-    final statuses = OrderStatus.values;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Show all columns in both modes (backlogs includes Picked Up so users can drag orders there).
+    // The Out for Delivery column only exists for organizations with delivery.
+    final deliveryEnabled = ref.watch(featureEnabledProvider(FeatureKey.delivery));
+    final statuses = [
+      for (final s in OrderStatus.values)
+        if (deliveryEnabled || s != OrderStatus.forDelivery) s,
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -585,6 +592,12 @@ class _MobileKanbanLayout extends StatelessWidget {
 }
 
 /// A single kanban column for one order status.
+/// Whether [sale] may be dropped on the [target] status column. Pickup orders
+/// never enter Out for Delivery.
+bool _canDropOn(Sale sale, OrderStatus target) =>
+    sale.orderStatus != target &&
+    (target != OrderStatus.forDelivery || sale.isDelivery);
+
 class _KanbanColumn extends ConsumerWidget {
   const _KanbanColumn({
     required this.status,
@@ -606,6 +619,7 @@ class _KanbanColumn extends ConsumerWidget {
         OrderStatus.pending => Colors.orange,
         OrderStatus.processing => Colors.blue,
         OrderStatus.ready => Colors.green,
+        OrderStatus.forDelivery => Colors.cyan,
         OrderStatus.pickedUp => Colors.grey,
       };
 
@@ -613,6 +627,7 @@ class _KanbanColumn extends ConsumerWidget {
         OrderStatus.pending => Icons.schedule,
         OrderStatus.processing => Icons.autorenew,
         OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.forDelivery => Icons.delivery_dining,
         OrderStatus.pickedUp => Icons.local_shipping_outlined,
       };
 
@@ -633,8 +648,9 @@ class _KanbanColumn extends ConsumerWidget {
 
     return DragTarget<Sale>(
       onWillAcceptWithDetails: (details) {
-        // Accept if sale is not already in this status
-        return details.data.orderStatus != status;
+        // Accept if sale is not already in this status and (for the delivery
+        // column) the order is actually a delivery order.
+        return _canDropOn(details.data, status);
       },
       onAcceptWithDetails: (details) {
         _handleDrop(context, ref, details.data);
@@ -794,6 +810,7 @@ void _showAllCardsSheet(
     OrderStatus.pending => Colors.orange,
     OrderStatus.processing => Colors.blue,
     OrderStatus.ready => Colors.green,
+    OrderStatus.forDelivery => Colors.cyan,
     OrderStatus.pickedUp => Colors.grey,
   };
 
@@ -801,6 +818,7 @@ void _showAllCardsSheet(
     OrderStatus.pending => Icons.schedule,
     OrderStatus.processing => Icons.autorenew,
     OrderStatus.ready => Icons.check_circle_outline,
+    OrderStatus.forDelivery => Icons.delivery_dining,
     OrderStatus.pickedUp => Icons.local_shipping_outlined,
   };
 
@@ -932,8 +950,9 @@ class _SaleCardState extends ConsumerState<_SaleCard> {
     final cardSize = renderBox.size;
     final cardOffset = renderBox.localToGlobal(Offset.zero);
     final screenSize = MediaQuery.sizeOf(context);
-    final targetStatuses =
-        OrderStatus.values.where((s) => s != widget.sale.orderStatus).toList();
+    final targetStatuses = OrderStatus.valuesFor(widget.sale.fulfillmentType)
+        .where((s) => s != widget.sale.orderStatus)
+        .toList();
 
     // Capture the card's context and ref so the overlay can use them
     // even after the overlay entry is removed.
@@ -1042,6 +1061,7 @@ class _QuickDropOverlay extends StatelessWidget {
         OrderStatus.pending => Colors.orange,
         OrderStatus.processing => Colors.blue,
         OrderStatus.ready => Colors.green,
+        OrderStatus.forDelivery => Colors.cyan,
         OrderStatus.pickedUp => Colors.grey,
       };
 
@@ -1049,6 +1069,7 @@ class _QuickDropOverlay extends StatelessWidget {
         OrderStatus.pending => Icons.schedule,
         OrderStatus.processing => Icons.autorenew,
         OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.forDelivery => Icons.delivery_dining,
         OrderStatus.pickedUp => Icons.local_shipping_outlined,
       };
 
@@ -1085,7 +1106,7 @@ class _QuickDropOverlay extends StatelessWidget {
                       width: _targetWidth,
                       child: DragTarget<Sale>(
                         onWillAcceptWithDetails: (details) =>
-                            details.data.orderStatus != targetStatuses[i],
+                            _canDropOn(details.data, targetStatuses[i]),
                         onAcceptWithDetails: (details) {
                           onAccepted();
                           _handleKanbanDrop(parentContext, parentRef,

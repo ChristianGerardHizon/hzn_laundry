@@ -23,6 +23,7 @@ class SaleHighlightBanner extends StatelessWidget {
     this.balanceDue,
     this.voidedByName,
     this.voidedAt,
+    this.isDelivery = false,
     this.onTap,
   });
 
@@ -33,6 +34,9 @@ class SaleHighlightBanner extends StatelessWidget {
   final num? balanceDue;
   final String? voidedByName;
   final DateTime? voidedAt;
+
+  /// Delivery orders get delivery wording (ready / out for delivery / delivered).
+  final bool isDelivery;
 
   /// When set, the banner is tappable (e.g. to change order status).
   final VoidCallback? onTap;
@@ -220,7 +224,9 @@ class SaleHighlightBanner extends StatelessWidget {
         color: Colors.red.shade600,
         icon: Icons.payment,
         title: 'Ready - Awaiting Payment',
-        description: 'Order is ready but payment is required before pickup.',
+        description: isDelivery
+            ? 'Order is ready. Collect payment on delivery or before dispatch.'
+            : 'Order is ready but payment is required before pickup.',
         secondaryInfo: _paymentSecondaryText(),
         secondaryIcon: _paymentSecondaryIcon(),
         secondaryColor: _paymentSecondaryColor(),
@@ -232,9 +238,10 @@ class SaleHighlightBanner extends StatelessWidget {
       return _HighlightInfo(
         color: Colors.green,
         icon: Icons.check_circle,
-        title: 'Ready for Pickup',
-        description:
-            'Order is complete and paid. Ready to release to customer.',
+        title: isDelivery ? 'Ready for Delivery' : 'Ready for Pickup',
+        description: isDelivery
+            ? 'Order is complete and paid. Ready to be delivered.'
+            : 'Order is complete and paid. Ready to release to customer.',
         secondaryInfo: _paymentSecondaryText(),
         secondaryIcon: _paymentSecondaryIcon(),
         secondaryColor: _paymentSecondaryColor(),
@@ -254,13 +261,30 @@ class SaleHighlightBanner extends StatelessWidget {
       );
     }
 
+    // Out for delivery (delivery orders only)
+    if (orderStatus == OrderStatus.forDelivery) {
+      return _HighlightInfo(
+        color: Colors.cyan.shade700,
+        icon: Icons.delivery_dining,
+        title: isPaid ? 'Out for Delivery' : 'Out for Delivery - Collect Payment',
+        description: isPaid
+            ? 'Order is on its way to the customer.'
+            : 'Order is on its way. Collect payment on delivery (COD).',
+        secondaryInfo: _paymentSecondaryText(),
+        secondaryIcon: _paymentSecondaryIcon(),
+        secondaryColor: _paymentSecondaryColor(),
+      );
+    }
+
     // Priority 7: Picked up + Unpaid/Partial (unusual case)
     if (orderStatus == OrderStatus.pickedUp && !isPaid) {
       return _HighlightInfo(
         color: Colors.red.shade600,
         icon: Icons.warning,
-        title: 'Picked Up - Unpaid',
-        description: 'Order was released but payment is still pending.',
+        title: isDelivery ? 'Delivered - Unpaid' : 'Fulfilled - Unpaid',
+        description: isDelivery
+            ? 'Order was delivered but payment is still pending.'
+            : 'Order was released but payment is still pending.',
         secondaryInfo: _paymentSecondaryText(),
         secondaryIcon: _paymentSecondaryIcon(),
         secondaryColor: _paymentSecondaryColor(),
@@ -273,7 +297,9 @@ class SaleHighlightBanner extends StatelessWidget {
         color: Colors.grey,
         icon: Icons.task_alt,
         title: 'Completed',
-        description: 'Order has been picked up by the customer.',
+        description: isDelivery
+            ? 'Order has been delivered to the customer.'
+            : 'Order has been picked up by the customer.',
         secondaryInfo: _paymentSecondaryText(),
         secondaryIcon: _paymentSecondaryIcon(),
         secondaryColor: _paymentSecondaryColor(),
