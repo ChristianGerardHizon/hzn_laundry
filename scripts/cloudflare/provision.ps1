@@ -5,10 +5,10 @@
 .DESCRIPTION
   Reads CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN from .env.
   Creates/updates:
-    1. Turnstile widget (managed + bot_fight_mode) for hznlaundrysystem.pages.dev
-    2. One Pages project: hznlaundrysystem
-       - prod:    https://hznlaundrysystem.pages.dev
-       - staging: https://staging.hznlaundrysystem.pages.dev (branch alias)
+    1. Turnstile widget (managed mode) for hznlaundry.pages.dev
+    2. One Pages project: hznlaundry
+       - prod:    https://hznlaundry.pages.dev
+       - staging: https://staging.hznlaundry.pages.dev (branch alias)
   Writes TURNSTILE_* and ORDER_VIEW_BASE_URL_* into .env.
 
 .NOTES
@@ -22,12 +22,12 @@ $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $RepoRoot) { $RepoRoot = (Get-Location).Path }
 $EnvFile = Join-Path $RepoRoot ".env"
 
-$ProjectName = "hznlaundrysystem"
-$ProdUrl     = "https://hznlaundrysystem.pages.dev"
-$StagingUrl  = "https://staging.hznlaundrysystem.pages.dev"
+$ProjectName = "hznlaundry"
+$ProdUrl     = "https://hznlaundry.pages.dev"
+$StagingUrl  = "https://staging.hznlaundry.pages.dev"
 $TurnstileDomains = @(
-    "hznlaundrysystem.pages.dev",
-    "staging.hznlaundrysystem.pages.dev",
+    "hznlaundry.pages.dev",
+    "staging.hznlaundry.pages.dev",
     "localhost"
 )
 
