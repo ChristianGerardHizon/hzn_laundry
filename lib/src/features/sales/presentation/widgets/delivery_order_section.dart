@@ -123,6 +123,10 @@ class DeliveryOrderSection extends ConsumerWidget {
           name: 'fulfillmentType',
           initialValue: draft.type,
           decoration: const InputDecoration(border: InputBorder.none),
+          // 12px between the chips and a 44px-tall touch target.
+          spacing: 12,
+          runSpacing: 8,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           options: [
             for (final t in FulfillmentType.values)
               FormBuilderChipOption(value: t, child: Text(t.displayName)),
