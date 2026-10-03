@@ -1,5 +1,6 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
+import 'fulfillment_type.dart';
 import 'order_status.dart';
 import 'payment_status.dart';
 
@@ -32,6 +33,16 @@ class Sale with SaleMappable {
     this.pickedUpNotificationSentAt,
     this.voidedById,
     this.voidedAt,
+    this.fulfillmentType = FulfillmentType.pickup,
+    this.deliveryAddress,
+    this.deliveryNotes,
+    this.distanceKm,
+    this.deliveryRatePerKm,
+    this.deliveryFee = 0,
+    this.deliveryFeeOverridden = false,
+    this.forDeliveryAt,
+    this.forDeliveryNotificationSentAt,
+    this.deliveryPhoto,
     this.created,
     this.updated,
   });
@@ -99,6 +110,36 @@ class Sale with SaleMappable {
   /// Timestamp when the sale was voided.
   final DateTime? voidedAt;
 
+  /// Pickup (default) or delivery. Delivery requires the `delivery` feature.
+  final FulfillmentType fulfillmentType;
+
+  /// Delivery address (delivery orders).
+  final String? deliveryAddress;
+
+  /// Delivery notes (landmarks, preferred time window, etc.).
+  final String? deliveryNotes;
+
+  /// Distance to the customer in kilometres, typed in by staff.
+  final num? distanceKm;
+
+  /// Per-km rate used for this order (prefilled from the branch default).
+  final num? deliveryRatePerKm;
+
+  /// Final delivery fee included in [totalAmount].
+  final num deliveryFee;
+
+  /// True when staff typed the fee instead of using the calculated amount.
+  final bool deliveryFeeOverridden;
+
+  /// When the order left for delivery.
+  final DateTime? forDeliveryAt;
+
+  /// When the out-for-delivery notification was last sent successfully.
+  final DateTime? forDeliveryNotificationSentAt;
+
+  /// Optional proof-of-delivery photo file name (PocketBase file field).
+  final String? deliveryPhoto;
+
   /// Creation timestamp.
   final DateTime? created;
 
@@ -108,7 +149,10 @@ class Sale with SaleMappable {
   /// Returns display name for customer.
   String? get customerDisplay => customerName;
 
-  /// Returns true if order has been picked up.
+  /// Returns true if this is a delivery order.
+  bool get isDelivery => fulfillmentType.isDelivery;
+
+  /// Returns true if order has been picked up (delivered, for delivery orders).
   bool get isPickedUp => orderStatus == OrderStatus.pickedUp;
 
   /// Returns true if a ready notification has already been sent.

@@ -184,6 +184,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? claimSheetNumber,
     DateTime? orderDate,
     DateTime? readyForPickupAt,
+    String? deliveryAddress,
+    double deliveryFee = 0,
     List<SaleItem> addOnItems = const [],
   }) async {
     if (!printer.hasAddress) {
@@ -208,6 +210,8 @@ class ThermalPrintService extends _$ThermalPrintService {
       claimSheetNumber: claimSheetNumber,
       orderDate: orderDate,
       readyForPickupAt: readyForPickupAt,
+      deliveryAddress: deliveryAddress,
+      deliveryFee: deliveryFee,
       addOnItems: addOnItems,
     );
 
@@ -995,6 +999,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? claimSheetNumber,
     DateTime? orderDate,
     DateTime? readyForPickupAt,
+    String? deliveryAddress,
+    double deliveryFee = 0,
     List<SaleItem> addOnItems = const [],
   }) {
     final amountFormat = NumberFormat('#,##0.00');
@@ -1137,10 +1143,30 @@ class ThermalPrintService extends _$ThermalPrintService {
       bytes += generator.text('Notes: $specialInstructions');
     }
 
+    final isDelivery =
+        deliveryAddress != null && deliveryAddress.trim().isNotEmpty;
+    if (isDelivery) {
+      bytes = _appendDivider(generator, bytes);
+      bytes += generator.text(
+        'For Delivery',
+        styles: const PosStyles(align: PosAlign.center, bold: true),
+      );
+      bytes += generator.text(
+        deliveryAddress,
+        styles: const PosStyles(align: PosAlign.center),
+      );
+      if (deliveryFee > 0) {
+        bytes += generator.text(
+          'Delivery fee: P${deliveryFee.toStringAsFixed(2)}',
+          styles: const PosStyles(align: PosAlign.center),
+        );
+      }
+    }
+
     if (readyForPickupAt != null) {
       bytes = _appendDivider(generator, bytes);
       bytes += generator.text(
-        'Ready For Pickup',
+        isDelivery ? 'Ready For Delivery' : 'Ready For Pickup',
         styles: const PosStyles(align: PosAlign.center, bold: true),
       );
       bytes += generator.text(
@@ -1151,7 +1177,9 @@ class ThermalPrintService extends _$ThermalPrintService {
 
     bytes = _appendDivider(generator, bytes);
     bytes += generator.text(
-      'Please bring this receipt when picking up.',
+      isDelivery
+          ? 'Please present this receipt upon delivery.'
+          : 'Please bring this receipt when picking up.',
       styles: const PosStyles(align: PosAlign.center),
     );
     bytes = _appendTicketBarcode(generator, bytes, claimSheetNumber);
@@ -1340,6 +1368,8 @@ class ThermalPrintService extends _$ThermalPrintService {
     String? claimSheetNumber,
     DateTime? orderDate,
     DateTime? readyForPickupAt,
+    String? deliveryAddress,
+    double deliveryFee = 0,
     List<SaleItem> addOnItems = const [],
   }) async {
     final profile = await CapabilityProfile.load(name: 'default');
@@ -1365,6 +1395,8 @@ class ThermalPrintService extends _$ThermalPrintService {
           claimSheetNumber: claimSheetNumber,
           orderDate: orderDate,
           readyForPickupAt: readyForPickupAt,
+          deliveryAddress: deliveryAddress,
+          deliveryFee: deliveryFee,
           addOnItems: addOnItems,
         );
 

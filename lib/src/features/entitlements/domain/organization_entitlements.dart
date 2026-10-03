@@ -21,7 +21,7 @@ class OrganizationEntitlements {
         for (final f in FeatureKey.values)
           f: FeatureEntitlement(
             feature: f,
-            enabled: true,
+            enabled: !f.defaultOff,
             source: EntitlementSource.plan,
           ),
       },
@@ -37,7 +37,7 @@ class OrganizationEntitlements {
     return items[feature] ??
         FeatureEntitlement(
           feature: feature,
-          enabled: true,
+          enabled: !feature.defaultOff,
           source: EntitlementSource.plan,
         );
   }

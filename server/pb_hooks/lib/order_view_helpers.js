@@ -291,6 +291,11 @@ function buildPublicOrderDto(app, sale) {
     customerName: customerName,
     postedDate: sale.getString("postedDate") || sale.getString("created") || "",
     pickedUpAt: sale.getString("pickedUpAt") || "",
+    fulfillmentType: sale.getString("fulfillmentType") || "pickup",
+    deliveryAddress:
+      sale.getString("fulfillmentType") === "delivery"
+        ? sale.getString("deliveryAddress") || ""
+        : "",
     totalAmount: sale.get("totalAmount"),
     lineItems: loadLineItems(app, sale.id)
   };

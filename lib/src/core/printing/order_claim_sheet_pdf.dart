@@ -28,6 +28,8 @@ class OrderClaimSheetPdfData {
     this.specialInstructions,
     this.claimSheetNumber,
     this.readyForPickupAt,
+    this.deliveryAddress,
+    this.deliveryFee = 0,
     this.addOnItems = const [],
   });
 
@@ -46,7 +48,14 @@ class OrderClaimSheetPdfData {
   final String? specialInstructions;
   final String? claimSheetNumber;
   final DateTime? readyForPickupAt;
+
+  /// Set for delivery orders (requires the delivery feature).
+  final String? deliveryAddress;
+  final double deliveryFee;
   final List<SaleItem> addOnItems;
+
+  bool get isDelivery =>
+      deliveryAddress != null && deliveryAddress!.trim().isNotEmpty;
 }
 
 /// Builds a filesystem-safe PDF document name from claim sheet data.
@@ -236,13 +245,41 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
           style: const pw.TextStyle(fontSize: 11),
         ),
       ],
+      if (data.isDelivery) ...[
+        pw.SizedBox(height: 12),
+        pw.Divider(borderStyle: pw.BorderStyle.dashed),
+        pw.SizedBox(height: 8),
+        pw.Center(
+          child: pw.Text(
+            'For Delivery',
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
+          ),
+        ),
+        pw.SizedBox(height: 2),
+        pw.Center(
+          child: pw.Text(
+            data.deliveryAddress!,
+            style: const pw.TextStyle(fontSize: 11),
+            textAlign: pw.TextAlign.center,
+          ),
+        ),
+        if (data.deliveryFee > 0) ...[
+          pw.SizedBox(height: 2),
+          pw.Center(
+            child: pw.Text(
+              'Delivery fee: P${data.deliveryFee.toStringAsFixed(2)}',
+              style: const pw.TextStyle(fontSize: 11),
+            ),
+          ),
+        ],
+      ],
       if (data.readyForPickupAt != null) ...[
         pw.SizedBox(height: 12),
         pw.Divider(borderStyle: pw.BorderStyle.dashed),
         pw.SizedBox(height: 8),
         pw.Center(
           child: pw.Text(
-            'Ready For Pickup',
+            data.isDelivery ? 'Ready For Delivery' : 'Ready For Pickup',
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11),
           ),
         ),
@@ -259,7 +296,9 @@ pw.Widget _buildCustomerCopyContent(OrderClaimSheetPdfData data) {
       pw.SizedBox(height: 8),
       pw.Center(
         child: pw.Text(
-          'Please bring this receipt when picking up.',
+          data.isDelivery
+              ? 'Please present this receipt upon delivery.'
+              : 'Please bring this receipt when picking up.',
           style: const pw.TextStyle(fontSize: 10),
           textAlign: pw.TextAlign.center,
         ),

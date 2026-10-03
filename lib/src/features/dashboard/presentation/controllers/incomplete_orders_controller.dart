@@ -32,7 +32,7 @@ Future<IncompleteOrdersData> incompleteOrders(Ref ref) async {
   final startUtc = dayStart.toPocketBaseUtc();
   final endUtc = dayEnd.toPocketBaseUtc();
   final openFilter =
-      "status != 'voided' && (orderStatus = 'processing' || orderStatus = 'ready')$branchFilter";
+      "status != 'voided' && (orderStatus = 'processing' || orderStatus = 'ready' || orderStatus = 'forDelivery')$branchFilter";
   final pickedUpFilter =
       "status != 'voided' && orderStatus = 'pickedUp'$branchFilter && "
       '((pickedUpAt >= "$startUtc" && pickedUpAt < "$endUtc") || '

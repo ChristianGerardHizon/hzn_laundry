@@ -24,7 +24,8 @@ class SaleListStatusChip extends StatelessWidget {
       OrderStatus.pending => (Colors.amber.shade700, 'Pending'),
       OrderStatus.processing => (Colors.blue, 'Processing'),
       OrderStatus.ready => (Colors.green, 'Ready'),
-      OrderStatus.pickedUp => (Colors.blueGrey, 'Picked up'),
+      OrderStatus.forDelivery => (Colors.cyan, 'Out for delivery'),
+      OrderStatus.pickedUp => (Colors.blueGrey, 'Fulfilled'),
     };
 
     return RowChip(label: label, color: color);

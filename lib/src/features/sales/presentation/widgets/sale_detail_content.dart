@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:hzn_laundry/src/core/routing/org_scoped_navigation.dart';
 import 'package:hzn_laundry/src/core/foundation/failure.dart';
@@ -23,10 +24,12 @@ import '../controllers/sale_provider.dart';
 import '../controllers/sale_refresh.dart';
 import '../controllers/sale_service_items_provider.dart';
 import 'assign_machines_dialog.dart';
+import 'delivery_photo_prompt.dart';
 import 'assign_storages_dialog.dart';
 import 'prepare_order_for_ready.dart';
 import 'ready_notification_confirm.dart';
 import 'set_packs_dialog.dart';
+import 'sale_delivery_section.dart';
 import 'sale_highlight_banner.dart';
 import 'sale_notification_section.dart';
 import 'sale_usage_section.dart';
@@ -105,6 +108,8 @@ class SaleDetailContent extends ConsumerWidget {
             compact: compact,
           ),
           SizedBox(height: compact ? 12 : 16),
+
+          SaleDeliverySection(sale: sale, compact: compact),
 
           SaleNotificationSection(
             sale: sale,
@@ -1105,10 +1110,26 @@ Future<bool> advanceSaleOrderStatus({
     );
     if (!confirm.proceed || !context.mounted) return false;
 
+    // Delivery orders: optional proof-of-delivery photo (attached to the email).
+    http.MultipartFile? deliveryPhoto;
+    if (freshSale.isDelivery) {
+      final prompt = await showDeliveryPhotoPrompt(context);
+      if (!prompt.proceed || !context.mounted) return false;
+      final picked = prompt.photo;
+      if (picked != null) {
+        deliveryPhoto = http.MultipartFile.fromBytes(
+          'deliveryPhoto',
+          await picked.readAsBytes(),
+          filename: picked.name,
+        );
+      }
+    }
+
     final result = await ref.read(salesRepositoryProvider).updateOrderStatus(
           sale.id,
           status,
           resendNotification: confirm.resend,
+          deliveryPhoto: deliveryPhoto,
         );
 
     if (!context.mounted) return false;
@@ -1154,7 +1175,7 @@ class _QuickMoveStatusButton extends HookConsumerWidget {
   /// Whether [sale] has a next status it can be advanced to.
   static bool isAvailable(Sale sale) {
     final status = sale.status.toLowerCase();
-    return sale.orderStatus.next != null &&
+    return sale.orderStatus.nextFor(sale.fulfillmentType) != null &&
         status != 'refunded' &&
         status != 'voided';
   }
@@ -1165,6 +1186,7 @@ class _QuickMoveStatusButton extends HookConsumerWidget {
         OrderStatus.pending => Colors.amber.shade700,
         OrderStatus.processing => Colors.blue,
         OrderStatus.ready => Colors.green,
+        OrderStatus.forDelivery => Colors.cyan,
         OrderStatus.pickedUp => Colors.blueGrey.shade300,
       };
 
@@ -1172,13 +1194,14 @@ class _QuickMoveStatusButton extends HookConsumerWidget {
         OrderStatus.pending => Icons.schedule,
         OrderStatus.processing => Icons.autorenew,
         OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.forDelivery => Icons.delivery_dining,
         OrderStatus.pickedUp => Icons.local_shipping_outlined,
       };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isUpdating = useState(false);
-    final next = sale.orderStatus.next;
+    final next = sale.orderStatus.nextFor(sale.fulfillmentType);
 
     if (next == null || !isAvailable(sale)) {
       return const SizedBox.shrink();
@@ -1236,6 +1259,7 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
         OrderStatus.pending => Icons.schedule,
         OrderStatus.processing => Icons.autorenew,
         OrderStatus.ready => Icons.check_circle_outline,
+        OrderStatus.forDelivery => Icons.delivery_dining,
         OrderStatus.pickedUp => Icons.local_shipping,
       };
 
@@ -1282,7 +1306,7 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
       final selected = await showMenu<OrderStatus>(
         context: context,
         position: position,
-        items: OrderStatus.values
+        items: OrderStatus.valuesFor(sale.fulfillmentType)
             .map(
               (status) => PopupMenuItem<OrderStatus>(
                 value: status,
@@ -1317,6 +1341,7 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
       balanceDue: balanceDue,
       voidedByName: voidedByName,
       voidedAt: sale.voidedAt,
+      isDelivery: sale.isDelivery,
       onTap: canChangeStatus ? showStatusMenu : null,
     );
   }

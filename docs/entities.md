@@ -702,7 +702,17 @@ A finalized transaction/receipt.
 | `cashierId` | String (FK) | Yes | User who processed the sale |
 | `totalAmount` | num | Yes | Total amount charged |
 | `status` | String | Yes | Transaction status (completed, refunded, voided) |
-| `orderStatus` | OrderStatus | No | Fulfillment status (default `pending`) |
+| `orderStatus` | OrderStatus | No | Fulfillment status (default `pending`); `forDelivery` only for delivery orders |
+| `fulfillmentType` | FulfillmentType | No | `pickup` (default / empty) or `delivery` (requires `delivery` feature) |
+| `deliveryAddress` / `deliveryNotes` | String | No | Delivery order address and notes |
+| `distanceKm` / `deliveryRatePerKm` | num | No | Distance typed by staff and the per-km rate used (prefilled from the branch) |
+| `deliveryFee` / `deliveryFeeOverridden` | num / bool | No | Final fee included in `totalAmount`; true when staff typed it manually |
+| `forDeliveryAt` / `forDeliveryNotificationSentAt` / `resendForDeliveryNotification` | DateTime / DateTime / bool | No | Out-for-delivery stamp and email tracking |
+| `deliveryPhoto` | File | No | Optional proof-of-delivery photo, attached to the delivered email |
+
+**Collection:** `branchDeliveryRates` (delivery feature) — named delivery rates per branch: `branch` (FK), `name`, `baseFee`, `includedKm`, `ratePerKm`, `isDefault` (exactly one per branch; first created becomes default; hook `delivery_defaults.pb.js`), `isDeleted`.
+
+**Collection:** `customerAddresses` (delivery feature) — saved delivery addresses per customer: `customer` (FK), `label`, `address`, `notes`, `distanceKm`, `deliveryRate` (optional FK to `branchDeliveryRates`), `isDefault` (exactly one per customer; same hook), `isDeleted`.
 | `isPaid` | bool | No | Auto-calculated from payments (default false) |
 | `paymentStatus` | PaymentStatus | No | `unpaid`/`partial`/`paid`, auto-calculated (default `unpaid`) |
 | `packs` | int | No | Number of laundry bags/packs (default 0) |

@@ -32,6 +32,8 @@ class OrderStatusMapper extends EnumMapper<OrderStatus> {
         return OrderStatus.processing;
       case r'ready':
         return OrderStatus.ready;
+      case r'forDelivery':
+        return OrderStatus.forDelivery;
       case r'pickedUp':
         return OrderStatus.pickedUp;
       default:
@@ -48,6 +50,8 @@ class OrderStatusMapper extends EnumMapper<OrderStatus> {
         return r'processing';
       case OrderStatus.ready:
         return r'ready';
+      case OrderStatus.forDelivery:
+        return r'forDelivery';
       case OrderStatus.pickedUp:
         return r'pickedUp';
     }

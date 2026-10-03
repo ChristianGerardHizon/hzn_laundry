@@ -92,7 +92,10 @@ int? _asLimit(dynamic value) {
 /// includes everything.
 List<String> _asFeatureKeys(dynamic value) {
   if (value is List) return value.whereType<String>().toList();
-  return [for (final f in FeatureKey.values) f.key];
+  return [
+    for (final f in FeatureKey.values)
+      if (!f.defaultOff) f.key,
+  ];
 }
 
 String? _relationId(dynamic value) {

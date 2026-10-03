@@ -20,6 +20,17 @@ onRecordUpdateRequest(function(e) {
   e.next();
 }, "employees", "employeeAttendances", "employeeDeductions", "promos", "customerPromos", "saleConsumableUsages", "posGroups");
 
+// Delivery orders require the delivery feature (pickup writes are untouched).
+onRecordCreateRequest(function(e) {
+  require(__hooks + "/lib/feature_entitlements_helpers.js").guardSaleDelivery(e);
+  e.next();
+}, "sales");
+
+onRecordUpdateRequest(function(e) {
+  require(__hooks + "/lib/feature_entitlements_helpers.js").guardSaleDelivery(e);
+  e.next();
+}, "sales");
+
 // Extra branches require the multiBranch feature.
 onRecordCreateRequest(function(e) {
   require(__hooks + "/lib/feature_entitlements_helpers.js").guardBranchCreate(e);
