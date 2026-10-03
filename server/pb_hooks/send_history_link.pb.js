@@ -1,23 +1,17 @@
 /// <reference path="../pb_data/types.d.ts" />
 
 // ============================================================================
-// Send Customer Order History Link (Resend)
+// Send public order-view link email after a sale is created (Resend).
+// Replaces the older customer-history link email for create-order.
 // ES5 only — no const, let, arrow functions, or async/await.
 // ============================================================================
 
-onRecordAfterCreateSuccess(function(e) {
-  console.log("[HISTORY_LINK] fired for sale " + e.record.id);
-  var config;
-  try {
-    config = require(__hooks + "/send_history_link_config.js");
-  } catch (err) {
-    console.error("[HISTORY_LINK] config require failed:", err);
-    return;
-  }
+onRecordAfterCreateSuccess(function (e) {
+  console.log("[ORDER_VIEW] create-email fired for sale " + e.record.id);
 
   var customerId = e.record.getString("customer");
   if (!customerId) {
-    console.log("[HISTORY_LINK] no customer linked, skipping");
+    console.log("[ORDER_VIEW] no customer linked, skipping");
     return;
   }
 
@@ -25,57 +19,37 @@ onRecordAfterCreateSuccess(function(e) {
   try {
     customer = $app.findRecordById("customers", customerId);
   } catch (err) {
-    console.error("[HISTORY_LINK] Customer not found: " + customerId, err);
+    console.error("[ORDER_VIEW] Customer not found: " + customerId, err);
     return;
   }
 
   var email = customer.getString("email");
   if (!email) {
-    return; // no email on file — nothing to send
+    return;
   }
 
-  // Skip when the organization does not have the customer history link.
-  try {
-    var entitlements = require(__hooks + "/lib/feature_entitlements_helpers.js");
-    if (!entitlements.isCustomerHistoryEntitled($app, customer)) {
-      console.log("[HISTORY_LINK] customerHistoryLink not enabled, skipping");
-      return;
-    }
-  } catch (err) {
-    console.error("[HISTORY_LINK] entitlement check failed:", err);
+  var helpers = require(__hooks + "/lib/order_view_helpers.js");
+  var token = helpers.ensureViewToken($app, e.record);
+  if (!token) {
+    console.error("[ORDER_VIEW] Failed to mint viewToken for sale " + e.record.id);
+    return;
   }
 
-  var token = customer.getString("historyToken");
-  var expiresAt = customer.getString("historyTokenExpiresAt");
-
-  var tokenChanged = false;
-  if (!token || config.isExpired(expiresAt)) {
-    token = config.generateToken();
-    customer.set("historyToken", token);
-    customer.set("historyTokenExpiresAt", config.getExpiryDateString());
-    tokenChanged = true;
-  } else {
-    // refresh expiry so active customers do not lose access
-    customer.set("historyTokenExpiresAt", config.getExpiryDateString());
-    tokenChanged = true;
-  }
-
-  if (tokenChanged) {
-    try {
-      $app.save(customer);
-    } catch (err) {
-      console.error("[HISTORY_LINK] Failed to save customer token:", err);
-      return;
-    }
-  }
-
-  var link = config.getAppBaseUrl() + "/history/" + token;
+  var link = helpers.buildOrderViewUrl(token);
+  var orgName = helpers.resolveOrganizationName($app, e.record);
+  var brand = helpers.brandWithEnv(orgName);
   var customerName = customer.getString("name") || "Customer";
 
   try {
-    config.sendHistoryLinkEmail(email, customerName, link);
-    console.log("[HISTORY_LINK] Sent to " + email + " for sale " + e.record.id);
+    helpers.sendOrderViewEmail(email, {
+      brand: brand,
+      customerName: customerName,
+      receiptNumber: e.record.getString("receiptNumber") || "",
+      orderViewLink: link,
+      branchName: helpers.resolveBranchName($app, e.record)
+    });
+    console.log("[ORDER_VIEW] Sent to " + email + " for sale " + e.record.id);
   } catch (err) {
-    console.error("[HISTORY_LINK] Failed to send email:", err);
+    console.error("[ORDER_VIEW] Failed to send email:", err);
   }
 }, "sales");

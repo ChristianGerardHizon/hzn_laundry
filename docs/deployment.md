@@ -290,6 +290,9 @@ Required variables:
 | `APP_BASE_URL` | Public site URL used in invite / history / billing links |
 | `APP_ENV` | `prod` or `staging` (brand tag in From / subject) |
 | `RESEND_FROM_EMAIL` | Use `HZN Laundry <noreply@hznsystems.com>` on local, staging, and prod (verified Resend domain). Display name is rewritten by hooks from `APP_ENV`. Do **not** use `@hznlaundry.hznsystems.com` |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret for `POST /api/hzn/public-order/{token}` |
+| `ORDER_VIEW_BASE_URL` | Staging: `https://hzn-order-view-staging.pages.dev` · Prod: `https://hzn-order-view.pages.dev` |
+| `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins (comma-separated) |
 
 After editing: `systemctl daemon-reload && systemctl restart pocketbase_hznlaundry.service pocketbase_hznlaundry-staging.service`.
 
@@ -506,6 +509,56 @@ Invite landing page (linked from staff invite emails — choose web or app sign-
 Source: [`web/privacy-policy.html`](web/privacy-policy.html), [`web/reset-password.html`](web/reset-password.html), and [`web/invite.html`](web/invite.html) (copied into `build/web/` and deployed to PocketBase `pb_public/`). Use the **production** privacy-policy URL in Play Console → App content → Privacy policy.
 
 Shorter alias: `/privacy-policy/` redirects to `/privacy-policy.html`.
+
+### Cloudflare Pages — Order View
+
+A static page hosted on Cloudflare Pages allows customers to view individual order details via a link (e.g. from email notifications). It is protected by Cloudflare Turnstile (bot verification) before the PocketBase public-order API is called.
+
+| Environment | Pages Project | URL |
+|-------------|---------------|-----|
+| Production | `hzn-order-view` | `https://hzn-order-view.pages.dev` |
+| Staging | `hzn-order-view-staging` | `https://hzn-order-view-staging.pages.dev` |
+
+#### Provisioning
+
+Run the provisioning script to create the Turnstile widget and Pages projects (requires `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` in `.env` with **Account > Turnstile > Edit** and **Account > Cloudflare Pages > Edit** scopes):
+
+```powershell
+pwsh scripts/cloudflare/provision.ps1
+```
+
+This appends `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `ORDER_VIEW_BASE_URL_STAGING`, and `ORDER_VIEW_BASE_URL_PROD` to your local `.env`.
+
+#### Deploying
+
+Deploy the `order_view/` static site to Pages (requires `wrangler` or `npx wrangler`):
+
+```powershell
+pwsh scripts/cloudflare/deploy.ps1 -Target both      # staging + prod
+pwsh scripts/cloudflare/deploy.ps1 -Target staging    # staging only
+```
+
+The deploy script injects `TURNSTILE_SITE_KEY` and `PUBLIC_ORDER_API_BASE` (PocketBase URL) into `index.html` at deploy time.
+
+#### PocketBase systemd env for order view
+
+Add these variables alongside the existing Resend/invite vars in the systemd drop-in:
+
+| Variable | Purpose |
+|----------|---------|
+| `TURNSTILE_SECRET_KEY` | Server-side Turnstile siteverify |
+| `ORDER_VIEW_BASE_URL` | Email link base for this env (`https://hzn-order-view-staging.pages.dev` on staging, `https://hzn-order-view.pages.dev` on prod) |
+| `ORDER_VIEW_ORIGINS` | Comma-separated CORS origins, e.g. `https://hzn-order-view-staging.pages.dev,https://hzn-order-view.pages.dev` |
+
+Hook files: [`public_order.pb.js`](../server/pb_hooks/public_order.pb.js), helpers in [`order_view_helpers.js`](../server/pb_hooks/lib/order_view_helpers.js). Migration `1793500000_add_view_token_fields_to_sales.js` adds `viewToken*` fields.
+
+#### Source
+
+- Static app: [`order_view/`](../order_view/) (index.html + `_redirects` for SPA routing `/o/:token`)
+- Provision script: [`scripts/cloudflare/provision.ps1`](../scripts/cloudflare/provision.ps1)
+- Deploy script: [`scripts/cloudflare/deploy.ps1`](../scripts/cloudflare/deploy.ps1)
+
+---
 
 ### Google OAuth redirect URIs
 

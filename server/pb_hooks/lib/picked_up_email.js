@@ -6,7 +6,7 @@ function buildPickedUpEmail(opts) {
   var brand = opts.brand || "HZN Laundry";
   var customerName = opts.customerName || "Customer";
   var receiptNumber = opts.receiptNumber || "";
-  var historyLink = opts.historyLink || "";
+  var orderViewLink = opts.orderViewLink || opts.historyLink || "";
 
   var emailLayout = require(__hooks + "/lib/email_layout.js");
 
@@ -26,12 +26,15 @@ function buildPickedUpEmail(opts) {
   }
 
   var button = null;
-  if (historyLink) {
-    button = { label: "View my orders", url: historyLink };
+  if (orderViewLink) {
+    button = { label: "View order", url: orderViewLink };
   }
 
   var html = emailLayout.renderEmail({
     brand: brand,
+    platformTag: "",
+    signOff: false,
+    disclaimer: "Generated using HZN Laundry System",
     preheader: preheader,
     title: "Hi " + customerName + ",",
     intro: intro,
@@ -52,12 +55,12 @@ function buildPickedUpEmail(opts) {
     text += "  Branch: " + opts.branchName + "\n";
   }
   text += "\n";
-  if (historyLink) {
-    text += "View your orders:\n" + historyLink + "\n\n";
+  if (orderViewLink) {
+    text += "View order:\n" + orderViewLink + "\n\n";
   }
   text +=
     "If you have questions about this order, please contact the shop directly.\n\n" +
-    brand;
+    "Generated using HZN Laundry System";
 
   return {
     subject: brand + ": Order " + receiptNumber + " has been picked up",
@@ -74,10 +77,10 @@ function sendPickedUpEmail(toEmail, opts) {
   }
 
   var body = buildPickedUpEmail({
-    brand: historyConfig.getAppDisplayName(),
+    brand: opts.brand || historyConfig.getAppDisplayName(),
     customerName: opts.customerName,
     receiptNumber: opts.receiptNumber,
-    historyLink: opts.historyLink,
+    orderViewLink: opts.orderViewLink || opts.historyLink,
     branchName: opts.branchName
   });
 

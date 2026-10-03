@@ -1,0 +1,3 @@
+# Cloudflare Pages _redirects
+# SPA routing: any /o/:token path serves index.html
+/o/*  /index.html  200

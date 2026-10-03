@@ -164,7 +164,10 @@ function fallbackLink(url) {
 
 /**
  * opts: {
- *   brand,          // display name, e.g. "[Dev] HZN Laundry"
+ *   brand,          // display name, e.g. "[Dev] HZN Laundry" or org name
+ *   platformTag,    // teal subtitle under brand; default "HZN systems"; "" hides
+ *   signOff,        // false hides "Kind regards, The {brand} team" (default true)
+ *   disclaimer,     // full footer disclaimer; default HZN systems account notice
  *   preheader,      // hidden inbox preview text
  *   title,          // H1
  *   intro,          // paragraph under the title (plain text)
@@ -173,13 +176,16 @@ function fallbackLink(url) {
  *   panelExtraHtml, // optional trusted HTML inside the panel
  *   button,         // optional { label, url }
  *   note,           // optional small muted paragraph (plain text)
- *   footerNote      // optional extra sentence in the disclaimer (plain text)
+ *   footerNote      // optional extra sentence prefixed to the default disclaimer
  * }
  * Returns an HTML string.
  */
 function renderEmail(opts) {
   var brand = opts.brand || "HZN Laundry";
   var safeBrand = escapeHtml(brand);
+  var platformTag =
+    opts.platformTag === undefined ? "HZN systems" : opts.platformTag;
+  var showSignOff = opts.signOff !== false;
   var body = "";
 
   body +=
@@ -205,12 +211,39 @@ function renderEmail(opts) {
       "</p>";
   }
 
-  var disclaimer =
-    "This is an automated transactional message from HZN systems regarding your " +
-    safeBrand +
-    " account. Please do not reply to this email.";
-  if (opts.footerNote) {
-    disclaimer = escapeHtml(opts.footerNote) + " " + disclaimer;
+  var disclaimer;
+  if (opts.disclaimer !== undefined && opts.disclaimer !== null) {
+    disclaimer = escapeHtml(opts.disclaimer);
+  } else {
+    disclaimer =
+      "This is an automated transactional message from HZN systems regarding your " +
+      safeBrand +
+      " account. Please do not reply to this email.";
+    if (opts.footerNote) {
+      disclaimer = escapeHtml(opts.footerNote) + " " + disclaimer;
+    }
+  }
+
+  var platformTagHtml = "";
+  if (platformTag) {
+    platformTagHtml =
+      "          <p style=\"margin:2px 0 0;font-family:" +
+      FONT +
+      ";font-size:12px;color:" +
+      ACCENT +
+      ";line-height:1.3;\">" +
+      escapeHtml(platformTag) +
+      "</p>\r\n";
+  }
+
+  var signOffHtml = "";
+  if (showSignOff) {
+    signOffHtml =
+      "          <p style=\"margin:0 0 8px;font-family:" +
+      FONT +
+      ";font-size:13px;color:#6B7280;line-height:1.5;\">Kind regards,<br>The " +
+      safeBrand +
+      " team</p>\r\n";
   }
 
   return (
@@ -241,11 +274,7 @@ function renderEmail(opts) {
     ";font-size:16px;font-weight:bold;color:#FFFFFF;line-height:1.3;\">" +
     safeBrand +
     "</p>\r\n" +
-    "          <p style=\"margin:2px 0 0;font-family:" +
-    FONT +
-    ";font-size:12px;color:" +
-    ACCENT +
-    ";line-height:1.3;\">HZN systems</p>\r\n" +
+    platformTagHtml +
     "        </td></tr>\r\n" +
     "        <tr><td style=\"height:3px;line-height:3px;font-size:3px;background-color:" +
     ACCENT +
@@ -254,12 +283,14 @@ function renderEmail(opts) {
     body +
     "\r\n        </td></tr>\r\n" +
     "        <tr><td style=\"background-color:#FFFFFF;padding:20px 28px 28px;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 8px 8px;\">\r\n" +
-    "          <p style=\"margin:0 0 8px;font-family:" +
-    FONT +
-    ";font-size:13px;color:#6B7280;line-height:1.5;\">Kind regards,<br>The " +
-    safeBrand +
-    " team</p>\r\n" +
-    "          <p style=\"margin:16px 0 0;padding-top:16px;border-top:1px solid #F3F4F6;font-family:" +
+    signOffHtml +
+    "          <p style=\"margin:" +
+    (showSignOff ? "16px" : "0") +
+    " 0 0;padding-top:" +
+    (showSignOff ? "16px" : "0") +
+    ";border-top:" +
+    (showSignOff ? "1px solid #F3F4F6" : "0") +
+    ";font-family:" +
     FONT +
     ";font-size:11px;color:#9CA3AF;line-height:1.5;\">" +
     disclaimer +
