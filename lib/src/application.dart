@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:theme_provider/theme_provider.dart';
 
@@ -8,7 +9,11 @@ import 'core/packages/pocketbase/pocketbase_provider.dart';
 import 'core/packages/theme/app_themes.dart';
 import 'core/routing/router.dart';
 import 'core/widgets/window_size_listener.dart';
+import 'features/settings/domain/app_theme_mode.dart';
 import 'features/settings/presentation/controllers/theme_controller.dart';
+
+/// Whether [FlutterNativeSplash.remove] has already been called this process.
+var _nativeSplashRemoved = false;
 
 /// Main application widget.
 ///
@@ -22,8 +27,17 @@ class Application extends HookConsumerWidget {
     final themeModeAsync = ref.watch(themeControllerProvider);
     final themeController = ref.read(themeControllerProvider.notifier);
 
+    // Prefer bootstrapped/loaded mode; fall back to dark while async settles.
+    final mode = themeModeAsync.value ??
+        ref.read(bootstrappedThemeModeProvider) ??
+        AppThemeMode.system;
+    final platformBrightness =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final defaultThemeId = effectiveAppThemeId(mode, platformBrightness);
+
     return ThemeProvider(
       themes: AppThemes.all,
+      defaultThemeId: defaultThemeId,
       saveThemesOnChange: false,
       loadThemeOnInit: false,
       child: ThemeConsumer(
@@ -38,13 +52,20 @@ class Application extends HookConsumerWidget {
                   data: (_) =>
                       themeController.getEffectiveThemeId(systemBrightness),
                 ) ??
-                AppThemes.lightId;
+                effectiveAppThemeId(
+                  ref.read(bootstrappedThemeModeProvider) ?? AppThemeMode.system,
+                  systemBrightness,
+                );
 
             // Apply theme via post-frame callback to avoid build-time mutations
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final controller = ThemeProvider.controllerOf(themeContext);
               if (controller.theme.id != effectiveThemeId) {
                 controller.setTheme(effectiveThemeId);
+              }
+              if (!_nativeSplashRemoved) {
+                _nativeSplashRemoved = true;
+                FlutterNativeSplash.remove();
               }
             });
 

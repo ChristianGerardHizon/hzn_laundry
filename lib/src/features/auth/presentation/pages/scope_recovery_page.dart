@@ -25,6 +25,7 @@ class ScopeRecoveryPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBusy = useState(false);
 
     final orgAsync = ref.watch(currentOrganizationControllerProvider);
@@ -73,7 +74,7 @@ class ScopeRecoveryPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: _kInk,
+      backgroundColor: isDark ? _kInk : const Color(0xFFF3F4F6),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

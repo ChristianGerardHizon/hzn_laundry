@@ -8,6 +8,62 @@ part of 'theme_controller.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Theme mode loaded in [main] before [runApp], if any.
+///
+/// Overridden with [ProviderScope] so [ThemeController] can skip a second
+/// secure-storage read on cold start.
+
+@ProviderFor(bootstrappedThemeMode)
+final bootstrappedThemeModeProvider = BootstrappedThemeModeProvider._();
+
+/// Theme mode loaded in [main] before [runApp], if any.
+///
+/// Overridden with [ProviderScope] so [ThemeController] can skip a second
+/// secure-storage read on cold start.
+
+final class BootstrappedThemeModeProvider
+    extends $FunctionalProvider<AppThemeMode?, AppThemeMode?, AppThemeMode?>
+    with $Provider<AppThemeMode?> {
+  /// Theme mode loaded in [main] before [runApp], if any.
+  ///
+  /// Overridden with [ProviderScope] so [ThemeController] can skip a second
+  /// secure-storage read on cold start.
+  BootstrappedThemeModeProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'bootstrappedThemeModeProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$bootstrappedThemeModeHash();
+
+  @$internal
+  @override
+  $ProviderElement<AppThemeMode?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AppThemeMode? create(Ref ref) {
+    return bootstrappedThemeMode(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppThemeMode? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppThemeMode?>(value),
+    );
+  }
+}
+
+String _$bootstrappedThemeModeHash() =>
+    r'a85457ee274661bd7d363d1560de0dd43b9e9f28';
+
 /// Controller for managing app theme mode.
 ///
 /// Handles light/dark/system theme switching with persistence.
@@ -42,7 +98,7 @@ final class ThemeControllerProvider
   ThemeController create() => ThemeController();
 }
 
-String _$themeControllerHash() => r'62889fd1a98d1ba9dd26c439c59253c7753774e0';
+String _$themeControllerHash() => r'c1b03f6ab60481d448b313391d96b50d41c20b14';
 
 /// Controller for managing app theme mode.
 ///

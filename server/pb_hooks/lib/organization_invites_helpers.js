@@ -370,6 +370,7 @@ function createOrganization(e) {
     branchRecord.set("operatingHours", branch.operatingHours);
     branchRecord.set("cutOffTime", branch.cutOffTime);
     branchRecord.set("isDeleted", false);
+    branchRecord.set("isDefault", true);
     txApp.save(branchRecord);
 
     if (invites.length > 0) {
