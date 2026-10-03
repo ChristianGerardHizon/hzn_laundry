@@ -50,7 +50,7 @@ abstract final class ActivityLogDisplay {
     'processing': 'Processing',
     'ready': 'Ready',
     'forDelivery': 'Out for Delivery',
-    'pickedUp': 'Picked Up',
+    'pickedUp': 'Fulfilled',
   };
 
   static const _saleStatusLabels = {

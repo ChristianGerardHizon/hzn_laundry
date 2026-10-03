@@ -605,7 +605,7 @@ String _shortReceipt(String receipt) {
 
 String _statusLabel(String status) => switch (status) {
       'ready' => 'Ready',
-      'pickedUp' => 'Picked Up',
+      'pickedUp' => 'Fulfilled',
       'processing' => 'Processing',
       'pending' => 'Pending',
       _ => status,

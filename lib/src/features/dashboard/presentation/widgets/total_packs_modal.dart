@@ -270,7 +270,7 @@ class _StatusBadge extends StatelessWidget {
     };
     final label = switch (status) {
       'ready' => 'Ready',
-      'pickedUp' => 'Picked Up',
+      'pickedUp' => 'Fulfilled',
       'pending' => 'Pending',
       _ => status,
     };

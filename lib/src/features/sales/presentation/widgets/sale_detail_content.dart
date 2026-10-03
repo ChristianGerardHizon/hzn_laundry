@@ -10,8 +10,6 @@ import '../../../../core/routing/dialog_dismissing_observer.dart';
 import '../../../../core/routing/routes/customers.routes.dart';
 import '../../../../core/widgets/form_feedback.dart';
 import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart';
-import '../../../entitlements/domain/feature_key.dart';
-import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale.dart';
@@ -1204,16 +1202,13 @@ class _QuickMoveStatusButton extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isUpdating = useState(false);
     final next = sale.orderStatus.nextFor(sale.fulfillmentType);
-    final deliveryEnabled =
-        ref.watch(featureEnabledProvider(FeatureKey.delivery));
 
     if (next == null || !isAvailable(sale)) {
       return const SizedBox.shrink();
     }
 
     final busy = isUpdating.value;
-    final label =
-        'Move to ${next.labelFor(deliveryEnabled: deliveryEnabled)}';
+    final label = 'Move to ${next.displayName}';
     final accent = _statusColor(next);
 
     return SizedBox(
@@ -1273,8 +1268,6 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
     final totalPaid = ref.watch(saleTotalPaidProvider(sale.id)).value ?? 0;
     final balanceDue = sale.totalAmount - totalPaid;
     final isUpdating = useState(false);
-    final deliveryEnabled =
-        ref.watch(featureEnabledProvider(FeatureKey.delivery));
     final statusLower = sale.status.toLowerCase();
     final canChangeStatus =
         statusLower != 'refunded' && statusLower != 'voided';
@@ -1321,7 +1314,7 @@ class _SaleHighlightBannerWithBalance extends HookConsumerWidget {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(_statusIcon(status)),
-                  title: Text(status.labelFor(deliveryEnabled: deliveryEnabled)),
+                  title: Text(status.displayName),
                   trailing: status == sale.orderStatus
                       ? const Icon(Icons.check, size: 18)
                       : null,

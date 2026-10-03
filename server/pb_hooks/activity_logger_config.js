@@ -53,7 +53,7 @@ module.exports = {
     "processing": "Processing",
     "ready": "Ready",
     "forDelivery": "Out for Delivery",
-    "pickedUp": "Picked Up"
+    "pickedUp": "Fulfilled"
   },
 
   SALE_STATUS_LABELS: {

@@ -70,16 +70,12 @@ Future<OrderNotificationConfirmResult> confirmPickedUpNotification({
             'delivered. This cannot be revoked.'
         : 'An email will be sent to {email} stating this order has been '
             'picked up. This cannot be revoked.',
-    firstConfirmLabel: sale.isDelivery
-        ? 'Send & mark Fulfilled'
-        : 'Send & mark Picked Up',
-    againTitle:
-        sale.isDelivery ? 'Mark as Fulfilled?' : 'Mark as Picked Up?',
+    firstConfirmLabel: 'Send & mark Fulfilled',
+    againTitle: 'Mark as Fulfilled?',
     againBody: sale.isDelivery
         ? 'A delivered notification was already sent to {email}.'
         : 'A picked-up notification was already sent to {email}.',
-    againConfirmLabel:
-        sale.isDelivery ? 'Mark Fulfilled' : 'Mark Picked Up',
+    againConfirmLabel: 'Mark Fulfilled',
   );
 }
 

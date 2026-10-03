@@ -56,11 +56,8 @@ void main() {
           contains(OrderStatus.forDelivery));
     });
 
-    test('Fulfilled label only when delivery is enabled', () {
-      expect(OrderStatus.pickedUp.labelFor(deliveryEnabled: false),
-          'Picked Up');
-      expect(OrderStatus.pickedUp.labelFor(deliveryEnabled: true),
-          'Fulfilled');
+    test('final status reads Fulfilled for every org', () {
+      expect(OrderStatus.pickedUp.displayName, 'Fulfilled');
     });
 
     test('missing fulfillment type parses as pickup', () {

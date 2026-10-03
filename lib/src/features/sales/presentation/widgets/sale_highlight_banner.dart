@@ -281,7 +281,7 @@ class SaleHighlightBanner extends StatelessWidget {
       return _HighlightInfo(
         color: Colors.red.shade600,
         icon: Icons.warning,
-        title: isDelivery ? 'Delivered - Unpaid' : 'Picked Up - Unpaid',
+        title: isDelivery ? 'Delivered - Unpaid' : 'Fulfilled - Unpaid',
         description: isDelivery
             ? 'Order was delivered but payment is still pending.'
             : 'Order was released but payment is still pending.',

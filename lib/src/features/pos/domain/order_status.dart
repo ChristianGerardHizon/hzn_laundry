@@ -21,16 +21,10 @@ enum OrderStatus {
         OrderStatus.processing => 'Processing',
         OrderStatus.ready => 'Ready',
         OrderStatus.forDelivery => 'Out for Delivery',
-        OrderStatus.pickedUp => 'Picked Up',
+        // The stored value stays `pickedUp`; "Fulfilled" fits both pickup and
+        // delivery orders.
+        OrderStatus.pickedUp => 'Fulfilled',
       };
-
-  /// Display name used when the `delivery` feature is enabled for the
-  /// organization. The final status reads "Fulfilled" so it fits both pickup
-  /// and delivery orders; organizations without the feature keep "Picked Up".
-  String labelFor({required bool deliveryEnabled}) =>
-      this == OrderStatus.pickedUp && deliveryEnabled
-          ? 'Fulfilled'
-          : displayName;
 
   /// Next status in the (pickup) fulfillment workflow, or null when already
   /// picked up. Prefer [nextFor] when the fulfillment type is known.

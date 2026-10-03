@@ -472,7 +472,7 @@ class SalesDetailView extends HookConsumerWidget {
                   DataColumn(label: Text('Status')),
                   DataColumn(label: Text('Order Status')),
                   DataColumn(label: Text('Paid')),
-                  DataColumn(label: Text('Picked Up')),
+                  DataColumn(label: Text('Fulfilled')),
                   DataColumn(label: Text('Created')),
                   DataColumn(label: Text('')),
                 ],
@@ -678,7 +678,7 @@ class SalesDetailView extends HookConsumerWidget {
       'Pending' => Colors.orange,
       'Processing' => Colors.blue,
       'Ready' => Colors.teal,
-      'Picked Up' => Colors.green,
+      'Fulfilled' => Colors.green,
       _ => Colors.grey,
     };
 

@@ -12,8 +12,6 @@ import '../../../../core/widgets/form_feedback.dart';
 import '../../../../core/widgets/state/error_state.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../pos/data/repositories/sales_repository.dart';
-import '../../../entitlements/domain/feature_key.dart';
-import '../../../entitlements/presentation/controllers/feature_enabled_provider.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
@@ -534,8 +532,6 @@ class _SaleDetailContent extends HookConsumerWidget {
   Widget _buildOrderStatusCard(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isUpdating = useState(false);
-    final deliveryEnabled =
-        ref.watch(featureEnabledProvider(FeatureKey.delivery));
     final statuses = OrderStatus.valuesFor(sale.fulfillmentType);
 
     Future<void> updateOrderStatus(OrderStatus status) async {
@@ -603,8 +599,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                         width: (constraints.maxWidth - 8) / 2,
                         child: _OrderStatusButton(
                           status: status,
-                          label: status.labelFor(
-                              deliveryEnabled: deliveryEnabled),
+                          label: status.displayName,
                           isSelected: isSelected,
                           isUpdating: isUpdating.value,
                           icon: _getOrderStatusIcon(status),
@@ -625,8 +620,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                           ),
                           child: _OrderStatusButton(
                             status: status,
-                            label: status.labelFor(
-                                deliveryEnabled: deliveryEnabled),
+                            label: status.displayName,
                             isSelected: isSelected,
                             isUpdating: isUpdating.value,
                             icon: _getOrderStatusIcon(status),
@@ -654,7 +648,7 @@ class _SaleDetailContent extends HookConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${deliveryEnabled ? 'Fulfilled' : 'Picked up'} on ${DateFormat('MMM dd, yyyy hh:mm a').format(sale.pickedUpAt!)}',
+                      'Fulfilled on ${DateFormat('MMM dd, yyyy hh:mm a').format(sale.pickedUpAt!)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
