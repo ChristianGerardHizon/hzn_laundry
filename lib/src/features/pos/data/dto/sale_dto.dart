@@ -28,6 +28,9 @@ class SaleDto with SaleDtoMappable {
   final String? notes;
   final String? postedDate;
   final String? readyForPickupAt;
+  final bool sendNotification;
+  final String? readyNotificationSentAt;
+  final String? pickedUpNotificationSentAt;
   final String? voidedBy;
   final String? voidedAt;
   final String? created;
@@ -52,6 +55,9 @@ class SaleDto with SaleDtoMappable {
     this.notes,
     this.postedDate,
     this.readyForPickupAt,
+    this.sendNotification = true,
+    this.readyNotificationSentAt,
+    this.pickedUpNotificationSentAt,
     this.voidedBy,
     this.voidedAt,
     this.created,
@@ -78,6 +84,13 @@ class SaleDto with SaleDtoMappable {
       notes: record.getStringValue('notes'),
       postedDate: record.get<String>('postedDate'),
       readyForPickupAt: record.get<String>('readyForPickupAt'),
+      // Missing field (pre-migration) treats as enabled — matches server default.
+      sendNotification: record.data.containsKey('sendNotification')
+          ? record.getBoolValue('sendNotification')
+          : true,
+      readyNotificationSentAt: record.get<String>('readyNotificationSentAt'),
+      pickedUpNotificationSentAt:
+          record.get<String>('pickedUpNotificationSentAt'),
       voidedBy: record.getStringValue('voidedBy'),
       voidedAt: record.get<String>('voidedAt'),
       created: record.get<String>('created'),
@@ -105,6 +118,9 @@ class SaleDto with SaleDtoMappable {
       notes: notes,
       postedDate: parseToLocal(postedDate),
       readyForPickupAt: parseToLocal(readyForPickupAt),
+      sendNotification: sendNotification,
+      readyNotificationSentAt: parseToLocal(readyNotificationSentAt),
+      pickedUpNotificationSentAt: parseToLocal(pickedUpNotificationSentAt),
       voidedById: voidedBy != null && voidedBy!.isNotEmpty ? voidedBy : null,
       voidedAt: parseToLocal(voidedAt),
       created: parseToLocal(created),

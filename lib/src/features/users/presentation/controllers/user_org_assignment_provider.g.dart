@@ -10,14 +10,18 @@ part of 'user_org_assignment_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Assignment for [userId] in the currently selected organization.
 ///
-/// Role comes from `organizationMemberships`; branch from the users record.
+/// Role comes from `organizationMemberships`. Branch uses the users record
+/// only when that branch belongs to the current org; otherwise the org
+/// default (or first) branch.
 
 @ProviderFor(userOrgAssignment)
 final userOrgAssignmentProvider = UserOrgAssignmentFamily._();
 
 /// Assignment for [userId] in the currently selected organization.
 ///
-/// Role comes from `organizationMemberships`; branch from the users record.
+/// Role comes from `organizationMemberships`. Branch uses the users record
+/// only when that branch belongs to the current org; otherwise the org
+/// default (or first) branch.
 
 final class UserOrgAssignmentProvider extends $FunctionalProvider<
         AsyncValue<UserOrgAssignment>,
@@ -28,7 +32,9 @@ final class UserOrgAssignmentProvider extends $FunctionalProvider<
         $FutureProvider<UserOrgAssignment> {
   /// Assignment for [userId] in the currently selected organization.
   ///
-  /// Role comes from `organizationMemberships`; branch from the users record.
+  /// Role comes from `organizationMemberships`. Branch uses the users record
+  /// only when that branch belongs to the current org; otherwise the org
+  /// default (or first) branch.
   UserOrgAssignmentProvider._(
       {required UserOrgAssignmentFamily super.from,
       required String super.argument})
@@ -76,11 +82,13 @@ final class UserOrgAssignmentProvider extends $FunctionalProvider<
   }
 }
 
-String _$userOrgAssignmentHash() => r'9e5c191c0827c608aabcc9676b876faecfcded60';
+String _$userOrgAssignmentHash() => r'857806e9891492db09555b47ae280dc589459e1e';
 
 /// Assignment for [userId] in the currently selected organization.
 ///
-/// Role comes from `organizationMemberships`; branch from the users record.
+/// Role comes from `organizationMemberships`. Branch uses the users record
+/// only when that branch belongs to the current org; otherwise the org
+/// default (or first) branch.
 
 final class UserOrgAssignmentFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserOrgAssignment>, String> {
@@ -95,7 +103,9 @@ final class UserOrgAssignmentFamily extends $Family
 
   /// Assignment for [userId] in the currently selected organization.
   ///
-  /// Role comes from `organizationMemberships`; branch from the users record.
+  /// Role comes from `organizationMemberships`. Branch uses the users record
+  /// only when that branch belongs to the current org; otherwise the org
+  /// default (or first) branch.
 
   UserOrgAssignmentProvider call(
     String userId,

@@ -23,7 +23,6 @@ import '../../../pos/domain/payment_type.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/presentation/services/thermal_print_service.dart';
-import '../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../settings/presentation/controllers/current_branch_controller.dart';
 import '../../../settings/presentation/controllers/branch_provider.dart';
 import '../../../settings/presentation/controllers/printer_config_provider.dart';
@@ -39,7 +38,6 @@ import '../../../dashboard/presentation/controllers/kanban_sales_controller.dart
 import '../../../services/domain/service_item_status.dart';
 import '../widgets/assign_machines_dialog.dart';
 import '../widgets/assign_storages_dialog.dart';
-import '../widgets/prepare_order_for_ready.dart';
 import '../../../users/domain/user_role.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../../../users/presentation/controllers/user_role_provider.dart';
@@ -532,99 +530,6 @@ class _SaleDetailContent extends HookConsumerWidget {
     final isUpdating = useState(false);
 
     Future<void> updateOrderStatus(OrderStatus status) async {
-      // Show assignment dialogs for processing/ready transitions
-      if (status == OrderStatus.processing) {
-        final serviceItems =
-            ref.read(saleServiceItemsProvider(sale.id)).value ?? [];
-        if (serviceItems.isNotEmpty) {
-          final result = await showAssignMachinesDialog(
-            context,
-            serviceItems: serviceItems,
-          );
-          if (result == null || !context.mounted) return;
-        }
-      } else if (status == OrderStatus.ready) {
-        final prepared = await prepareOrderForReadyStatus(
-          context: context,
-          ref: ref,
-          saleId: sale.id,
-          sale: sale,
-        );
-        if (!prepared || !context.mounted) return;
-      }
-
-      // Invalidate and re-fetch service items so assignments saved by dialogs are reflected
-      ref.invalidate(saleServiceItemsProvider(sale.id));
-      final freshServiceItems = await ref
-          .read(saleServiceItemsProvider(sale.id).future)
-          .catchError((_) => <SaleServiceItem>[]);
-
-      // Feature flag requirement checks
-      if (status == OrderStatus.processing) {
-        final machineRequired =
-            ref.read(requireMachineEnabledProvider).value ?? false;
-        if (machineRequired && freshServiceItems.isNotEmpty) {
-          final missing = freshServiceItems.any(
-            (item) => item.machineName == null || item.machineName!.isEmpty,
-          );
-          if (missing) {
-            if (context.mounted) {
-              showErrorSnackBar(
-                context,
-                message:
-                    'All services must have a machine assigned before processing.',
-              );
-            }
-            return;
-          }
-        }
-      }
-
-      if (status == OrderStatus.ready) {
-        final missingMachines = freshServiceItems.isNotEmpty &&
-            freshServiceItems.any((item) => !serviceItemHasMachine(item));
-        if (missingMachines) {
-          if (context.mounted) {
-            showErrorSnackBar(
-              context,
-              message:
-                  'All services must have a machine assigned before marking as Ready.',
-            );
-          }
-          return;
-        }
-
-        final loadedSale = await ref.read(saleProvider(sale.id).future);
-        final freshSale = loadedSale ?? sale;
-        if (freshSale.packs <= 0) {
-          if (context.mounted) {
-            showErrorSnackBar(
-              context,
-              message: 'Pack count must be set before marking as Ready.',
-            );
-          }
-          return;
-        }
-
-        final storageRequired =
-            ref.read(requireStorageEnabledProvider).value ?? false;
-        if (storageRequired && freshServiceItems.isNotEmpty) {
-          final missing = freshServiceItems.any(
-            (item) => item.storageName == null || item.storageName!.isEmpty,
-          );
-          if (missing) {
-            if (context.mounted) {
-              showErrorSnackBar(
-                context,
-                message:
-                    'All services must have a storage location assigned before marking as Ready.',
-              );
-            }
-            return;
-          }
-        }
-      }
-
       addBreadcrumb('Update order status', category: 'order', data: {
         'saleId': sale.id,
         'from': sale.orderStatus.name,
@@ -632,24 +537,20 @@ class _SaleDetailContent extends HookConsumerWidget {
       });
 
       isUpdating.value = true;
-      final repo = ref.read(salesRepositoryProvider);
-      final result = await repo.updateOrderStatus(sale.id, status);
+      final ok = await advanceSaleOrderStatus(
+        context: context,
+        ref: ref,
+        sale: sale,
+        status: status,
+      );
       isUpdating.value = false;
 
-      if (!context.mounted) return;
-
-      result.fold(
-        (failure) {
-          addBreadcrumb('Order status update failed', category: 'order', data: {
-            'saleId': sale.id,
-            'error': failure.messageString,
-          });
-          showErrorSnackBar(context, message: failure.messageString);
-        },
-        (_) {
-          refreshSaleRelatedProviders(ref, saleId: sale.id);
-        },
-      );
+      if (!ok) {
+        addBreadcrumb('Order status update failed', category: 'order', data: {
+          'saleId': sale.id,
+          'to': status.name,
+        });
+      }
     }
 
     return Card(
@@ -1904,25 +1805,15 @@ class _ServiceItemMarkDoneButton extends HookConsumerWidget {
             );
 
             if (!context.mounted) return;
-            final prepared = await prepareOrderForReadyStatus(
+            final currentSale =
+                await ref.read(saleProvider(saleId).future);
+            if (currentSale == null || !context.mounted) return;
+            await advanceSaleOrderStatus(
               context: context,
               ref: ref,
-              saleId: saleId,
+              sale: currentSale,
+              status: OrderStatus.ready,
             );
-            if (prepared && context.mounted) {
-              final statusResult =
-                  await repo.updateOrderStatus(saleId, OrderStatus.ready);
-              statusResult.fold(
-                (failure) {
-                  if (context.mounted) {
-                    showErrorSnackBar(context, message: failure.messageString);
-                  }
-                },
-                (_) {
-                  ref.invalidate(saleProvider(saleId));
-                },
-              );
-            }
           } else {
             showSuccessSnackBar(
               context,
