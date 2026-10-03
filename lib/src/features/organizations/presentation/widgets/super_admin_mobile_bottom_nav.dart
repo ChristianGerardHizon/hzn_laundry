@@ -27,6 +27,7 @@ class SuperAdminMobileBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Translations.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
     final destinations = [
       (
@@ -57,9 +58,9 @@ class SuperAdminMobileBottomNav extends StatelessWidget {
       selectedIndex: selectedIndex,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       height: 64,
-      backgroundColor: kSuperAdminSurface,
+      backgroundColor: scheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: kSuperAdminBrandTeal.withValues(alpha: 0.16),
+      indicatorColor: scheme.primary.withValues(alpha: 0.16),
       onDestinationSelected: (index) {
         if (index == destinations.length) {
           onMoreTap?.call();
@@ -70,15 +71,14 @@ class SuperAdminMobileBottomNav extends StatelessWidget {
       destinations: [
         ...destinations.map(
           (item) => NavigationDestination(
-            icon: Icon(item.$2, color: kSuperAdminMuted),
-            selectedIcon: Icon(item.$3, color: kSuperAdminBrandTeal),
+            icon: Icon(item.$2, color: scheme.onSurfaceVariant),
+            selectedIcon: Icon(item.$3, color: scheme.primary),
             label: item.$4,
           ),
         ),
         NavigationDestination(
-          icon: const Icon(Icons.more_horiz, color: kSuperAdminMuted),
-          selectedIcon:
-              const Icon(Icons.more_horiz, color: kSuperAdminBrandTeal),
+          icon: Icon(Icons.more_horiz, color: scheme.onSurfaceVariant),
+          selectedIcon: Icon(Icons.more_horiz, color: scheme.primary),
           label: t.navigation.more,
         ),
       ],

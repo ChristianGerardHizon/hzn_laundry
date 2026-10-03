@@ -10,8 +10,9 @@ part of 'storage_locations_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Controller for managing storage location list state.
 ///
-/// Storages are scoped to the current working branch. Unassigned locations
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Storages are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch locations are
+/// excluded so they cannot leak across orgs.
 
 @ProviderFor(StorageLocationsController)
 final storageLocationsControllerProvider =
@@ -19,14 +20,16 @@ final storageLocationsControllerProvider =
 
 /// Controller for managing storage location list state.
 ///
-/// Storages are scoped to the current working branch. Unassigned locations
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Storages are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch locations are
+/// excluded so they cannot leak across orgs.
 final class StorageLocationsControllerProvider extends $AsyncNotifierProvider<
     StorageLocationsController, List<StorageLocation>> {
   /// Controller for managing storage location list state.
   ///
-  /// Storages are scoped to the current working branch. Unassigned locations
-  /// (no branch set) remain visible so existing org-wide records are not hidden.
+  /// Storages are scoped to the selected branch, or all branches of the current
+  /// organization when All Branches is selected. Blank-branch locations are
+  /// excluded so they cannot leak across orgs.
   StorageLocationsControllerProvider._()
       : super(
           from: null,
@@ -47,12 +50,13 @@ final class StorageLocationsControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$storageLocationsControllerHash() =>
-    r'75679593e490a35b100e336ba3dbbfe7821db30a';
+    r'e10fe2d896edb9790c9d1bd82e539df7307b9f52';
 
 /// Controller for managing storage location list state.
 ///
-/// Storages are scoped to the current working branch. Unassigned locations
-/// (no branch set) remain visible so existing org-wide records are not hidden.
+/// Storages are scoped to the selected branch, or all branches of the current
+/// organization when All Branches is selected. Blank-branch locations are
+/// excluded so they cannot leak across orgs.
 
 abstract class _$StorageLocationsController
     extends $AsyncNotifier<List<StorageLocation>> {

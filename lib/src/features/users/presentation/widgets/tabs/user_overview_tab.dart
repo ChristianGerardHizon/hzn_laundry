@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../domain/user.dart';
+import '../../controllers/user_org_assignment_provider.dart';
 import '../user_avatar.dart';
 
 /// Overview tab showing key user information at a glance.
 ///
 /// Displays:
 /// - User avatar and basic info
-/// - Role and branch assignment
+/// - Role and branch assignment (role from current-org membership)
 /// - Account status (verified, active)
 /// - Quick stats
-class UserOverviewTab extends StatelessWidget {
+class UserOverviewTab extends ConsumerWidget {
   const UserOverviewTab({super.key, required this.user});
 
   final User user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final assignmentAsync = ref.watch(userOrgAssignmentProvider(user.id));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -30,7 +33,7 @@ class UserOverviewTab extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Role and Branch Card
-          _buildAssignmentCard(context, theme),
+          _buildAssignmentCard(context, theme, assignmentAsync),
           const SizedBox(height: 16),
 
           // Account Status Card
@@ -127,7 +130,21 @@ class UserOverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAssignmentCard(BuildContext context, ThemeData theme) {
+  Widget _buildAssignmentCard(
+    BuildContext context,
+    ThemeData theme,
+    AsyncValue<UserOrgAssignment> assignmentAsync,
+  ) {
+    final assignment = assignmentAsync.asData?.value;
+    final roleValue = assignmentAsync.when(
+      data: (a) => a.displayRole,
+      loading: () => '…',
+      error: (_, __) => 'No Role',
+    );
+    final branchValue = assignment?.displayBranch ?? user.displayBranch;
+    final hasRole = assignment?.hasRole ?? false;
+    final hasBranch = assignment?.hasBranch ?? user.branchId != null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -156,8 +173,8 @@ class UserOverviewTab extends StatelessWidget {
               context,
               icon: Icons.admin_panel_settings,
               label: 'Role',
-              value: user.displayRole,
-              hasValue: user.roleId != null,
+              value: roleValue,
+              hasValue: hasRole,
             ),
             const SizedBox(height: 12),
             // Branch
@@ -165,8 +182,8 @@ class UserOverviewTab extends StatelessWidget {
               context,
               icon: Icons.business,
               label: 'Branch',
-              value: user.displayBranch,
-              hasValue: user.branchId != null,
+              value: branchValue,
+              hasValue: hasBranch,
             ),
           ],
         ),

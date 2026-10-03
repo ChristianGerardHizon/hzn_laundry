@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../features/organizations/presentation/pages/select_organization_page.dart';
 import '../../../features/organizations/presentation/pages/super_admin_page.dart';
 import '../../../features/organizations/presentation/pages/super_admin_shell.dart';
+import '../../../features/settings/presentation/widgets/theme_settings_panel.dart';
 import '../../../features/subscriptions/presentation/widgets/billing_settings_tab.dart';
 import '../../../features/subscriptions/presentation/widgets/packages_tab.dart';
 import '../../../features/subscriptions/presentation/widgets/payments_tab.dart';
@@ -38,6 +39,9 @@ class SelectOrganizationRoute extends GoRouteData
         ),
         TypedGoRoute<SuperAdminBillingRoute>(
           path: SuperAdminBillingRoute.relativePath,
+        ),
+        TypedGoRoute<SuperAdminAppearanceRoute>(
+          path: SuperAdminAppearanceRoute.relativePath,
         ),
       ],
     ),
@@ -102,5 +106,19 @@ class SuperAdminBillingRoute extends GoRouteData with $SuperAdminBillingRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) {
     return const BillingSettingsTab();
+  }
+}
+
+/// Super Admin appearance (Light / Dark / System theme).
+class SuperAdminAppearanceRoute extends GoRouteData
+    with $SuperAdminAppearanceRoute {
+  const SuperAdminAppearanceRoute();
+
+  static const relativePath = 'appearance';
+  static const path = '${SuperAdminRoute.path}/$relativePath';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const ThemeSettingsPanel(showAppBar: false);
   }
 }

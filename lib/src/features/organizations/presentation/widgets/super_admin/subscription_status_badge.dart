@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/i18n/strings.g.dart';
+import '../../../../../core/packages/theme/feedback_colors.dart';
 import '../../../../subscriptions/domain/subscription_status.dart';
-import '../super_admin_theme.dart';
 
 /// Label, colour and icon for an organization subscription status.
 class OrgStatusStyle {
@@ -17,34 +17,40 @@ class OrgStatusStyle {
   final IconData icon;
 
   /// Resolves the style for a raw `subscriptionStatus` value (null = none).
-  factory OrgStatusStyle.from(Translations t, String? status) {
+  factory OrgStatusStyle.from(
+    BuildContext context,
+    Translations t,
+    String? status,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     final parsed = status == null || status.isEmpty
         ? null
         : SubscriptionStatus.fromString(status);
     return switch (parsed) {
       SubscriptionStatus.active => OrgStatusStyle(
           label: t.subscriptions.statusActive,
-          color: kSuperAdminBrandTeal,
+          color: scheme.primary,
           icon: Icons.check_circle_outline,
         ),
       SubscriptionStatus.grace => OrgStatusStyle(
           label: t.subscriptions.statusGrace,
-          color: kSuperAdminWarning,
+          color: FeedbackColors.warning(theme).icon,
           icon: Icons.schedule,
         ),
       SubscriptionStatus.locked => OrgStatusStyle(
           label: t.subscriptions.statusLocked,
-          color: kSuperAdminDanger,
+          color: scheme.error,
           icon: Icons.lock_outline,
         ),
       SubscriptionStatus.cancelled => OrgStatusStyle(
           label: t.subscriptions.statusCancelled,
-          color: kSuperAdminMuted,
+          color: scheme.onSurfaceVariant,
           icon: Icons.block,
         ),
       null => OrgStatusStyle(
           label: t.subscriptions.noSubscription,
-          color: kSuperAdminMuted,
+          color: scheme.onSurfaceVariant,
           icon: Icons.remove_circle_outline,
         ),
     };

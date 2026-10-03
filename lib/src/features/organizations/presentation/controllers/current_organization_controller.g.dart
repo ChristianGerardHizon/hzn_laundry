@@ -46,7 +46,7 @@ final class OrganizationSwitchOverlayProvider extends $NotifierProvider<
 }
 
 String _$organizationSwitchOverlayHash() =>
-    r'8961cfe4a2d03cba98a5cf4ce969f9ff9e89a7fa';
+    r'1e71a4ffebbf54037e673f24931d4f59b32034a1';
 
 /// Keep-alive flag for the org/branch-switch full-screen overlay.
 
@@ -95,7 +95,7 @@ final class CurrentOrganizationControllerProvider
 }
 
 String _$currentOrganizationControllerHash() =>
-    r'9f4da00ddd16bca0e831a2e40cf7500cf1dc3c20';
+    r'db60fe2963c65b1a1abcb49d8fa54cdfb6cd6e8a';
 
 abstract class _$CurrentOrganizationController
     extends $AsyncNotifier<Organization?> {

@@ -165,8 +165,7 @@ class ThermalPrintService extends _$ThermalPrintService {
   ///
   /// [copyType] selects customer vs store sheet.
   /// When [includeStoreCopy] is true with a customer copy, a store sheet is
-  /// appended in the same job. Customer sheet cuts (if enabled); store sheet
-  /// feeds only — no cut — so staff can tear the compact machine tag by hand.
+  /// appended in the same job. Each sheet cuts when Auto Cut is enabled.
   Future<PrintResult> printOrderReceipt({
     required PrinterConfig printer,
     required String customerName,
@@ -801,15 +800,24 @@ class ThermalPrintService extends _$ThermalPrintService {
     return '${text.substring(0, maxLen - 2)}..';
   }
 
-  /// Feeds paper; optionally cuts. Store copies always skip cut.
+  /// Feeds paper; optionally cuts when Auto Cut is enabled.
+  ///
+  /// Uses a small [Generator.feed] plus raw `GS V 0` instead of
+  /// [Generator.cut], which hardcodes five empty lines before the cut and
+  /// stacks with our feed into a large tear margin.
   List<int> _appendFeedAndCut(
     Generator generator,
     List<int> bytes, {
     bool cut = true,
   }) {
     final shouldCut = cut && _autoCut;
-    bytes += generator.feed(shouldCut ? 2 : 4);
-    if (shouldCut) bytes += generator.cut();
+    if (shouldCut) {
+      bytes += generator.feed(2);
+      // ESC/POS full cut: GS V 0
+      bytes += [0x1D, 0x56, 0x00];
+    } else {
+      bytes += generator.feed(4);
+    }
     return bytes;
   }
 
@@ -834,7 +842,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     return bytes;
   }
 
-  /// Compact store/machine tag — large fitted customer name, no barcode, no cut.
+  /// Compact store/machine tag — large fitted customer name, no barcode.
   List<int> _appendStoreClaimSheet(
     Generator generator,
     List<int> bytes, {
@@ -967,8 +975,7 @@ class ThermalPrintService extends _$ThermalPrintService {
     bytes = _appendClaimSheetDisclaimer(generator, bytes);
     bytes = _appendDivider(generator, bytes, ch: '=');
 
-    // Store copy: feed only — no auto-cut / tear zone.
-    return _appendFeedAndCut(generator, bytes, cut: false);
+    return _appendFeedAndCut(generator, bytes);
   }
 
   /// Full customer claim sheet with barcode, pickup notes, and BIR disclaimer.
@@ -1311,9 +1318,10 @@ class ThermalPrintService extends _$ThermalPrintService {
   /// Generates order claim sheet bytes.
   ///
   /// Customer copy: full receipt with barcode + BIR disclaimer; when
-  /// [includeStoreCopy] is true, a compact store tag (no barcode, no cut) is
+  /// [includeStoreCopy] is true, a compact store tag (no barcode) is
   /// appended after the customer sheet cut.
   /// Store copy: compact machine tag with fitted large customer name.
+  /// Each sheet ends with feed + cut when Auto Cut is enabled.
   Future<List<int>> _generateOrderReceiptBytes({
     required String customerName,
     required String serviceName,

@@ -38,7 +38,7 @@ final class OrgPendingInvitesControllerProvider extends $AsyncNotifierProvider<
 }
 
 String _$orgPendingInvitesControllerHash() =>
-    r'39170c9492c8bc20ebca4e6ba3206bf21661df4c';
+    r'9886664998ae35384e7fe2b8ab523318af9595ad';
 
 /// Pending organization invites for the current org (Management Users).
 

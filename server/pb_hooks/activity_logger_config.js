@@ -602,12 +602,150 @@ module.exports = {
     return { changes: changes, changedFields: changedFields };
   },
 
+  // Activity logs older than this many days are deleted by the daily cron.
+  RETENTION_DAYS: 30,
+
   // Request hooks expose e.auth; AfterSuccess RecordEvent does not.
   getUserId: function(e) {
     try {
       if (e.auth && e.auth.id) return e.auth.id;
     } catch (err) {}
     return "";
+  },
+
+  // Delete activityLogs with created older than RETENTION_DAYS (batched).
+  purgeExpired: function() {
+    var cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - this.RETENTION_DAYS);
+    var cutoffStr =
+      cutoff.toISOString().replace("T", " ").substring(0, 19) + ".000Z";
+
+    var totalDeleted = 0;
+    var batchDeleted = 0;
+    do {
+      batchDeleted = 0;
+      var records = [];
+      try {
+        records = $app.findRecordsByFilter(
+          "activityLogs",
+          "created < {:cutoff}",
+          "created",
+          500,
+          0,
+          { cutoff: cutoffStr }
+        );
+      } catch (err) {
+        console.error("[ACTIVITY_LOGGER] purge query failed:", err);
+        break;
+      }
+
+      for (var i = 0; i < records.length; i++) {
+        try {
+          $app.delete(records[i]);
+          batchDeleted++;
+          totalDeleted++;
+        } catch (delErr) {
+          console.error(
+            "[ACTIVITY_LOGGER] purge delete failed:",
+            records[i].id,
+            delErr
+          );
+        }
+      }
+    } while (batchDeleted > 0);
+
+    if (totalDeleted > 0) {
+      console.log(
+        "[ACTIVITY_LOGGER] purged " +
+          totalDeleted +
+          " log(s) older than " +
+          this.RETENTION_DAYS +
+          " days (before " +
+          cutoffStr +
+          ")"
+      );
+    }
+  },
+
+  organizationFromBranch: function(branchId) {
+    if (!branchId) return "";
+    try {
+      return $app.findRecordById("branches", branchId).getString("organization") || "";
+    } catch (err) {
+      return "";
+    }
+  },
+
+  organizationFromUser: function(userId) {
+    if (!userId) return "";
+    try {
+      var membership = $app.findFirstRecordByFilter(
+        "organizationMemberships",
+        "user = {:user} && status = 'active'",
+        { user: userId }
+      );
+      if (membership) return membership.getString("organization") || "";
+    } catch (err) {}
+    return "";
+  },
+
+  // Resolve denormalized organization + branch for an activity log row.
+  resolveTenantScope: function(colName, record, e) {
+    var branchId = "";
+    var organizationId = "";
+
+    if (colName === "branches") {
+      branchId = record.id;
+      organizationId = this.getStr(record, "organization");
+    } else if (
+      colName === "payments" ||
+      colName === "saleItems" ||
+      colName === "saleServiceItems"
+    ) {
+      var saleId = this.getStr(record, "sale");
+      if (saleId) {
+        try {
+          branchId = $app.findRecordById("sales", saleId).getString("branch") || "";
+        } catch (err) {}
+      }
+    } else if (
+      colName === "employeeAttendances" ||
+      colName === "employeeDeductions"
+    ) {
+      var employeeId = this.getStr(record, "employee");
+      if (employeeId) {
+        try {
+          organizationId =
+            $app.findRecordById("employees", employeeId).getString("organization") || "";
+        } catch (err) {}
+      }
+    } else if (colName === "employees") {
+      organizationId = this.getStr(record, "organization");
+    } else if (colName === "users") {
+      organizationId = this.organizationFromUser(record.id);
+    } else if (colName === "userRoles") {
+      // Org-level; prefer the actor's active membership when available.
+      organizationId = this.organizationFromUser(this.getUserId(e));
+    } else {
+      branchId = this.getStr(record, "branch");
+      organizationId = this.getStr(record, "organization");
+    }
+
+    if (!organizationId && branchId) {
+      organizationId = this.organizationFromBranch(branchId);
+    }
+
+    return { branchId: branchId, organizationId: organizationId };
+  },
+
+  applyTenantScope: function(logRecord, colName, record, e) {
+    var scope = this.resolveTenantScope(colName, record, e);
+    if (scope.organizationId) {
+      logRecord.set("organization", scope.organizationId);
+    }
+    if (scope.branchId) {
+      logRecord.set("branch", scope.branchId);
+    }
   },
 
   logCreate: function(e) {
@@ -625,6 +763,7 @@ module.exports = {
     if (userId) {
       logRecord.set("user", userId);
     }
+    this.applyTenantScope(logRecord, colName, record, e);
     $app.save(logRecord);
   },
 
@@ -650,6 +789,7 @@ module.exports = {
     if (userId) {
       logRecord.set("user", userId);
     }
+    this.applyTenantScope(logRecord, colName, record, e);
     $app.save(logRecord);
   },
 
@@ -668,6 +808,7 @@ module.exports = {
     if (userId) {
       logRecord.set("user", userId);
     }
+    this.applyTenantScope(logRecord, colName, record, e);
     $app.save(logRecord);
   }
 };

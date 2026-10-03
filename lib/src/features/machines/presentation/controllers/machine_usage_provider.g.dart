@@ -10,16 +10,18 @@ part of 'machine_usage_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Provider that checks if a machine is currently in use.
 ///
-/// A machine is considered "in use" if it's assigned to any saleServiceItem
-/// whose parent sale has orderStatus == "processing".
+/// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+/// active sale (`orderStatus == processing`, not voided/refunded) in the
+/// current branch/org scope — matching Orders by Resource / kanban.
 
 @ProviderFor(machineUsage)
 final machineUsageProvider = MachineUsageFamily._();
 
 /// Provider that checks if a machine is currently in use.
 ///
-/// A machine is considered "in use" if it's assigned to any saleServiceItem
-/// whose parent sale has orderStatus == "processing".
+/// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+/// active sale (`orderStatus == processing`, not voided/refunded) in the
+/// current branch/org scope — matching Orders by Resource / kanban.
 
 final class MachineUsageProvider extends $FunctionalProvider<
         AsyncValue<MachineUsageInfo>,
@@ -28,8 +30,9 @@ final class MachineUsageProvider extends $FunctionalProvider<
     with $FutureModifier<MachineUsageInfo>, $FutureProvider<MachineUsageInfo> {
   /// Provider that checks if a machine is currently in use.
   ///
-  /// A machine is considered "in use" if it's assigned to any saleServiceItem
-  /// whose parent sale has orderStatus == "processing".
+  /// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+  /// active sale (`orderStatus == processing`, not voided/refunded) in the
+  /// current branch/org scope — matching Orders by Resource / kanban.
   MachineUsageProvider._(
       {required MachineUsageFamily super.from, required String super.argument})
       : super(
@@ -76,12 +79,13 @@ final class MachineUsageProvider extends $FunctionalProvider<
   }
 }
 
-String _$machineUsageHash() => r'8b1970e1f1df392ebaa069517d3cf2ad94a15c2c';
+String _$machineUsageHash() => r'cc37c8e3415b92d2c465ce2f4ab16d51fa251d6b';
 
 /// Provider that checks if a machine is currently in use.
 ///
-/// A machine is considered "in use" if it's assigned to any saleServiceItem
-/// whose parent sale has orderStatus == "processing".
+/// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+/// active sale (`orderStatus == processing`, not voided/refunded) in the
+/// current branch/org scope — matching Orders by Resource / kanban.
 
 final class MachineUsageFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<MachineUsageInfo>, String> {
@@ -96,8 +100,9 @@ final class MachineUsageFamily extends $Family
 
   /// Provider that checks if a machine is currently in use.
   ///
-  /// A machine is considered "in use" if it's assigned to any saleServiceItem
-  /// whose parent sale has orderStatus == "processing".
+  /// A machine is "in use" when assigned to a non-completed saleServiceItem on an
+  /// active sale (`orderStatus == processing`, not voided/refunded) in the
+  /// current branch/org scope — matching Orders by Resource / kanban.
 
   MachineUsageProvider call(
     String machineId,

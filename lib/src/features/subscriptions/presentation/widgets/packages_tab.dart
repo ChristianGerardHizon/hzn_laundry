@@ -14,11 +14,6 @@ import '../../domain/billing_interval_unit.dart';
 import '../../domain/subscription_package.dart';
 import '../controllers/packages_controller.dart';
 
-const _kBrandTeal = Color(0xFF45A9AB);
-const _kInk = Color(0xFF0B0B0B);
-const _kSurface = Color(0xFF141414);
-const _kSurfaceBorder = Color(0xFF2A2A2A);
-const _kMuted = Color(0xFF9CA3AF);
 
 /// Super Admin tab: list / create / edit / soft-delete subscription packages.
 class PackagesTab extends HookConsumerWidget {
@@ -33,8 +28,8 @@ class PackagesTab extends HookConsumerWidget {
     );
 
     return packagesAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: _kBrandTeal),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
       ),
       error: (e, _) => Center(
         child: Padding(
@@ -48,7 +43,7 @@ class PackagesTab extends HookConsumerWidget {
       ),
       data: (packages) {
         return RefreshIndicator(
-          color: _kBrandTeal,
+          color: Theme.of(context).colorScheme.primary,
           onRefresh: () =>
               ref.read(packagesControllerProvider().notifier).refresh(),
           child: CustomScrollView(
@@ -62,8 +57,8 @@ class PackagesTab extends HookConsumerWidget {
                     child: FilledButton.icon(
                       onPressed: () => _showPackageDialog(context, ref),
                       style: FilledButton.styleFrom(
-                        backgroundColor: _kBrandTeal,
-                        foregroundColor: _kInk,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       ),
                       icon: const Icon(Icons.add),
                       label: Text(t.subscriptions.createPackage),
@@ -77,7 +72,7 @@ class PackagesTab extends HookConsumerWidget {
                   child: Center(
                     child: Text(
                       t.subscriptions.noPackages,
-                      style: const TextStyle(color: _kMuted),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ),
                 )
@@ -117,7 +112,7 @@ class PackagesTab extends HookConsumerWidget {
       builder: (ctx) => ScaffoldMessenger(
         child: Builder(
           builder: (ctx) => AlertDialog(
-            backgroundColor: _kSurface,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
             title: Text(t.subscriptions.deletePackage),
             content: Text(package.name),
             actions: [
@@ -128,7 +123,8 @@ class PackagesTab extends HookConsumerWidget {
               FilledButton(
                 onPressed: () => ctx.pop(true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
                 child: Text(t.subscriptions.deletePackage),
               ),
@@ -194,9 +190,9 @@ class _PackageCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _kSurface.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kSurfaceBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -216,7 +212,7 @@ class _PackageCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       package.description,
-                      style: const TextStyle(color: _kMuted, fontSize: 13),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -227,7 +223,7 @@ class _PackageCard extends StatelessWidget {
                     '${package.intervalCount} $interval'
                     '${package.isPremade ? '' : ' · ${t.subscriptions.customPackage}'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: _kBrandTeal,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -235,19 +231,19 @@ class _PackageCard extends StatelessWidget {
                   Text(
                     'Branches: ${package.maxBranches ?? 'Unlimited'} · '
                     'Employees: ${package.maxEmployees ?? 'Unlimited'}',
-                    style: const TextStyle(color: _kMuted, fontSize: 12),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                   ),
                 ],
               ),
             ),
             IconButton(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined, color: _kMuted),
+              icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
               tooltip: t.subscriptions.editPackage,
             ),
             IconButton(
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
               tooltip: t.subscriptions.deletePackage,
             ),
           ],
@@ -356,7 +352,7 @@ class _PackageFormDialog extends HookConsumerWidget {
     return ScaffoldMessenger(
       child: Builder(
         builder: (context) => AlertDialog(
-          backgroundColor: _kSurface,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
           title: Text(
             isEditing
                 ? t.subscriptions.editPackage
@@ -504,7 +500,7 @@ class _PackageFormDialog extends HookConsumerWidget {
                         labelText: 'Included features',
                         border: InputBorder.none,
                       ),
-                      activeColor: _kBrandTeal,
+                      activeColor: Theme.of(context).colorScheme.primary,
                       options: [
                         for (final f in FeatureKey.values)
                           FormBuilderFieldOption<String>(
@@ -526,8 +522,8 @@ class _PackageFormDialog extends HookConsumerWidget {
             FilledButton(
               onPressed: isSaving.value ? null : handleSave,
               style: FilledButton.styleFrom(
-                backgroundColor: _kBrandTeal,
-                foregroundColor: _kInk,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
               child: isSaving.value
                   ? const SizedBox(
