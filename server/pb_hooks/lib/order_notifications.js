@@ -27,22 +27,27 @@ function resolveChannels(customer) {
   return channels;
 }
 
-function resolveBranchName(app, sale) {
-  var branchId = sale.getString("branch");
-  if (!branchId) return "";
+function resolveOrderViewLink(app, sale) {
   try {
-    var branch = app.findRecordById("branches", branchId);
-    return branch.getString("name") || "";
+    var helpers = require(__hooks + "/lib/order_view_helpers.js");
+    var token = helpers.ensureViewToken(app, sale);
+    if (!token) return "";
+    return helpers.buildOrderViewUrl(token);
   } catch (err) {
+    console.error("[ORDER_NOTIFY] order view link failed:", err);
     return "";
   }
 }
 
 function emailPayload(app, sale, customer) {
+  var helpers = require(__hooks + "/lib/order_view_helpers.js");
+  var orgName = helpers.resolveOrganizationName(app, sale);
   return {
+    brand: helpers.brandWithEnv(orgName),
     customerName: customer.getString("name") || "Customer",
     receiptNumber: sale.getString("receiptNumber") || "",
-    branchName: resolveBranchName(app, sale)
+    orderViewLink: resolveOrderViewLink(app, sale),
+    branchName: helpers.resolveBranchName(app, sale)
   };
 }
 

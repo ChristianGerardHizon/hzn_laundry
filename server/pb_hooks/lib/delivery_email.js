@@ -41,6 +41,7 @@ function buildDeliveryEmail(event, opts) {
   var customerName = opts.customerName || "Customer";
   var receiptNumber = opts.receiptNumber || "";
   var photoUrl = opts.photoUrl || "";
+  var orderViewLink = opts.orderViewLink || "";
 
   var emailLayout = require(__hooks + "/lib/email_layout.js");
 
@@ -55,14 +56,20 @@ function buildDeliveryEmail(event, opts) {
     rows.push({ label: "Delivery address", value: opts.deliveryAddress });
   }
 
-  // Delivery photo only — no customer history CTA (not customer-facing yet).
+  // Order-view link CTA; the delivered email links the delivery photo instead
+  // when there is one.
   var button = null;
   if (event === "delivered" && photoUrl) {
     button = { label: "View delivery photo", url: photoUrl };
+  } else if (orderViewLink) {
+    button = { label: "View order", url: orderViewLink };
   }
 
   var html = emailLayout.renderEmail({
     brand: brand,
+    platformTag: "",
+    signOff: false,
+    disclaimer: "Generated using HZN Laundry System",
     preheader: copy.preheader,
     title: "Hi " + customerName + ",",
     intro: copy.intro,
@@ -87,9 +94,12 @@ function buildDeliveryEmail(event, opts) {
   if (event === "delivered" && photoUrl) {
     text += "Delivery photo:\n" + photoUrl + "\n\n";
   }
+  if (orderViewLink) {
+    text += "View order:\n" + orderViewLink + "\n\n";
+  }
   text +=
     "If you have questions about this order, please contact the shop directly.\n\n" +
-    brand;
+    "Generated using HZN Laundry System";
 
   return {
     subject: copy.subject(receiptNumber, brand),
@@ -106,9 +116,10 @@ function sendDeliveryEmail(event, toEmail, opts) {
   }
 
   var content = buildDeliveryEmail(event, {
-    brand: historyConfig.getAppDisplayName(),
+    brand: opts.brand || historyConfig.getAppDisplayName(),
     customerName: opts.customerName,
     receiptNumber: opts.receiptNumber,
+    orderViewLink: opts.orderViewLink,
     branchName: opts.branchName,
     deliveryAddress: opts.deliveryAddress,
     photoUrl: opts.photoUrl

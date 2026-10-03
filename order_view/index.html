@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
+  <title>Order Details</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <style>
+    :root {
+      --brand-teal: #45A9AB;
+      --brand-dark: #2C3E50;
+      --text: #333;
+      --text-muted: #666;
+      --bg: #f5f5f5;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+      --error-red: #e74c3c;
+      --ok-green: #27ae60;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--brand-dark);
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    main {
+      flex: 1;
+      max-width: 520px;
+      width: 100%;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Turnstile verification card */
+    .verify-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .verify-card h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: var(--brand-dark);
+    }
+    .verify-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .turnstile-wrapper {
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    /* Order detail card (shown after verification) */
+    .order-card { display: none; }
+    .order-card.visible { display: block; }
+    .order-card .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .order-card h2 {
+      font-size: 20px;
+      color: var(--brand-dark);
+      margin-bottom: 16px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: var(--text-muted); }
+    .detail-value { font-weight: 600; text-align: right; }
+    .status-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-pill.ready { background: #e8f5e9; color: var(--ok-green); }
+    .status-pill.processing { background: #fff3e0; color: #f57c00; }
+    .status-pill.picked-up { background: #e3f2fd; color: #1976d2; }
+    .status-pill.pending { background: #fce4ec; color: #c62828; }
+
+    .line-items { margin-top: 16px; }
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .line-item-name { flex: 1; }
+    .line-item-qty { width: 40px; text-align: center; color: var(--text-muted); }
+    .line-item-amount { width: 80px; text-align: right; font-weight: 500; }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0 0;
+      border-top: 2px solid var(--brand-teal);
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    /* States */
+    .error-msg {
+      background: #fef2f2;
+      color: var(--error-red);
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      font-size: 14px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+    .loading { display: none; text-align: center; padding: 40px; }
+    .loading.visible { display: block; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--brand-teal);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="page-title">Order Details</h1>
+  </header>
+
+  <main>
+    <!-- Turnstile verification -->
+    <div id="verify-section" class="verify-card">
+      <h2>Verify to view your order</h2>
+      <p>Please complete the check below to access your order details.</p>
+      <div class="turnstile-wrapper">
+        <div id="turnstile-widget"
+             class="cf-turnstile"
+             data-sitekey="__TURNSTILE_SITE_KEY__"
+             data-callback="onTurnstileSuccess"
+             data-error-callback="onTurnstileError"
+             data-theme="light">
+        </div>
+      </div>
+      <div id="turnstile-error" class="error-msg">
+        Verification failed. Please refresh and try again.
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-section" class="loading">
+      <div class="spinner"></div>
+      <p>Loading order details…</p>
+    </div>
+
+    <!-- Error -->
+    <div id="error-section" class="error-msg"></div>
+
+    <!-- Order detail -->
+    <div id="order-section" class="order-card">
+      <div class="card">
+        <h2 id="org-name">Order Details</h2>
+        <div id="order-details"></div>
+      </div>
+      <div class="card">
+        <h2>Items</h2>
+        <div id="line-items" class="line-items"></div>
+        <div id="total-row" class="total-row"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Generated using HZN Laundry System
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var API_BASE = "__PUBLIC_ORDER_API_BASE__";
+      var token = extractToken();
+
+      if (!token) {
+        showError("Invalid order link. No order token found.");
+        document.getElementById("verify-section").style.display = "none";
+        return;
+      }
+
+      // Turnstile callbacks (global)
+      window.onTurnstileSuccess = function (turnstileToken) {
+        document.getElementById("verify-section").style.display = "none";
+        document.getElementById("loading-section").className = "loading visible";
+        fetchOrder(token, turnstileToken);
+      };
+
+      window.onTurnstileError = function () {
+        document.getElementById("turnstile-error").className = "error-msg visible";
+      };
+
+      function extractToken() {
+        var path = window.location.pathname;
+        var match = path.match(/^\/o\/([A-Za-z0-9_-]+)$/);
+        return match ? match[1] : null;
+      }
+
+      function fetchOrder(viewToken, turnstileToken) {
+        var url = API_BASE.replace(/\/$/, "") + "/api/hzn/public-order/" + encodeURIComponent(viewToken);
+
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ turnstileToken: turnstileToken })
+        })
+          .then(function (resp) {
+            if (!resp.ok) {
+              return resp.json().then(function (body) {
+                throw new Error(body.message || "Order not found or expired.");
+              }).catch(function () {
+                if (resp.status === 410) throw new Error("This order link has expired.");
+                if (resp.status === 404) throw new Error("Order not found.");
+                throw new Error("Failed to load order (HTTP " + resp.status + ").");
+              });
+            }
+            return resp.json();
+          })
+          .then(function (data) {
+            document.getElementById("loading-section").className = "loading";
+            renderOrder(data);
+          })
+          .catch(function (err) {
+            document.getElementById("loading-section").className = "loading";
+            showError(err.message || "Something went wrong.");
+          });
+      }
+
+      function renderOrder(order) {
+        // Update header with org name
+        var orgName = order.organizationName || order.branchName || "Order Details";
+        document.getElementById("page-title").textContent = orgName;
+        document.getElementById("org-name").textContent = orgName;
+        document.title = orgName + " — Order Details";
+
+        // Detail rows
+        var rows = [
+          { label: "Receipt #", value: order.receiptNumber || "—" },
+          { label: "Status", value: order.orderStatus || "—", isPill: true },
+          { label: "Payment", value: order.isPaid ? "Paid" : (order.paymentStatus || "Unpaid") }
+        ];
+        if (order.branchName) {
+          rows.push({ label: "Branch", value: order.branchName });
+        }
+        if (order.customerName) {
+          rows.push({ label: "Customer", value: order.customerName });
+        }
+        if (order.postedDate) {
+          rows.push({ label: "Date", value: formatDate(order.postedDate) });
+        }
+        if (order.pickedUpAt) {
+          rows.push({ label: "Picked up", value: formatDate(order.pickedUpAt) });
+        }
+        if (order.fulfillmentType === "delivery" && order.deliveryAddress) {
+          rows.push({ label: "Delivery", value: order.deliveryAddress });
+        }
+
+        var detailsEl = document.getElementById("order-details");
+        detailsEl.innerHTML = rows.map(function (r) {
+          var val = r.isPill ? statusPill(r.value) : escapeHtml(r.value);
+          return '<div class="detail-row"><span class="detail-label">' +
+            escapeHtml(r.label) + '</span><span class="detail-value">' + val + '</span></div>';
+        }).join("");
+
+        // Line items
+        var itemsEl = document.getElementById("line-items");
+        var items = order.lineItems || order.items || [];
+        if (items.length > 0) {
+          itemsEl.innerHTML = items.map(function (item) {
+            return '<div class="line-item">' +
+              '<span class="line-item-name">' + escapeHtml(item.name || item.serviceName || "—") + '</span>' +
+              '<span class="line-item-qty">×' + (item.qty || item.quantity || 1) + '</span>' +
+              '<span class="line-item-amount">' + formatCurrency(item.subtotal || item.amount || 0) + '</span>' +
+              '</div>';
+          }).join("");
+        } else {
+          itemsEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No items</p>';
+        }
+
+        // Total
+        var totalEl = document.getElementById("total-row");
+        totalEl.innerHTML = '<span>Total</span><span>' + formatCurrency(order.totalAmount || 0) + '</span>';
+
+        document.getElementById("order-section").className = "order-card visible";
+      }
+
+      function showError(msg) {
+        var el = document.getElementById("error-section");
+        el.textContent = msg;
+        el.className = "error-msg visible";
+      }
+
+      function statusPill(status) {
+        var s = (status || "").toLowerCase().replace(/[_ ]/g, "-");
+        var cls = "status-pill";
+        if (s.indexOf("ready") >= 0) cls += " ready";
+        else if (s.indexOf("process") >= 0) cls += " processing";
+        else if (s.indexOf("picked") >= 0 || s.indexOf("complete") >= 0) cls += " picked-up";
+        else cls += " pending";
+        return '<span class="' + cls + '">' + escapeHtml(status) + '</span>';
+      }
+
+      function formatCurrency(amount) {
+        var n = parseFloat(amount) || 0;
+        return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function formatDate(iso) {
+        try {
+          var d = new Date(iso);
+          return d.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
+        } catch (_) {
+          return iso;
+        }
+      }
+
+      function escapeHtml(str) {
+        var el = document.createElement("span");
+        el.textContent = str || "";
+        return el.innerHTML;
+      }
+    })();
+  </script>
+</body>
+</html>
