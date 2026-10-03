@@ -1,21 +1,18 @@
 <#
 .SYNOPSIS
-  Provisions Cloudflare Turnstile widget + Pages projects for the HZN Laundry
-  public order-view feature.
+  Provisions Cloudflare Turnstile + Pages project for HZN Laundry order-view.
 
 .DESCRIPTION
-  Reads CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN from the repo .env file.
-  Creates:
-    1. A Turnstile widget (managed mode) for *.pages.dev + localhost
-    2. Two Cloudflare Pages projects: hzn-order-view (prod) and hzn-order-view-staging
-  Appends new keys to .env (TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY,
-  ORDER_VIEW_BASE_URL_STAGING, ORDER_VIEW_BASE_URL_PROD).
-
-  Fails clearly when the API token lacks required scopes.
+  Reads CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN from .env.
+  Creates/updates:
+    1. Turnstile widget (managed + bot_fight_mode) for hznlaundrysystem.pages.dev
+    2. One Pages project: hznlaundrysystem
+       - prod:    https://hznlaundrysystem.pages.dev
+       - staging: https://staging.hznlaundrysystem.pages.dev (branch alias)
+  Writes TURNSTILE_* and ORDER_VIEW_BASE_URL_* into .env.
 
 .NOTES
-  Run from the repo root:
-    powershell -ExecutionPolicy Bypass -File scripts\cloudflare\provision.ps1
+  powershell -ExecutionPolicy Bypass -File scripts\cloudflare\provision.ps1
   NEVER commit .env or print full secrets.
 #>
 
@@ -25,7 +22,14 @@ $RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $RepoRoot) { $RepoRoot = (Get-Location).Path }
 $EnvFile = Join-Path $RepoRoot ".env"
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+$ProjectName = "hznlaundrysystem"
+$ProdUrl     = "https://hznlaundrysystem.pages.dev"
+$StagingUrl  = "https://staging.hznlaundrysystem.pages.dev"
+$TurnstileDomains = @(
+    "hznlaundrysystem.pages.dev",
+    "staging.hznlaundrysystem.pages.dev",
+    "localhost"
+)
 
 function Read-EnvFile {
     param([string]$Path)
@@ -53,15 +57,15 @@ function Invoke-CF {
         "Content-Type"  = "application/json"
     }
     $params = @{
-        Method  = $Method
-        Uri     = $Uri
-        Headers = $headers
+        Method      = $Method
+        Uri         = $Uri
+        Headers     = $headers
+        ErrorAction = "Stop"
     }
     if ($Body) {
         $params["Body"] = ($Body | ConvertTo-Json -Depth 10)
     }
-    $resp = Invoke-RestMethod @params -ErrorAction Stop
-    return $resp
+    return Invoke-RestMethod @params
 }
 
 function Append-EnvVar {
@@ -75,147 +79,138 @@ function Append-EnvVar {
     }
 }
 
-# ── load .env ────────────────────────────────────────────────────────────────
-
 Write-Host ""
 Write-Host "=== HZN Laundry - Cloudflare Order-View Provisioning ===" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not (Test-Path $EnvFile)) {
-    Write-Error ".env not found at $EnvFile. Create it with CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN."
+    Write-Error ".env not found at $EnvFile."
 }
 $envVars = Read-EnvFile $EnvFile
-
 $AccountId = $envVars["CLOUDFLARE_ACCOUNT_ID"]
 $ApiToken  = $envVars["CLOUDFLARE_API_TOKEN"]
-
 if (-not $AccountId -or -not $ApiToken) {
     Write-Error ".env must contain CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN."
 }
 
 $CfBase = "https://api.cloudflare.com/client/v4"
 
-# ── 1. Turnstile widget ─────────────────────────────────────────────────────
+# ── 1. Turnstile widget (create or update) ───────────────────────────────────
 
-Write-Host "[1/3] Creating Turnstile widget..." -ForegroundColor Yellow
+Write-Host "[1/3] Ensuring Turnstile widget..." -ForegroundColor Yellow
 
-$turnstilePayload = @{
-    name     = "HZN Laundry Order View"
-    domains  = @(
-        "hzn-order-view.pages.dev",
-        "hzn-order-view-staging.pages.dev",
-        "localhost"
-    )
-    mode     = "managed"
-    bot_fight_mode = $false
+$existingSiteKey = $envVars["TURNSTILE_SITE_KEY"]
+# Note: Turnstile widget PUT rejects unknown fields (e.g. bot_fight_mode).
+# Bot protection is Turnstile managed mode + noindex headers / robots.txt.
+$widgetPayload = @{
+    name    = "HZN Laundry Order View"
+    domains = $TurnstileDomains
+    mode    = "managed"
 }
 
 try {
-    $tsResult = Invoke-CF -Method POST -Uri "$CfBase/accounts/$AccountId/challenges/widgets" -Token $ApiToken -Body $turnstilePayload
+    $siteKey = $null
+    $secretKey = $null
 
-    if (-not $tsResult.success) {
-        Write-Error ("Turnstile creation failed: " + ($tsResult.errors | ConvertTo-Json))
+    if ($existingSiteKey) {
+        # List widgets and update the matching one
+        $list = Invoke-CF -Method GET -Uri "$CfBase/accounts/$AccountId/challenges/widgets" -Token $ApiToken
+        $match = $null
+        if ($list.result) {
+            foreach ($w in $list.result) {
+                if ($w.sitekey -eq $existingSiteKey) { $match = $w; break }
+            }
+        }
+        if ($match) {
+            Write-Host "  Updating existing widget domains + bot_fight_mode..." -ForegroundColor Yellow
+            $upd = Invoke-CF -Method PUT -Uri "$CfBase/accounts/$AccountId/challenges/widgets/$($match.sitekey)" -Token $ApiToken -Body $widgetPayload
+            if (-not $upd.success) {
+                Write-Error ("Turnstile update failed: " + ($upd.errors | ConvertTo-Json))
+            }
+            $siteKey = $upd.result.sitekey
+            if ($upd.result.secret) { $secretKey = $upd.result.secret }
+            Write-Host "  Turnstile widget updated." -ForegroundColor Green
+        }
     }
 
-    $siteKey   = $tsResult.result.sitekey
-    $secretKey = $tsResult.result.secret
+    if (-not $siteKey) {
+        $tsResult = Invoke-CF -Method POST -Uri "$CfBase/accounts/$AccountId/challenges/widgets" -Token $ApiToken -Body $widgetPayload
+        if (-not $tsResult.success) {
+            Write-Error ("Turnstile creation failed: " + ($tsResult.errors | ConvertTo-Json))
+        }
+        $siteKey = $tsResult.result.sitekey
+        $secretKey = $tsResult.result.secret
+        Write-Host "  Turnstile widget created." -ForegroundColor Green
+    }
 
-    Write-Host "  Turnstile widget created." -ForegroundColor Green
     Write-Host "  Site key: $siteKey"
-    Write-Host "  Widget name: $($tsResult.result.name)"
-
     Append-EnvVar -Path $EnvFile -Key "TURNSTILE_SITE_KEY" -Value $siteKey
-    Append-EnvVar -Path $EnvFile -Key "TURNSTILE_SECRET_KEY" -Value $secretKey
-    Write-Host "  Keys appended to .env" -ForegroundColor Green
+    if ($secretKey) {
+        Append-EnvVar -Path $EnvFile -Key "TURNSTILE_SECRET_KEY" -Value $secretKey
+    }
+    Write-Host "  Keys written to .env" -ForegroundColor Green
 }
 catch {
     $msg = $_.Exception.Message
     if ($msg -match "403|401|forbidden|unauthorized|10000") {
-        Write-Host ""
         Write-Host "ERROR: Turnstile API call failed (likely missing scope)." -ForegroundColor Red
-        Write-Host "Ensure your CLOUDFLARE_API_TOKEN has:" -ForegroundColor Red
-        Write-Host "  Account > Turnstile > Edit" -ForegroundColor Red
-        Write-Host "  Account > Cloudflare Pages > Edit" -ForegroundColor Red
-        Write-Host "Error: $msg" -ForegroundColor Red
+        Write-Host "Need: Account > Turnstile > Edit, Account > Cloudflare Pages > Edit" -ForegroundColor Red
     }
     throw
 }
 
-# ── 2. Pages projects ───────────────────────────────────────────────────────
+# ── 2. Pages project ─────────────────────────────────────────────────────────
 
-function New-PagesProject {
-    param([string]$ProjectName)
+Write-Host ""
+Write-Host "[2/3] Ensuring Pages project '$ProjectName'..." -ForegroundColor Yellow
 
-    Write-Host "  Creating Pages project: $ProjectName ..." -ForegroundColor Yellow
+$body = @{
+    name              = $ProjectName
+    production_branch = "main"
+}
 
-    $body = @{
-        name = $ProjectName
-        production_branch = "main"
-    }
-
-    try {
-        $result = Invoke-CF -Method POST -Uri "$CfBase/accounts/$AccountId/pages/projects" -Token $ApiToken -Body $body
-
-        if (-not $result.success) {
-            $errCode = $null
-            if ($result.errors) {
-                $errCode = $result.errors[0].code
-            }
-            if ($errCode -eq 8000007) {
-                Write-Host "  Project '$ProjectName' already exists - skipping." -ForegroundColor DarkYellow
-                return
-            }
+try {
+    $result = Invoke-CF -Method POST -Uri "$CfBase/accounts/$AccountId/pages/projects" -Token $ApiToken -Body $body
+    if (-not $result.success) {
+        $errCode = $null
+        if ($result.errors) { $errCode = $result.errors[0].code }
+        if ($errCode -eq 8000007) {
+            Write-Host "  Project already exists - skipping create." -ForegroundColor DarkYellow
+        } else {
             Write-Error ("Pages project creation failed: " + ($result.errors | ConvertTo-Json))
         }
-        Write-Host "  Created: https://$ProjectName.pages.dev" -ForegroundColor Green
+    } else {
+        Write-Host "  Created: $ProdUrl" -ForegroundColor Green
     }
-    catch {
-        $msg = $_.Exception.Message
-        if ($msg -match "already exists" -or $msg -match "8000007") {
-            Write-Host "  Project '$ProjectName' already exists - skipping." -ForegroundColor DarkYellow
-            return
-        }
+}
+catch {
+    $msg = $_.Exception.Message
+    if ($msg -match "already exists" -or $msg -match "8000007") {
+        Write-Host "  Project already exists - skipping create." -ForegroundColor DarkYellow
+    } else {
         if ($msg -match "403|401|forbidden|unauthorized") {
             Write-Host "ERROR: Pages API call failed (likely missing scope)." -ForegroundColor Red
-            Write-Host "Ensure CLOUDFLARE_API_TOKEN has: Account > Cloudflare Pages > Edit" -ForegroundColor Red
-            Write-Host "Error: $msg" -ForegroundColor Red
         }
         throw
     }
 }
 
-Write-Host ""
-Write-Host "[2/3] Creating Cloudflare Pages projects..." -ForegroundColor Yellow
-
-New-PagesProject -ProjectName "hzn-order-view"
-New-PagesProject -ProjectName "hzn-order-view-staging"
-
-# ── 3. Write URLs to .env ───────────────────────────────────────────────────
+# ── 3. Write URLs ────────────────────────────────────────────────────────────
 
 Write-Host ""
 Write-Host "[3/3] Writing ORDER_VIEW URLs to .env..." -ForegroundColor Yellow
 
-Append-EnvVar -Path $EnvFile -Key "ORDER_VIEW_BASE_URL_STAGING" -Value "https://hzn-order-view-staging.pages.dev"
-Append-EnvVar -Path $EnvFile -Key "ORDER_VIEW_BASE_URL_PROD"    -Value "https://hzn-order-view.pages.dev"
+Append-EnvVar -Path $EnvFile -Key "ORDER_VIEW_BASE_URL_STAGING" -Value $StagingUrl
+Append-EnvVar -Path $EnvFile -Key "ORDER_VIEW_BASE_URL_PROD"    -Value $ProdUrl
+Append-EnvVar -Path $EnvFile -Key "ORDER_VIEW_ORIGINS" -Value "$ProdUrl,$StagingUrl,http://localhost:8788,http://127.0.0.1:8788"
 
-Write-Host "  ORDER_VIEW_BASE_URL_STAGING = https://hzn-order-view-staging.pages.dev" -ForegroundColor Green
-Write-Host "  ORDER_VIEW_BASE_URL_PROD    = https://hzn-order-view.pages.dev" -ForegroundColor Green
-
-# ── done ─────────────────────────────────────────────────────────────────────
+Write-Host "  ORDER_VIEW_BASE_URL_STAGING = $StagingUrl" -ForegroundColor Green
+Write-Host "  ORDER_VIEW_BASE_URL_PROD    = $ProdUrl" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "=== Provisioning complete ===" -ForegroundColor Cyan
+Write-Host "  Prod:    $ProdUrl"
+Write-Host "  Staging: $StagingUrl  (deploy with --branch=staging)"
+Write-Host "  Next: powershell -File scripts/cloudflare/deploy.ps1 -Target both"
 Write-Host ""
-Write-Host "Resources created:"
-Write-Host "  Turnstile widget : HZN Laundry Order View"
-Write-Host "  Pages (prod)     : hzn-order-view.pages.dev"
-Write-Host "  Pages (staging)  : hzn-order-view-staging.pages.dev"
-Write-Host ""
-Write-Host ".env keys added:"
-Write-Host "  TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY,"
-Write-Host "  ORDER_VIEW_BASE_URL_STAGING, ORDER_VIEW_BASE_URL_PROD"
-Write-Host ""
-Write-Host "Next steps:"
-Write-Host "  1. Deploy order_view/ to Pages (see scripts/cloudflare/deploy.ps1)"
-Write-Host "  2. Add PocketBase migration for viewToken fields"
-Write-Host "  3. Wire email hooks to use ORDER_VIEW_BASE_URL"
+Write-Host "Note: old hzn-order-view* projects can be deleted in the CF dashboard when ready."

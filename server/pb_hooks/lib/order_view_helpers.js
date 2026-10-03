@@ -43,7 +43,7 @@ function getOrderViewBaseUrl() {
   }
   if (prod) return String(prod).replace(/\/$/, "");
   if (staging) return String(staging).replace(/\/$/, "");
-  return "https://hzn-order-view.pages.dev";
+  return "https://hznlaundrysystem.pages.dev";
 }
 
 function buildOrderViewUrl(token) {
@@ -63,8 +63,8 @@ function getAllowedOrigins() {
       });
   }
   return [
-    "https://hzn-order-view.pages.dev",
-    "https://hzn-order-view-staging.pages.dev",
+    "https://hznlaundrysystem.pages.dev",
+    "https://staging.hznlaundrysystem.pages.dev",
     "http://localhost:8788",
     "http://127.0.0.1:8788"
   ];
