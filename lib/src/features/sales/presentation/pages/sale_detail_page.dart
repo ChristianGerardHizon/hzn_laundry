@@ -1935,6 +1935,8 @@ class _PrintMenuButton extends HookConsumerWidget {
         claimSheetNumber: sale.receiptNumber,
         addOnItems: addOnItems,
         readyForPickupAt: sale.readyForPickupAt,
+        deliveryAddress: sale.isDelivery ? sale.deliveryAddress : null,
+        deliveryFee: sale.isDelivery ? sale.deliveryFee.toDouble() : 0,
       );
     }
 

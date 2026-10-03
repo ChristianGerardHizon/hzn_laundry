@@ -628,6 +628,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
           productItems: productItems.value,
           claimSheetNumber: createdReceiptNumber.value,
           readyForPickupAt: createdReadyForPickupAt.value,
+          deliveryAddress: isDeliveryOrder
+              ? deliveryDraft.value.address.trim()
+              : null,
+          deliveryFee: deliveryFee.toDouble(),
         ),
       );
     }
@@ -2943,6 +2947,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
     this.productItems = const [],
     this.claimSheetNumber,
     this.readyForPickupAt,
+    this.deliveryAddress,
+    this.deliveryFee = 0,
   });
 
   final Customer customer;
@@ -2954,6 +2960,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
   final List<_OrderProductItem> productItems;
   final String? claimSheetNumber;
   final DateTime? readyForPickupAt;
+  final String? deliveryAddress;
+  final double deliveryFee;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -3024,6 +3032,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
         claimSheetNumber: claimSheetNumber,
         addOnItems: addOnSaleItems,
         readyForPickupAt: readyForPickupAt,
+        deliveryAddress: deliveryAddress,
+        deliveryFee: deliveryFee,
       );
     }
 
@@ -3092,6 +3102,8 @@ class _OrderSuccessPage extends HookConsumerWidget {
         orderDate: orderDate,
         addOnItems: addOnSaleItems,
         readyForPickupAt: readyForPickupAt,
+        deliveryAddress: deliveryAddress,
+        deliveryFee: deliveryFee,
       );
 
       isPrinting.value = false;
