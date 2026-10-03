@@ -65,6 +65,13 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
     _$cutOffTime,
     opt: true,
   );
+  static bool _$isDefault(BranchDto v) => v.isDefault;
+  static const Field<BranchDto, bool> _f$isDefault = Field(
+    'isDefault',
+    _$isDefault,
+    opt: true,
+    def: false,
+  );
   static bool _$isDeleted(BranchDto v) => v.isDeleted;
   static const Field<BranchDto, bool> _f$isDeleted = Field(
     'isDeleted',
@@ -97,6 +104,7 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
     #organizationId: _f$organizationId,
     #operatingHours: _f$operatingHours,
     #cutOffTime: _f$cutOffTime,
+    #isDefault: _f$isDefault,
     #isDeleted: _f$isDeleted,
     #created: _f$created,
     #updated: _f$updated,
@@ -114,6 +122,7 @@ class BranchDtoMapper extends ClassMapperBase<BranchDto> {
       organizationId: data.dec(_f$organizationId),
       operatingHours: data.dec(_f$operatingHours),
       cutOffTime: data.dec(_f$cutOffTime),
+      isDefault: data.dec(_f$isDefault),
       isDeleted: data.dec(_f$isDeleted),
       created: data.dec(_f$created),
       updated: data.dec(_f$updated),
@@ -190,6 +199,7 @@ abstract class BranchDtoCopyWith<$R, $In extends BranchDto, $Out>
     String? organizationId,
     String? operatingHours,
     String? cutOffTime,
+    bool? isDefault,
     bool? isDeleted,
     String? created,
     String? updated,
@@ -217,6 +227,7 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     Object? organizationId = $none,
     Object? operatingHours = $none,
     Object? cutOffTime = $none,
+    bool? isDefault,
     bool? isDeleted,
     Object? created = $none,
     Object? updated = $none,
@@ -232,6 +243,7 @@ class _BranchDtoCopyWithImpl<$R, $Out>
       if (organizationId != $none) #organizationId: organizationId,
       if (operatingHours != $none) #operatingHours: operatingHours,
       if (cutOffTime != $none) #cutOffTime: cutOffTime,
+      if (isDefault != null) #isDefault: isDefault,
       if (isDeleted != null) #isDeleted: isDeleted,
       if (created != $none) #created: created,
       if (updated != $none) #updated: updated,
@@ -249,6 +261,7 @@ class _BranchDtoCopyWithImpl<$R, $Out>
     organizationId: data.get(#organizationId, or: $value.organizationId),
     operatingHours: data.get(#operatingHours, or: $value.operatingHours),
     cutOffTime: data.get(#cutOffTime, or: $value.cutOffTime),
+    isDefault: data.get(#isDefault, or: $value.isDefault),
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     created: data.get(#created, or: $value.created),
     updated: data.get(#updated, or: $value.updated),

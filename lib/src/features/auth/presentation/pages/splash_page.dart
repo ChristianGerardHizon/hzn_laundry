@@ -66,9 +66,10 @@ class SplashPage extends HookConsumerWidget {
 
     final dots = '.' * (ellipsisStep.value + 1);
     final verbText = '${splashLoadingVerbs[verbIndex.value]}$dots';
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: showOrgBrand
             ? _OrgBrandedSplash(
@@ -92,6 +93,8 @@ class _OrgBrandedSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Expanded(
@@ -111,7 +114,7 @@ class _OrgBrandedSplash extends StatelessWidget {
                     orgName,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.15,
                           height: 1.2,
@@ -128,7 +131,7 @@ class _OrgBrandedSplash extends StatelessWidget {
             t.auth.poweredBy,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF999999),
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
           ),
@@ -145,17 +148,24 @@ class _AppLogoSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isLight = colorScheme.brightness == Brightness.light;
+    // Opaque mark reads better on light surfaces; transparent suits dark.
+    final logo = isLight
+        ? Assets.icons.appIcon
+        : Assets.icons.appIconTransparent;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Assets.icons.appIconTransparent.image(width: 150, height: 150),
+          logo.image(width: 150, height: 150),
           const SizedBox(height: 24),
           Text(
             t.auth.almostThereWarmingUp,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF999999),
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
           ),
@@ -163,7 +173,7 @@ class _AppLogoSplash extends StatelessWidget {
           Text(
             verbText,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFFBBBBBB),
+                  color: colorScheme.onSurface.withValues(alpha: 0.72),
                   letterSpacing: 0.02 * 14,
                 ),
           ),

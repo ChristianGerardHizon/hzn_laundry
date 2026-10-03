@@ -45,8 +45,11 @@ class BranchFormDialog extends HookConsumerWidget {
               'contactNumber': branch!.contactNumber,
               'operatingHours': branch!.operatingHours ?? '',
               'cutOffTime': branch!.cutOffTime ?? '',
+              'isDefault': branch!.isDefault,
             }
-          : null,
+          : {
+              'isDefault': false,
+            },
     );
 
     final isSaving = useState(false);
@@ -89,6 +92,7 @@ class BranchFormDialog extends HookConsumerWidget {
         contactNumber: (values['contactNumber'] as String).trim(),
         operatingHours: _nullIfEmpty(values['operatingHours'] as String?),
         cutOffTime: _nullIfEmpty(values['cutOffTime'] as String?),
+        isDefault: values['isDefault'] as bool? ?? false,
       );
 
       final success = isEditing
@@ -298,6 +302,20 @@ class BranchFormDialog extends HookConsumerWidget {
                           enabled: !isSaving.value,
                           textInputAction: TextInputAction.next,
                         ),
+                        const SizedBox(height: 16),
+                        FormBuilderSwitch(
+                          name: 'isDefault',
+                          initialValue: branch?.isDefault ?? false,
+                          title: const Text('Default branch'),
+                          subtitle: const Text(
+                            'Used when a user has no branch in this organization',
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          enabled: !isSaving.value,
+                        ),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -318,6 +336,7 @@ class BranchFormDialog extends HookConsumerWidget {
     'contactNumber': 'Contact Number',
     'operatingHours': 'Operating Hours',
     'cutOffTime': 'Cut-off Time',
+    'isDefault': 'Default branch',
   };
 
   String? _nullIfEmpty(String? value) {

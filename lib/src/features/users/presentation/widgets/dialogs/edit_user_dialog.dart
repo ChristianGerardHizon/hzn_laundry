@@ -29,15 +29,6 @@ class EditUserDialog extends HookConsumerWidget {
 
     // Form key
     final formKey = useMemoized(() => GlobalKey<FormBuilderState>());
-    final dirtyGuard = useFormDirtyGuard(
-      formKey: formKey,
-      initialValues: {
-        'name': user.name,
-        'email': user.email,
-        'role': user.roleId,
-        'branch': user.branchId,
-      },
-    );
 
     // UI state
     final isSaving = useState(false);
@@ -45,6 +36,35 @@ class EditUserDialog extends HookConsumerWidget {
     // Watch providers for dropdown data
     final rolesAsync = ref.watch(userRolesControllerProvider);
     final branchesAsync = ref.watch(branchesControllerProvider);
+    final orgBranches = branchesAsync.asData?.value;
+
+    // Drop a users.branch that belongs to another organization.
+    final initialBranchId = useMemoized(() {
+      final id = user.branchId;
+      if (id == null || id.isEmpty) return null;
+      if (orgBranches == null) return null;
+      return orgBranches.any((b) => b.id == id) ? id : null;
+    }, [user.branchId, orgBranches]);
+
+    final dirtyGuard = useFormDirtyGuard(
+      formKey: formKey,
+      initialValues: {
+        'name': user.name,
+        'email': user.email,
+        'role': user.roleId,
+        'branch': initialBranchId,
+      },
+    );
+
+    useEffect(() {
+      if (orgBranches == null) return null;
+      final field = formKey.currentState?.fields['branch'];
+      if (field == null) return null;
+      if (field.value != initialBranchId) {
+        field.didChange(initialBranchId);
+      }
+      return null;
+    }, [orgBranches, initialBranchId]);
 
     Future<void> handleSave() async {
       final isValid = formKey.currentState!.saveAndValidate();
@@ -167,7 +187,7 @@ class EditUserDialog extends HookConsumerWidget {
                     'name': user.name,
                     'email': user.email,
                     'role': user.roleId,
-                    'branch': user.branchId,
+                    'branch': initialBranchId,
                   },
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24),

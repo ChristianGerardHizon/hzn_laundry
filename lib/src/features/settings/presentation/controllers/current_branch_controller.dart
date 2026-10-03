@@ -112,12 +112,16 @@ class CurrentBranchController extends _$CurrentBranchController {
 
   /// Slug for the default branch when entering/switching an organization.
   ///
-  /// Uses the first org branch (name-sorted). Falls back to [allBranchesSlug]
-  /// only when the org has no branches.
+  /// Prefers the org branch with [Branch.isDefault], else the first
+  /// name-sorted branch. Falls back to [allBranchesSlug] only when the org
+  /// has no branches.
   Future<String> defaultBranchSlug() async {
     final branches = await ref.read(branchesControllerProvider.future);
-    if (branches.isNotEmpty) return branches.first.slug;
-    return allBranchesSlug;
+    if (branches.isEmpty) return allBranchesSlug;
+    for (final branch in branches) {
+      if (branch.isDefault) return branch.slug;
+    }
+    return branches.first.slug;
   }
 
   /// Switches to All Branches mode (admin only).

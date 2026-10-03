@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:hzn_laundry/src/core/packages/pocketbase/pocketbase_provider.dart';
 import 'package:hzn_laundry/src/core/utils/window_utils.dart';
 import 'package:hzn_laundry/src/application.dart';
 import 'package:hzn_laundry/src/core/i18n/strings.g.dart';
+import 'package:hzn_laundry/src/features/settings/presentation/controllers/theme_controller.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -12,12 +14,18 @@ import 'src/core/packages/sentry/sentry_provider_observer.dart';
 import 'src/core/utils/spurious_key_event_assert.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   usePathUrlStrategy();
   await WindowUtils.register();
   LocaleSettings.useDeviceLocale();
 
+  final initialThemeMode = await readPersistedThemeMode();
+
   final app = ProviderScope(
+    overrides: [
+      bootstrappedThemeModeProvider.overrideWithValue(initialThemeMode),
+    ],
     observers: [SentryProviderObserver()],
     child: TranslationProvider(child: Application()),
   );
