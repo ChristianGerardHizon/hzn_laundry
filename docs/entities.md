@@ -712,6 +712,11 @@ A finalized transaction/receipt.
 | `notes` | String | No | Internal notes |
 | `postedDate` | DateTime | No | Editable business/transaction date |
 | `readyForPickupAt` | DateTime | No | Optional promised ready-for-pickup date/time |
+| `sendNotification` | bool | No | When true (default), notify customer on Ready and Picked Up (email; SMS later) |
+| `readyNotificationSentAt` | DateTime | No | When the ready notification was last sent successfully |
+| `resendReadyNotification` | bool | No | One-shot server trigger to resend the ready notification |
+| `pickedUpNotificationSentAt` | DateTime | No | When the picked-up notification was last sent successfully |
+| `resendPickedUpNotification` | bool | No | One-shot server trigger to resend the picked-up notification |
 | `voidedById` | String (FK) | No | User who voided the sale |
 | `voidedAt` | DateTime | No | Timestamp when the sale was voided |
 | `created` | DateTime | No | Creation timestamp |

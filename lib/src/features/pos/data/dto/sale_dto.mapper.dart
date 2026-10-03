@@ -113,6 +113,27 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     _$readyForPickupAt,
     opt: true,
   );
+  static bool _$sendNotification(SaleDto v) => v.sendNotification;
+  static const Field<SaleDto, bool> _f$sendNotification = Field(
+    'sendNotification',
+    _$sendNotification,
+    opt: true,
+    def: true,
+  );
+  static String? _$readyNotificationSentAt(SaleDto v) =>
+      v.readyNotificationSentAt;
+  static const Field<SaleDto, String> _f$readyNotificationSentAt = Field(
+    'readyNotificationSentAt',
+    _$readyNotificationSentAt,
+    opt: true,
+  );
+  static String? _$pickedUpNotificationSentAt(SaleDto v) =>
+      v.pickedUpNotificationSentAt;
+  static const Field<SaleDto, String> _f$pickedUpNotificationSentAt = Field(
+    'pickedUpNotificationSentAt',
+    _$pickedUpNotificationSentAt,
+    opt: true,
+  );
   static String? _$voidedBy(SaleDto v) => v.voidedBy;
   static const Field<SaleDto, String> _f$voidedBy = Field(
     'voidedBy',
@@ -158,6 +179,9 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
     #notes: _f$notes,
     #postedDate: _f$postedDate,
     #readyForPickupAt: _f$readyForPickupAt,
+    #sendNotification: _f$sendNotification,
+    #readyNotificationSentAt: _f$readyNotificationSentAt,
+    #pickedUpNotificationSentAt: _f$pickedUpNotificationSentAt,
     #voidedBy: _f$voidedBy,
     #voidedAt: _f$voidedAt,
     #created: _f$created,
@@ -184,6 +208,9 @@ class SaleDtoMapper extends ClassMapperBase<SaleDto> {
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
       readyForPickupAt: data.dec(_f$readyForPickupAt),
+      sendNotification: data.dec(_f$sendNotification),
+      readyNotificationSentAt: data.dec(_f$readyNotificationSentAt),
+      pickedUpNotificationSentAt: data.dec(_f$pickedUpNotificationSentAt),
       voidedBy: data.dec(_f$voidedBy),
       voidedAt: data.dec(_f$voidedAt),
       created: data.dec(_f$created),
@@ -267,6 +294,9 @@ abstract class SaleDtoCopyWith<$R, $In extends SaleDto, $Out>
     String? notes,
     String? postedDate,
     String? readyForPickupAt,
+    bool? sendNotification,
+    String? readyNotificationSentAt,
+    String? pickedUpNotificationSentAt,
     String? voidedBy,
     String? voidedAt,
     String? created,
@@ -303,6 +333,9 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     Object? notes = $none,
     Object? postedDate = $none,
     Object? readyForPickupAt = $none,
+    bool? sendNotification,
+    Object? readyNotificationSentAt = $none,
+    Object? pickedUpNotificationSentAt = $none,
     Object? voidedBy = $none,
     Object? voidedAt = $none,
     Object? created = $none,
@@ -327,6 +360,11 @@ class _SaleDtoCopyWithImpl<$R, $Out>
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
       if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
+      if (sendNotification != null) #sendNotification: sendNotification,
+      if (readyNotificationSentAt != $none)
+        #readyNotificationSentAt: readyNotificationSentAt,
+      if (pickedUpNotificationSentAt != $none)
+        #pickedUpNotificationSentAt: pickedUpNotificationSentAt,
       if (voidedBy != $none) #voidedBy: voidedBy,
       if (voidedAt != $none) #voidedAt: voidedAt,
       if (created != $none) #created: created,
@@ -353,6 +391,15 @@ class _SaleDtoCopyWithImpl<$R, $Out>
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
     readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
+    sendNotification: data.get(#sendNotification, or: $value.sendNotification),
+    readyNotificationSentAt: data.get(
+      #readyNotificationSentAt,
+      or: $value.readyNotificationSentAt,
+    ),
+    pickedUpNotificationSentAt: data.get(
+      #pickedUpNotificationSentAt,
+      or: $value.pickedUpNotificationSentAt,
+    ),
     voidedBy: data.get(#voidedBy, or: $value.voidedBy),
     voidedAt: data.get(#voidedAt, or: $value.voidedAt),
     created: data.get(#created, or: $value.created),

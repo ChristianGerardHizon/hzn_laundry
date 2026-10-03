@@ -16,6 +16,7 @@ import '../../../pos/presentation/payments_controller.dart';
 import '../../../pos/domain/sale_item.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
+import '../../../settings/data/repositories/feature_flag_repository.dart';
 import '../../../users/presentation/controllers/user_provider.dart';
 import '../controllers/sale_items_provider.dart';
 import '../controllers/sale_provider.dart';
@@ -24,8 +25,10 @@ import '../controllers/sale_service_items_provider.dart';
 import 'assign_machines_dialog.dart';
 import 'assign_storages_dialog.dart';
 import 'prepare_order_for_ready.dart';
+import 'ready_notification_confirm.dart';
 import 'set_packs_dialog.dart';
 import 'sale_highlight_banner.dart';
+import 'sale_notification_section.dart';
 import 'sale_usage_section.dart';
 
 /// Reusable sale detail content widget.
@@ -99,6 +102,12 @@ class SaleDetailContent extends ConsumerWidget {
           // Special Instructions Section
           _SpecialInstructionsSection(
             notes: sale.notes,
+            compact: compact,
+          ),
+          SizedBox(height: compact ? 12 : 16),
+
+          SaleNotificationSection(
+            sale: sale,
             compact: compact,
           ),
           SizedBox(height: compact ? 12 : 16),
@@ -388,27 +397,12 @@ class _ServiceItemTile extends HookConsumerWidget {
             );
 
             if (!context.mounted) return;
-            final prepared = await prepareOrderForReadyStatus(
+            await advanceSaleOrderStatus(
               context: context,
               ref: ref,
-              saleId: sale.id,
               sale: sale,
+              status: OrderStatus.ready,
             );
-            if (prepared && context.mounted) {
-              final statusResult =
-                  await repo.updateOrderStatus(sale.id, OrderStatus.ready);
-              statusResult.fold(
-                (failure) {
-                  if (context.mounted) {
-                    showErrorSnackBar(context, message: failure.messageString);
-                  }
-                },
-                (_) {
-                  ref.invalidate(saleProvider(sale.id));
-                  ref.invalidate(kanbanSalesProvider);
-                },
-              );
-            }
           } else {
             showSuccessSnackBar(
               context,
@@ -1008,6 +1002,11 @@ class SaleAssignmentInfoCard extends StatelessWidget {
 
 /// Advances [sale] to [status], running assignment dialogs when needed.
 ///
+/// Advances [sale] to [status], running assignment dialogs when needed.
+///
+/// For Ready / Picked Up, confirms the irrevocable notification when the
+/// customer has an email and [Sale.sendNotification] is on.
+///
 /// Returns `true` when the status was updated successfully.
 Future<bool> advanceSaleOrderStatus({
   required BuildContext context,
@@ -1027,6 +1026,29 @@ Future<bool> advanceSaleOrderStatus({
       );
       if (result == null || !context.mounted) return false;
     }
+
+    // Enforce org requireMachine flag after assignment dialogs.
+    ref.invalidate(saleServiceItemsProvider(sale.id));
+    final freshServiceItems = await ref
+        .read(saleServiceItemsProvider(sale.id).future)
+        .catchError((_) => <SaleServiceItem>[]);
+    final machineRequired =
+        ref.read(requireMachineEnabledProvider).value ?? false;
+    if (machineRequired && freshServiceItems.isNotEmpty) {
+      final missing = freshServiceItems.any(
+        (item) => item.machineName == null || item.machineName!.isEmpty,
+      );
+      if (missing) {
+        if (context.mounted) {
+          showErrorSnackBar(
+            context,
+            message:
+                'All services must have a machine assigned before processing.',
+          );
+        }
+        return false;
+      }
+    }
   } else if (status == OrderStatus.ready) {
     final prepared = await prepareOrderForReadyStatus(
       context: context,
@@ -1035,6 +1057,72 @@ Future<bool> advanceSaleOrderStatus({
       sale: sale,
     );
     if (!prepared || !context.mounted) return false;
+
+    final freshSale =
+        await ref.read(saleProvider(sale.id).future) ?? sale;
+    if (!context.mounted) return false;
+
+    final customer = await loadSaleCustomer(ref, freshSale);
+    if (!context.mounted) return false;
+
+    final confirm = await confirmReadyNotification(
+      context: context,
+      sale: freshSale,
+      customer: customer,
+    );
+    if (!confirm.proceed || !context.mounted) return false;
+
+    final result = await ref.read(salesRepositoryProvider).updateOrderStatus(
+          sale.id,
+          status,
+          resendNotification: confirm.resend,
+        );
+
+    if (!context.mounted) return false;
+
+    return result.fold(
+      (failure) {
+        showErrorSnackBar(context, message: failure.messageString);
+        return false;
+      },
+      (_) {
+        refreshSaleRelatedProviders(ref, saleId: sale.id);
+        return true;
+      },
+    );
+  } else if (status == OrderStatus.pickedUp) {
+    final freshSale =
+        await ref.read(saleProvider(sale.id).future) ?? sale;
+    if (!context.mounted) return false;
+
+    final customer = await loadSaleCustomer(ref, freshSale);
+    if (!context.mounted) return false;
+
+    final confirm = await confirmPickedUpNotification(
+      context: context,
+      sale: freshSale,
+      customer: customer,
+    );
+    if (!confirm.proceed || !context.mounted) return false;
+
+    final result = await ref.read(salesRepositoryProvider).updateOrderStatus(
+          sale.id,
+          status,
+          resendNotification: confirm.resend,
+        );
+
+    if (!context.mounted) return false;
+
+    return result.fold(
+      (failure) {
+        showErrorSnackBar(context, message: failure.messageString);
+        return false;
+      },
+      (_) {
+        refreshSaleRelatedProviders(ref, saleId: sale.id);
+        return true;
+      },
+    );
   }
 
   if (!context.mounted) return false;

@@ -38,7 +38,23 @@ abstract class SalesRepository {
   FutureEither<Sale> updateSale(String id, Map<String, dynamic> data);
 
   /// Updates the order status of a sale.
-  FutureEither<Sale> updateOrderStatus(String id, OrderStatus status);
+  ///
+  /// When [resendNotification] is true, sets the matching resend flag for
+  /// Ready or Picked Up so the server hook sends another notification.
+  FutureEither<Sale> updateOrderStatus(
+    String id,
+    OrderStatus status, {
+    bool resendNotification = false,
+  });
+
+  /// Updates whether order status notifications should be sent.
+  FutureEither<Sale> updateSendNotification(String id, bool value);
+
+  /// Requests a resend of the ready-for-pickup notification (server hook).
+  FutureEither<Sale> resendReadyNotification(String id);
+
+  /// Requests a resend of the picked-up notification (server hook).
+  FutureEither<Sale> resendPickedUpNotification(String id);
 
   /// Updates the sale status (completed, refunded, voided).
   FutureEither<Sale> updateSaleStatus(String id, String status);
@@ -194,6 +210,7 @@ class SalesRepositoryImpl implements SalesRepository {
           if (sale.readyForPickupAt != null)
             'readyForPickupAt':
                 sale.readyForPickupAt!.toUtc().toIso8601String(),
+          'sendNotification': sale.sendNotification,
         };
         final saleRecord = await _sales.create(body: saleBody);
 
@@ -270,7 +287,11 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
-  FutureEither<Sale> updateOrderStatus(String id, OrderStatus status) async {
+  FutureEither<Sale> updateOrderStatus(
+    String id,
+    OrderStatus status, {
+    bool resendNotification = false,
+  }) async {
     return TaskEither.tryCatch(
       () async {
         final current = await _sales.getOne(id);
@@ -279,6 +300,10 @@ class SalesRepositoryImpl implements SalesRepository {
 
         final data = <String, dynamic>{
           'orderStatus': status.name,
+          if (resendNotification && status == OrderStatus.ready)
+            'resendReadyNotification': true,
+          if (resendNotification && status == OrderStatus.pickedUp)
+            'resendPickedUpNotification': true,
         };
         if (status == OrderStatus.pickedUp) {
           data['pickedUpAt'] = DateTime.now().toUtc().toIso8601String();
@@ -291,6 +316,46 @@ class SalesRepositoryImpl implements SalesRepository {
           }
         }
         final record = await _sales.update(id, body: data);
+        return _toSaleEntity(record);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Sale> updateSendNotification(String id, bool value) async {
+    return TaskEither.tryCatch(
+      () async {
+        final record =
+            await _sales.update(id, body: {'sendNotification': value});
+        return _toSaleEntity(record);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Sale> resendReadyNotification(String id) async {
+    return TaskEither.tryCatch(
+      () async {
+        final record = await _sales.update(
+          id,
+          body: {'resendReadyNotification': true},
+        );
+        return _toSaleEntity(record);
+      },
+      Failure.handle,
+    ).run();
+  }
+
+  @override
+  FutureEither<Sale> resendPickedUpNotification(String id) async {
+    return TaskEither.tryCatch(
+      () async {
+        final record = await _sales.update(
+          id,
+          body: {'resendPickedUpNotification': true},
+        );
         return _toSaleEntity(record);
       },
       Failure.handle,
