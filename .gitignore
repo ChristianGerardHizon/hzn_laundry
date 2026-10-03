@@ -79,5 +79,7 @@ app.*.map.json
 # grepai index/symbols are local; share ignore/boost config
 .grepai/*
 !.grepai/config.yaml
+# wrangler local cache from Pages deploys
+.wrangler/
 pocketbase.env
 .env

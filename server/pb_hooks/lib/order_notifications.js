@@ -27,63 +27,27 @@ function resolveChannels(customer) {
   return channels;
 }
 
-function ensureHistoryLink(app, customer) {
-  var historyConfig = require(__hooks + "/send_history_link_config.js");
-  var token = customer.getString("historyToken");
-  var expiresAt = customer.getString("historyTokenExpiresAt");
-  var tokenChanged = false;
-
-  if (!token || historyConfig.isExpired(expiresAt)) {
-    token = historyConfig.generateToken();
-    customer.set("historyToken", token);
-    customer.set("historyTokenExpiresAt", historyConfig.getExpiryDateString());
-    tokenChanged = true;
-  } else {
-    customer.set("historyTokenExpiresAt", historyConfig.getExpiryDateString());
-    tokenChanged = true;
-  }
-
-  if (tokenChanged) {
-    try {
-      app.save(customer);
-    } catch (err) {
-      console.error("[ORDER_NOTIFY] Failed to save customer token:", err);
-      return "";
-    }
-  }
-
-  return historyConfig.getAppBaseUrl() + "/history/" + token;
-}
-
-function resolveBranchName(app, sale) {
-  var branchId = sale.getString("branch");
-  if (!branchId) return "";
+function resolveOrderViewLink(app, sale) {
   try {
-    var branch = app.findRecordById("branches", branchId);
-    return branch.getString("name") || "";
+    var helpers = require(__hooks + "/lib/order_view_helpers.js");
+    var token = helpers.ensureViewToken(app, sale);
+    if (!token) return "";
+    return helpers.buildOrderViewUrl(token);
   } catch (err) {
+    console.error("[ORDER_NOTIFY] order view link failed:", err);
     return "";
   }
 }
 
-function resolveHistoryLink(app, customer) {
-  try {
-    var entitlements = require(__hooks + "/lib/feature_entitlements_helpers.js");
-    if (entitlements.isCustomerHistoryEntitled(app, customer)) {
-      return ensureHistoryLink(app, customer);
-    }
-  } catch (err) {
-    console.error("[ORDER_NOTIFY] history link entitlement check failed:", err);
-  }
-  return "";
-}
-
 function emailPayload(app, sale, customer) {
+  var helpers = require(__hooks + "/lib/order_view_helpers.js");
+  var orgName = helpers.resolveOrganizationName(app, sale);
   return {
+    brand: helpers.brandWithEnv(orgName),
     customerName: customer.getString("name") || "Customer",
     receiptNumber: sale.getString("receiptNumber") || "",
-    historyLink: resolveHistoryLink(app, customer),
-    branchName: resolveBranchName(app, sale)
+    orderViewLink: resolveOrderViewLink(app, sale),
+    branchName: helpers.resolveBranchName(app, sale)
   };
 }
 
