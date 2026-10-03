@@ -273,6 +273,28 @@ deploy-hznlaundry ALL=(root) NOPASSWD: /usr/bin/systemctl restart pocketbase_hzn
 deploy-hznlaundry ALL=(root) NOPASSWD: /usr/bin/systemctl restart pocketbase_hznlaundry.service
 ```
 
+### PocketBase systemd env (Resend / invite emails)
+
+Invite emails, order-history links, and subscription reminders are sent by `pb_hooks` via the **Resend HTTP API**. They do **not** use PocketBase SMTP settings (SMTP is only for OTP / password-reset / verification).
+
+Drop-ins live at:
+
+- Production: `/etc/systemd/system/pocketbase_hznlaundry.service.d/app.conf`
+- Staging: `/etc/systemd/system/pocketbase_hznlaundry-staging.service.d/app.conf`
+
+Required variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `RESEND_API_KEY` | Resend API key — **required**; if missing, invites are created but email is skipped |
+| `APP_BASE_URL` | Public site URL used in invite / history / billing links |
+| `APP_ENV` | `prod` or `staging` (brand tag in From / subject) |
+| `RESEND_FROM_EMAIL` | Use `HZN Laundry <noreply@hznsystems.com>` on local, staging, and prod (verified Resend domain). Display name is rewritten by hooks from `APP_ENV`. Do **not** use `@hznlaundry.hznsystems.com` |
+
+After editing: `systemctl daemon-reload && systemctl restart pocketbase_hznlaundry.service pocketbase_hznlaundry-staging.service`.
+
+Look for `[INVITE] RESEND_API_KEY not set` or `[INVITE] Resend error` in `journalctl -u pocketbase_hznlaundry*` when debugging.
+
 ---
 
 ## Build-Time Dart Defines

@@ -260,9 +260,11 @@ class _LockedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: _kInk,
+      color: isDark ? _kInk : const Color(0xFFF3F4F6),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -280,7 +282,7 @@ class _LockedScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: scheme.onSurface,
                     ),
               ),
               const SizedBox(height: 12),
@@ -288,7 +290,7 @@ class _LockedScreen extends ConsumerWidget {
                 canPay ? message : t.subscriptions.askAdminToPay,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white70,
+                      color: scheme.onSurface.withValues(alpha: 0.7),
                       height: 1.4,
                     ),
               ),
@@ -318,7 +320,9 @@ class _LockedScreen extends ConsumerWidget {
                     ref.read(authControllerProvider.notifier).logout(),
                 child: Text(
                   t.auth.logoutButton,
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
               ),
             ],

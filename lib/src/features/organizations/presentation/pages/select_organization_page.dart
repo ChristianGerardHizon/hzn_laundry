@@ -35,6 +35,7 @@ class SelectOrganizationPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final orgAsync = ref.watch(currentOrganizationControllerProvider);
     final orgNotifier =
@@ -87,7 +88,7 @@ class SelectOrganizationPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: _kInk,
+      backgroundColor: isDark ? _kInk : const Color(0xFFF3F4F6),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -230,6 +231,7 @@ class _OrgTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Translations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sub = ref
         .watch(organizationSubscriptionProvider(organizationId))
         .asData
@@ -254,13 +256,17 @@ class _OrgTile extends ConsumerWidget {
     ];
 
     final tile = Material(
-      color: _kSurface.withValues(alpha: 0.92),
+      color: isDark
+          ? _kSurface.withValues(alpha: 0.92)
+          : scheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isLastUsed
               ? _kBrandTeal.withValues(alpha: 0.55)
-              : _kSurfaceBorder,
+              : isDark
+                  ? _kSurfaceBorder
+                  : scheme.outlineVariant,
           width: isLastUsed ? 1.5 : 1,
         ),
       ),

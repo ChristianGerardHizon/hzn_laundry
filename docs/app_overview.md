@@ -199,7 +199,7 @@ Device-specific settings only (this tablet/phone/desktop).
 
 ### Authentication (`/login`)
 
-- Splash screen (`/splash`) — black warming-up UI with rotating status verbs
+- Splash screen (`/splash`) — theme-aware warming-up UI with rotating status verbs (follows Appearance preference after early preload; native splash stays black)
 - Login page (`/login`) — email step, then email OTP by default (password optional); Google OAuth on web (custom redirect page) and Android (Custom Tabs)
 - Organization selection (`/select-organization`) — after login when the user has 1+ memberships; each card shows package name plus Expiring / Expired / Locked when applicable; Super Admin entry for `system.admin`
 - Scope recovery (`/scope-recovery`) — when login succeeds but org/branch scope cannot resolve a home path (no membership, missing slug, no branches); Retry or Logout
@@ -349,7 +349,7 @@ Plus a set of read-only SQL **view** collections for reporting (`vw_sales_daily_
 ## Key Screens
 
 ### Authentication
-- Splash Screen (`/splash`) — black warming-up verbs
+- Splash Screen (`/splash`) — theme-aware warming-up verbs (native splash remains black)
 - Login Screen (`/login`) — email OTP (default), password optional, Google (web + Android)
 - Scope Recovery (`/scope-recovery`) — Retry / Logout when workspace scope fails
 - Forgot Password (`/forgot-password`)
@@ -645,7 +645,10 @@ lib/src/
 
 ---
 
-| Oct 03 | Profile org assignment | Profile / User Detail Overview and Details show Role from the current org’s `organizationMemberships` and Branch from the users record (not the legacy global `users.role`) |
+| Oct 03 | Invite email delivery (ops) | Staging/prod PocketBase systemd now has `RESEND_API_KEY` + verified `RESEND_FROM_EMAIL` (`@hznsystems.com`). Missing key had been silently skipping invite/history emails while SMTP OTP still worked. Prod `meta.appUrl` corrected off localhost |
+| Oct 03 | Theme-aware splash bootstrap | Appearance preference is read before `runApp`; Flutter splash uses ColorScheme (light/dark). Native splash stays black until the first themed frame |
+| Oct 03 | Org default branch | `branches.isDefault` (one per org); Profile Overview/Details resolve Branch as in-org `users.branch`, else org default, else first name-sorted branch — no cross-org branch names |
+| Oct 03 | Profile org assignment | Profile / User Detail Overview and Details show Role from the current org’s `organizationMemberships`; Branch is org-resolved (in-org users.branch, else default, else first) |
 | Oct 03 | Activity log org/branch + 30-day retention | `activityLogs` stores `organization` + `branch`; hooks stamp them from the source record; list/view requires org membership. Activities feed follows the branch switcher. Daily cron deletes logs older than 30 days |
 | Oct 03 | Clear activity logs script | `server/scripts/clear_activity_logs.py` clears historical `activityLogs` via API (dry-run default; `--env staging|prod|local` or `--all`) |
 | Sep 30 | Create Order missing-fields banner | The Create Order button is always clickable. Tapping it with the customer, service, or required consumable usage missing shows an error banner at the top of the dialog ("Customer is missing", ...) that updates and clears as the user fills them in |

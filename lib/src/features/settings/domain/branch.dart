@@ -16,6 +16,7 @@ class Branch with BranchMappable {
     this.organizationId,
     this.operatingHours,
     this.cutOffTime,
+    this.isDefault = false,
     this.isDeleted = false,
     this.created,
     this.updated,
@@ -44,6 +45,9 @@ class Branch with BranchMappable {
 
   /// Cut-off time for accepting new orders (e.g., "4:30 PM").
   final String? cutOffTime;
+
+  /// Whether this is the organization's default branch.
+  final bool isDefault;
 
   /// Soft delete flag.
   final bool isDeleted;

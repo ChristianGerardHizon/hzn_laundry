@@ -170,6 +170,7 @@ Business branches or locations.
 | `organizationId` | String (FK) | Yes | FK to Organization |
 | `operatingHours` | String | No | e.g. "Mon-Sat 8:00 AM - 5:00 PM" |
 | `cutOffTime` | String | No | Cut-off time for accepting new orders |
+| `isDefault` | bool | Yes | Organization default branch (at most one per org; used when a user has no in-org branch) |
 | `isDeleted` | bool | Yes | Soft delete flag |
 | `created` | DateTime | No | Creation timestamp |
 | `updated` | DateTime | No | Last update timestamp |
@@ -178,7 +179,7 @@ Business branches or locations.
 
 **Relationships:** `organizationId` -> Organization (required after backfill).
 
-**Notes:** Soft-deleted branches are excluded from list/view/update API rules; hard delete is superuser-only.
+**Notes:** Soft-deleted branches are excluded from list/view/update API rules; hard delete is superuser-only. PocketBase hook `branch_default.pb.js` keeps a single `isDefault` per organization; org create stamps the first branch as default.
 
 **Referenced by:** User, Product, Service, Customer, Sale, Cart, Promo, PosGroup (most of these treat `branch` as optional — unassigned records remain visible to all branches).
 
