@@ -291,7 +291,7 @@ Required variables:
 | `APP_ENV` | `prod` or `staging` (brand tag in From / subject) |
 | `RESEND_FROM_EMAIL` | Use `HZN Laundry <noreply@hznsystems.com>` on local, staging, and prod (verified Resend domain). Display name is rewritten by hooks from `APP_ENV`. Do **not** use `@hznlaundry.hznsystems.com` |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret for `POST /api/hzn/public-order/{token}` |
-| `ORDER_VIEW_BASE_URL` | Staging: `https://staging.hznlaundrysystem.pages.dev` · Prod: `https://hznlaundrysystem.pages.dev` |
+| `ORDER_VIEW_BASE_URL` | Staging: `https://staging.hznlaundry.pages.dev` · Prod: `https://hznlaundry.pages.dev` |
 | `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins (comma-separated) |
 
 After editing: `systemctl daemon-reload && systemctl restart pocketbase_hznlaundry.service pocketbase_hznlaundry-staging.service`.
@@ -516,8 +516,8 @@ A static page hosted on Cloudflare Pages allows customers to view individual ord
 
 | Environment | Pages Project | Branch | URL |
 |-------------|---------------|--------|-----|
-| Production | `hznlaundrysystem` | `main` | `https://hznlaundrysystem.pages.dev` |
-| Staging | `hznlaundrysystem` | `staging` | `https://staging.hznlaundrysystem.pages.dev` |
+| Production | `hznlaundry` | `main` | `https://hznlaundry.pages.dev` |
+| Staging | `hznlaundry` | `staging` | `https://staging.hznlaundry.pages.dev` |
 
 SEO/bots: `order_view/robots.txt` disallows all crawlers; `_headers` sets `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet`; HTML meta mirrors that. Access is gated by Cloudflare Turnstile (managed mode) before the PocketBase API is called.
 
@@ -549,7 +549,7 @@ Add these variables alongside the existing Resend/invite vars in the systemd dro
 | Variable | Purpose |
 |----------|---------|
 | `TURNSTILE_SECRET_KEY` | Server-side Turnstile siteverify |
-| `ORDER_VIEW_BASE_URL` | Email link base (`https://staging.hznlaundrysystem.pages.dev` / `https://hznlaundrysystem.pages.dev`) |
+| `ORDER_VIEW_BASE_URL` | Email link base (`https://staging.hznlaundry.pages.dev` / `https://hznlaundry.pages.dev`) |
 | `ORDER_VIEW_ORIGINS` | CORS allow-list for Pages origins |
 
 Hook files: [`public_order.pb.js`](../server/pb_hooks/public_order.pb.js), helpers in [`order_view_helpers.js`](../server/pb_hooks/lib/order_view_helpers.js). Migration `1793500000_add_view_token_fields_to_sales.js` adds `viewToken*` fields.

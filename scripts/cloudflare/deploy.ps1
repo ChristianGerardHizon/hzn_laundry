@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-  Deploys order_view/ to Cloudflare Pages project hznlaundrysystem.
+  Deploys order_view/ to Cloudflare Pages project hznlaundry.
 
 .DESCRIPTION
   One Pages project:
-    prod    -> https://hznlaundrysystem.pages.dev          (--branch=main)
-    staging -> https://staging.hznlaundrysystem.pages.dev  (--branch=staging)
+    prod    -> https://hznlaundry.pages.dev          (--branch=main)
+    staging -> https://staging.hznlaundry.pages.dev  (--branch=staging)
 
   Injects TURNSTILE_SITE_KEY and PUBLIC_ORDER_API_BASE into index.html.
 
@@ -27,7 +27,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot     = Resolve-Path (Join-Path $PSScriptRoot "../../")
 $EnvFile      = Join-Path $RepoRoot ".env"
 $OrderViewDir = Join-Path $RepoRoot "order_view"
-$ProjectName  = "hznlaundrysystem"
+$ProjectName  = "hznlaundry"
 
 function Read-EnvFile {
     param([string]$Path)
@@ -66,7 +66,7 @@ function Build-DeployDir {
         [string]$ApiBaseUrl,
         [string]$SiteKey
     )
-    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("hznlaundrysystem-deploy-" + [guid]::NewGuid().ToString("N"))
+    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("hznlaundry-deploy-" + [guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
     Copy-Item -Path (Join-Path $OrderViewDir "*") -Destination $tmpDir -Recurse -Force
 
@@ -124,14 +124,14 @@ Write-Host ("Project: {0}" -f $ProjectName)
 if ($Target -eq "staging" -or $Target -eq "both") {
     $apiBase = if ($StagingApi) { $StagingApi } else { "https://staging.hznlaundry.hznsystems.com" }
     $dir = Build-DeployDir -ApiBaseUrl $apiBase -SiteKey $TurnstileKey
-    Deploy-Pages -Branch "staging" -DeployDir $dir -PublicUrl "https://staging.hznlaundrysystem.pages.dev"
+    Deploy-Pages -Branch "staging" -DeployDir $dir -PublicUrl "https://staging.hznlaundry.pages.dev"
     Remove-Item $dir -Recurse -Force
 }
 
 if ($Target -eq "prod" -or $Target -eq "both") {
     $apiBase = if ($ProdApi) { $ProdApi } else { "https://hznlaundry.hznsystems.com" }
     $dir = Build-DeployDir -ApiBaseUrl $apiBase -SiteKey $TurnstileKey
-    Deploy-Pages -Branch "main" -DeployDir $dir -PublicUrl "https://hznlaundrysystem.pages.dev"
+    Deploy-Pages -Branch "main" -DeployDir $dir -PublicUrl "https://hznlaundry.pages.dev"
     Remove-Item $dir -Recurse -Force
 }
 
