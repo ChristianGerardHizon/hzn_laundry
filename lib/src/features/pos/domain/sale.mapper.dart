@@ -108,6 +108,27 @@ class SaleMapper extends ClassMapperBase<Sale> {
     _$readyForPickupAt,
     opt: true,
   );
+  static bool _$sendNotification(Sale v) => v.sendNotification;
+  static const Field<Sale, bool> _f$sendNotification = Field(
+    'sendNotification',
+    _$sendNotification,
+    opt: true,
+    def: true,
+  );
+  static DateTime? _$readyNotificationSentAt(Sale v) =>
+      v.readyNotificationSentAt;
+  static const Field<Sale, DateTime> _f$readyNotificationSentAt = Field(
+    'readyNotificationSentAt',
+    _$readyNotificationSentAt,
+    opt: true,
+  );
+  static DateTime? _$pickedUpNotificationSentAt(Sale v) =>
+      v.pickedUpNotificationSentAt;
+  static const Field<Sale, DateTime> _f$pickedUpNotificationSentAt = Field(
+    'pickedUpNotificationSentAt',
+    _$pickedUpNotificationSentAt,
+    opt: true,
+  );
   static String? _$voidedById(Sale v) => v.voidedById;
   static const Field<Sale, String> _f$voidedById = Field(
     'voidedById',
@@ -151,6 +172,9 @@ class SaleMapper extends ClassMapperBase<Sale> {
     #notes: _f$notes,
     #postedDate: _f$postedDate,
     #readyForPickupAt: _f$readyForPickupAt,
+    #sendNotification: _f$sendNotification,
+    #readyNotificationSentAt: _f$readyNotificationSentAt,
+    #pickedUpNotificationSentAt: _f$pickedUpNotificationSentAt,
     #voidedById: _f$voidedById,
     #voidedAt: _f$voidedAt,
     #created: _f$created,
@@ -175,6 +199,9 @@ class SaleMapper extends ClassMapperBase<Sale> {
       notes: data.dec(_f$notes),
       postedDate: data.dec(_f$postedDate),
       readyForPickupAt: data.dec(_f$readyForPickupAt),
+      sendNotification: data.dec(_f$sendNotification),
+      readyNotificationSentAt: data.dec(_f$readyNotificationSentAt),
+      pickedUpNotificationSentAt: data.dec(_f$pickedUpNotificationSentAt),
       voidedById: data.dec(_f$voidedById),
       voidedAt: data.dec(_f$voidedAt),
       created: data.dec(_f$created),
@@ -245,6 +272,9 @@ abstract class SaleCopyWith<$R, $In extends Sale, $Out>
     String? notes,
     DateTime? postedDate,
     DateTime? readyForPickupAt,
+    bool? sendNotification,
+    DateTime? readyNotificationSentAt,
+    DateTime? pickedUpNotificationSentAt,
     String? voidedById,
     DateTime? voidedAt,
     DateTime? created,
@@ -277,6 +307,9 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     Object? notes = $none,
     Object? postedDate = $none,
     Object? readyForPickupAt = $none,
+    bool? sendNotification,
+    Object? readyNotificationSentAt = $none,
+    Object? pickedUpNotificationSentAt = $none,
     Object? voidedById = $none,
     Object? voidedAt = $none,
     Object? created = $none,
@@ -299,6 +332,11 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
       if (notes != $none) #notes: notes,
       if (postedDate != $none) #postedDate: postedDate,
       if (readyForPickupAt != $none) #readyForPickupAt: readyForPickupAt,
+      if (sendNotification != null) #sendNotification: sendNotification,
+      if (readyNotificationSentAt != $none)
+        #readyNotificationSentAt: readyNotificationSentAt,
+      if (pickedUpNotificationSentAt != $none)
+        #pickedUpNotificationSentAt: pickedUpNotificationSentAt,
       if (voidedById != $none) #voidedById: voidedById,
       if (voidedAt != $none) #voidedAt: voidedAt,
       if (created != $none) #created: created,
@@ -323,6 +361,15 @@ class _SaleCopyWithImpl<$R, $Out> extends ClassCopyWithBase<$R, Sale, $Out>
     notes: data.get(#notes, or: $value.notes),
     postedDate: data.get(#postedDate, or: $value.postedDate),
     readyForPickupAt: data.get(#readyForPickupAt, or: $value.readyForPickupAt),
+    sendNotification: data.get(#sendNotification, or: $value.sendNotification),
+    readyNotificationSentAt: data.get(
+      #readyNotificationSentAt,
+      or: $value.readyNotificationSentAt,
+    ),
+    pickedUpNotificationSentAt: data.get(
+      #pickedUpNotificationSentAt,
+      or: $value.pickedUpNotificationSentAt,
+    ),
     voidedById: data.get(#voidedById, or: $value.voidedById),
     voidedAt: data.get(#voidedAt, or: $value.voidedAt),
     created: data.get(#created, or: $value.created),

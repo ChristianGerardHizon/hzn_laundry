@@ -438,6 +438,10 @@ class _CreateOrderDialog extends HookConsumerWidget {
 
       final receiptNumber = _generateReceiptNumber();
 
+      final sendNotification = formKey.currentState?.fields['sendNotification']
+              ?.value as bool? ??
+          true;
+
       final sale = Sale(
         id: '',
         receiptNumber: receiptNumber,
@@ -451,6 +455,7 @@ class _CreateOrderDialog extends HookConsumerWidget {
         customerName: customer.name,
         notes: notes,
         readyForPickupAt: readyForPickupAt,
+        sendNotification: sendNotification,
       );
 
       final serviceItem = SaleServiceItem(
@@ -734,6 +739,14 @@ class _CreateOrderDialog extends HookConsumerWidget {
                     // Ready for pickup (optional)
                     _ReadyForPickupField(
                       enabled: !isSaving.value,
+                      onChanged: () => isDirty.value = true,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Send ready notification (default ON)
+                    _SendNotificationField(
+                      enabled: !isSaving.value,
+                      customer: selectedCustomer.value,
                       onChanged: () => isDirty.value = true,
                     ),
                     const SizedBox(height: 20),
@@ -2021,6 +2034,55 @@ class _ReadyForPickupField extends StatelessWidget {
             prefixIcon: const Icon(Icons.event_available),
             contentPadding: const EdgeInsets.all(12),
           ),
+          onChanged: (_) => onChanged(),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Send notification ────────────────────────────────────────────────────────
+
+class _SendNotificationField extends StatelessWidget {
+  const _SendNotificationField({
+    required this.enabled,
+    required this.customer,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final Customer? customer;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final email = customer?.email?.trim() ?? '';
+    final hasEmail = email.isNotEmpty;
+    final subtitle = customer == null
+        ? 'Select a customer first'
+        : hasEmail
+            ? 'Email $email when this order is Ready or Picked Up'
+            : 'Customer has no email — notification will not be sent';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notifications',
+          style:
+              theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        FormBuilderSwitch(
+          name: 'sendNotification',
+          initialValue: true,
+          enabled: enabled,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          title: const Text('Send notification'),
+          subtitle: Text(subtitle),
           onChanged: (_) => onChanged(),
         ),
       ],

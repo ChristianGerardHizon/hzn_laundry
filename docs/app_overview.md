@@ -122,6 +122,7 @@ View and manage completed transactions.
 - Detailed sale view with items, optional consumable usage, and payment info
 - Create Order records house-chemical usage when the org `consumableUsage` flag is on (not POS)
 - Create-order add-ons picker shows only products for the current branch
+- Per-order **Send notification** (default ON): when marked Ready or Picked Up, emails customers who have an email on file (irrevocable confirm; send-once with optional Resend)
 
 #### Activities (`/activities`)
 Audit log of changes made across the system (Admin-only, `system.admin` permission). Scoped to the current organization; the branch switcher limits the feed to one branch or **All Branches**.
@@ -704,6 +705,7 @@ lib/src/
 | Sep 25 | Email brand teal + env tags | OTP/auth-alert accents use brand teal `#45A9AB` (not green); staging/dev emails show `[Staging]` / `[Dev]` in `{APP_NAME}` / From; history + subscription Resend emails match |
 | Sep 20 | Super Admin dashboard | `/super-admin` shows platform KPIs and per-org metrics (orders, customers, revenue, branches, members) via `GET /api/super-admin/organization-stats` |
 | Sep 20 | Post-login org selection | Users with 1+ memberships pick an organization at `/select-organization` after login; `system.admin` can open `/super-admin` to create an organization |
+| Oct 3 | Ready / picked-up emails | Per-order `sendNotification` (default ON); irrevocable confirm before first Ready and Picked Up emails; send-once + Resend; channel dispatcher for future SMS |
 | Sep 19 | Ready for pickup field | Optional `readyForPickupAt` on create order; shown on sale detail and claim sheet Ready For Pickup when set |
 | Sep 19 | Reports lazy loading | Sales/Orders KPIs from daily summary views first; payment/order rows paginated with infinite scroll; sales-by-customer caches view per branch; consumables query usages by sale date |
 | Sep 19 | Branch switch loader | Full-screen animated overlay covers the shell for at least 2 seconds when switching branches; lands on Dashboard for the new branch |

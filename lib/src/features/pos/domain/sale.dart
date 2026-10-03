@@ -27,6 +27,9 @@ class Sale with SaleMappable {
     this.notes,
     this.postedDate,
     this.readyForPickupAt,
+    this.sendNotification = true,
+    this.readyNotificationSentAt,
+    this.pickedUpNotificationSentAt,
     this.voidedById,
     this.voidedAt,
     this.created,
@@ -81,6 +84,15 @@ class Sale with SaleMappable {
   /// Optional promised ready-for-pickup date/time.
   final DateTime? readyForPickupAt;
 
+  /// When true, notify the customer (email now; SMS later) on Ready / Picked Up.
+  final bool sendNotification;
+
+  /// When the ready-for-pickup notification was last sent successfully.
+  final DateTime? readyNotificationSentAt;
+
+  /// When the picked-up notification was last sent successfully.
+  final DateTime? pickedUpNotificationSentAt;
+
   /// User who voided this sale.
   final String? voidedById;
 
@@ -98,4 +110,11 @@ class Sale with SaleMappable {
 
   /// Returns true if order has been picked up.
   bool get isPickedUp => orderStatus == OrderStatus.pickedUp;
+
+  /// Returns true if a ready notification has already been sent.
+  bool get hasReadyNotificationBeenSent => readyNotificationSentAt != null;
+
+  /// Returns true if a picked-up notification has already been sent.
+  bool get hasPickedUpNotificationBeenSent =>
+      pickedUpNotificationSentAt != null;
 }

@@ -8,16 +8,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/routing/routes/sales_history.routes.dart';
 import '../../../../core/utils/breakpoints.dart';
-import '../../../../core/widgets/form_feedback.dart';
-import '../../../pos/data/repositories/sales_repository.dart';
 import '../../../pos/domain/order_status.dart';
 import '../../../pos/domain/payment_status.dart';
 import '../../../pos/domain/sale.dart';
 import '../../../pos/domain/sale_item.dart';
-import '../../../sales/presentation/controllers/sale_refresh.dart';
-import '../../../sales/presentation/controllers/sale_service_items_provider.dart';
-import '../../../sales/presentation/widgets/assign_machines_dialog.dart';
-import '../../../sales/presentation/widgets/prepare_order_for_ready.dart';
+import '../../../sales/presentation/widgets/sale_detail_content.dart';
 import '../../../sales/presentation/widgets/sale_detail_dialog.dart';
 import '../../../services/domain/sale_service_item.dart';
 import '../../../services/domain/service_item_status.dart';
@@ -32,62 +27,31 @@ Future<void> _handleKanbanDrop(
   Sale sale,
   OrderStatus targetStatus,
 ) async {
-  // Handle assignment dialogs for specific transitions
-  if (targetStatus == OrderStatus.processing) {
-    final serviceItems =
-        await ref.read(saleServiceItemsProvider(sale.id).future);
-    if (serviceItems.isNotEmpty && context.mounted) {
-      final result = await showAssignMachinesDialog(
-        context,
-        serviceItems: serviceItems,
-      );
-      if (result == null) {
-        ref.invalidate(kanbanSalesProvider);
-        return;
-      }
-    }
-  } else if (targetStatus == OrderStatus.ready) {
-    final prepared = await prepareOrderForReadyStatus(
-      context: context,
-      ref: ref,
-      saleId: sale.id,
-      sale: sale,
-    );
-    if (!prepared) {
-      ref.invalidate(kanbanSalesProvider);
-      return;
-    }
-  }
-
-  if (!context.mounted) return;
-
   addBreadcrumb('Kanban move order', category: 'order', data: {
     'saleId': sale.id,
     'from': sale.orderStatus.name,
     'to': targetStatus.name,
   });
 
-  final repo = ref.read(salesRepositoryProvider);
-  final result = await repo.updateOrderStatus(sale.id, targetStatus);
+  final ok = await advanceSaleOrderStatus(
+    context: context,
+    ref: ref,
+    sale: sale,
+    status: targetStatus,
+  );
 
   if (!context.mounted) return;
 
-  result.fold(
-    (failure) {
-      addBreadcrumb('Kanban move failed', category: 'order', data: {
-        'saleId': sale.id,
-        'error': failure.messageString,
-      });
-      showErrorSnackBar(context, message: failure.messageString);
-      ref.invalidate(kanbanSalesProvider);
-      ref.invalidate(notPickedUpCountProvider);
-      ref.invalidate(todayCountProvider);
-      ref.invalidate(backlogPendingCountProvider);
-    },
-    (_) {
-      refreshSaleRelatedProviders(ref, saleId: sale.id);
-    },
-  );
+  if (!ok) {
+    addBreadcrumb('Kanban move failed', category: 'order', data: {
+      'saleId': sale.id,
+      'to': targetStatus.name,
+    });
+    ref.invalidate(kanbanSalesProvider);
+    ref.invalidate(notPickedUpCountProvider);
+    ref.invalidate(todayCountProvider);
+    ref.invalidate(backlogPendingCountProvider);
+  }
 }
 
 /// Kanban-style board showing all sales grouped by order status.
